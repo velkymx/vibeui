@@ -1,0 +1,22 @@
+# Source files (we only want to publish dist/)
+src/
+docs/
+public/
+
+# Configuration files
+.vscode/
+.idea/
+*.log
+vite.config.ts
+tsconfig.json
+tsconfig.node.json
+index.html
+
+# Development files
+.DS_Store
+*.local
+node_modules/
+
+# Git files
+.git/
+.gitignore

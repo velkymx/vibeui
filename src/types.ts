@@ -1,0 +1,101 @@
+// Shared TypeScript types for VibeUI components
+
+export type Variant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
+
+export type Size = 'sm' | 'lg'
+
+export type ButtonType = 'button' | 'submit' | 'reset'
+
+export type Placement = 'top' | 'bottom' | 'start' | 'end'
+
+export type Tag = 'div' | 'span' | 'section' | 'article' | 'nav' | 'aside' | 'header' | 'footer' | 'main'
+
+export type Direction = 'up' | 'down' | 'start' | 'end'
+
+export type SpinnerType = 'border' | 'grow'
+
+export type PlaceholderAnimation = 'glow' | 'wave'
+
+export type OffcanvasPlacement = 'start' | 'end' | 'top' | 'bottom'
+
+export type ToastPlacement = 'top-start' | 'top-center' | 'top-end' | 'middle-start' | 'middle-center' | 'middle-end' | 'bottom-start' | 'bottom-center' | 'bottom-end'
+
+export type NavbarPosition = 'fixed-top' | 'fixed-bottom' | 'sticky-top'
+
+// DataTable types
+export type SortDirection = 'asc' | 'desc' | null
+
+export interface DataTableColumn {
+  key: string
+  label: string
+  sortable?: boolean
+  searchable?: boolean
+  formatter?: (value: any, row: any) => string | number
+  class?: string
+  headerClass?: string
+  thStyle?: Record<string, string>
+  tdStyle?: Record<string, string>
+}
+
+export interface DataTableSort {
+  key: string
+  direction: 'asc' | 'desc'
+}
+
+// Component item types
+export interface BreadcrumbItem {
+  text: string
+  href?: string
+  to?: string | object
+  active?: boolean
+}
+
+export interface NavItem {
+  text: string
+  href?: string
+  to?: string | object
+  active?: boolean
+  disabled?: boolean
+}
+
+export interface PaginationItem {
+  page: number
+  text?: string
+  active?: boolean
+  disabled?: boolean
+}
+
+export interface ListGroupItem {
+  text: string
+  href?: string
+  to?: string | object
+  active?: boolean
+  disabled?: boolean
+  variant?: Variant
+}
+
+export interface AccordionItem {
+  id: string
+  title: string
+  content: string
+  show?: boolean
+}
+
+export interface DropdownItem {
+  text?: string
+  href?: string
+  to?: string | object
+  active?: boolean
+  disabled?: boolean
+  divider?: boolean
+  header?: boolean
+}
+
+export interface CarouselItem {
+  src: string
+  alt?: string
+  caption?: string
+  captionText?: string
+  active?: boolean
+  interval?: number
+}
