@@ -99,3 +99,26 @@ export interface CarouselItem {
   active?: boolean
   interval?: number
 }
+
+// Form types
+export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'date' | 'time' | 'datetime-local' | 'month' | 'week' | 'color'
+
+export type ValidationState = 'valid' | 'invalid' | null
+
+export type ValidatorFunction = (value: any) => boolean | string | Promise<boolean | string>
+
+export interface ValidationRule {
+  validator: ValidatorFunction
+  message?: string
+}
+
+export interface FormValidationResult {
+  valid: boolean
+  message?: string
+}
+
+export interface FormSelectOption {
+  value: string | number
+  text: string
+  disabled?: boolean
+}

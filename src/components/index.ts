@@ -56,6 +56,18 @@ import VibeScrollspy from './VibeScrollspy.vue'
 // Data Components
 import VibeDataTable from './VibeDataTable.vue'
 
+// Form Components
+import VibeFormInput from './VibeFormInput.vue'
+import VibeFormSelect from './VibeFormSelect.vue'
+import VibeFormTextarea from './VibeFormTextarea.vue'
+import VibeFormSpinbutton from './VibeFormSpinbutton.vue'
+import VibeFormDatepicker from './VibeFormDatepicker.vue'
+import VibeFormCheckbox from './VibeFormCheckbox.vue'
+import VibeFormRadio from './VibeFormRadio.vue'
+import VibeFormSwitch from './VibeFormSwitch.vue'
+import VibeFormGroup from './VibeFormGroup.vue'
+import VibeFormWysiwyg from './VibeFormWysiwyg.vue'
+
 // Export all components
 export {
   // Core
@@ -114,7 +126,19 @@ export {
   VibeScrollspy,
 
   // Data
-  VibeDataTable
+  VibeDataTable,
+
+  // Form
+  VibeFormInput,
+  VibeFormSelect,
+  VibeFormTextarea,
+  VibeFormSpinbutton,
+  VibeFormDatepicker,
+  VibeFormCheckbox,
+  VibeFormRadio,
+  VibeFormSwitch,
+  VibeFormGroup,
+  VibeFormWysiwyg
 }
 
 // Vue plugin for global registration
@@ -177,5 +201,17 @@ export default {
 
     // Data
     app.component('VibeDataTable', VibeDataTable)
+
+    // Form
+    app.component('VibeFormInput', VibeFormInput)
+    app.component('VibeFormSelect', VibeFormSelect)
+    app.component('VibeFormTextarea', VibeFormTextarea)
+    app.component('VibeFormSpinbutton', VibeFormSpinbutton)
+    app.component('VibeFormDatepicker', VibeFormDatepicker)
+    app.component('VibeFormCheckbox', VibeFormCheckbox)
+    app.component('VibeFormRadio', VibeFormRadio)
+    app.component('VibeFormSwitch', VibeFormSwitch)
+    app.component('VibeFormGroup', VibeFormGroup)
+    app.component('VibeFormWysiwyg', VibeFormWysiwyg)
   }
 }

@@ -122,6 +122,217 @@ For maximum flexibility and custom content:
 
 Components with dual-mode support include: `VibeBreadcrumb`, `VibeNav`, `VibeNavbarNav`, `VibePagination`, `VibeListGroup`, `VibeAccordion`, `VibeDropdown`, and `VibeCarousel`.
 
+## Form Components with Validation
+
+VibeUI provides comprehensive form components with built-in validation support for both front-end and API-based validation:
+
+### Basic Form Example
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { validators } from '@velkymx/vibeui'
+
+const email = ref('')
+const emailValidationState = ref(null)
+const emailValidationMessage = ref('')
+
+const validateEmail = async () => {
+  const emailRules = [validators.required(), validators.email()]
+
+  for (const rule of emailRules) {
+    const result = await rule.validator(email.value)
+    if (result !== true) {
+      emailValidationState.value = 'invalid'
+      emailValidationMessage.value = typeof result === 'string' ? result : rule.message
+      return
+    }
+  }
+
+  emailValidationState.value = 'valid'
+  emailValidationMessage.value = ''
+}
+</script>
+
+<template>
+  <VibeFormInput
+    v-model="email"
+    id="email"
+    type="email"
+    label="Email Address"
+    placeholder="Enter your email"
+    :validation-state="emailValidationState"
+    :validation-message="emailValidationMessage"
+    @validate="validateEmail"
+    required
+  />
+</template>
+```
+
+### Advanced Form with Composable
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useFormValidation, validators } from '@velkymx/vibeui'
+
+const form = {
+  username: useFormValidation(''),
+  password: useFormValidation(''),
+  age: useFormValidation(0),
+  country: useFormValidation(''),
+  agreeToTerms: useFormValidation(false)
+}
+
+const handleSubmit = async () => {
+  const usernameValid = await form.username.validate([
+    validators.required(),
+    validators.minLength(3)
+  ])
+
+  const passwordValid = await form.password.validate([
+    validators.required(),
+    validators.minLength(8)
+  ])
+
+  const ageValid = await form.age.validate([
+    validators.required(),
+    validators.min(18)
+  ])
+
+  if (usernameValid.valid && passwordValid.valid && ageValid.valid) {
+    console.log('Form is valid!')
+  }
+}
+</script>
+
+<template>
+  <form @submit.prevent="handleSubmit">
+    <VibeFormInput
+      v-model="form.username.value"
+      id="username"
+      label="Username"
+      :validation-state="form.username.validationState"
+      :validation-message="form.username.validationMessage"
+      @validate="() => form.username.validate([validators.required(), validators.minLength(3)])"
+      required
+    />
+
+    <VibeFormInput
+      v-model="form.password.value"
+      id="password"
+      type="password"
+      label="Password"
+      :validation-state="form.password.validationState"
+      :validation-message="form.password.validationMessage"
+      @validate="() => form.password.validate([validators.required(), validators.minLength(8)])"
+      required
+    />
+
+    <VibeFormSpinbutton
+      v-model="form.age.value"
+      id="age"
+      label="Age"
+      :min="0"
+      :max="120"
+      :validation-state="form.age.validationState"
+      :validation-message="form.age.validationMessage"
+      @validate="() => form.age.validate([validators.required(), validators.min(18)])"
+      required
+    />
+
+    <VibeFormCheckbox
+      v-model="form.agreeToTerms.value"
+      id="terms"
+      label="I agree to the terms and conditions"
+      required
+    />
+
+    <VibeButton type="submit" variant="primary">Submit</VibeButton>
+  </form>
+</template>
+```
+
+### API Validation Example
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { validators } from '@velkymx/vibeui'
+
+const username = ref('')
+const usernameValidationState = ref(null)
+const usernameValidationMessage = ref('')
+
+// Custom async validator for checking username availability
+const checkUsernameAvailability = validators.async(async (value) => {
+  if (!value) return true
+
+  try {
+    const response = await fetch(`/api/check-username?username=${value}`)
+    const data = await response.json()
+
+    if (data.available) {
+      return true
+    } else {
+      return 'Username is already taken'
+    }
+  } catch (error) {
+    return 'Error checking username availability'
+  }
+})
+
+const validateUsername = async () => {
+  const rules = [
+    validators.required(),
+    validators.minLength(3),
+    checkUsernameAvailability
+  ]
+
+  usernameValidationState.value = null
+
+  for (const rule of rules) {
+    const result = await rule.validator(username.value)
+    if (result !== true) {
+      usernameValidationState.value = 'invalid'
+      usernameValidationMessage.value = typeof result === 'string' ? result : rule.message
+      return
+    }
+  }
+
+  usernameValidationState.value = 'valid'
+  usernameValidationMessage.value = 'Username is available!'
+}
+</script>
+
+<template>
+  <VibeFormInput
+    v-model="username"
+    id="username"
+    label="Username"
+    :validation-state="usernameValidationState"
+    :validation-message="usernameValidationMessage"
+    @validate="validateUsername"
+    validate-on="blur"
+    required
+  />
+</template>
+```
+
+### Available Validators
+
+VibeUI provides built-in validators:
+
+- `validators.required(message?)` - Field is required
+- `validators.email(message?)` - Valid email format
+- `validators.minLength(min, message?)` - Minimum string length
+- `validators.maxLength(max, message?)` - Maximum string length
+- `validators.min(min, message?)` - Minimum numeric value
+- `validators.max(max, message?)` - Maximum numeric value
+- `validators.pattern(regex, message?)` - Custom regex pattern
+- `validators.url(message?)` - Valid URL format
+- `validators.async(asyncFn)` - Custom async validator
+
 ## Components
 
 VibeUI includes all major Bootstrap 5.3 components:
@@ -183,6 +394,25 @@ VibeUI includes all major Bootstrap 5.3 components:
 
 ### Data Components
 * **VibeDataTable** - Powerful data table with search, sorting, and pagination
+
+### Form Components
+* **VibeFormInput** - Text, email, password, number inputs with validation
+* **VibeFormSelect** - Select dropdowns with single/multiple selection
+* **VibeFormTextarea** - Multi-line text input with character count
+* **VibeFormSpinbutton** - Number input with increment/decrement buttons
+* **VibeFormDatepicker** - Date, time, and datetime input controls
+* **VibeFormCheckbox** - Checkboxes with support for arrays
+* **VibeFormRadio** - Radio button groups
+* **VibeFormSwitch** - Toggle switches
+* **VibeFormGroup** - Form group container with floating labels
+* **VibeFormWysiwyg** - WYSIWYG editor with QuillJS (requires quill package)
+
+All form components support:
+- Front-end validation with built-in validators
+- Async validation for API calls
+- Bootstrap 5 styling and validation states
+- Accessibility features
+- Custom validation messages
 
 ## Contributing
 
