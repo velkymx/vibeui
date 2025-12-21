@@ -337,6 +337,11 @@ VibeUI provides built-in validators:
 
 VibeUI includes all major Bootstrap 5.3 components:
 
+### Layout Components
+* **VibeContainer** - Responsive container with fluid and breakpoint variants
+* **VibeRow** - Row wrapper for columns with gutter control and row-cols support
+* **VibeCol** - Responsive grid columns with offset and order support
+
 ### Core Components
 * **VibeAlert** - Alert messages with variants and dismissible option
 * **VibeBadge** - Badges and labels with pill option

@@ -7,6 +7,11 @@ import VibeCloseButton from './VibeCloseButton.vue'
 import VibeSpinner from './VibeSpinner.vue'
 import VibePlaceholder from './VibePlaceholder.vue'
 
+// Layout Components
+import VibeContainer from './VibeContainer.vue'
+import VibeRow from './VibeRow.vue'
+import VibeCol from './VibeCol.vue'
+
 // Card Components
 import VibeCard from './VibeCard.vue'
 import VibeCardHeader from './VibeCardHeader.vue'
@@ -78,6 +83,11 @@ export {
   VibeCloseButton,
   VibeSpinner,
   VibePlaceholder,
+
+  // Layout
+  VibeContainer,
+  VibeRow,
+  VibeCol,
 
   // Card
   VibeCard,
@@ -152,6 +162,11 @@ export default {
     app.component('VibeCloseButton', VibeCloseButton)
     app.component('VibeSpinner', VibeSpinner)
     app.component('VibePlaceholder', VibePlaceholder)
+
+    // Layout
+    app.component('VibeContainer', VibeContainer)
+    app.component('VibeRow', VibeRow)
+    app.component('VibeCol', VibeCol)
 
     // Card
     app.component('VibeCard', VibeCard)
