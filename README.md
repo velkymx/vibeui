@@ -122,6 +122,43 @@ For maximum flexibility and custom content:
 
 Components with dual-mode support include: `VibeBreadcrumb`, `VibeNav`, `VibeNavbarNav`, `VibePagination`, `VibeListGroup`, `VibeAccordion`, `VibeDropdown`, and `VibeCarousel`.
 
+## Tabs
+
+VibeUI provides complete tab functionality following Bootstrap 5.3 patterns:
+
+```vue
+<template>
+  <!-- Tab Navigation -->
+  <VibeNav tabs>
+    <VibeNavItem tab active target="#home-tab">Home</VibeNavItem>
+    <VibeNavItem tab target="#profile-tab">Profile</VibeNavItem>
+    <VibeNavItem tab target="#contact-tab">Contact</VibeNavItem>
+  </VibeNav>
+
+  <!-- Tab Content -->
+  <VibeTabContent>
+    <VibeTabPane id="home-tab" active>
+      <h3>Home Content</h3>
+      <p>This is the home tab content.</p>
+    </VibeTabPane>
+    <VibeTabPane id="profile-tab">
+      <h3>Profile Content</h3>
+      <p>This is the profile tab content.</p>
+    </VibeTabPane>
+    <VibeTabPane id="contact-tab">
+      <h3>Contact Content</h3>
+      <p>This is the contact tab content.</p>
+    </VibeTabPane>
+  </VibeTabContent>
+</template>
+```
+
+**Key Features:**
+- Automatic Bootstrap tab behavior with proper `data-bs-toggle` and `data-bs-target` attributes
+- Accessible with proper ARIA attributes
+- Fade transitions enabled by default
+- Works seamlessly with Bootstrap's JavaScript
+
 ## Form Components with Validation
 
 VibeUI provides comprehensive form components with built-in validation support for both front-end and API-based validation:
@@ -364,13 +401,15 @@ VibeUI includes all major Bootstrap 5.3 components:
 * **VibeBreadcrumb** - Breadcrumb navigation container
 * **VibeBreadcrumbItem** - Individual breadcrumb items
 * **VibeNav** - Navigation tabs and pills
-* **VibeNavItem** - Navigation items with active state
+* **VibeNavItem** - Navigation items with active state and tab support
 * **VibeNavbar** - Responsive navbar with variants
 * **VibeNavbarBrand** - Navbar branding section
 * **VibeNavbarToggle** - Navbar mobile toggle button
 * **VibeNavbarNav** - Navbar navigation links container
 * **VibePagination** - Pagination container
 * **VibePaginationItem** - Individual pagination items
+* **VibeTabContent** - Container for tab panes
+* **VibeTabPane** - Individual tab panel content
 
 ### List Components
 * **VibeListGroup** - List group container with flush and horizontal options
