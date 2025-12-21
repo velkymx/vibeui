@@ -7,6 +7,11 @@ import VibeCloseButton from './VibeCloseButton.vue'
 import VibeSpinner from './VibeSpinner.vue'
 import VibePlaceholder from './VibePlaceholder.vue'
 
+// Layout Components
+import VibeContainer from './VibeContainer.vue'
+import VibeRow from './VibeRow.vue'
+import VibeCol from './VibeCol.vue'
+
 // Card Components
 import VibeCard from './VibeCard.vue'
 import VibeCardHeader from './VibeCardHeader.vue'
@@ -27,6 +32,8 @@ import VibeNavbarToggle from './VibeNavbarToggle.vue'
 import VibeNavbarNav from './VibeNavbarNav.vue'
 import VibePagination from './VibePagination.vue'
 import VibePaginationItem from './VibePaginationItem.vue'
+import VibeTabContent from './VibeTabContent.vue'
+import VibeTabPane from './VibeTabPane.vue'
 
 // List Components
 import VibeListGroup from './VibeListGroup.vue'
@@ -52,6 +59,7 @@ import VibeCarouselSlide from './VibeCarouselSlide.vue'
 import VibeTooltip from './VibeTooltip.vue'
 import VibePopover from './VibePopover.vue'
 import VibeScrollspy from './VibeScrollspy.vue'
+import VibeIcon from './VibeIcon.vue'
 
 // Data Components
 import VibeDataTable from './VibeDataTable.vue'
@@ -79,6 +87,11 @@ export {
   VibeSpinner,
   VibePlaceholder,
 
+  // Layout
+  VibeContainer,
+  VibeRow,
+  VibeCol,
+
   // Card
   VibeCard,
   VibeCardHeader,
@@ -99,6 +112,8 @@ export {
   VibeNavbarNav,
   VibePagination,
   VibePaginationItem,
+  VibeTabContent,
+  VibeTabPane,
 
   // List
   VibeListGroup,
@@ -124,6 +139,7 @@ export {
   VibeTooltip,
   VibePopover,
   VibeScrollspy,
+  VibeIcon,
 
   // Data
   VibeDataTable,
@@ -153,6 +169,11 @@ export default {
     app.component('VibeSpinner', VibeSpinner)
     app.component('VibePlaceholder', VibePlaceholder)
 
+    // Layout
+    app.component('VibeContainer', VibeContainer)
+    app.component('VibeRow', VibeRow)
+    app.component('VibeCol', VibeCol)
+
     // Card
     app.component('VibeCard', VibeCard)
     app.component('VibeCardHeader', VibeCardHeader)
@@ -173,6 +194,8 @@ export default {
     app.component('VibeNavbarNav', VibeNavbarNav)
     app.component('VibePagination', VibePagination)
     app.component('VibePaginationItem', VibePaginationItem)
+    app.component('VibeTabContent', VibeTabContent)
+    app.component('VibeTabPane', VibeTabPane)
 
     // List
     app.component('VibeListGroup', VibeListGroup)
@@ -198,6 +221,7 @@ export default {
     app.component('VibeTooltip', VibeTooltip)
     app.component('VibePopover', VibePopover)
     app.component('VibeScrollspy', VibeScrollspy)
+    app.component('VibeIcon', VibeIcon)
 
     // Data
     app.component('VibeDataTable', VibeDataTable)

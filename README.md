@@ -25,6 +25,12 @@ Make sure you also install Bootstrap:
 npm install bootstrap
 ```
 
+Optionally, install Bootstrap Icons for icon support:
+
+```bash
+npm install bootstrap-icons
+```
+
 ## Quick Setup
 
 In your Vue app's entry file (`main.ts` or `main.js`):
@@ -34,6 +40,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import VibeUI from '@velkymx/vibeui';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css'; // Optional: for icon support
 
 createApp(App).use(VibeUI).mount('#app');
 ```
@@ -121,6 +128,352 @@ For maximum flexibility and custom content:
 ```
 
 Components with dual-mode support include: `VibeBreadcrumb`, `VibeNav`, `VibeNavbarNav`, `VibePagination`, `VibeListGroup`, `VibeAccordion`, `VibeDropdown`, and `VibeCarousel`.
+
+## Tabs
+
+VibeUI provides complete tab functionality following Bootstrap 5.3 patterns:
+
+```vue
+<template>
+  <!-- Tab Navigation -->
+  <VibeNav tabs>
+    <VibeNavItem tab active target="#home-tab">Home</VibeNavItem>
+    <VibeNavItem tab target="#profile-tab">Profile</VibeNavItem>
+    <VibeNavItem tab target="#contact-tab">Contact</VibeNavItem>
+  </VibeNav>
+
+  <!-- Tab Content -->
+  <VibeTabContent>
+    <VibeTabPane id="home-tab" active>
+      <h3>Home Content</h3>
+      <p>This is the home tab content.</p>
+    </VibeTabPane>
+    <VibeTabPane id="profile-tab">
+      <h3>Profile Content</h3>
+      <p>This is the profile tab content.</p>
+    </VibeTabPane>
+    <VibeTabPane id="contact-tab">
+      <h3>Contact Content</h3>
+      <p>This is the contact tab content.</p>
+    </VibeTabPane>
+  </VibeTabContent>
+</template>
+```
+
+**Key Features:**
+- Automatic Bootstrap tab behavior with proper `data-bs-toggle` and `data-bs-target` attributes
+- Accessible with proper ARIA attributes
+- Fade transitions enabled by default
+- Works seamlessly with Bootstrap's JavaScript
+
+## Bootstrap Icons
+
+VibeUI provides a convenient `VibeIcon` component for using [Bootstrap Icons](https://icons.getbootstrap.com/) (2000+ icons):
+
+### Installation
+
+```bash
+npm install bootstrap-icons
+```
+
+Import the icon font CSS in your `main.ts`:
+
+```typescript
+import 'bootstrap-icons/font/bootstrap-icons.css';
+```
+
+### Basic Usage
+
+```vue
+<template>
+  <!-- Simple icon -->
+  <VibeIcon icon="heart-fill" />
+
+  <!-- With color -->
+  <VibeIcon icon="star-fill" color="gold" />
+
+  <!-- With size -->
+  <VibeIcon icon="house" size="2x" />
+
+  <!-- Custom font size -->
+  <VibeIcon icon="alarm" fontSize="2rem" />
+
+  <!-- In a button -->
+  <VibeButton variant="primary">
+    <VibeIcon icon="download" /> Download
+  </VibeButton>
+</template>
+```
+
+### Props
+
+- **icon** (required): Icon name from [Bootstrap Icons](https://icons.getbootstrap.com/)
+- **size**: Preset sizes: `'sm' | 'lg' | '1x' | '2x' | '3x' | '4x' | '5x'`
+- **fontSize**: Custom font size (e.g., `'1.5rem'`, `'24px'`)
+- **color**: Icon color (any CSS color value)
+- **customClass**: Additional CSS classes
+- **flipH**: Flip horizontally
+- **flipV**: Flip vertically
+- **rotate**: Rotate by degrees (`90`, `180`, or `270`)
+
+### Advanced Examples
+
+```vue
+<template>
+  <!-- Flipped icon -->
+  <VibeIcon icon="arrow-right" flipH />
+
+  <!-- Rotated icon -->
+  <VibeIcon icon="arrow-up" :rotate="90" />
+
+  <!-- Large colored icon -->
+  <VibeIcon icon="emoji-smile" size="5x" color="#0d6efd" />
+
+  <!-- Icon with click handler -->
+  <VibeIcon icon="trash" color="red" @click="deleteItem" style="cursor: pointer" />
+
+  <!-- Icon in navigation -->
+  <VibeNav>
+    <VibeNavItem active>
+      <VibeIcon icon="house-fill" /> Home
+    </VibeNavItem>
+    <VibeNavItem>
+      <VibeIcon icon="person" /> Profile
+    </VibeNavItem>
+  </VibeNav>
+</template>
+```
+
+**Browse all 2000+ icons at:** [https://icons.getbootstrap.com/](https://icons.getbootstrap.com/)
+
+## Bootstrap Utilities
+
+Since VibeUI uses Bootstrap 5.3 CSS, **all Bootstrap utility classes are available** for use with any component or element. This includes spacing, colors, typography, borders, shadows, flexbox, positioning, and more.
+
+### Common Utilities
+
+#### Spacing (Margin & Padding)
+
+```vue
+<template>
+  <!-- Margin utilities -->
+  <VibeButton class="m-3">Margin all sides</VibeButton>
+  <VibeButton class="mt-4 mb-2">Margin top & bottom</VibeButton>
+  <VibeButton class="mx-auto">Centered with auto margin</VibeButton>
+
+  <!-- Padding utilities -->
+  <VibeCard class="p-4">Card with padding</VibeCard>
+  <VibeCard class="px-5 py-3">Custom x/y padding</VibeCard>
+</template>
+```
+
+#### Borders & Rounded Corners
+
+```vue
+<template>
+  <!-- Border utilities -->
+  <VibeCard class="border border-primary">Primary border</VibeCard>
+  <VibeCard class="border-top border-3">Thick top border</VibeCard>
+  <VibeCard class="border-0">No border</VibeCard>
+
+  <!-- Rounded corners -->
+  <VibeButton class="rounded-pill">Pill shaped</VibeButton>
+  <VibeCard class="rounded-0">Sharp corners</VibeCard>
+  <VibeCard class="rounded-3">More rounded</VibeCard>
+</template>
+```
+
+#### Shadows
+
+```vue
+<template>
+  <VibeCard class="shadow-sm">Small shadow</VibeCard>
+  <VibeCard class="shadow">Regular shadow</VibeCard>
+  <VibeCard class="shadow-lg">Large shadow</VibeCard>
+</template>
+```
+
+#### Colors (Text & Background)
+
+```vue
+<template>
+  <!-- Text colors -->
+  <VibeAlert class="text-primary">Primary text</VibeAlert>
+  <VibeAlert class="text-success">Success text</VibeAlert>
+  <VibeAlert class="text-danger">Danger text</VibeAlert>
+
+  <!-- Background colors -->
+  <div class="bg-light p-3">Light background</div>
+  <div class="bg-primary text-white p-3">Primary background</div>
+
+  <!-- Background opacity -->
+  <div class="bg-success bg-opacity-25 p-3">25% opacity</div>
+</template>
+```
+
+#### Opacity
+
+```vue
+<template>
+  <VibeIcon icon="star" class="opacity-25" />
+  <VibeIcon icon="star" class="opacity-50" />
+  <VibeIcon icon="star" class="opacity-75" />
+  <VibeIcon icon="star" class="opacity-100" />
+</template>
+```
+
+#### Flexbox
+
+```vue
+<template>
+  <!-- Flex container -->
+  <VibeCard class="d-flex justify-content-between align-items-center p-3">
+    <span>Left content</span>
+    <VibeButton>Right button</VibeButton>
+  </VibeCard>
+
+  <!-- Flex direction -->
+  <div class="d-flex flex-column gap-3">
+    <VibeButton>Button 1</VibeButton>
+    <VibeButton>Button 2</VibeButton>
+  </div>
+
+  <!-- Flex responsive -->
+  <div class="d-flex flex-column flex-md-row">
+    <VibeCard>Card 1</VibeCard>
+    <VibeCard>Card 2</VibeCard>
+  </div>
+</template>
+```
+
+#### Position
+
+```vue
+<template>
+  <!-- Position utilities -->
+  <div class="position-relative">
+    <VibeIcon icon="bell" class="position-absolute top-0 end-0" />
+  </div>
+
+  <!-- Sticky positioning -->
+  <VibeNavbar class="sticky-top">
+    <!-- Navbar content -->
+  </VibeNavbar>
+
+  <!-- Fixed positioning -->
+  <VibeButton class="position-fixed bottom-0 end-0 m-3">
+    <VibeIcon icon="chat" />
+  </VibeButton>
+</template>
+```
+
+#### Display & Visibility
+
+```vue
+<template>
+  <!-- Display utilities -->
+  <VibeAlert class="d-none d-md-block">Hidden on mobile</VibeAlert>
+  <VibeButton class="d-inline-block">Inline block</VibeButton>
+
+  <!-- Visibility -->
+  <VibeCard class="visible">Visible</VibeCard>
+  <VibeCard class="invisible">Invisible (takes space)</VibeCard>
+</template>
+```
+
+#### Sizing
+
+```vue
+<template>
+  <!-- Width utilities -->
+  <VibeButton class="w-100">Full width</VibeButton>
+  <VibeButton class="w-75">75% width</VibeButton>
+  <VibeButton class="w-auto">Auto width</VibeButton>
+
+  <!-- Height utilities -->
+  <div class="h-100">Full height</div>
+  <div class="mh-100">Max height 100%</div>
+
+  <!-- Viewport units -->
+  <div class="vw-100">100% viewport width</div>
+  <div class="vh-100">100% viewport height</div>
+</template>
+```
+
+#### Typography
+
+```vue
+<template>
+  <!-- Font size -->
+  <p class="fs-1">Very large text</p>
+  <p class="fs-6">Small text</p>
+
+  <!-- Font weight -->
+  <span class="fw-bold">Bold</span>
+  <span class="fw-light">Light</span>
+
+  <!-- Text alignment -->
+  <p class="text-start">Left aligned</p>
+  <p class="text-center">Center aligned</p>
+  <p class="text-end">Right aligned</p>
+
+  <!-- Text transform -->
+  <p class="text-uppercase">Uppercase</p>
+  <p class="text-lowercase">Lowercase</p>
+  <p class="text-capitalize">Capitalized</p>
+</template>
+```
+
+### Combined Examples
+
+```vue
+<template>
+  <!-- Card with multiple utilities -->
+  <VibeCard class="shadow-lg rounded-3 border-0 p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="fw-bold text-primary mb-0">Card Title</h3>
+      <VibeIcon icon="star-fill" class="text-warning" size="2x" />
+    </div>
+    <p class="text-muted mb-3">Card content with utilities</p>
+    <VibeButton variant="primary" class="w-100">Full Width Button</VibeButton>
+  </VibeCard>
+
+  <!-- Responsive layout with utilities -->
+  <VibeContainer>
+    <VibeRow class="g-4">
+      <VibeCol :cols="12" :md="6" :lg="4">
+        <VibeCard class="h-100 shadow-sm hover-shadow">
+          <div class="position-relative">
+            <img src="..." class="w-100 rounded-top" />
+            <VibeBadge class="position-absolute top-0 end-0 m-2">New</VibeBadge>
+          </div>
+          <div class="p-3">
+            <h5 class="fw-semibold">Product Title</h5>
+            <p class="text-muted small mb-3">Description</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fs-4 fw-bold text-primary">$29.99</span>
+              <VibeButton size="sm">
+                <VibeIcon icon="cart-plus" /> Add
+              </VibeButton>
+            </div>
+          </div>
+        </VibeCard>
+      </VibeCol>
+    </VibeRow>
+  </VibeContainer>
+</template>
+```
+
+### Full Documentation
+
+For complete details on all available utilities, see:
+- **[Bootstrap Utilities Documentation](https://getbootstrap.com/docs/5.3/utilities/api/)**
+- **[Spacing](https://getbootstrap.com/docs/5.3/utilities/spacing/)**
+- **[Colors](https://getbootstrap.com/docs/5.3/utilities/colors/)**
+- **[Borders](https://getbootstrap.com/docs/5.3/utilities/borders/)**
+- **[Shadows](https://getbootstrap.com/docs/5.3/utilities/shadows/)**
+- **[Flex](https://getbootstrap.com/docs/5.3/utilities/flex/)**
+- **[Position](https://getbootstrap.com/docs/5.3/utilities/position/)**
 
 ## Form Components with Validation
 
@@ -337,6 +690,11 @@ VibeUI provides built-in validators:
 
 VibeUI includes all major Bootstrap 5.3 components:
 
+### Layout Components
+* **VibeContainer** - Responsive container with fluid and breakpoint variants
+* **VibeRow** - Row wrapper for columns with gutter control and row-cols support
+* **VibeCol** - Responsive grid columns with offset and order support
+
 ### Core Components
 * **VibeAlert** - Alert messages with variants and dismissible option
 * **VibeBadge** - Badges and labels with pill option
@@ -359,13 +717,15 @@ VibeUI includes all major Bootstrap 5.3 components:
 * **VibeBreadcrumb** - Breadcrumb navigation container
 * **VibeBreadcrumbItem** - Individual breadcrumb items
 * **VibeNav** - Navigation tabs and pills
-* **VibeNavItem** - Navigation items with active state
+* **VibeNavItem** - Navigation items with active state and tab support
 * **VibeNavbar** - Responsive navbar with variants
 * **VibeNavbarBrand** - Navbar branding section
 * **VibeNavbarToggle** - Navbar mobile toggle button
 * **VibeNavbarNav** - Navbar navigation links container
 * **VibePagination** - Pagination container
 * **VibePaginationItem** - Individual pagination items
+* **VibeTabContent** - Container for tab panes
+* **VibeTabPane** - Individual tab panel content
 
 ### List Components
 * **VibeListGroup** - List group container with flush and horizontal options
@@ -391,6 +751,7 @@ VibeUI includes all major Bootstrap 5.3 components:
 * **VibeTooltip** - Tooltips with placement options (requires Bootstrap JS)
 * **VibePopover** - Popovers with title and content (requires Bootstrap JS)
 * **VibeScrollspy** - Scrollspy for navigation highlighting
+* **VibeIcon** - Bootstrap Icons integration with 2000+ icons
 
 ### Data Components
 * **VibeDataTable** - Powerful data table with search, sorting, and pagination

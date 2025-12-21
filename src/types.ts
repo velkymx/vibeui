@@ -22,6 +22,15 @@ export type ToastPlacement = 'top-start' | 'top-center' | 'top-end' | 'middle-st
 
 export type NavbarPosition = 'fixed-top' | 'fixed-bottom' | 'sticky-top'
 
+// Layout types
+export type ContainerType = 'sm' | 'md' | 'lg' | 'xl' | 'xxl'
+export type ColSize = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 'auto'
+export type GutterSize = 0 | 1 | 2 | 3 | 4 | 5
+export type RowColsSize = 1 | 2 | 3 | 4 | 5 | 6
+export type OrderValue = 0 | 1 | 2 | 3 | 4 | 5 | 'first' | 'last'
+export type AlignItems = 'start' | 'center' | 'end' | 'baseline' | 'stretch'
+export type JustifyContent = 'start' | 'center' | 'end' | 'around' | 'between' | 'evenly'
+
 // DataTable types
 export type SortDirection = 'asc' | 'desc' | null
 
