@@ -246,6 +246,235 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 **Browse all 2000+ icons at:** [https://icons.getbootstrap.com/](https://icons.getbootstrap.com/)
 
+## Bootstrap Utilities
+
+Since VibeUI uses Bootstrap 5.3 CSS, **all Bootstrap utility classes are available** for use with any component or element. This includes spacing, colors, typography, borders, shadows, flexbox, positioning, and more.
+
+### Common Utilities
+
+#### Spacing (Margin & Padding)
+
+```vue
+<template>
+  <!-- Margin utilities -->
+  <VibeButton class="m-3">Margin all sides</VibeButton>
+  <VibeButton class="mt-4 mb-2">Margin top & bottom</VibeButton>
+  <VibeButton class="mx-auto">Centered with auto margin</VibeButton>
+
+  <!-- Padding utilities -->
+  <VibeCard class="p-4">Card with padding</VibeCard>
+  <VibeCard class="px-5 py-3">Custom x/y padding</VibeCard>
+</template>
+```
+
+#### Borders & Rounded Corners
+
+```vue
+<template>
+  <!-- Border utilities -->
+  <VibeCard class="border border-primary">Primary border</VibeCard>
+  <VibeCard class="border-top border-3">Thick top border</VibeCard>
+  <VibeCard class="border-0">No border</VibeCard>
+
+  <!-- Rounded corners -->
+  <VibeButton class="rounded-pill">Pill shaped</VibeButton>
+  <VibeCard class="rounded-0">Sharp corners</VibeCard>
+  <VibeCard class="rounded-3">More rounded</VibeCard>
+</template>
+```
+
+#### Shadows
+
+```vue
+<template>
+  <VibeCard class="shadow-sm">Small shadow</VibeCard>
+  <VibeCard class="shadow">Regular shadow</VibeCard>
+  <VibeCard class="shadow-lg">Large shadow</VibeCard>
+</template>
+```
+
+#### Colors (Text & Background)
+
+```vue
+<template>
+  <!-- Text colors -->
+  <VibeAlert class="text-primary">Primary text</VibeAlert>
+  <VibeAlert class="text-success">Success text</VibeAlert>
+  <VibeAlert class="text-danger">Danger text</VibeAlert>
+
+  <!-- Background colors -->
+  <div class="bg-light p-3">Light background</div>
+  <div class="bg-primary text-white p-3">Primary background</div>
+
+  <!-- Background opacity -->
+  <div class="bg-success bg-opacity-25 p-3">25% opacity</div>
+</template>
+```
+
+#### Opacity
+
+```vue
+<template>
+  <VibeIcon icon="star" class="opacity-25" />
+  <VibeIcon icon="star" class="opacity-50" />
+  <VibeIcon icon="star" class="opacity-75" />
+  <VibeIcon icon="star" class="opacity-100" />
+</template>
+```
+
+#### Flexbox
+
+```vue
+<template>
+  <!-- Flex container -->
+  <VibeCard class="d-flex justify-content-between align-items-center p-3">
+    <span>Left content</span>
+    <VibeButton>Right button</VibeButton>
+  </VibeCard>
+
+  <!-- Flex direction -->
+  <div class="d-flex flex-column gap-3">
+    <VibeButton>Button 1</VibeButton>
+    <VibeButton>Button 2</VibeButton>
+  </div>
+
+  <!-- Flex responsive -->
+  <div class="d-flex flex-column flex-md-row">
+    <VibeCard>Card 1</VibeCard>
+    <VibeCard>Card 2</VibeCard>
+  </div>
+</template>
+```
+
+#### Position
+
+```vue
+<template>
+  <!-- Position utilities -->
+  <div class="position-relative">
+    <VibeIcon icon="bell" class="position-absolute top-0 end-0" />
+  </div>
+
+  <!-- Sticky positioning -->
+  <VibeNavbar class="sticky-top">
+    <!-- Navbar content -->
+  </VibeNavbar>
+
+  <!-- Fixed positioning -->
+  <VibeButton class="position-fixed bottom-0 end-0 m-3">
+    <VibeIcon icon="chat" />
+  </VibeButton>
+</template>
+```
+
+#### Display & Visibility
+
+```vue
+<template>
+  <!-- Display utilities -->
+  <VibeAlert class="d-none d-md-block">Hidden on mobile</VibeAlert>
+  <VibeButton class="d-inline-block">Inline block</VibeButton>
+
+  <!-- Visibility -->
+  <VibeCard class="visible">Visible</VibeCard>
+  <VibeCard class="invisible">Invisible (takes space)</VibeCard>
+</template>
+```
+
+#### Sizing
+
+```vue
+<template>
+  <!-- Width utilities -->
+  <VibeButton class="w-100">Full width</VibeButton>
+  <VibeButton class="w-75">75% width</VibeButton>
+  <VibeButton class="w-auto">Auto width</VibeButton>
+
+  <!-- Height utilities -->
+  <div class="h-100">Full height</div>
+  <div class="mh-100">Max height 100%</div>
+
+  <!-- Viewport units -->
+  <div class="vw-100">100% viewport width</div>
+  <div class="vh-100">100% viewport height</div>
+</template>
+```
+
+#### Typography
+
+```vue
+<template>
+  <!-- Font size -->
+  <p class="fs-1">Very large text</p>
+  <p class="fs-6">Small text</p>
+
+  <!-- Font weight -->
+  <span class="fw-bold">Bold</span>
+  <span class="fw-light">Light</span>
+
+  <!-- Text alignment -->
+  <p class="text-start">Left aligned</p>
+  <p class="text-center">Center aligned</p>
+  <p class="text-end">Right aligned</p>
+
+  <!-- Text transform -->
+  <p class="text-uppercase">Uppercase</p>
+  <p class="text-lowercase">Lowercase</p>
+  <p class="text-capitalize">Capitalized</p>
+</template>
+```
+
+### Combined Examples
+
+```vue
+<template>
+  <!-- Card with multiple utilities -->
+  <VibeCard class="shadow-lg rounded-3 border-0 p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="fw-bold text-primary mb-0">Card Title</h3>
+      <VibeIcon icon="star-fill" class="text-warning" size="2x" />
+    </div>
+    <p class="text-muted mb-3">Card content with utilities</p>
+    <VibeButton variant="primary" class="w-100">Full Width Button</VibeButton>
+  </VibeCard>
+
+  <!-- Responsive layout with utilities -->
+  <VibeContainer>
+    <VibeRow class="g-4">
+      <VibeCol :cols="12" :md="6" :lg="4">
+        <VibeCard class="h-100 shadow-sm hover-shadow">
+          <div class="position-relative">
+            <img src="..." class="w-100 rounded-top" />
+            <VibeBadge class="position-absolute top-0 end-0 m-2">New</VibeBadge>
+          </div>
+          <div class="p-3">
+            <h5 class="fw-semibold">Product Title</h5>
+            <p class="text-muted small mb-3">Description</p>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fs-4 fw-bold text-primary">$29.99</span>
+              <VibeButton size="sm">
+                <VibeIcon icon="cart-plus" /> Add
+              </VibeButton>
+            </div>
+          </div>
+        </VibeCard>
+      </VibeCol>
+    </VibeRow>
+  </VibeContainer>
+</template>
+```
+
+### Full Documentation
+
+For complete details on all available utilities, see:
+- **[Bootstrap Utilities Documentation](https://getbootstrap.com/docs/5.3/utilities/api/)**
+- **[Spacing](https://getbootstrap.com/docs/5.3/utilities/spacing/)**
+- **[Colors](https://getbootstrap.com/docs/5.3/utilities/colors/)**
+- **[Borders](https://getbootstrap.com/docs/5.3/utilities/borders/)**
+- **[Shadows](https://getbootstrap.com/docs/5.3/utilities/shadows/)**
+- **[Flex](https://getbootstrap.com/docs/5.3/utilities/flex/)**
+- **[Position](https://getbootstrap.com/docs/5.3/utilities/position/)**
+
 ## Form Components with Validation
 
 VibeUI provides comprehensive form components with built-in validation support for both front-end and API-based validation:
