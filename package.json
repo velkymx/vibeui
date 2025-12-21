@@ -13,7 +13,9 @@
     },
     "./dist/style.css": "./dist/vibeui.css"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -41,12 +43,13 @@
   },
   "homepage": "https://github.com/velkymx/vibeui#readme",
   "dependencies": {
-    "vue": "^3.5.13"
+    "vue": "^3.5.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
+    "vite-plugin-dts": "^4.5.4",
     "vue-tsc": "^2.1.10"
   },
   "peerDependencies": {
@@ -58,4 +61,3 @@
     }
   }
 }
-
