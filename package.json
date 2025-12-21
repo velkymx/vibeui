@@ -56,6 +56,9 @@
     "vue": "^3.5.0"
   },
   "peerDependenciesMeta": {
+    "bootstrap-icons": {
+      "optional": true
+    },
     "quill": {
       "optional": true
     }

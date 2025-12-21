@@ -59,6 +59,7 @@ import VibeCarouselSlide from './VibeCarouselSlide.vue'
 import VibeTooltip from './VibeTooltip.vue'
 import VibePopover from './VibePopover.vue'
 import VibeScrollspy from './VibeScrollspy.vue'
+import VibeIcon from './VibeIcon.vue'
 
 // Data Components
 import VibeDataTable from './VibeDataTable.vue'
@@ -138,6 +139,7 @@ export {
   VibeTooltip,
   VibePopover,
   VibeScrollspy,
+  VibeIcon,
 
   // Data
   VibeDataTable,
@@ -219,6 +221,7 @@ export default {
     app.component('VibeTooltip', VibeTooltip)
     app.component('VibePopover', VibePopover)
     app.component('VibeScrollspy', VibeScrollspy)
+    app.component('VibeIcon', VibeIcon)
 
     // Data
     app.component('VibeDataTable', VibeDataTable)

@@ -25,6 +25,12 @@ Make sure you also install Bootstrap:
 npm install bootstrap
 ```
 
+Optionally, install Bootstrap Icons for icon support:
+
+```bash
+npm install bootstrap-icons
+```
+
 ## Quick Setup
 
 In your Vue app's entry file (`main.ts` or `main.js`):
@@ -34,6 +40,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import VibeUI from '@velkymx/vibeui';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css'; // Optional: for icon support
 
 createApp(App).use(VibeUI).mount('#app');
 ```
@@ -158,6 +165,86 @@ VibeUI provides complete tab functionality following Bootstrap 5.3 patterns:
 - Accessible with proper ARIA attributes
 - Fade transitions enabled by default
 - Works seamlessly with Bootstrap's JavaScript
+
+## Bootstrap Icons
+
+VibeUI provides a convenient `VibeIcon` component for using [Bootstrap Icons](https://icons.getbootstrap.com/) (2000+ icons):
+
+### Installation
+
+```bash
+npm install bootstrap-icons
+```
+
+Import the icon font CSS in your `main.ts`:
+
+```typescript
+import 'bootstrap-icons/font/bootstrap-icons.css';
+```
+
+### Basic Usage
+
+```vue
+<template>
+  <!-- Simple icon -->
+  <VibeIcon icon="heart-fill" />
+
+  <!-- With color -->
+  <VibeIcon icon="star-fill" color="gold" />
+
+  <!-- With size -->
+  <VibeIcon icon="house" size="2x" />
+
+  <!-- Custom font size -->
+  <VibeIcon icon="alarm" fontSize="2rem" />
+
+  <!-- In a button -->
+  <VibeButton variant="primary">
+    <VibeIcon icon="download" /> Download
+  </VibeButton>
+</template>
+```
+
+### Props
+
+- **icon** (required): Icon name from [Bootstrap Icons](https://icons.getbootstrap.com/)
+- **size**: Preset sizes: `'sm' | 'lg' | '1x' | '2x' | '3x' | '4x' | '5x'`
+- **fontSize**: Custom font size (e.g., `'1.5rem'`, `'24px'`)
+- **color**: Icon color (any CSS color value)
+- **customClass**: Additional CSS classes
+- **flipH**: Flip horizontally
+- **flipV**: Flip vertically
+- **rotate**: Rotate by degrees (`90`, `180`, or `270`)
+
+### Advanced Examples
+
+```vue
+<template>
+  <!-- Flipped icon -->
+  <VibeIcon icon="arrow-right" flipH />
+
+  <!-- Rotated icon -->
+  <VibeIcon icon="arrow-up" :rotate="90" />
+
+  <!-- Large colored icon -->
+  <VibeIcon icon="emoji-smile" size="5x" color="#0d6efd" />
+
+  <!-- Icon with click handler -->
+  <VibeIcon icon="trash" color="red" @click="deleteItem" style="cursor: pointer" />
+
+  <!-- Icon in navigation -->
+  <VibeNav>
+    <VibeNavItem active>
+      <VibeIcon icon="house-fill" /> Home
+    </VibeNavItem>
+    <VibeNavItem>
+      <VibeIcon icon="person" /> Profile
+    </VibeNavItem>
+  </VibeNav>
+</template>
+```
+
+**Browse all 2000+ icons at:** [https://icons.getbootstrap.com/](https://icons.getbootstrap.com/)
 
 ## Form Components with Validation
 
@@ -435,6 +522,7 @@ VibeUI includes all major Bootstrap 5.3 components:
 * **VibeTooltip** - Tooltips with placement options (requires Bootstrap JS)
 * **VibePopover** - Popovers with title and content (requires Bootstrap JS)
 * **VibeScrollspy** - Scrollspy for navigation highlighting
+* **VibeIcon** - Bootstrap Icons integration with 2000+ icons
 
 ### Data Components
 * **VibeDataTable** - Powerful data table with search, sorting, and pagination
