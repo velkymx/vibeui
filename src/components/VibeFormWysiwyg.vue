@@ -3,7 +3,21 @@ import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 
 const props = defineProps({
-  modelValue: { type: String, default: '' },
+  modelValue: {
+    type: String,
+    default: '',
+    validator: (value: any) => {
+      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+        console.error(
+          `[VibeFormWysiwyg] Invalid prop: modelValue must be a string, received object. ` +
+          `If you're using useFormValidation(), bind to the .value property: ` +
+          `v-model="field.value" instead of v-model="field"`
+        )
+        return false
+      }
+      return true
+    }
+  },
   id: { type: String, required: true },
   label: { type: String, default: undefined },
   placeholder: { type: String, default: 'Write something...' },

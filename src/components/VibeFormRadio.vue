@@ -3,7 +3,21 @@ import { computed } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 
 const props = defineProps({
-  modelValue: { type: [String, Number, Boolean], default: undefined },
+  modelValue: {
+    type: [String, Number, Boolean],
+    default: undefined,
+    validator: (value: any) => {
+      if (import.meta.env.DEV && value !== null && value !== undefined && typeof value === 'object') {
+        console.error(
+          `[VibeFormRadio] Invalid prop: modelValue must be a string, number, or boolean, received object. ` +
+          `If you're using useFormValidation(), bind to the .value property: ` +
+          `v-model="field.value" instead of v-model="field"`
+        )
+        return false
+      }
+      return true
+    }
+  },
   id: { type: String, required: true },
   label: { type: String, default: undefined },
   value: { type: [String, Number, Boolean], required: true },

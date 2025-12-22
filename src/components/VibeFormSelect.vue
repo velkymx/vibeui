@@ -3,7 +3,21 @@ import { computed } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size, FormSelectOption } from '../types'
 
 const props = defineProps({
-  modelValue: { type: [String, Number, Array], default: '' },
+  modelValue: {
+    type: [String, Number, Array],
+    default: '',
+    validator: (value: any) => {
+      if (import.meta.env.DEV && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        console.error(
+          `[VibeFormSelect] Invalid prop: modelValue must be a string, number, or array, received object. ` +
+          `If you're using useFormValidation(), bind to the .value property: ` +
+          `v-model="field.value" instead of v-model="field"`
+        )
+        return false
+      }
+      return true
+    }
+  },
   id: { type: String, required: true },
   label: { type: String, default: undefined },
   options: { type: Array as () => FormSelectOption[], default: () => [] },
