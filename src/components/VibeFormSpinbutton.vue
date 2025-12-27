@@ -3,7 +3,21 @@ import { computed } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 
 const props = defineProps({
-  modelValue: { type: Number, default: 0 },
+  modelValue: {
+    type: Number,
+    default: 0,
+    validator: (value: any) => {
+      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+        console.error(
+          `[VibeFormSpinbutton] Invalid prop: modelValue must be a number, received object. ` +
+          `If you're using useFormValidation(), bind to the .value property: ` +
+          `v-model="field.value" instead of v-model="field"`
+        )
+        return false
+      }
+      return true
+    }
+  },
   id: { type: String, required: true },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },

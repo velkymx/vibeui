@@ -3,7 +3,21 @@ import { computed } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 
 const props = defineProps({
-  modelValue: { type: String, default: '' },
+  modelValue: {
+    type: String,
+    default: '',
+    validator: (value: any) => {
+      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+        console.error(
+          `[VibeFormTextarea] Invalid prop: modelValue must be a string, received object. ` +
+          `If you're using useFormValidation(), bind to the .value property: ` +
+          `v-model="field.value" instead of v-model="field"`
+        )
+        return false
+      }
+      return true
+    }
+  },
   id: { type: String, required: true },
   label: { type: String, default: undefined },
   placeholder: { type: String, default: undefined },
@@ -36,7 +50,8 @@ const textareaClass = computed(() => {
 })
 
 const charCount = computed(() => {
-  return props.modelValue ? props.modelValue.length : 0
+  const value = typeof props.modelValue === 'string' ? props.modelValue : ''
+  return value ? value.length : 0
 })
 
 const charCountText = computed(() => {

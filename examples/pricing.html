@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - VibeUI Example</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../dist/vibeui.css">
+</head>
+<body>
+    <div id="app">
+        <header class="py-3 mb-4 border-bottom">
+            <vibe-container class="d-flex flex-wrap justify-content-between">
+                <a href="./" class="d-flex align-items-center mb-3 mb-lg-0 me-lg-auto text-dark text-decoration-none">
+                    <vibe-icon icon="cash-stack" class="fs-4 me-2"></vibe-icon>
+                    <span class="fs-4 fw-bold">Pricing</span>
+                </a>
+                <vibe-nav :items="navItems"></vibe-nav>
+            </vibe-container>
+        </header>
+
+        <main>
+            <vibe-container>
+                <div class="pricing-header p-3 pb-md-4 mx-auto text-center">
+                    <h1 class="display-4 fw-bold">Pricing</h1>
+                    <p class="fs-5 text-muted">
+                        Quickly build an effective pricing table for your potential customers with this example.
+                    </p>
+                </div>
+
+                <vibe-row row-cols="1" row-cols-md="3" class="mb-3 text-center" :g="4">
+                    <vibe-col v-for="plan in pricingPlans" :key="plan.name">
+                        <vibe-card class="mb-4 rounded-3 shadow-sm" :class="plan.highlighted ? 'border-primary' : ''">
+                            <vibe-card-header class="py-3" :class="plan.highlighted ? 'bg-primary text-white' : ''">
+                                <h4 class="my-0 fw-normal">{{ plan.name }}</h4>
+                            </vibe-card-header>
+                            <vibe-card-body>
+                                <h1 class="card-title pricing-card-title">
+                                    ${{ plan.price }}<small class="text-muted fw-light">/mo</small>
+                                </h1>
+                                <ul class="list-unstyled mt-3 mb-4">
+                                    <li v-for="(feature, index) in plan.features" :key="index" class="mb-2">
+                                        <vibe-icon
+                                            :icon="feature.included ? 'check-circle' : 'x-circle'"
+                                            :class="feature.included ? 'text-success' : 'text-muted'"
+                                            class="me-2"
+                                        ></vibe-icon>
+                                        {{ feature.text }}
+                                    </li>
+                                </ul>
+                                <vibe-button
+                                    :variant="plan.highlighted ? 'primary' : 'outline-primary'"
+                                    size="lg"
+                                    class="w-100"
+                                >
+                                    {{ plan.buttonText }}
+                                </vibe-button>
+                            </vibe-card-body>
+                        </vibe-card>
+                    </vibe-col>
+                </vibe-row>
+
+                <h2 class="display-6 text-center mb-4">Compare plans</h2>
+
+                <div class="table-responsive">
+                    <table class="table text-center">
+                        <thead>
+                            <tr>
+                                <th style="width: 34%;"></th>
+                                <th style="width: 22%;">Free</th>
+                                <th style="width: 22%;">Pro</th>
+                                <th style="width: 22%;">Enterprise</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="comparison in comparisonFeatures" :key="comparison.feature">
+                                <th scope="row" class="text-start">{{ comparison.feature }}</th>
+                                <td>
+                                    <vibe-icon v-if="comparison.free" icon="check-lg" class="text-success"></vibe-icon>
+                                </td>
+                                <td>
+                                    <vibe-icon v-if="comparison.pro" icon="check-lg" class="text-success"></vibe-icon>
+                                </td>
+                                <td>
+                                    <vibe-icon v-if="comparison.enterprise" icon="check-lg" class="text-success"></vibe-icon>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </vibe-container>
+        </main>
+
+        <footer class="pt-4 my-md-5 pt-md-5 border-top">
+            <vibe-container class="text-center">
+                <vibe-icon icon="lightning-charge-fill" class="fs-2 text-primary"></vibe-icon>
+                <p class="mb-0 mt-2">Built with ✨ by <a href="https://technosorcery.com" class="text-decoration-none">TechnoSorcery.com</a></p>
+            </vibe-container>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../dist/vibeui.umd.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    navItems: [
+                        { text: 'Features', href: '#' },
+                        { text: 'Enterprise', href: '#' },
+                        { text: 'Support', href: '#' },
+                        { text: 'Pricing', href: '#', active: true }
+                    ],
+                    pricingPlans: [
+                        {
+                            name: 'Free',
+                            price: 0,
+                            buttonText: 'Sign up for free',
+                            highlighted: false,
+                            features: [
+                                { text: '10 users included', included: true },
+                                { text: '2 GB of storage', included: true },
+                                { text: 'Email support', included: true },
+                                { text: 'Help center access', included: false }
+                            ]
+                        },
+                        {
+                            name: 'Pro',
+                            price: 15,
+                            buttonText: 'Get started',
+                            highlighted: true,
+                            features: [
+                                { text: '20 users included', included: true },
+                                { text: '10 GB of storage', included: true },
+                                { text: 'Priority email support', included: true },
+                                { text: 'Help center access', included: true }
+                            ]
+                        },
+                        {
+                            name: 'Enterprise',
+                            price: 29,
+                            buttonText: 'Contact us',
+                            highlighted: false,
+                            features: [
+                                { text: '30 users included', included: true },
+                                { text: '15 GB of storage', included: true },
+                                { text: 'Phone and email support', included: true },
+                                { text: 'Help center access', included: true }
+                            ]
+                        }
+                    ],
+                    comparisonFeatures: [
+                        { feature: 'Public', free: true, pro: true, enterprise: true },
+                        { feature: 'Private', free: false, pro: true, enterprise: true },
+                        { feature: 'Permissions', free: true, pro: true, enterprise: true },
+                        { feature: 'Sharing', free: false, pro: true, enterprise: true },
+                        { feature: 'Unlimited members', free: false, pro: true, enterprise: true },
+                        { feature: 'Extra security', free: false, pro: false, enterprise: true }
+                    ]
+                }
+            }
+        }).use(VibeUI.default).mount('#app');
+    </script>
+</body>
+</html>

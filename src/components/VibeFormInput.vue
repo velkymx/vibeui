@@ -3,7 +3,22 @@ import { computed, watch } from 'vue'
 import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 
 const props = defineProps({
-  modelValue: { type: [String, Number], default: '' },
+  modelValue: {
+    type: [String, Number],
+    default: '',
+    validator: (value: any) => {
+      // Only validate in development mode
+      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+        console.error(
+          `[VibeFormInput] Invalid prop: modelValue must be a string or number, received object. ` +
+          `If you're using useFormValidation(), bind to the .value property: ` +
+          `v-model="field.value" instead of v-model="field"`
+        )
+        return false
+      }
+      return true
+    }
+  },
   type: { type: String as () => InputType, default: 'text' },
   id: { type: String, required: true },
   label: { type: String, default: undefined },
