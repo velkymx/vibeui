@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starter Template - VibeUI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../dist/vibeui.css">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 0;
+        }
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: .75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <vibe-navbar variant="dark" expand="lg" class="shadow-sm">
+            <vibe-container>
+                <vibe-navbar-brand href="#">
+                    <vibe-icon icon="lightning-charge-fill" class="me-2"></vibe-icon>
+                    VibeUI
+                </vibe-navbar-brand>
+                <vibe-navbar-toggle target="navbarNav"></vibe-navbar-toggle>
+                <vibe-collapse id="navbarNav" navbar>
+                    <vibe-navbar-nav :items="navItems" class="ms-auto"></vibe-navbar-nav>
+                </vibe-collapse>
+            </vibe-container>
+        </vibe-navbar>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <vibe-container>
+                <vibe-row class="align-items-center">
+                    <vibe-col :lg="6">
+                        <h1 class="display-3 fw-bold mb-3">Build amazing apps with VibeUI</h1>
+                        <p class="lead mb-4">A modern Vue 3 component library built on Bootstrap 5.3. Create beautiful, responsive interfaces in minutes.</p>
+                        <div class="d-flex gap-3 mb-4">
+                            <vibe-button variant="light" size="lg" @click="handleGetStarted">
+                                <vibe-icon icon="rocket-takeoff-fill" class="me-2"></vibe-icon>
+                                Get Started
+                            </vibe-button>
+                            <vibe-button variant="outline-light" size="lg">
+                                <vibe-icon icon="github" class="me-2"></vibe-icon>
+                                View on GitHub
+                            </vibe-button>
+                        </div>
+                    </vibe-col>
+                    <vibe-col :lg="6" class="text-center">
+                        <img src="https://via.placeholder.com/600x400/ffffff/667eea?text=VibeUI+Demo" alt="Demo" class="img-fluid rounded-4 shadow-lg">
+                    </vibe-col>
+                </vibe-row>
+            </vibe-container>
+        </section>
+
+        <!-- Alert Demo -->
+        <vibe-container class="my-5">
+            <vibe-row>
+                <vibe-col :cols="12">
+                    <vibe-alert v-model="showAlert" variant="success" dismissable class="shadow-sm">
+                        <vibe-icon icon="check-circle-fill" class="me-2"></vibe-icon>
+                        <strong>Welcome!</strong> This is a live demo of VibeUI components. Try clicking the buttons below!
+                    </vibe-alert>
+                </vibe-col>
+            </vibe-row>
+        </vibe-container>
+
+        <!-- Features -->
+        <vibe-container class="my-5 py-5">
+            <vibe-row>
+                <vibe-col :cols="12" class="text-center mb-5">
+                    <h2 class="display-5 fw-bold">Why developers love VibeUI</h2>
+                    <p class="lead text-muted">Everything you need to build modern web applications</p>
+                </vibe-col>
+            </vibe-row>
+            <vibe-row :g="4">
+                <vibe-col :md="4" v-for="feature in features" :key="feature.title">
+                    <div class="text-center h-100">
+                        <div :class="`feature-icon bg-${feature.color} bg-opacity-10 text-${feature.color}`">
+                            <vibe-icon :icon="feature.icon"></vibe-icon>
+                        </div>
+                        <h4 class="fw-bold">{{ feature.title }}</h4>
+                        <p class="text-muted">{{ feature.description }}</p>
+                    </div>
+                </vibe-col>
+            </vibe-row>
+        </vibe-container>
+
+        <!-- Interactive Demo -->
+        <section class="bg-light py-5">
+            <vibe-container>
+                <vibe-row class="align-items-center">
+                    <vibe-col :lg="6">
+                        <h2 class="display-6 fw-bold mb-3">Interactive Components</h2>
+                        <p class="lead text-muted mb-4">All components are fully reactive and work seamlessly with Vue 3.</p>
+
+                        <div class="d-flex gap-2 mb-3 flex-wrap">
+                            <vibe-button variant="primary" @click="counter++">
+                                <vibe-icon icon="hand-thumbs-up-fill" class="me-2"></vibe-icon>
+                                Like ({{ counter }})
+                            </vibe-button>
+                            <vibe-button variant="success">
+                                <vibe-icon icon="share-fill" class="me-2"></vibe-icon>
+                                Share
+                            </vibe-button>
+                            <vibe-dropdown id="demo-dropdown" text="More" variant="secondary">
+                                <vibe-dropdown-item href="#">
+                                    <vibe-icon icon="bookmark" class="me-2"></vibe-icon>
+                                    Bookmark
+                                </vibe-dropdown-item>
+                                <vibe-dropdown-item href="#">
+                                    <vibe-icon icon="download" class="me-2"></vibe-icon>
+                                    Download
+                                </vibe-dropdown-item>
+                                <vibe-dropdown-item divider></vibe-dropdown-item>
+                                <vibe-dropdown-item href="#">
+                                    <vibe-icon icon="flag" class="me-2"></vibe-icon>
+                                    Report
+                                </vibe-dropdown-item>
+                            </vibe-dropdown>
+                        </div>
+
+                        <div class="mb-4">
+                            <vibe-badge variant="primary" class="me-2">Vue 3</vibe-badge>
+                            <vibe-badge variant="success" class="me-2">TypeScript</vibe-badge>
+                            <vibe-badge variant="info" class="me-2">Bootstrap 5.3</vibe-badge>
+                            <vibe-badge variant="warning">Responsive</vibe-badge>
+                        </div>
+
+                        <vibe-progress class="mb-2" :height="20">
+                            <vibe-progress-bar :value="75" variant="primary" striped animated>75% Complete</vibe-progress-bar>
+                        </vibe-progress>
+                    </vibe-col>
+                    <vibe-col :lg="6">
+                        <vibe-card class="shadow border-0">
+                            <vibe-card-body class="p-4">
+                                <h5 class="card-title fw-bold mb-3">Component Showcase</h5>
+                                <vibe-list-group flush>
+                                    <vibe-list-group-item v-for="item in showcaseItems" :key="item.name" class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <vibe-icon :icon="item.icon" :class="`text-${item.color} me-2`"></vibe-icon>
+                                            {{ item.name }}
+                                        </div>
+                                        <vibe-badge :variant="item.color" pill>{{ item.count }}</vibe-badge>
+                                    </vibe-list-group-item>
+                                </vibe-list-group>
+                            </vibe-card-body>
+                        </vibe-card>
+                    </vibe-col>
+                </vibe-row>
+            </vibe-container>
+        </section>
+
+        <!-- Stats -->
+        <vibe-container class="py-5 my-5">
+            <vibe-row class="text-center" :g="4">
+                <vibe-col :md="3" v-for="stat in stats" :key="stat.label">
+                    <div class="h-100">
+                        <div :class="`display-4 fw-bold text-${stat.color}`">{{ stat.value }}</div>
+                        <p class="text-muted mb-0">{{ stat.label }}</p>
+                    </div>
+                </vibe-col>
+            </vibe-row>
+        </vibe-container>
+
+        <!-- CTA -->
+        <section class="bg-primary text-white py-5">
+            <vibe-container class="text-center">
+                <vibe-row>
+                    <vibe-col :cols="12">
+                        <h2 class="display-5 fw-bold mb-3">Ready to get started?</h2>
+                        <p class="lead mb-4">Join thousands of developers building with VibeUI</p>
+                        <vibe-button variant="light" size="lg" class="me-3">
+                            <vibe-icon icon="download" class="me-2"></vibe-icon>
+                            Install Now
+                        </vibe-button>
+                        <vibe-button variant="outline-light" size="lg">
+                            <vibe-icon icon="book" class="me-2"></vibe-icon>
+                            Read Docs
+                        </vibe-button>
+                    </vibe-col>
+                </vibe-row>
+            </vibe-container>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-dark text-white py-5">
+            <vibe-container>
+                <vibe-row :g="4">
+                    <vibe-col :lg="4">
+                        <h5 class="fw-bold mb-3">
+                            <vibe-icon icon="lightning-charge-fill" class="me-2"></vibe-icon>
+                            VibeUI
+                        </h5>
+                        <p class="text-white-50">A modern Vue 3 UI library for building beautiful applications with Bootstrap 5.3.</p>
+                    </vibe-col>
+                    <vibe-col :lg="2">
+                        <h6 class="fw-bold mb-3">Product</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Features</a></li>
+                            <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Pricing</a></li>
+                            <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Examples</a></li>
+                        </ul>
+                    </vibe-col>
+                    <vibe-col :lg="2">
+                        <h6 class="fw-bold mb-3">Resources</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Documentation</a></li>
+                            <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Components</a></li>
+                            <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">GitHub</a></li>
+                        </ul>
+                    </vibe-col>
+                    <vibe-col :lg="4">
+                        <h6 class="fw-bold mb-3">Stay Updated</h6>
+                        <p class="text-white-50 small">Get the latest updates and news about VibeUI.</p>
+                        <div class="d-flex gap-2">
+                            <a href="#" class="text-white"><vibe-icon icon="twitter" size="lg"></vibe-icon></a>
+                            <a href="#" class="text-white"><vibe-icon icon="github" size="lg"></vibe-icon></a>
+                            <a href="#" class="text-white"><vibe-icon icon="discord" size="lg"></vibe-icon></a>
+                        </div>
+                    </vibe-col>
+                </vibe-row>
+                <hr class="my-4 border-secondary">
+                <vibe-row>
+                    <vibe-col :md="6">
+                        <p class="text-white-50 small mb-0">© 2024 VibeUI. Built with ✨ by <a href="https://technosorcery.com" class="text-white-50">TechnoSorcery.com</a></p>
+                    </vibe-col>
+                    <vibe-col :md="6" class="text-md-end">
+                        <a href="#" class="text-white-50 text-decoration-none small me-3">Privacy</a>
+                        <a href="#" class="text-white-50 text-decoration-none small">Terms</a>
+                    </vibe-col>
+                </vibe-row>
+            </vibe-container>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../dist/vibeui.umd.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    showAlert: true,
+                    counter: 42,
+                    navItems: [
+                        { text: 'Features', href: '#' },
+                        { text: 'Examples', href: '#' },
+                        { text: 'Docs', href: '#' },
+                        { text: 'GitHub', href: '#' }
+                    ],
+                    features: [
+                        {
+                            icon: 'lightning-charge-fill',
+                            color: 'primary',
+                            title: 'Lightning Fast',
+                            description: 'Optimized for performance with minimal bundle size and maximum efficiency.'
+                        },
+                        {
+                            icon: 'palette-fill',
+                            color: 'success',
+                            title: 'Customizable',
+                            description: 'Easily theme and customize components to match your brand identity.'
+                        },
+                        {
+                            icon: 'shield-check',
+                            color: 'info',
+                            title: 'Type Safe',
+                            description: 'Full TypeScript support with comprehensive type definitions.'
+                        }
+                    ],
+                    showcaseItems: [
+                        { name: 'Navigation', icon: 'compass', color: 'primary', count: '8' },
+                        { name: 'Forms', icon: 'ui-checks', color: 'success', count: '12' },
+                        { name: 'Data Display', icon: 'table', color: 'info', count: '6' },
+                        { name: 'Feedback', icon: 'bell', color: 'warning', count: '5' }
+                    ],
+                    stats: [
+                        { value: '50+', label: 'Components', color: 'primary' },
+                        { value: '10K+', label: 'Downloads', color: 'success' },
+                        { value: '100%', label: 'Free & Open', color: 'info' },
+                        { value: '5.0', label: 'Rating', color: 'warning' }
+                    ]
+                }
+            },
+            methods: {
+                handleGetStarted() {
+                    alert('Ready to build something amazing? Check out the documentation!');
+                }
+            }
+        }).use(VibeUI.default).mount('#app');
+    </script>
+</body>
+</html>

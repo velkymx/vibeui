@@ -20,6 +20,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "examples": "npm run build && cd examples && python3 -m http.server 8000",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
