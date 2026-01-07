@@ -1,20 +1,16 @@
-# VibeAccordion & VibeAccordionItem
+# VibeAccordion
 
-Collapsible accordion component for organizing content.
+Collapsible accordion component for organizing content in a data-driven way.
 
-## VibeAccordion
-
-Accordion container. Requires Bootstrap JS.
-
-### Props
+## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `id` | `String` | Required | Unique identifier for the accordion |
 | `flush` | `Boolean` | `false` | Remove borders and rounded corners |
-| `items` | `AccordionItem[]` | `undefined` | Array of accordion items (shorthand mode) |
+| `items` | `AccordionItem[]` | Required | Array of accordion items |
 
-#### AccordionItem Interface
+### AccordionItem Interface
 
 ```typescript
 interface AccordionItem {
@@ -25,22 +21,22 @@ interface AccordionItem {
 }
 ```
 
-## VibeAccordionItem
+## Events
 
-Individual accordion item.
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `item-click` | `{ item, index }` | Emitted when an accordion item is clicked |
 
-### Props
+## Slots
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `id` | `String` | Required | Unique identifier for this item |
-| `title` | `String` | Required | Accordion header text |
-| `parentId` | `String` | Required | Parent accordion ID |
-| `show` | `Boolean` | `false` | Initially expanded |
+| Slot | Scope | Description |
+|------|-------|-------------|
+| `title` | `{ item, index }` | Custom title rendering |
+| `content` | `{ item, index }` | Custom content rendering |
 
 ## Usage
 
-### Shorthand Mode (Array-Based)
+### Basic Example
 
 ```vue
 <template>
@@ -69,61 +65,65 @@ const accordionItems = [
 </script>
 ```
 
-### Composable Mode (Slot-Based)
+### Custom Title Rendering
+
+Use the `title` scoped slot to customize how titles are rendered:
 
 ```vue
 <template>
-  <VibeAccordion id="accordionExample">
-    <VibeAccordionItem
-      id="collapseOne"
-      parent-id="accordionExample"
-      title="Accordion Item #1"
-      show
-    >
-      This is the first item's content.
-    </VibeAccordionItem>
+  <VibeAccordion id="accordionCustom" :items="accordionItems">
+    <template #title="{ item, index }">
+      <VibeIcon icon="chevron-right" />
+      <strong>{{ item.title }}</strong>
+    </template>
+  </VibeAccordion>
+</template>
+```
 
-    <VibeAccordionItem
-      id="collapseTwo"
-      parent-id="accordionExample"
-      title="Accordion Item #2"
-    >
-      This is the second item's content.
-    </VibeAccordionItem>
+### Custom Content Rendering
 
-    <VibeAccordionItem
-      id="collapseThree"
-      parent-id="accordionExample"
-      title="Accordion Item #3"
-    >
-      This is the third item's content.
-    </VibeAccordionItem>
+Use the `content` scoped slot for rich content:
+
+```vue
+<template>
+  <VibeAccordion id="accordionRich" :items="accordionItems">
+    <template #content="{ item }">
+      <div class="p-3">
+        <h5>{{ item.title }}</h5>
+        <p>{{ item.content }}</p>
+        <VibeButton size="sm" variant="primary">Learn More</VibeButton>
+      </div>
+    </template>
   </VibeAccordion>
 </template>
 ```
 
 ### Flush Accordion
 
+Remove borders and rounded corners:
+
 ```vue
 <template>
-  <VibeAccordion id="accordionFlush" flush>
-    <VibeAccordionItem
-      id="flush-collapseOne"
-      parent-id="accordionFlush"
-      title="Flush Item #1"
-      show
-    >
-      Flush accordion content.
-    </VibeAccordionItem>
-    <VibeAccordionItem
-      id="flush-collapseTwo"
-      parent-id="accordionFlush"
-      title="Flush Item #2"
-    >
-      More flush content.
-    </VibeAccordionItem>
-  </VibeAccordion>
+  <VibeAccordion id="accordionFlush" flush :items="accordionItems" />
 </template>
+```
+
+### With Event Handling
+
+```vue
+<template>
+  <VibeAccordion
+    id="accordionEvents"
+    :items="accordionItems"
+    @item-click="handleItemClick"
+  />
+</template>
+
+<script setup>
+const handleItemClick = ({ item, index }) => {
+  console.log(`Clicked item ${index}: ${item.title}`)
+}
+</script>
 ```
 
 **Note:** Requires Bootstrap JavaScript to be included in your project.

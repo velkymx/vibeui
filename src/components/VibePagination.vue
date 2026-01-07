@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
+import { computed } from 'vue'
 import type { Size } from '../types'
-import VibePaginationItem from './VibePaginationItem.vue'
 
 const props = defineProps({
   size: { type: String as () => Size, default: undefined },
   ariaLabel: { type: String, default: 'Pagination' },
-  // Shorthand props
-  totalPages: { type: Number, default: undefined },
+  totalPages: { type: Number, required: true },
   currentPage: { type: Number, default: 1 },
-  showPrevNext: { type: Boolean, default: true }
+  showPrevNext: { type: Boolean, default: true },
+  prevText: { type: String, default: 'Previous' },
+  nextText: { type: String, default: 'Next' }
 })
 
-const emit = defineEmits(['page-click', 'component-error'])
-
-const slots = useSlots()
+const emit = defineEmits(['update:currentPage', 'page-click', 'component-error'])
 
 const paginationClass = computed(() => {
   const classes = ['pagination']
@@ -23,50 +21,73 @@ const paginationClass = computed(() => {
 })
 
 const pages = computed(() => {
-  if (!props.totalPages) return []
   return Array.from({ length: props.totalPages }, (_, i) => i + 1)
 })
 
 const handlePageClick = (page: number) => {
-  if (page >= 1 && page <= props.totalPages!) {
+  if (page >= 1 && page <= props.totalPages) {
+    emit('update:currentPage', page)
     emit('page-click', page)
   }
 }
+
+const isPrevDisabled = computed(() => props.currentPage === 1)
+const isNextDisabled = computed(() => props.currentPage === props.totalPages)
 </script>
 
 <template>
   <nav :aria-label="ariaLabel">
     <ul :class="paginationClass">
-      <!-- Shorthand mode: generate from totalPages -->
-      <template v-if="totalPages && !slots.default">
-        <VibePaginationItem
-          v-if="showPrevNext"
-          :disabled="currentPage === 1"
+      <!-- Previous button -->
+      <li v-if="showPrevNext" :class="['page-item', { disabled: isPrevDisabled }]">
+        <button
+          class="page-link"
+          type="button"
+          :disabled="isPrevDisabled"
+          :aria-disabled="isPrevDisabled"
           @click="handlePageClick(currentPage - 1)"
         >
-          Previous
-        </VibePaginationItem>
+          <!-- Scoped slot for custom prev button -->
+          <slot name="prev" :disabled="isPrevDisabled">
+            {{ prevText }}
+          </slot>
+        </button>
+      </li>
 
-        <VibePaginationItem
-          v-for="page in pages"
-          :key="page"
-          :active="page === currentPage"
+      <!-- Page numbers -->
+      <li
+        v-for="page in pages"
+        :key="page"
+        :class="['page-item', { active: page === currentPage }]"
+      >
+        <button
+          class="page-link"
+          type="button"
+          :aria-current="page === currentPage ? 'page' : undefined"
           @click="handlePageClick(page)"
         >
-          {{ page }}
-        </VibePaginationItem>
+          <!-- Scoped slot for custom page rendering -->
+          <slot name="page" :page="page" :active="page === currentPage">
+            {{ page }}
+          </slot>
+        </button>
+      </li>
 
-        <VibePaginationItem
-          v-if="showPrevNext"
-          :disabled="currentPage === totalPages"
+      <!-- Next button -->
+      <li v-if="showPrevNext" :class="['page-item', { disabled: isNextDisabled }]">
+        <button
+          class="page-link"
+          type="button"
+          :disabled="isNextDisabled"
+          :aria-disabled="isNextDisabled"
           @click="handlePageClick(currentPage + 1)"
         >
-          Next
-        </VibePaginationItem>
-      </template>
-
-      <!-- Slot mode: full control -->
-      <slot v-else />
+          <!-- Scoped slot for custom next button -->
+          <slot name="next" :disabled="isNextDisabled">
+            {{ nextText }}
+          </slot>
+        </button>
+      </li>
     </ul>
   </nav>
 </template>

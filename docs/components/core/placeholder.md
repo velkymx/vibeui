@@ -39,16 +39,14 @@ Placeholder loading component with optional animations.
 ```vue
 <template>
   <VibeCard>
-    <VibeCardBody>
-      <VibeCardTitle>
-        <VibePlaceholder width="100" />
-      </VibeCardTitle>
-      <VibeCardText>
-        <VibePlaceholder width="100" />
-        <VibePlaceholder width="100" />
-        <VibePlaceholder width="75" />
-      </VibeCardText>
-    </VibeCardBody>
+    <template #title>
+      <VibePlaceholder width="100" />
+    </template>
+    <template #body>
+      <VibePlaceholder width="100" />
+      <VibePlaceholder width="100" />
+      <VibePlaceholder width="75" />
+    </template>
   </VibeCard>
 </template>
 ```
@@ -118,19 +116,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <VibeCard>
-    <VibeCardBody>
-      <template v-if="loading">
-        <VibePlaceholder animation="glow" width="100" />
-        <VibePlaceholder animation="glow" width="100" />
-        <VibePlaceholder animation="glow" width="75" />
-      </template>
-      <template v-else>
-        <VibeCardTitle>{{ data.title }}</VibeCardTitle>
-        <VibeCardText>{{ data.content }}</VibeCardText>
-      </template>
-    </VibeCardBody>
+  <VibeCard v-if="loading">
+    <template #body>
+      <VibePlaceholder animation="glow" width="100" />
+      <VibePlaceholder animation="glow" width="100" />
+      <VibePlaceholder animation="glow" width="75" />
+    </template>
   </VibeCard>
+  <VibeCard v-else :title="data.title" :body="data.content" />
 </template>
 ```
 

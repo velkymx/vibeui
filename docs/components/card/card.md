@@ -1,12 +1,8 @@
-# Card Components
+# VibeCard
 
-Flexible content container with multiple sub-components for headers, bodies, footers, images, titles, and text.
+Flexible content container component for displaying headers, bodies, footers, and images.
 
-## VibeCard
-
-Main card container component. Supports both **shorthand prop-based** and **composable slot-based** usage.
-
-### Props
+## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -14,83 +10,39 @@ Main card container component. Supports both **shorthand prop-based** and **comp
 | `border` | `Variant` | `undefined` | Border color variant |
 | `textVariant` | `Variant` | `undefined` | Text color variant |
 | `tag` | `String` | `'div'` | HTML tag to render |
-| **Shorthand Props** | | | |
-| `title` | `String` | `undefined` | Card title (auto-renders VibeCardTitle) |
-| `body` | `String` | `undefined` | Card body text (auto-renders VibeCardText) |
-| `header` | `String` | `undefined` | Card header text (auto-renders VibeCardHeader) |
-| `footer` | `String` | `undefined` | Card footer text (auto-renders VibeCardFooter) |
-| `headerImage` | `String` | `undefined` | Header image URL (auto-renders VibeCardImg at top) |
-| `headerImageAlt` | `String` | `''` | Header image alt text |
-| `footerImage` | `String` | `undefined` | Footer image URL (auto-renders VibeCardImg at bottom) |
-| `footerImageAlt` | `String` | `''` | Footer image alt text |
+| `title` | `String` | `undefined` | Card title |
+| `body` | `String` | `undefined` | Card body text |
+| `header` | `String` | `undefined` | Card header text |
+| `footer` | `String` | `undefined` | Card footer text |
+| `imgSrc` | `String` | `undefined` | Image URL |
+| `imgAlt` | `String` | `''` | Image alt text |
+| `imgTop` | `Boolean` | `true` | Display image at top |
+| `imgBottom` | `Boolean` | `false` | Display image at bottom |
 
-### Slots
+## Slots
 
 | Slot | Description |
 |------|-------------|
-| `default` | Card content (for composable mode with sub-components) |
-
-## Sub-Components
-
-- **VibeCardHeader** - Card header section
-- **VibeCardBody** - Card body section (main content)
-- **VibeCardFooter** - Card footer section
-- **VibeCardImg** - Card images
-- **VibeCardTitle** - Card title heading
-- **VibeCardText** - Card text paragraph
+| `default` | Additional body content |
+| `header` | Custom header content |
+| `title` | Custom title content |
+| `body` | Custom body content |
+| `footer` | Custom footer content |
 
 ## Usage
 
-VibeCard supports **two usage patterns**:
-
-1. **Shorthand Mode** - Quick and easy with props
-2. **Composable Mode** - Full control with sub-components
-
-### Shorthand Mode (Quick & Easy)
-
-Perfect for simple cards - just pass props:
+### Basic Card
 
 ```vue
 <template>
-  <!-- Simple card with title and body -->
   <VibeCard
-    variant="primary"
     title="Card Title"
     body="This is the card body text. Quick and easy!"
   />
-
-  <!-- Card with everything -->
-  <VibeCard
-    variant="success"
-    header="Featured"
-    headerImage="/path/to/image.jpg"
-    headerImageAlt="Card image"
-    title="Complete Card"
-    body="Card with all the features using just props."
-    footer="Last updated 3 mins ago"
-  />
 </template>
 ```
 
-### Composable Mode (Full Control)
-
-For complex cards with custom content:
-
-```vue
-<template>
-  <VibeCard>
-    <VibeCardBody>
-      <VibeCardTitle>Card Title</VibeCardTitle>
-      <VibeCardText>
-        Card content goes here. This is some sample text.
-      </VibeCardText>
-      <VibeButton variant="primary">Go somewhere</VibeButton>
-    </VibeCardBody>
-  </VibeCard>
-</template>
-```
-
-### Shorthand: Header and Footer
+### Card with Header and Footer
 
 ```vue
 <template>
@@ -103,54 +55,20 @@ For complex cards with custom content:
 </template>
 ```
 
-Or with composable mode:
-
-```vue
-<template>
-  <VibeCard>
-    <VibeCardHeader>Featured</VibeCardHeader>
-    <VibeCardBody>
-      <VibeCardTitle>Special title treatment</VibeCardTitle>
-      <VibeCardText>
-        With supporting text below as a natural lead-in.
-      </VibeCardText>
-      <VibeButton variant="primary">Go somewhere</VibeButton>
-    </VibeCardBody>
-    <VibeCardFooter class="text-muted">2 days ago</VibeCardFooter>
-  </VibeCard>
-</template>
-```
-
-### Shorthand: Card with Image
+### Card with Image
 
 ```vue
 <template>
   <VibeCard
-    headerImage="/path/to/image.jpg"
-    headerImageAlt="Card image"
+    img-src="/path/to/image.jpg"
+    img-alt="Card image"
     title="Card with Image"
     body="This card has an image at the top."
   />
 </template>
 ```
 
-Or with composable mode:
-
-```vue
-<template>
-  <VibeCard>
-    <VibeCardImg top src="/path/to/image.jpg" alt="Card image" />
-    <VibeCardBody>
-      <VibeCardTitle>Card with Image</VibeCardTitle>
-      <VibeCardText>
-        This card has an image at the top.
-      </VibeCardText>
-    </VibeCardBody>
-  </VibeCard>
-</template>
-```
-
-### Shorthand: Colored Cards
+### Colored Cards
 
 ```vue
 <template>
@@ -172,69 +90,76 @@ Or with composable mode:
 </template>
 ```
 
-Or with composable mode:
-
-```vue
-<template>
-  <div>
-    <VibeCard variant="primary" text-variant="white">
-      <VibeCardBody>
-        <VibeCardTitle>Primary Card</VibeCardTitle>
-        <VibeCardText>Card with primary background.</VibeCardText>
-      </VibeCardBody>
-    </VibeCard>
-
-    <VibeCard variant="success" text-variant="white">
-      <VibeCardBody>
-        <VibeCardTitle>Success Card</VibeCardTitle>
-        <VibeCardText>Card with success background.</VibeCardText>
-      </VibeCardBody>
-    </VibeCard>
-  </div>
-</template>
-```
-
 ### Border Variants
 
 ```vue
 <template>
   <div>
-    <VibeCard border="primary">
-      <VibeCardBody>
-        <VibeCardTitle>Primary Border</VibeCardTitle>
-        <VibeCardText>Card with primary border.</VibeCardText>
-      </VibeCardBody>
-    </VibeCard>
+    <VibeCard
+      border="primary"
+      title="Primary Border"
+      body="Card with primary border."
+    />
 
-    <VibeCard border="danger">
-      <VibeCardBody>
-        <VibeCardTitle>Danger Border</VibeCardTitle>
-        <VibeCardText>Card with danger border.</VibeCardText>
-      </VibeCardBody>
-    </VibeCard>
+    <VibeCard
+      border="danger"
+      title="Danger Border"
+      body="Card with danger border."
+    />
   </div>
 </template>
 ```
 
+### Custom Content with Slots
+
+Use named slots for complex content:
+
+```vue
+<template>
+  <VibeCard>
+    <template #header>
+      <strong>Featured</strong>
+    </template>
+
+    <template #title>
+      Special Title Treatment
+    </template>
+
+    <template #body>
+      <p>With supporting text below as a natural lead-in.</p>
+    </template>
+
+    <!-- Additional body content via default slot -->
+    <VibeButton variant="primary">Go somewhere</VibeButton>
+
+    <template #footer>
+      <small class="text-muted">Last updated 3 mins ago</small>
+    </template>
+  </VibeCard>
+</template>
+```
+
 ### Horizontal Card
+
+Use the default slot with Bootstrap grid:
 
 ```vue
 <template>
   <VibeCard>
     <div class="row g-0">
       <div class="col-md-4">
-        <VibeCardImg src="/path/to/image.jpg" alt="..." />
+        <img src="/path/to/image.jpg" alt="..." class="card-img">
       </div>
       <div class="col-md-8">
-        <VibeCardBody>
-          <VibeCardTitle>Horizontal Card</VibeCardTitle>
-          <VibeCardText>
+        <div class="card-body">
+          <h5 class="card-title">Horizontal Card</h5>
+          <p class="card-text">
             This is a wider card with supporting text.
-          </VibeCardText>
-          <VibeCardText>
+          </p>
+          <p class="card-text">
             <small class="text-muted">Last updated 3 mins ago</small>
-          </VibeCardText>
-        </VibeCardBody>
+          </p>
+        </div>
       </div>
     </div>
   </VibeCard>
@@ -247,31 +172,28 @@ Or with composable mode:
 <template>
   <div class="row row-cols-1 row-cols-md-3 g-4">
     <div class="col">
-      <VibeCard>
-        <VibeCardImg top src="/path/to/image1.jpg" alt="..." />
-        <VibeCardBody>
-          <VibeCardTitle>Card 1</VibeCardTitle>
-          <VibeCardText>Card content here.</VibeCardText>
-        </VibeCardBody>
-      </VibeCard>
+      <VibeCard
+        img-src="/path/to/image1.jpg"
+        img-alt="Card 1"
+        title="Card 1"
+        body="Card content here."
+      />
     </div>
     <div class="col">
-      <VibeCard>
-        <VibeCardImg top src="/path/to/image2.jpg" alt="..." />
-        <VibeCardBody>
-          <VibeCardTitle>Card 2</VibeCardTitle>
-          <VibeCardText>Card content here.</VibeCardText>
-        </VibeCardBody>
-      </VibeCard>
+      <VibeCard
+        img-src="/path/to/image2.jpg"
+        img-alt="Card 2"
+        title="Card 2"
+        body="Card content here."
+      />
     </div>
     <div class="col">
-      <VibeCard>
-        <VibeCardImg top src="/path/to/image3.jpg" alt="..." />
-        <VibeCardBody>
-          <VibeCardTitle>Card 3</VibeCardTitle>
-          <VibeCardText>Card content here.</VibeCardText>
-        </VibeCardBody>
-      </VibeCard>
+      <VibeCard
+        img-src="/path/to/image3.jpg"
+        img-alt="Card 3"
+        title="Card 3"
+        body="Card content here."
+      />
     </div>
   </div>
 </template>

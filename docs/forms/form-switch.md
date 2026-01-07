@@ -216,12 +216,12 @@ const handleSave = () => {
 
 <template>
   <VibeCard>
-    <VibeCardHeader>
+    <template #header>
       <h5>Notification Preferences</h5>
       <p class="text-muted">{{ notificationCount }} notification types enabled</p>
-    </VibeCardHeader>
+    </template>
 
-    <VibeCardBody>
+    <template #body>
       <h6>Instant Notifications</h6>
       <VibeFormSwitch
         v-model="preferences.emailNotifications"
@@ -267,11 +267,11 @@ const handleSave = () => {
         label="Promotional Emails"
         help-text="Receive special offers and promotions"
       />
-    </VibeCardBody>
+    </template>
 
-    <VibeCardFooter>
+    <template #footer>
       <VibeButton variant="primary" @click="handleSave">Save Preferences</VibeButton>
-    </VibeCardFooter>
+    </template>
   </VibeCard>
 </template>
 ```

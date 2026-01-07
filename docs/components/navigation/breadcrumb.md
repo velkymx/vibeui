@@ -1,19 +1,15 @@
-# VibeBreadcrumb & VibeBreadcrumbItem
+# VibeBreadcrumb
 
-Breadcrumb navigation to indicate the current page's location within a navigational hierarchy.
+Data-driven breadcrumb navigation to indicate the current page's location within a navigational hierarchy.
 
-## VibeBreadcrumb
-
-Container for breadcrumb items.
-
-### Props
+## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `ariaLabel` | `String` | `'breadcrumb'` | ARIA label for navigation |
-| `items` | `BreadcrumbItem[]` | `undefined` | Array of breadcrumb items (shorthand mode) |
+| `items` | `BreadcrumbItem[]` | Required | Array of breadcrumb items |
 
-#### BreadcrumbItem Interface
+### BreadcrumbItem Interface
 
 ```typescript
 interface BreadcrumbItem {
@@ -24,21 +20,21 @@ interface BreadcrumbItem {
 }
 ```
 
-## VibeBreadcrumbItem
+## Events
 
-Individual breadcrumb item.
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `item-click` | `{ item, index, event }` | Emitted when an item is clicked (unless active) |
 
-### Props
+## Slots
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `active` | `Boolean` | `false` | Marks item as current page |
-| `href` | `String` | `undefined` | Link URL |
-| `to` | `String\|Object` | `undefined` | Router link destination |
+| Slot | Scope | Description |
+|------|-------|-------------|
+| `item` | `{ item, index }` | Custom item rendering |
 
 ## Usage
 
-### Shorthand Mode (Array-Based)
+### Basic Example
 
 ```vue
 <template>
@@ -54,28 +50,63 @@ const breadcrumbItems = [
 </script>
 ```
 
-### Composable Mode (Slot-Based)
-
-```vue
-<template>
-  <VibeBreadcrumb>
-    <VibeBreadcrumbItem href="/">Home</VibeBreadcrumbItem>
-    <VibeBreadcrumbItem href="/library">Library</VibeBreadcrumbItem>
-    <VibeBreadcrumbItem active>Data</VibeBreadcrumbItem>
-  </VibeBreadcrumb>
-</template>
-```
-
 ### With Router Links
 
 ```vue
 <template>
-  <VibeBreadcrumb>
-    <VibeBreadcrumbItem :to="{ name: 'home' }">Home</VibeBreadcrumbItem>
-    <VibeBreadcrumbItem :to="{ name: 'products' }">Products</VibeBreadcrumbItem>
-    <VibeBreadcrumbItem active>Details</VibeBreadcrumbItem>
+  <VibeBreadcrumb :items="breadcrumbItems" />
+</template>
+
+<script setup>
+const breadcrumbItems = [
+  { text: 'Home', to: { name: 'home' } },
+  { text: 'Products', to: { name: 'products' } },
+  { text: 'Details', active: true }
+]
+</script>
+```
+
+### Custom Item Rendering
+
+Use the `item` scoped slot for custom rendering:
+
+```vue
+<template>
+  <VibeBreadcrumb :items="breadcrumbItems">
+    <template #item="{ item, index }">
+      <VibeIcon v-if="item.icon" :icon="item.icon" class="me-1" />
+      {{ item.text }}
+    </template>
   </VibeBreadcrumb>
 </template>
+
+<script setup>
+const breadcrumbItems = [
+  { text: 'Home', href: '/', icon: 'house-fill' },
+  { text: 'Library', href: '/library', icon: 'book' },
+  { text: 'Data', active: true, icon: 'file-earmark' }
+]
+</script>
+```
+
+### With Event Handling
+
+```vue
+<template>
+  <VibeBreadcrumb :items="breadcrumbItems" @item-click="handleClick" />
+</template>
+
+<script setup>
+const breadcrumbItems = [
+  { text: 'Home', href: '/' },
+  { text: 'Products', href: '/products' },
+  { text: 'Details', active: true }
+]
+
+const handleClick = ({ item, index }) => {
+  console.log(`Clicked: ${item.text} at index ${index}`)
+}
+</script>
 ```
 
 ## Bootstrap CSS Classes

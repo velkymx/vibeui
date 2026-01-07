@@ -1,36 +1,42 @@
 <script setup lang="ts">
-import { useSlots } from 'vue'
+import { computed } from 'vue'
 import type { BreadcrumbItem } from '../types'
-import VibeBreadcrumbItem from './VibeBreadcrumbItem.vue'
 
 const props = defineProps({
   ariaLabel: { type: String, default: 'breadcrumb' },
-  items: { type: Array as () => BreadcrumbItem[], default: undefined }
+  items: { type: Array as () => BreadcrumbItem[], required: true }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits(['item-click', 'component-error'])
 
-const slots = useSlots()
+const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
+  if (!item.active) {
+    emit('item-click', { item, index, event })
+  }
+}
 </script>
 
 <template>
   <nav :aria-label="ariaLabel">
     <ol class="breadcrumb">
-      <!-- Shorthand mode: generate from items array -->
-      <template v-if="items && items.length > 0 && !slots.default">
-        <VibeBreadcrumbItem
-          v-for="(item, index) in items"
-          :key="index"
+      <li
+        v-for="(item, index) in items"
+        :key="index"
+        :class="['breadcrumb-item', { active: item.active }]"
+        :aria-current="item.active ? 'page' : undefined"
+      >
+        <component
+          :is="item.href ? 'a' : item.to ? 'router-link' : 'span'"
           :href="item.href"
           :to="item.to"
-          :active="item.active"
+          @click="handleItemClick(item, index, $event)"
         >
-          {{ item.text }}
-        </VibeBreadcrumbItem>
-      </template>
-
-      <!-- Slot mode: full control -->
-      <slot v-else />
+          <!-- Scoped slot for custom item rendering -->
+          <slot name="item" :item="item" :index="index">
+            {{ item.text }}
+          </slot>
+        </component>
+      </li>
     </ol>
   </nav>
 </template>

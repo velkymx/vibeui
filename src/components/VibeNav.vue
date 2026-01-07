@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
+import { computed } from 'vue'
 import type { Tag, NavItem } from '../types'
-import VibeNavItem from './VibeNavItem.vue'
 
 const props = defineProps({
   tabs: { type: Boolean, default: false },
@@ -10,12 +9,10 @@ const props = defineProps({
   justified: { type: Boolean, default: false },
   vertical: { type: Boolean, default: false },
   tag: { type: String as () => Tag | 'ul', default: 'ul' },
-  items: { type: Array as () => NavItem[], default: undefined }
+  items: { type: Array as () => NavItem[], required: true }
 })
 
-const emit = defineEmits(['component-error'])
-
-const slots = useSlots()
+const emit = defineEmits(['item-click', 'component-error'])
 
 const navClass = computed(() => {
   const classes = ['nav']
@@ -26,25 +23,44 @@ const navClass = computed(() => {
   if (props.vertical) classes.push('flex-column')
   return classes.join(' ')
 })
+
+const getItemClass = (item: NavItem) => {
+  const classes = ['nav-link']
+  if (item.active) classes.push('active')
+  if (item.disabled) classes.push('disabled')
+  return classes.join(' ')
+}
+
+const getItemTag = (item: NavItem) => {
+  if (item.href) return 'a'
+  if (item.to) return 'router-link'
+  return 'a'
+}
+
+const handleItemClick = (item: NavItem, index: number, event: Event) => {
+  if (!item.disabled) {
+    emit('item-click', { item, index, event })
+  }
+}
 </script>
 
 <template>
   <component :is="tag" :class="navClass">
-    <!-- Shorthand mode: generate from items array -->
-    <template v-if="items && items.length > 0 && !slots.default">
-      <VibeNavItem
-        v-for="(item, index) in items"
-        :key="index"
+    <li v-for="(item, index) in items" :key="index" class="nav-item">
+      <component
+        :is="getItemTag(item)"
+        :class="getItemClass(item)"
         :href="item.href"
         :to="item.to"
-        :active="item.active"
-        :disabled="item.disabled"
+        :aria-current="item.active ? 'page' : undefined"
+        :aria-disabled="item.disabled"
+        @click="handleItemClick(item, index, $event)"
       >
-        {{ item.text }}
-      </VibeNavItem>
-    </template>
-
-    <!-- Slot mode: full control -->
-    <slot v-else />
+        <!-- Scoped slot for custom item rendering -->
+        <slot name="item" :item="item" :index="index">
+          {{ item.text }}
+        </slot>
+      </component>
+    </li>
   </component>
 </template>

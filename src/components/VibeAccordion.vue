@@ -1,36 +1,55 @@
 <script setup lang="ts">
-import { useSlots } from 'vue'
+import { computed } from 'vue'
 import type { AccordionItem } from '../types'
-import VibeAccordionItem from './VibeAccordionItem.vue'
 
 const props = defineProps({
   id: { type: String, required: true },
   flush: { type: Boolean, default: false },
-  items: { type: Array as () => AccordionItem[], default: undefined }
+  items: { type: Array as () => AccordionItem[], required: true }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits(['item-click', 'component-error'])
 
-const slots = useSlots()
+const handleItemClick = (item: AccordionItem, index: number) => {
+  emit('item-click', { item, index })
+}
 </script>
 
 <template>
   <div :id="id" :class="['accordion', { 'accordion-flush': flush }]">
-    <!-- Shorthand mode: generate from items array -->
-    <template v-if="items && items.length > 0 && !slots.default">
-      <VibeAccordionItem
-        v-for="(item, index) in items"
-        :key="index"
+    <div
+      v-for="(item, index) in items"
+      :key="item.id"
+      class="accordion-item"
+    >
+      <h2 class="accordion-header">
+        <button
+          :class="['accordion-button', { collapsed: !item.show }]"
+          type="button"
+          data-bs-toggle="collapse"
+          :data-bs-target="`#${item.id}`"
+          :aria-expanded="item.show"
+          :aria-controls="item.id"
+          @click="handleItemClick(item, index)"
+        >
+          <!-- Scoped slot for custom title rendering -->
+          <slot name="title" :item="item" :index="index">
+            {{ item.title }}
+          </slot>
+        </button>
+      </h2>
+      <div
         :id="item.id"
-        :parent-id="id"
-        :title="item.title"
-        :show="item.show"
+        :class="['accordion-collapse', 'collapse', { show: item.show }]"
+        :data-bs-parent="`#${id}`"
       >
-        {{ item.content }}
-      </VibeAccordionItem>
-    </template>
-
-    <!-- Slot mode: full control -->
-    <slot v-else />
+        <div class="accordion-body">
+          <!-- Scoped slot for custom content rendering -->
+          <slot name="content" :item="item" :index="index">
+            {{ item.content }}
+          </slot>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

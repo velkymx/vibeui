@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { useSlots } from 'vue'
+import { computed } from 'vue'
 import type { CarouselItem } from '../types'
-import VibeCarouselSlide from './VibeCarouselSlide.vue'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -15,18 +14,23 @@ const props = defineProps({
   touch: { type: Boolean, default: true },
   dark: { type: Boolean, default: false },
   fade: { type: Boolean, default: false },
-  items: { type: Array as () => CarouselItem[], default: undefined }
+  items: { type: Array as () => CarouselItem[], required: true }
 })
 
 const emit = defineEmits(['slide', 'slid', 'component-error'])
 
-const slots = useSlots()
+const carouselClass = computed(() => {
+  const classes = ['carousel', 'slide']
+  if (props.dark) classes.push('carousel-dark')
+  if (props.fade) classes.push('carousel-fade')
+  return classes.join(' ')
+})
 </script>
 
 <template>
   <div
     :id="id"
-    :class="['carousel', 'slide', { 'carousel-dark': dark, 'carousel-fade': fade }]"
+    :class="carouselClass"
     :data-bs-ride="ride === true ? 'carousel' : ride"
     :data-bs-interval="interval"
     :data-bs-keyboard="keyboard"
@@ -34,44 +38,40 @@ const slots = useSlots()
     :data-bs-wrap="wrap"
     :data-bs-touch="touch"
   >
-    <!-- Shorthand mode: generate from items array -->
-    <template v-if="items && items.length > 0 && !slots.default">
-      <div v-if="indicators" class="carousel-indicators">
-        <button
-          v-for="(item, index) in items"
-          :key="`indicator-${index}`"
-          type="button"
-          :data-bs-target="`#${id}`"
-          :data-bs-slide-to="index"
-          :class="{ active: item.active || index === 0 }"
-          :aria-current="item.active || index === 0"
-          :aria-label="`Slide ${index + 1}`"
-        ></button>
-      </div>
-      <div class="carousel-inner">
-        <VibeCarouselSlide
-          v-for="(item, index) in items"
-          :key="index"
-          :active="item.active || index === 0"
-          :interval="item.interval"
-          :img-src="item.src"
-          :img-alt="item.alt"
-          :caption="item.caption"
-          :caption-text="item.captionText"
-        />
-      </div>
-    </template>
+    <!-- Indicators -->
+    <div v-if="indicators" class="carousel-indicators">
+      <button
+        v-for="(item, index) in items"
+        :key="`indicator-${index}`"
+        type="button"
+        :data-bs-target="`#${id}`"
+        :data-bs-slide-to="index"
+        :class="{ active: item.active || index === 0 }"
+        :aria-current="item.active || index === 0"
+        :aria-label="`Slide ${index + 1}`"
+      />
+    </div>
 
-    <!-- Slot mode: full control -->
-    <template v-else>
-      <div v-if="indicators" class="carousel-indicators">
-        <slot name="indicators" />
+    <!-- Slides -->
+    <div class="carousel-inner">
+      <div
+        v-for="(item, index) in items"
+        :key="index"
+        :class="['carousel-item', { active: item.active || index === 0 }]"
+        :data-bs-interval="item.interval"
+      >
+        <img :src="item.src" :alt="item.alt || ''" class="d-block w-100">
+        <div v-if="item.caption || item.captionText || $slots.caption" class="carousel-caption d-none d-md-block">
+          <!-- Scoped slot for custom caption -->
+          <slot name="caption" :item="item" :index="index">
+            <h5 v-if="item.caption">{{ item.caption }}</h5>
+            <p v-if="item.captionText">{{ item.captionText }}</p>
+          </slot>
+        </div>
       </div>
-      <div class="carousel-inner">
-        <slot />
-      </div>
-    </template>
+    </div>
 
+    <!-- Controls -->
     <button
       v-if="controls"
       class="carousel-control-prev"
@@ -79,7 +79,7 @@ const slots = useSlots()
       :data-bs-target="`#${id}`"
       data-bs-slide="prev"
     >
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="carousel-control-prev-icon" aria-hidden="true" />
       <span class="visually-hidden">Previous</span>
     </button>
     <button
@@ -89,7 +89,7 @@ const slots = useSlots()
       :data-bs-target="`#${id}`"
       data-bs-slide="next"
     >
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="carousel-control-next-icon" aria-hidden="true" />
       <span class="visually-hidden">Next</span>
     </button>
   </div>
