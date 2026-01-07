@@ -32,11 +32,7 @@ Automatically update navigation based on scroll position. Requires Bootstrap JS.
 <template>
   <div class="row">
     <div class="col-4">
-      <VibeNav id="navbar-example" vertical pills>
-        <VibeNavItem href="#item-1">Item 1</VibeNavItem>
-        <VibeNavItem href="#item-2">Item 2</VibeNavItem>
-        <VibeNavItem href="#item-3">Item 3</VibeNavItem>
-      </VibeNav>
+      <VibeNav id="navbar-example" vertical pills :items="navItems" />
     </div>
     <div class="col-8">
       <VibeScrollspy
@@ -55,23 +51,33 @@ Automatically update navigation based on scroll position. Requires Bootstrap JS.
     </div>
   </div>
 </template>
+
+<script setup>
+const navItems = [
+  { text: 'Item 1', href: '#item-1' },
+  { text: 'Item 2', href: '#item-2' },
+  { text: 'Item 3', href: '#item-3' }
+]
+</script>
 ```
 
 ### Nested Navigation
+
+For nested navigation, use the default slot with custom markup:
 
 ```vue
 <template>
   <div class="row">
     <div class="col-4">
-      <VibeNav id="navbar-nested" vertical pills>
-        <VibeNavItem href="#item-1">Item 1</VibeNavItem>
-        <VibeNav vertical pills class="ms-3">
-          <VibeNavItem href="#item-1-1">Item 1-1</VibeNavItem>
-          <VibeNavItem href="#item-1-2">Item 1-2</VibeNavItem>
-        </VibeNav>
-        <VibeNavItem href="#item-2">Item 2</VibeNavItem>
-        <VibeNavItem href="#item-3">Item 3</VibeNavItem>
-      </VibeNav>
+      <nav id="navbar-nested" class="nav nav-pills flex-column">
+        <a class="nav-link" href="#item-1">Item 1</a>
+        <nav class="nav nav-pills flex-column ms-3">
+          <a class="nav-link" href="#item-1-1">Item 1-1</a>
+          <a class="nav-link" href="#item-1-2">Item 1-2</a>
+        </nav>
+        <a class="nav-link" href="#item-2">Item 2</a>
+        <a class="nav-link" href="#item-3">Item 3</a>
+      </nav>
     </div>
     <div class="col-8">
       <VibeScrollspy
@@ -111,12 +117,7 @@ Automatically update navigation based on scroll position. Requires Bootstrap JS.
 <template>
   <div class="row">
     <div class="col-4">
-      <VibeListGroup id="list-example">
-        <VibeListGroupItem href="#list-item-1">Item 1</VibeListGroupItem>
-        <VibeListGroupItem href="#list-item-2">Item 2</VibeListGroupItem>
-        <VibeListGroupItem href="#list-item-3">Item 3</VibeListGroupItem>
-        <VibeListGroupItem href="#list-item-4">Item 4</VibeListGroupItem>
-      </VibeListGroup>
+      <VibeListGroup id="list-example" :items="listItems" />
     </div>
     <div class="col-8">
       <VibeScrollspy
@@ -135,6 +136,15 @@ Automatically update navigation based on scroll position. Requires Bootstrap JS.
     </div>
   </div>
 </template>
+
+<script setup>
+const listItems = [
+  { text: 'Item 1', href: '#list-item-1' },
+  { text: 'Item 2', href: '#list-item-2' },
+  { text: 'Item 3', href: '#list-item-3' },
+  { text: 'Item 4', href: '#list-item-4' }
+]
+</script>
 ```
 
 **Note:** Requires Bootstrap JavaScript to be included in your project.

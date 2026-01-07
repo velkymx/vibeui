@@ -57,7 +57,7 @@ Basic, essential components with no JavaScript dependencies:
 
 Flexible content containers:
 
-- [Card Components](./components/card/card.md) - VibeCard, VibeCardHeader, VibeCardBody, VibeCardFooter, VibeCardImg, VibeCardTitle, VibeCardText
+- [VibeCard](./components/card/card.md) - Card container with props and named slots
 
 ### [Navigation Components](./components/navigation/)
 
@@ -177,9 +177,9 @@ Components use slots for flexible content:
     Custom Header
   </template>
 
-  <VibeCardBody>
+  <template #body>
     Main content
-  </VibeCardBody>
+  </template>
 
   <template #footer>
     Custom Footer

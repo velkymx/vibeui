@@ -1,32 +1,33 @@
-# VibeProgress & VibeProgressBar
+# VibeProgress
 
-Progress bars for showing task completion.
+Data-driven progress bar component supporting single or multiple bars.
 
-## VibeProgress
-
-Progress container component.
-
-### Props
+## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `height` | `String` | `undefined` | Custom height (e.g., `'20px'`, `'2rem'`) |
+| `bars` | `ProgressBar[]` | Required | Array of progress bars to display |
 
-## VibeProgressBar
+### ProgressBar Interface
 
-Progress bar component.
+```typescript
+interface ProgressBar {
+  value: number
+  max?: number
+  variant?: Variant
+  striped?: boolean
+  animated?: boolean
+  label?: string
+  showValue?: boolean
+}
+```
 
-### Props
+## Slots
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `value` | `Number` | `0` | Current progress value |
-| `max` | `Number` | `100` | Maximum value |
-| `variant` | `Variant` | `undefined` | Color variant |
-| `striped` | `Boolean` | `false` | Striped pattern |
-| `animated` | `Boolean` | `false` | Animated stripes |
-| `label` | `String` | `undefined` | Custom label text |
-| `showValue` | `Boolean` | `false` | Show value as percentage |
+| Slot | Scope | Description |
+|------|-------|-------------|
+| `label` | `{ bar, index }` | Custom label rendering for each bar |
 
 ## Usage
 
@@ -34,9 +35,7 @@ Progress bar component.
 
 ```vue
 <template>
-  <VibeProgress>
-    <VibeProgressBar :value="25" />
-  </VibeProgress>
+  <VibeProgress :bars="[{ value: 25 }]" />
 </template>
 ```
 
@@ -44,9 +43,7 @@ Progress bar component.
 
 ```vue
 <template>
-  <VibeProgress>
-    <VibeProgressBar :value="75" show-value />
-  </VibeProgress>
+  <VibeProgress :bars="[{ value: 75, showValue: true }]" />
 </template>
 ```
 
@@ -54,9 +51,7 @@ Progress bar component.
 
 ```vue
 <template>
-  <VibeProgress height="20px">
-    <VibeProgressBar :value="50" />
-  </VibeProgress>
+  <VibeProgress height="20px" :bars="[{ value: 50 }]" />
 </template>
 ```
 
@@ -64,53 +59,45 @@ Progress bar component.
 
 ```vue
 <template>
-  <div>
-    <VibeProgress>
-      <VibeProgressBar :value="25" variant="success" />
-    </VibeProgress>
-    <VibeProgress>
-      <VibeProgressBar :value="50" variant="info" />
-    </VibeProgress>
-    <VibeProgress>
-      <VibeProgressBar :value="75" variant="warning" />
-    </VibeProgress>
-    <VibeProgress>
-      <VibeProgressBar :value="100" variant="danger" />
-    </VibeProgress>
+  <div class="d-flex flex-column gap-2">
+    <VibeProgress :bars="[{ value: 25, variant: 'success' }]" />
+    <VibeProgress :bars="[{ value: 50, variant: 'info' }]" />
+    <VibeProgress :bars="[{ value: 75, variant: 'warning' }]" />
+    <VibeProgress :bars="[{ value: 100, variant: 'danger' }]" />
   </div>
 </template>
 ```
 
-### Striped
+### Striped and Animated
 
 ```vue
 <template>
-  <VibeProgress>
-    <VibeProgressBar :value="60" variant="success" striped />
-  </VibeProgress>
-</template>
-```
+  <div class="d-flex flex-column gap-2">
+    <!-- Striped -->
+    <VibeProgress :bars="[{ value: 60, variant: 'success', striped: true }]" />
 
-### Animated Stripes
-
-```vue
-<template>
-  <VibeProgress>
-    <VibeProgressBar :value="75" variant="info" animated />
-  </VibeProgress>
+    <!-- Animated stripes -->
+    <VibeProgress :bars="[{ value: 75, variant: 'info', animated: true }]" />
+  </div>
 </template>
 ```
 
 ### Multiple Bars
 
+Stack multiple progress bars in a single component:
+
 ```vue
 <template>
-  <VibeProgress>
-    <VibeProgressBar :value="15" variant="success" />
-    <VibeProgressBar :value="30" variant="warning" />
-    <VibeProgressBar :value="20" variant="danger" />
-  </VibeProgress>
+  <VibeProgress :bars="progressBars" />
 </template>
+
+<script setup>
+const progressBars = [
+  { value: 15, variant: 'success' },
+  { value: 30, variant: 'warning' },
+  { value: 20, variant: 'danger' }
+]
+</script>
 ```
 
 ### Dynamic Progress
@@ -133,9 +120,56 @@ onMounted(() => {
 </script>
 
 <template>
-  <VibeProgress>
-    <VibeProgressBar :value="progress" variant="primary" show-value />
+  <VibeProgress :bars="[{
+    value: progress,
+    variant: 'primary',
+    showValue: true
+  }]" />
+</template>
+```
+
+### Custom Label Rendering
+
+Use the `label` scoped slot for custom labels:
+
+```vue
+<template>
+  <VibeProgress :bars="progressBars">
+    <template #label="{ bar }">
+      <strong>{{ bar.value }}% Complete</strong>
+    </template>
   </VibeProgress>
+</template>
+
+<script setup>
+const progressBars = [{ value: 75, variant: 'success' }]
+</script>
+```
+
+### Complex Example
+
+```vue
+<script setup>
+import { ref } from 'vue'
+
+const tasks = ref([
+  { name: 'Design', value: 100, variant: 'success' },
+  { name: 'Development', value: 75, variant: 'primary', animated: true },
+  { name: 'Testing', value: 50, variant: 'warning', striped: true },
+  { name: 'Deployment', value: 0, variant: 'secondary' }
+])
+</script>
+
+<template>
+  <div class="d-flex flex-column gap-3">
+    <div v-for="task in tasks" :key="task.name">
+      <div class="d-flex justify-content-between mb-1">
+        <span>{{ task.name }}</span>
+        <span>{{ task.value }}%</span>
+      </div>
+      <VibeProgress :bars="[task]" />
+    </div>
+  </div>
 </template>
 ```
 

@@ -6,7 +6,7 @@ A modern Vue 3 UI component library built with Bootstrap 5, designed to simplify
 
 * **Vue 3 Composition API**: Built from the ground up using modern, reactive Vue.js practices.
 * **Bootstrap 5 Integration**: Directly utilizes Bootstrap 5 CSS for consistency, without additional styling overhead.
-* **Dual-Mode Components**: Use shorthand props for quick setup or composable slots for full control.
+* **Data-Driven Components**: Pass data arrays to components with props and customize rendering with scoped slots.
 * **Lightweight & Modular**: Import only what you need, keeping your bundle small.
 * **TypeScript Support**: Fully typed components for a great developer experience.
 * **Accessibility First**: Components crafted with accessibility and usability in mind.
@@ -63,22 +63,27 @@ const showAlert = ref(true);
 </template>
 ```
 
-## Dual-Mode Components
+## Data-Driven Components
 
-Many VibeUI components support two usage modes:
+VibeUI components are designed to be data-driven for maximum flexibility and maintainability:
 
-### Shorthand Mode (Array-Based Props)
+### Basic Usage with Props
 
-Perfect for quickly building UIs with data arrays:
+Pass data arrays to components and let them handle the rendering:
 
 ```vue
 <template>
   <VibeBreadcrumb :items="breadcrumbItems" />
   <VibeNav tabs :items="navItems" />
   <VibeDropdown id="menu" text="Menu" :items="dropdownItems" />
+  <VibePagination :total-pages="10" v-model:current-page="page" />
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
+const page = ref(1)
+
 const breadcrumbItems = [
   { text: 'Home', href: '/' },
   { text: 'Products', href: '/products' },
@@ -100,70 +105,101 @@ const dropdownItems = [
 </script>
 ```
 
-### Composable Mode (Slot-Based)
+### Custom Rendering with Scoped Slots
 
-For maximum flexibility and custom content:
+Need to customize how items are rendered? Use scoped slots:
 
 ```vue
 <template>
-  <VibeBreadcrumb>
-    <VibeBreadcrumbItem href="/">Home</VibeBreadcrumbItem>
-    <VibeBreadcrumbItem href="/products">Products</VibeBreadcrumbItem>
-    <VibeBreadcrumbItem active>Details</VibeBreadcrumbItem>
+  <!-- Custom item rendering -->
+  <VibeBreadcrumb :items="breadcrumbItems">
+    <template #item="{ item, index }">
+      <VibeIcon :icon="item.icon" /> {{ item.text }}
+    </template>
   </VibeBreadcrumb>
 
-  <VibeNav tabs>
-    <VibeNavItem active href="#">Home</VibeNavItem>
-    <VibeNavItem href="#">Features</VibeNavItem>
-    <VibeNavItem href="#">Pricing</VibeNavItem>
+  <!-- Custom nav items with badges -->
+  <VibeNav tabs :items="navItems">
+    <template #item="{ item }">
+      {{ item.text }}
+      <VibeBadge v-if="item.count" variant="danger">{{ item.count }}</VibeBadge>
+    </template>
   </VibeNav>
 
-  <VibeDropdown id="menu" text="Menu">
-    <VibeDropdownItem href="#">Action</VibeDropdownItem>
-    <VibeDropdownItem href="#">Another action</VibeDropdownItem>
-    <VibeDropdownItem divider />
-    <VibeDropdownItem href="#">Separated link</VibeDropdownItem>
+  <!-- Custom dropdown items -->
+  <VibeDropdown id="menu" text="Menu" :items="dropdownItems">
+    <template #item="{ item }">
+      <VibeIcon :icon="item.icon" class="me-2" />
+      {{ item.text }}
+    </template>
   </VibeDropdown>
 </template>
+
+<script setup>
+const breadcrumbItems = [
+  { text: 'Home', href: '/', icon: 'house-fill' },
+  { text: 'Products', href: '/products', icon: 'box' },
+  { text: 'Details', active: true, icon: 'info-circle' }
+]
+
+const navItems = [
+  { text: 'Home', href: '#', active: true },
+  { text: 'Messages', href: '#', count: 5 },
+  { text: 'Settings', href: '#' }
+]
+
+const dropdownItems = [
+  { text: 'Profile', href: '#', icon: 'person' },
+  { text: 'Settings', href: '#', icon: 'gear' },
+  { divider: true },
+  { text: 'Logout', href: '#', icon: 'box-arrow-right' }
+]
+</script>
 ```
 
-Components with dual-mode support include: `VibeBreadcrumb`, `VibeNav`, `VibeNavbarNav`, `VibePagination`, `VibeListGroup`, `VibeAccordion`, `VibeDropdown`, and `VibeCarousel`.
+Data-driven components include: `VibeBreadcrumb`, `VibeNav`, `VibeNavbarNav`, `VibePagination`, `VibeListGroup`, `VibeAccordion`, `VibeDropdown`, `VibeCarousel`, `VibeProgress`, and `VibeTabContent`.
 
 ## Tabs
 
-VibeUI provides complete tab functionality following Bootstrap 5.3 patterns:
+VibeUI provides complete tab functionality using a data-driven approach:
 
 ```vue
 <template>
-  <!-- Tab Navigation -->
-  <VibeNav tabs>
-    <VibeNavItem tab active target="#home-tab">Home</VibeNavItem>
-    <VibeNavItem tab target="#profile-tab">Profile</VibeNavItem>
-    <VibeNavItem tab target="#contact-tab">Contact</VibeNavItem>
-  </VibeNav>
-
-  <!-- Tab Content -->
-  <VibeTabContent>
-    <VibeTabPane id="home-tab" active>
-      <h3>Home Content</h3>
-      <p>This is the home tab content.</p>
-    </VibeTabPane>
-    <VibeTabPane id="profile-tab">
-      <h3>Profile Content</h3>
-      <p>This is the profile tab content.</p>
-    </VibeTabPane>
-    <VibeTabPane id="contact-tab">
-      <h3>Contact Content</h3>
-      <p>This is the contact tab content.</p>
-    </VibeTabPane>
+  <VibeTabContent :panes="tabPanes">
+    <template #pane="{ pane }">
+      <h3>{{ pane.title }}</h3>
+      <p>{{ pane.content }}</p>
+    </template>
   </VibeTabContent>
 </template>
+
+<script setup>
+const tabPanes = [
+  {
+    id: 'home-tab',
+    title: 'Home',
+    content: 'This is the home tab content.',
+    active: true
+  },
+  {
+    id: 'profile-tab',
+    title: 'Profile',
+    content: 'This is the profile tab content.'
+  },
+  {
+    id: 'contact-tab',
+    title: 'Contact',
+    content: 'This is the contact tab content.'
+  }
+]
+</script>
 ```
 
 **Key Features:**
-- Automatic Bootstrap tab behavior with proper `data-bs-toggle` and `data-bs-target` attributes
-- Accessible with proper ARIA attributes
+- Data-driven with `panes` array prop
+- Automatic Bootstrap tab behavior with proper ARIA attributes
 - Fade transitions enabled by default
+- Scoped slot for custom pane content
 - Works seamlessly with Bootstrap's JavaScript
 
 ## Bootstrap Icons
@@ -233,13 +269,10 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
   <VibeIcon icon="trash" color="red" @click="deleteItem" style="cursor: pointer" />
 
   <!-- Icon in navigation -->
-  <VibeNav>
-    <VibeNavItem active>
-      <VibeIcon icon="house-fill" /> Home
-    </VibeNavItem>
-    <VibeNavItem>
-      <VibeIcon icon="person" /> Profile
-    </VibeNavItem>
+  <VibeNav :items="navItems">
+    <template #item="{ item }">
+      <VibeIcon :icon="item.icon" /> {{ item.text }}
+    </template>
   </VibeNav>
 </template>
 ```
@@ -705,47 +738,32 @@ VibeUI includes all major Bootstrap 5.3 components:
 * **VibePlaceholder** - Placeholder loading states with animations
 
 ### Card Components
-* **VibeCard** - Card container with variant styling
-* **VibeCardHeader** - Card header section
-* **VibeCardBody** - Card body section
-* **VibeCardFooter** - Card footer section
-* **VibeCardImg** - Card images (top, bottom, or overlay)
-* **VibeCardTitle** - Card title heading
-* **VibeCardText** - Card text paragraph
+* **VibeCard** - Card container with header, body, footer, and image support via props and named slots
 
 ### Navigation Components
-* **VibeBreadcrumb** - Breadcrumb navigation container
-* **VibeBreadcrumbItem** - Individual breadcrumb items
-* **VibeNav** - Navigation tabs and pills
-* **VibeNavItem** - Navigation items with active state and tab support
+* **VibeBreadcrumb** - Data-driven breadcrumb navigation with `items` prop
+* **VibeNav** - Navigation tabs and pills with `items` prop
 * **VibeNavbar** - Responsive navbar with variants
 * **VibeNavbarBrand** - Navbar branding section
 * **VibeNavbarToggle** - Navbar mobile toggle button
-* **VibeNavbarNav** - Navbar navigation links container
-* **VibePagination** - Pagination container
-* **VibePaginationItem** - Individual pagination items
-* **VibeTabContent** - Container for tab panes
-* **VibeTabPane** - Individual tab panel content
+* **VibeNavbarNav** - Navbar navigation links with optional `items` prop
+* **VibePagination** - Data-driven pagination with `totalPages` prop and v-model support
+* **VibeTabContent** - Tab panes container with `panes` prop
 
 ### List Components
-* **VibeListGroup** - List group container with flush and horizontal options
-* **VibeListGroupItem** - List items with variants and active state
+* **VibeListGroup** - Data-driven list group with `items` prop, supports flush and horizontal layouts
 
 ### Progress Components
-* **VibeProgress** - Progress bar container
-* **VibeProgressBar** - Progress bar with variants, striped, and animated styles
+* **VibeProgress** - Data-driven progress bars with `bars` prop, supports multiple bars with variants, striped, and animated styles
 
 ### Interactive Components
-* **VibeAccordion** - Accordion container with flush option
-* **VibeAccordionItem** - Collapsible accordion items
+* **VibeAccordion** - Data-driven accordion with `items` prop and flush option
 * **VibeCollapse** - Collapse component for showing/hiding content
-* **VibeDropdown** - Dropdown menus with variants and directions
-* **VibeDropdownItem** - Dropdown menu items, dividers, and headers
+* **VibeDropdown** - Data-driven dropdown with `items` prop, supports variants, directions, dividers, and headers
 * **VibeModal** - Modal dialogs with sizes and positions
 * **VibeOffcanvas** - Offcanvas sidebars with placement options
 * **VibeToast** - Toast notifications with autohide
-* **VibeCarousel** - Image carousels with controls and indicators
-* **VibeCarouselSlide** - Individual carousel slides
+* **VibeCarousel** - Data-driven image carousel with `items` prop, controls, and indicators
 
 ### Advanced Components
 * **VibeTooltip** - Tooltips with placement options (requires Bootstrap JS)
