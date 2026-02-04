@@ -48,7 +48,7 @@ interface NavItem {
 
 ## Usage
 
-### Basic Navbar (Shorthand Mode)
+### Basic Navbar
 
 ```vue
 <template>
@@ -70,36 +70,22 @@ const navItems = [
 </script>
 ```
 
-### Basic Navbar (Composable Mode)
-
-```vue
-<template>
-  <VibeNavbar variant="light">
-    <VibeNavbarBrand href="#">Navbar</VibeNavbarBrand>
-    <VibeNavbarToggle target="navbarNav" />
-    <VibeCollapse id="navbarNav">
-      <VibeNavbarNav>
-        <VibeNavItem active href="#">Home</VibeNavItem>
-        <VibeNavItem href="#">Features</VibeNavItem>
-        <VibeNavItem href="#">Pricing</VibeNavItem>
-      </VibeNavbarNav>
-    </VibeCollapse>
-  </VibeNavbar>
-</template>
-```
-
 ### Colored Navbar
 
 ```vue
 <template>
   <VibeNavbar variant="dark" class="bg-dark">
     <VibeNavbarBrand href="#">Dark Navbar</VibeNavbarBrand>
-    <VibeNavbarNav>
-      <VibeNavItem active href="#">Home</VibeNavItem>
-      <VibeNavItem href="#">About</VibeNavItem>
-    </VibeNavbarNav>
+    <VibeNavbarNav :items="navItems" />
   </VibeNavbar>
 </template>
+
+<script setup>
+const navItems = [
+  { text: 'Home', href: '#', active: true },
+  { text: 'About', href: '#' }
+]
+</script>
 ```
 
 ### Fixed Position

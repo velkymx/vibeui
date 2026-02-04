@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 
 const props = defineProps({
@@ -29,7 +30,7 @@ const props = defineProps({
   size: { type: String as () => Size, default: undefined },
   validationState: { type: String as () => ValidationState, default: null },
   validationMessage: { type: String, default: undefined },
-  validationRules: { type: [Array, Function] as () => ValidationRule[] | ValidatorFunction | undefined, default: undefined },
+  validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
   validateOn: { type: String as () => 'input' | 'blur' | 'change', default: 'blur' },
   helpText: { type: String, default: undefined },
   showCharCount: { type: Boolean, default: false }
@@ -37,14 +38,13 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
 
-const internalValidationState = computed(() => props.validationState)
 
 const textareaClass = computed(() => {
   const classes = ['form-control']
 
   if (props.size) classes.push(`form-control-${props.size}`)
-  if (internalValidationState.value === 'valid') classes.push('is-valid')
-  if (internalValidationState.value === 'invalid') classes.push('is-invalid')
+  if (props.validationState === 'valid') classes.push('is-valid')
+  if (props.validationState === 'invalid') classes.push('is-invalid')
 
   return classes.join(' ')
 })
@@ -108,7 +108,7 @@ const handleFocus = (event: FocusEvent) => {
       :required="required"
       :rows="rows"
       :maxlength="maxlength"
-      :aria-invalid="internalValidationState === 'invalid'"
+      :aria-invalid="validationState === 'invalid'"
       :aria-describedby="validationMessage || helpText ? `${id}-feedback` : undefined"
       @input="handleInput"
       @change="handleChange"
@@ -121,10 +121,10 @@ const handleFocus = (event: FocusEvent) => {
     <div v-if="helpText && !validationMessage && !showCharCount" :id="`${id}-feedback`" class="form-text">
       {{ helpText }}
     </div>
-    <div v-if="internalValidationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+    <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
       {{ validationMessage || 'Looks good!' }}
     </div>
-    <div v-if="internalValidationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+    <div v-if="validationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
       {{ validationMessage || 'Please provide a valid value.' }}
     </div>
   </div>

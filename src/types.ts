@@ -109,6 +109,24 @@ export interface CarouselItem {
   interval?: number
 }
 
+export interface ProgressBar {
+  value: number
+  max?: number
+  variant?: Variant
+  striped?: boolean
+  animated?: boolean
+  label?: string
+  showValue?: boolean
+}
+
+export interface TabPane {
+  id: string
+  title: string
+  content?: string
+  active?: boolean
+  disabled?: boolean
+}
+
 // Form types
 export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'date' | 'time' | 'datetime-local' | 'month' | 'week' | 'color'
 

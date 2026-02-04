@@ -1,11 +1,12 @@
-<script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import type { DataTableColumn, DataTableSort } from '../types'
+<script setup lang="ts" generic="T extends Record<string, unknown>">
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import type { DataTableColumn } from '../types'
 
 const props = defineProps({
   // Data
-  items: { type: Array as () => any[], default: () => [] },
+  items: { type: Array as () => T[], default: () => [] },
   columns: { type: Array as () => DataTableColumn[], required: true },
+  rowKey: { type: String, default: 'id' }, // Key to use for unique row identification
 
   // Table styling
   striped: { type: Boolean, default: false },
@@ -25,50 +26,72 @@ const props = defineProps({
   searchPlaceholder: { type: String, default: 'Search...' },
   searchDebounce: { type: Number, default: 300 },
 
-  // Pagination
-  perPage: { type: Number, default: 10 },
-  currentPage: { type: Number, default: 1 },
-  perPageOptions: { type: Array as () => number[], default: () => [5, 10, 25, 50, 100] },
-
-  // Sorting
-  sortBy: { type: String, default: undefined },
-  sortDesc: { type: Boolean, default: false },
-
   // Display
   showEmpty: { type: Boolean, default: true },
   emptyText: { type: String, default: 'No data available' },
   showPerPage: { type: Boolean, default: true },
   showInfo: { type: Boolean, default: true },
   infoText: { type: String, default: 'Showing {start} to {end} of {total} entries' },
-  filteredInfoText: { type: String, default: 'Showing {start} to {end} of {total} entries (filtered from {totalRows} total entries)' }
+  filteredInfoText: { type: String, default: 'Showing {start} to {end} of {total} entries (filtered from {totalRows} total entries)' },
+  perPageOptions: { type: Array as () => number[], default: () => [5, 10, 25, 50, 100] }
 })
 
-const emit = defineEmits(['update:currentPage', 'update:perPage', 'update:sortBy', 'update:sortDesc', 'row-clicked', 'component-error'])
+// Use defineModel for two-way binding (Vue 3.4+)
+const currentPage = defineModel<number>('currentPage', { default: 1 })
+const perPage = defineModel<number>('perPage', { default: 10 })
+const sortBy = defineModel<string | undefined>('sortBy', { default: undefined })
+const sortDesc = defineModel<boolean>('sortDesc', { default: false })
 
-// Local state
+const emit = defineEmits(['row-clicked', 'component-error'])
+
+// Local state for search
 const searchQuery = ref('')
-const searchDebounceTimer = ref<number | null>(null)
+const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const debouncedSearchQuery = ref('')
-const localCurrentPage = ref(props.currentPage)
-const localPerPage = ref(props.perPage)
-const localSortBy = ref(props.sortBy)
-const localSortDesc = ref(props.sortDesc)
 
-// Watch for prop changes
-watch(() => props.currentPage, (val) => { localCurrentPage.value = val })
-watch(() => props.perPage, (val) => { localPerPage.value = val })
-watch(() => props.sortBy, (val) => { localSortBy.value = val })
-watch(() => props.sortDesc, (val) => { localSortDesc.value = val })
+/**
+ * Generate a unique key for each row.
+ * IMPORTANT: For best performance, always provide a `rowKey` prop that matches
+ * a unique identifier property in your data (e.g., 'id', 'uuid', '_id').
+ * The fallback uses index which can cause issues with sorting/filtering.
+ */
+const getRowKey = (item: T, index: number): string | number => {
+  // Try to use the specified rowKey property
+  if (props.rowKey && item[props.rowKey] !== undefined) {
+    return String(item[props.rowKey])
+  }
 
-// Debounced search
+  // Warn in development if no rowKey is found
+  if (import.meta.env.DEV && index === 0) {
+    console.warn(
+      `[VibeDataTable] No unique key found for rows. ` +
+      `For better performance and correct behavior during sorting/filtering, ` +
+      `provide a 'rowKey' prop that matches a unique property in your items (e.g., rowKey="id").`
+    )
+  }
+
+  // Fallback to index - not ideal but avoids expensive JSON.stringify
+  return index
+}
+
+// Debounced search with proper cleanup
 watch(searchQuery, (newVal) => {
-  if (searchDebounceTimer.value) {
+  if (searchDebounceTimer.value !== null) {
     clearTimeout(searchDebounceTimer.value)
   }
-  searchDebounceTimer.value = window.setTimeout(() => {
+  searchDebounceTimer.value = setTimeout(() => {
     debouncedSearchQuery.value = newVal
-    localCurrentPage.value = 1 // Reset to first page on search
+    currentPage.value = 1 // Reset to first page on search
+    searchDebounceTimer.value = null
   }, props.searchDebounce)
+})
+
+// Cleanup debounce timer on unmount
+onBeforeUnmount(() => {
+  if (searchDebounceTimer.value !== null) {
+    clearTimeout(searchDebounceTimer.value)
+    searchDebounceTimer.value = null
+  }
 })
 
 // Filtered items (based on search)
@@ -88,31 +111,61 @@ const filteredItems = computed(() => {
   })
 })
 
+/**
+ * Compare two values for sorting, handling unknown types safely.
+ * Supports strings, numbers, booleans, and Dates.
+ * Non-comparable types (objects, arrays, symbols) are treated as equal.
+ */
+const compareValues = (a: unknown, b: unknown, desc: boolean): number => {
+  // Handle null/undefined - push to end
+  if (a == null) return 1
+  if (b == null) return -1
+
+  // Handle strings
+  if (typeof a === 'string' && typeof b === 'string') {
+    const aLower = a.toLowerCase()
+    const bLower = b.toLowerCase()
+    if (aLower < bLower) return desc ? 1 : -1
+    if (aLower > bLower) return desc ? -1 : 1
+    return 0
+  }
+
+  // Handle numbers
+  if (typeof a === 'number' && typeof b === 'number') {
+    if (a < b) return desc ? 1 : -1
+    if (a > b) return desc ? -1 : 1
+    return 0
+  }
+
+  // Handle booleans (false < true)
+  if (typeof a === 'boolean' && typeof b === 'boolean') {
+    if (a === b) return 0
+    return (a ? 1 : -1) * (desc ? -1 : 1)
+  }
+
+  // Handle Dates
+  if (a instanceof Date && b instanceof Date) {
+    const aTime = a.getTime()
+    const bTime = b.getTime()
+    if (aTime < bTime) return desc ? 1 : -1
+    if (aTime > bTime) return desc ? -1 : 1
+    return 0
+  }
+
+  // Non-comparable types (objects, arrays, symbols, mixed types) - treat as equal
+  return 0
+}
+
 // Sorted items
 const sortedItems = computed(() => {
-  if (!props.sortable || !localSortBy.value) {
+  if (!props.sortable || !sortBy.value) {
     return filteredItems.value
   }
 
   const items = [...filteredItems.value]
-  const sortKey = localSortBy.value
+  const sortKey = sortBy.value
 
-  items.sort((a, b) => {
-    let aVal = a[sortKey]
-    let bVal = b[sortKey]
-
-    // Handle null/undefined
-    if (aVal == null) return 1
-    if (bVal == null) return -1
-
-    // Convert to comparable values
-    if (typeof aVal === 'string') aVal = aVal.toLowerCase()
-    if (typeof bVal === 'string') bVal = bVal.toLowerCase()
-
-    if (aVal < bVal) return localSortDesc.value ? 1 : -1
-    if (aVal > bVal) return localSortDesc.value ? -1 : 1
-    return 0
-  })
+  items.sort((a, b) => compareValues(a[sortKey], b[sortKey], sortDesc.value))
 
   return items
 })
@@ -123,21 +176,21 @@ const paginatedItems = computed(() => {
     return sortedItems.value
   }
 
-  const start = (localCurrentPage.value - 1) * localPerPage.value
-  const end = start + localPerPage.value
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
   return sortedItems.value.slice(start, end)
 })
 
 // Pagination info
 const totalRows = computed(() => props.items.length)
 const totalFilteredRows = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.ceil(totalFilteredRows.value / localPerPage.value))
+const totalPages = computed(() => Math.ceil(totalFilteredRows.value / perPage.value))
 const startRow = computed(() => {
   if (totalFilteredRows.value === 0) return 0
-  return (localCurrentPage.value - 1) * localPerPage.value + 1
+  return (currentPage.value - 1) * perPage.value + 1
 })
 const endRow = computed(() => {
-  const end = localCurrentPage.value * localPerPage.value
+  const end = currentPage.value * perPage.value
   return Math.min(end, totalFilteredRows.value)
 })
 
@@ -168,34 +221,28 @@ const tableClass = computed(() => {
 const handleSort = (column: DataTableColumn) => {
   if (!props.sortable || column.sortable === false) return
 
-  if (localSortBy.value === column.key) {
-    localSortDesc.value = !localSortDesc.value
+  if (sortBy.value === column.key) {
+    sortDesc.value = !sortDesc.value
   } else {
-    localSortBy.value = column.key
-    localSortDesc.value = false
+    sortBy.value = column.key
+    sortDesc.value = false
   }
-
-  emit('update:sortBy', localSortBy.value)
-  emit('update:sortDesc', localSortDesc.value)
 }
 
 const handlePageChange = (page: number) => {
   if (page < 1 || page > totalPages.value) return
-  localCurrentPage.value = page
-  emit('update:currentPage', page)
+  currentPage.value = page
 }
 
 const handlePerPageChange = () => {
-  localCurrentPage.value = 1
-  emit('update:perPage', localPerPage.value)
-  emit('update:currentPage', 1)
+  currentPage.value = 1
 }
 
-const handleRowClick = (item: any, index: number) => {
+const handleRowClick = (item: T, index: number) => {
   emit('row-clicked', item, index)
 }
 
-const getCellValue = (item: any, column: DataTableColumn) => {
+const getCellValue = (item: T, column: DataTableColumn) => {
   const value = item[column.key]
   if (column.formatter) {
     return column.formatter(value, item)
@@ -205,8 +252,8 @@ const getCellValue = (item: any, column: DataTableColumn) => {
 
 const getSortIcon = (column: DataTableColumn) => {
   if (!props.sortable || column.sortable === false) return ''
-  if (localSortBy.value !== column.key) return '⇅'
-  return localSortDesc.value ? '↓' : '↑'
+  if (sortBy.value !== column.key) return '⇅'
+  return sortDesc.value ? '↓' : '↑'
 }
 
 const getThStyle = (column: DataTableColumn) => {
@@ -234,7 +281,7 @@ const getThStyle = (column: DataTableColumn) => {
         <div class="d-flex justify-content-md-end align-items-center">
           <label class="me-2 mb-0">Show</label>
           <select
-            v-model.number="localPerPage"
+            v-model.number="perPage"
             class="form-select form-select-sm"
             style="width: auto"
             @change="handlePerPageChange"
@@ -270,7 +317,7 @@ const getThStyle = (column: DataTableColumn) => {
         <tbody>
           <tr
             v-for="(item, index) in paginatedItems"
-            :key="index"
+            :key="getRowKey(item, index)"
             @click="handleRowClick(item, index)"
             :style="{ cursor: 'pointer' }"
           >
@@ -304,28 +351,28 @@ const getThStyle = (column: DataTableColumn) => {
       <div v-if="paginated && totalPages > 1" class="col-md-6">
         <nav>
           <ul class="pagination justify-content-md-end mb-0">
-            <li class="page-item" :class="{ disabled: localCurrentPage === 1 }">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(localCurrentPage - 1)">
+            <li class="page-item" :class="{ disabled: currentPage === 1 }">
+              <a class="page-link" href="#" @click.prevent="handlePageChange(currentPage - 1)">
                 Previous
               </a>
             </li>
 
             <!-- First page -->
-            <li v-if="localCurrentPage > 3" class="page-item">
+            <li v-if="currentPage > 3" class="page-item">
               <a class="page-link" href="#" @click.prevent="handlePageChange(1)">1</a>
             </li>
-            <li v-if="localCurrentPage > 4" class="page-item disabled">
+            <li v-if="currentPage > 4" class="page-item disabled">
               <span class="page-link">...</span>
             </li>
 
             <!-- Page numbers around current page -->
             <li
               v-for="page in Array.from({ length: totalPages }, (_, i) => i + 1).filter(
-                p => p >= localCurrentPage - 2 && p <= localCurrentPage + 2
+                p => p >= currentPage - 2 && p <= currentPage + 2
               )"
               :key="page"
               class="page-item"
-              :class="{ active: page === localCurrentPage }"
+              :class="{ active: page === currentPage }"
             >
               <a class="page-link" href="#" @click.prevent="handlePageChange(page)">
                 {{ page }}
@@ -333,17 +380,17 @@ const getThStyle = (column: DataTableColumn) => {
             </li>
 
             <!-- Last page -->
-            <li v-if="localCurrentPage < totalPages - 3" class="page-item disabled">
+            <li v-if="currentPage < totalPages - 3" class="page-item disabled">
               <span class="page-link">...</span>
             </li>
-            <li v-if="localCurrentPage < totalPages - 2" class="page-item">
+            <li v-if="currentPage < totalPages - 2" class="page-item">
               <a class="page-link" href="#" @click.prevent="handlePageChange(totalPages)">
                 {{ totalPages }}
               </a>
             </li>
 
-            <li class="page-item" :class="{ disabled: localCurrentPage === totalPages }">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(localCurrentPage + 1)">
+            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+              <a class="page-link" href="#" @click.prevent="handlePageChange(currentPage + 1)">
                 Next
               </a>
             </li>

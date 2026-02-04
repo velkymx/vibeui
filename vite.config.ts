@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import dts from 'vite-plugin-dts'
@@ -19,13 +20,30 @@ export default defineConfig({
       fileName: (format) => `vibeui.${format}.js`
     },
     rollupOptions: {
-      external: ['vue', /^quill/],
+      external: ['vue', /^quill/, /^bootstrap/],
       output: {
         globals: {
           vue: 'Vue',
-          quill: 'Quill'
+          quill: 'Quill',
+          bootstrap: 'bootstrap'
         }
       }
+    }
+  },
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        'examples/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/index.ts'
+      ]
     }
   }
 })

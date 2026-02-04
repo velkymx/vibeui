@@ -1,12 +1,8 @@
-# VibeCarousel & VibeCarouselSlide
+# VibeCarousel
 
-Slideshow component for cycling through images or content. Requires Bootstrap JS.
+Data-driven slideshow component for cycling through images or content. Requires Bootstrap JS.
 
-## VibeCarousel
-
-Carousel container.
-
-### Props
+## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -14,16 +10,16 @@ Carousel container.
 | `controls` | `Boolean` | `true` | Show prev/next controls |
 | `indicators` | `Boolean` | `true` | Show slide indicators |
 | `ride` | `Boolean\|String` | `false` | Auto-play: `false`, `true`, or `'carousel'` |
-| `interval` | `Number\|Boolean` | `5000` | Slide interval in ms |
+| `interval` | `Number\|Boolean` | `5000` | Slide interval in ms (`false` to disable) |
 | `keyboard` | `Boolean` | `true` | Keyboard navigation |
-| `pause` | `String\|Boolean` | `'hover'` | Pause on hover |
+| `pause` | `String\|Boolean` | `'hover'` | Pause on hover (`'hover'` or `false`) |
 | `wrap` | `Boolean` | `true` | Continuous cycling |
 | `touch` | `Boolean` | `true` | Touch swipe support |
 | `dark` | `Boolean` | `false` | Dark variant indicators/controls |
 | `fade` | `Boolean` | `false` | Fade transition instead of slide |
-| `items` | `CarouselItem[]` | `undefined` | Array of carousel items (shorthand mode) |
+| `items` | `CarouselItem[]` | Required | Array of carousel items |
 
-#### CarouselItem Interface
+### CarouselItem Interface
 
 ```typescript
 interface CarouselItem {
@@ -36,43 +32,52 @@ interface CarouselItem {
 }
 ```
 
-### Events
+## Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `slide` | - | Emitted when slide starts |
-| `slid` | - | Emitted when slide completes |
+| `slide` | - | Emitted when slide transition starts |
+| `slid` | - | Emitted when slide transition completes |
 
-## VibeCarouselSlide
+## Slots
 
-Individual carousel slide.
-
-### Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `active` | `Boolean` | `false` | Active slide |
-| `interval` | `Number` | `undefined` | Slide-specific interval |
-| `imgSrc` | `String` | `undefined` | Image source URL |
-| `imgAlt` | `String` | `''` | Image alt text |
-| `caption` | `String` | `undefined` | Caption heading |
-| `captionText` | `String` | `undefined` | Caption text |
-
-### Slots
-
-| Slot | Description |
-|------|-------------|
-| `default` | Slide content |
-| `img` | Custom image content |
-| `caption` | Custom caption content |
+| Slot | Scope | Description |
+|------|-------|-------------|
+| `caption` | `{ item, index }` | Custom caption rendering |
 
 ## Usage
 
-### Shorthand Mode (Array-Based)
+### Basic Carousel
 
 ```vue
 <template>
   <VibeCarousel id="carousel1" :items="carouselItems" />
+</template>
+
+<script setup>
+const carouselItems = [
+  {
+    src: '/images/slide1.jpg',
+    alt: 'First slide',
+    active: true
+  },
+  {
+    src: '/images/slide2.jpg',
+    alt: 'Second slide'
+  },
+  {
+    src: '/images/slide3.jpg',
+    alt: 'Third slide'
+  }
+]
+</script>
+```
+
+### With Captions
+
+```vue
+<template>
+  <VibeCarousel id="carousel-captions" :items="carouselItems" />
 </template>
 
 <script setup>
@@ -100,59 +105,11 @@ const carouselItems = [
 </script>
 ```
 
-### Composable Mode (Slot-Based)
-
-```vue
-<template>
-  <VibeCarousel id="carouselExample">
-    <VibeCarouselSlide
-      active
-      img-src="/images/slide1.jpg"
-      img-alt="First slide"
-    />
-    <VibeCarouselSlide
-      img-src="/images/slide2.jpg"
-      img-alt="Second slide"
-    />
-    <VibeCarouselSlide
-      img-src="/images/slide3.jpg"
-      img-alt="Third slide"
-    />
-  </VibeCarousel>
-</template>
-```
-
-### With Captions
-
-```vue
-<template>
-  <VibeCarousel id="carouselCaptions">
-    <VibeCarouselSlide
-      active
-      img-src="/images/slide1.jpg"
-      img-alt="First slide"
-      caption="First Slide"
-      caption-text="Description for first slide"
-    />
-    <VibeCarouselSlide
-      img-src="/images/slide2.jpg"
-      img-alt="Second slide"
-      caption="Second Slide"
-      caption-text="Description for second slide"
-    />
-  </VibeCarousel>
-</template>
-```
-
 ### Fade Transition
 
 ```vue
 <template>
-  <VibeCarousel id="carouselFade" fade>
-    <VibeCarouselSlide active img-src="/images/slide1.jpg" />
-    <VibeCarouselSlide img-src="/images/slide2.jpg" />
-    <VibeCarouselSlide img-src="/images/slide3.jpg" />
-  </VibeCarousel>
+  <VibeCarousel id="carousel-fade" fade :items="carouselItems" />
 </template>
 ```
 
@@ -160,22 +117,127 @@ const carouselItems = [
 
 ```vue
 <template>
-  <VibeCarousel id="carouselAuto" ride="carousel" :interval="3000">
-    <VibeCarouselSlide active img-src="/images/slide1.jpg" />
-    <VibeCarouselSlide img-src="/images/slide2.jpg" />
-    <VibeCarouselSlide img-src="/images/slide3.jpg" />
+  <VibeCarousel
+    id="carousel-auto"
+    ride="carousel"
+    :interval="3000"
+    :items="carouselItems"
+  />
+</template>
+```
+
+### Without Controls or Indicators
+
+```vue
+<template>
+  <VibeCarousel
+    id="carousel-minimal"
+    :controls="false"
+    :indicators="false"
+    :items="carouselItems"
+  />
+</template>
+```
+
+### Dark Variant
+
+For use on light backgrounds:
+
+```vue
+<template>
+  <VibeCarousel id="carousel-dark" dark :items="carouselItems" />
+</template>
+```
+
+### Custom Captions
+
+Use the `caption` scoped slot for rich captions:
+
+```vue
+<template>
+  <VibeCarousel id="carousel-custom" :items="carouselItems">
+    <template #caption="{ item, index }">
+      <div class="p-3 bg-dark bg-opacity-75 rounded">
+        <h3>{{ item.caption }}</h3>
+        <p class="mb-0">{{ item.captionText }}</p>
+        <VibeButton size="sm" variant="primary" class="mt-2">
+          Learn More
+        </VibeButton>
+      </div>
+    </template>
   </VibeCarousel>
 </template>
 ```
 
-### Without Controls
+### Different Intervals Per Slide
 
 ```vue
 <template>
-  <VibeCarousel id="carouselNoControls" :controls="false" :indicators="false">
-    <VibeCarouselSlide active img-src="/images/slide1.jpg" />
-    <VibeCarouselSlide img-src="/images/slide2.jpg" />
-  </VibeCarousel>
+  <VibeCarousel id="carousel-intervals" ride="carousel" :items="carouselItems" />
+</template>
+
+<script setup>
+const carouselItems = [
+  {
+    src: '/images/slide1.jpg',
+    alt: 'Slow slide',
+    interval: 10000, // 10 seconds
+    active: true
+  },
+  {
+    src: '/images/slide2.jpg',
+    alt: 'Fast slide',
+    interval: 2000 // 2 seconds
+  },
+  {
+    src: '/images/slide3.jpg',
+    alt: 'Default speed'
+    // Uses carousel's default interval
+  }
+]
+</script>
+```
+
+### With Event Handling
+
+```vue
+<template>
+  <VibeCarousel
+    id="carousel-events"
+    :items="carouselItems"
+    @slide="handleSlide"
+    @slid="handleSlid"
+  />
+</template>
+
+<script setup>
+const carouselItems = [
+  { src: '/images/slide1.jpg', alt: 'Slide 1', active: true },
+  { src: '/images/slide2.jpg', alt: 'Slide 2' },
+  { src: '/images/slide3.jpg', alt: 'Slide 3' }
+]
+
+const handleSlide = () => {
+  console.log('Slide transition started')
+}
+
+const handleSlid = () => {
+  console.log('Slide transition completed')
+}
+</script>
+```
+
+### Responsive Example
+
+```vue
+<template>
+  <VibeContainer>
+    <VibeRow>
+      <VibeCol :cols="12" :lg="8" class="mx-auto">
+        <VibeCarousel id="carousel-responsive" :items="carouselItems" />
+      </VibeCol>
+    </VibeRow>
+  </VibeContainer>
 </template>
 ```
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
+import { computed } from 'vue'
 import type { Variant, Size, Direction, DropdownItem } from '../types'
-import VibeDropdownItem from './VibeDropdownItem.vue'
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -11,12 +10,10 @@ const props = defineProps({
   split: { type: Boolean, default: false },
   direction: { type: String as () => Direction, default: 'down' },
   menuEnd: { type: Boolean, default: false },
-  items: { type: Array as () => DropdownItem[], default: undefined }
+  items: { type: Array as () => DropdownItem[], required: true }
 })
 
-const emit = defineEmits(['component-error'])
-
-const slots = useSlots()
+const emit = defineEmits(['item-click', 'component-error'])
 
 const dropdownClass = computed(() => {
   if (props.direction === 'up') return 'dropup'
@@ -36,6 +33,19 @@ const menuClass = computed(() => {
   if (props.menuEnd) classes.push('dropdown-menu-end')
   return classes.join(' ')
 })
+
+const getItemClass = (item: DropdownItem) => {
+  const classes = ['dropdown-item']
+  if (item.active) classes.push('active')
+  if (item.disabled) classes.push('disabled')
+  return classes.join(' ')
+}
+
+const handleItemClick = (item: DropdownItem, index: number, event: Event) => {
+  if (!item.disabled && !item.divider && !item.header) {
+    emit('item-click', { item, index, event })
+  }
+}
 </script>
 
 <template>
@@ -47,27 +57,43 @@ const menuClass = computed(() => {
       data-bs-toggle="dropdown"
       aria-expanded="false"
     >
-      {{ text }}
+      <!-- Slot for custom button content -->
+      <slot name="button">{{ text }}</slot>
     </button>
     <ul :class="menuClass" :aria-labelledby="id">
-      <!-- Shorthand mode: generate from items array -->
-      <template v-if="items && items.length > 0 && !slots.default">
-        <VibeDropdownItem
-          v-for="(item, index) in items"
-          :key="index"
-          :href="item.href"
-          :to="item.to"
-          :active="item.active"
-          :disabled="item.disabled"
-          :divider="item.divider"
-          :header="item.header"
-        >
-          {{ item.text }}
-        </VibeDropdownItem>
-      </template>
+      <template v-for="(item, index) in items" :key="index">
+        <!-- Divider -->
+        <li v-if="item.divider">
+          <hr class="dropdown-divider">
+        </li>
 
-      <!-- Slot mode: full control -->
-      <slot v-else />
+        <!-- Header -->
+        <li v-else-if="item.header">
+          <h6 class="dropdown-header">
+            <slot name="header" :item="item" :index="index">
+              {{ item.text }}
+            </slot>
+          </h6>
+        </li>
+
+        <!-- Regular item -->
+        <li v-else>
+          <component
+            :is="item.href ? 'a' : item.to ? 'router-link' : 'button'"
+            :class="getItemClass(item)"
+            :href="item.href"
+            :to="item.to"
+            :type="!item.href && !item.to ? 'button' : undefined"
+            :disabled="item.disabled"
+            @click="handleItemClick(item, index, $event)"
+          >
+            <!-- Scoped slot for custom item rendering -->
+            <slot name="item" :item="item" :index="index">
+              {{ item.text }}
+            </slot>
+          </component>
+        </li>
+      </template>
     </ul>
   </div>
 </template>

@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
+
+interface QuillInstance {
+  root: HTMLElement
+  getText: () => string
+  getSemanticHTML: () => string
+  clipboard: {
+    dangerouslyPasteHTML: (html: string, source?: string) => void
+  }
+  setContents: (delta: unknown, source?: string) => void
+  on: (event: string, handler: (...args: unknown[]) => void) => void
+  off: (event: string, handler: (...args: unknown[]) => void) => void
+  enable: (enabled: boolean) => void
+}
 
 const props = defineProps({
   modelValue: {
     type: String,
-    default: '',
-    validator: (value: any) => {
-      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
-        console.error(
-          `[VibeFormWysiwyg] Invalid prop: modelValue must be a string, received object. ` +
-          `If you're using useFormValidation(), bind to the .value property: ` +
-          `v-model="field.value" instead of v-model="field"`
-        )
-        return false
-      }
-      return true
-    }
+    default: ''
   },
   id: { type: String, required: true },
   label: { type: String, default: undefined },
@@ -24,12 +27,12 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
   required: { type: Boolean, default: false },
-  theme: { type: String as () => 'snow' | 'bubble', default: 'snow' },
-  toolbar: { type: [Array, String, Boolean], default: undefined },
-  validationState: { type: String as () => ValidationState, default: null },
+  theme: { type: String as PropType<'snow' | 'bubble'>, default: 'snow' },
+  toolbar: { type: [Array, String, Boolean] as PropType<unknown[] | string | boolean>, default: undefined },
+  validationState: { type: String as PropType<ValidationState>, default: null },
   validationMessage: { type: String, default: undefined },
-  validationRules: { type: [Array, Function] as () => ValidationRule[] | ValidatorFunction | undefined, default: undefined },
-  validateOn: { type: String as () => 'change' | 'blur', default: 'blur' },
+  validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
+  validateOn: { type: String as PropType<'change' | 'blur'>, default: 'blur' },
   helpText: { type: String, default: undefined },
   height: { type: String, default: '200px' }
 })
@@ -37,17 +40,21 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change', 'ready'])
 
 const editorContainer = ref<HTMLElement | null>(null)
-const quillInstance = ref<any>(null)
+const quillInstance = ref<QuillInstance | null>(null)
 const isQuillLoaded = ref(false)
 const loadError = ref<string | null>(null)
+const isUpdatingFromProp = ref(false)
 
-const internalValidationState = computed(() => props.validationState)
+// Store event handlers for cleanup
+const blurHandler = ref<(() => void) | null>(null)
+const focusHandler = ref<(() => void) | null>(null)
+const textChangeHandler = ref<((...args: unknown[]) => void) | null>(null)
 
 const containerClass = computed(() => {
   const classes = ['vibe-wysiwyg-container']
 
-  if (internalValidationState.value === 'valid') classes.push('is-valid')
-  if (internalValidationState.value === 'invalid') classes.push('is-invalid')
+  if (props.validationState === 'valid') classes.push('is-valid')
+  if (props.validationState === 'invalid') classes.push('is-invalid')
   if (props.disabled) classes.push('disabled')
 
   return classes.join(' ')
@@ -68,6 +75,41 @@ const getToolbarConfig = () => {
   return props.toolbar
 }
 
+/**
+ * Safely set content using Quill's clipboard API which sanitizes HTML.
+ * This prevents XSS attacks by letting Quill process the content.
+ *
+ * NOTE: The method name "dangerouslyPasteHTML" is a Quill convention (similar to
+ * React's dangerouslySetInnerHTML naming pattern). Despite the name, this is
+ * actually SAFER than using innerHTML directly because Quill's clipboard module
+ * processes and sanitizes the HTML through its internal Delta conversion,
+ * stripping potentially malicious content like <script> tags and event handlers.
+ */
+const setQuillContent = (html: string) => {
+  if (!quillInstance.value) return
+
+  isUpdatingFromProp.value = true
+  // Clear existing content first
+  quillInstance.value.setContents([], 'silent')
+  // Use Quill's clipboard API - sanitizes HTML through Delta conversion
+  if (html) {
+    quillInstance.value.clipboard.dangerouslyPasteHTML(html, 'silent')
+  }
+  isUpdatingFromProp.value = false
+}
+
+/**
+ * Get content using Quill's semantic HTML method for consistent output
+ */
+const getQuillContent = (): string => {
+  if (!quillInstance.value) return ''
+
+  const text = quillInstance.value.getText().trim()
+  if (text.length === 0) return ''
+
+  return quillInstance.value.getSemanticHTML()
+}
+
 onMounted(async () => {
   try {
     // Try to import Quill dynamically
@@ -78,7 +120,7 @@ onMounted(async () => {
     await import('quill/dist/quill.snow.css')
 
     if (editorContainer.value) {
-      const options: any = {
+      const options = {
         theme: props.theme,
         placeholder: props.placeholder,
         readOnly: props.readonly || props.disabled,
@@ -87,39 +129,42 @@ onMounted(async () => {
         }
       }
 
-      quillInstance.value = new Quill(editorContainer.value, options)
+      quillInstance.value = new Quill(editorContainer.value, options) as QuillInstance
 
-      // Set initial content
+      // Set initial content safely using Quill's sanitization
       if (props.modelValue) {
-        quillInstance.value.root.innerHTML = props.modelValue
+        setQuillContent(props.modelValue)
       }
 
-      // Listen for text changes
-      quillInstance.value.on('text-change', () => {
-        const html = quillInstance.value.root.innerHTML
-        const isEmpty = quillInstance.value.getText().trim().length === 0
+      // Create and store text-change handler
+      textChangeHandler.value = () => {
+        // Skip if we're updating from prop to avoid loops
+        if (isUpdatingFromProp.value) return
 
-        emit('update:modelValue', isEmpty ? '' : html)
+        const html = getQuillContent()
+        emit('update:modelValue', html)
         emit('change')
 
         if (props.validateOn === 'change') {
           emit('validate')
         }
-      })
+      }
+      quillInstance.value.on('text-change', textChangeHandler.value)
 
-      // Listen for blur
-      quillInstance.value.root.addEventListener('blur', () => {
+      // Create and store blur handler
+      blurHandler.value = () => {
         emit('blur')
-
         if (props.validateOn === 'blur') {
           emit('validate')
         }
-      })
+      }
+      quillInstance.value.root.addEventListener('blur', blurHandler.value)
 
-      // Listen for focus
-      quillInstance.value.root.addEventListener('focus', () => {
+      // Create and store focus handler
+      focusHandler.value = () => {
         emit('focus')
-      })
+      }
+      quillInstance.value.root.addEventListener('focus', focusHandler.value)
 
       isQuillLoaded.value = true
       emit('ready', quillInstance.value)
@@ -133,13 +178,33 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (quillInstance.value) {
+    // Remove text-change handler
+    if (textChangeHandler.value) {
+      quillInstance.value.off('text-change', textChangeHandler.value)
+      textChangeHandler.value = null
+    }
+
+    // Remove DOM event listeners
+    if (blurHandler.value) {
+      quillInstance.value.root.removeEventListener('blur', blurHandler.value)
+      blurHandler.value = null
+    }
+    if (focusHandler.value) {
+      quillInstance.value.root.removeEventListener('focus', focusHandler.value)
+      focusHandler.value = null
+    }
+
     quillInstance.value = null
   }
 })
 
 watch(() => props.modelValue, (newValue) => {
-  if (quillInstance.value && quillInstance.value.root.innerHTML !== newValue) {
-    quillInstance.value.root.innerHTML = newValue || ''
+  if (!quillInstance.value) return
+
+  // Compare with current Quill content to avoid unnecessary updates
+  const currentContent = getQuillContent()
+  if (currentContent !== (newValue || '')) {
+    setQuillContent(newValue || '')
   }
 })
 
@@ -178,10 +243,10 @@ watch(() => props.readonly, (newValue) => {
     <div v-if="helpText && !validationMessage" :id="`${id}-feedback`" class="form-text">
       {{ helpText }}
     </div>
-    <div v-if="internalValidationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+    <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
       {{ validationMessage || 'Looks good!' }}
     </div>
-    <div v-if="internalValidationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+    <div v-if="validationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
       {{ validationMessage || 'Please provide valid content.' }}
     </div>
   </div>

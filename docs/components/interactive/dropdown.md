@@ -1,25 +1,21 @@
-# VibeDropdown & VibeDropdownItem
+# VibeDropdown
 
-Toggleable contextual overlays for displaying lists of links. Requires Bootstrap JS.
+Data-driven toggleable contextual overlay for displaying lists of links. Requires Bootstrap JS.
 
-## VibeDropdown
-
-Dropdown container.
-
-### Props
+## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `id` | `String` | Required | Unique identifier |
 | `text` | `String` | `'Dropdown'` | Button text |
 | `variant` | `Variant` | `'primary'` | Button color variant |
-| `size` | `Size` | `undefined` | Button size |
+| `size` | `Size` | `undefined` | Button size (`'sm'` or `'lg'`) |
 | `split` | `Boolean` | `false` | Split button style |
 | `direction` | `Direction` | `'down'` | Direction: `'up'`, `'down'`, `'start'`, `'end'` |
 | `menuEnd` | `Boolean` | `false` | Align menu to the right |
-| `items` | `DropdownItem[]` | `undefined` | Array of dropdown items (shorthand mode) |
+| `items` | `DropdownItem[]` | Required | Array of dropdown items |
 
-#### DropdownItem Interface
+### DropdownItem Interface
 
 ```typescript
 interface DropdownItem {
@@ -33,30 +29,23 @@ interface DropdownItem {
 }
 ```
 
-## VibeDropdownItem
-
-Dropdown menu item.
-
-### Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `active` | `Boolean` | `false` | Active state |
-| `disabled` | `Boolean` | `false` | Disabled state |
-| `href` | `String` | `undefined` | Link URL |
-| `to` | `String\|Object` | `undefined` | Router link |
-| `divider` | `Boolean` | `false` | Render as divider |
-| `header` | `Boolean` | `false` | Render as header |
-
-### Events
+## Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `click` | `Event` | Emitted when item is clicked |
+| `item-click` | `{ item, index, event }` | Emitted when an item is clicked (unless disabled, divider, or header) |
+
+## Slots
+
+| Slot | Scope | Description |
+|------|-------|-------------|
+| `button` | - | Custom button content |
+| `item` | `{ item, index }` | Custom item rendering (for regular items) |
+| `header` | `{ item, index }` | Custom header rendering |
 
 ## Usage
 
-### Shorthand Mode (Array-Based)
+### Basic Dropdown
 
 ```vue
 <template>
@@ -78,60 +67,143 @@ const dropdownItems = [
 </script>
 ```
 
-### Composable Mode (Slot-Based)
+### With Headers and Dividers
 
 ```vue
 <template>
-  <VibeDropdown id="dropdown1" text="Dropdown Menu" variant="primary">
-    <VibeDropdownItem href="#">Action</VibeDropdownItem>
-    <VibeDropdownItem href="#">Another action</VibeDropdownItem>
-    <VibeDropdownItem divider />
-    <VibeDropdownItem href="#">Separated link</VibeDropdownItem>
-  </VibeDropdown>
+  <VibeDropdown id="dropdown2" text="Menu" variant="secondary" :items="items" />
 </template>
-```
 
-### With Headers
-
-```vue
-<template>
-  <VibeDropdown id="dropdown2" text="Menu" variant="secondary">
-    <VibeDropdownItem header>Header 1</VibeDropdownItem>
-    <VibeDropdownItem href="#">Action</VibeDropdownItem>
-    <VibeDropdownItem href="#">Another action</VibeDropdownItem>
-    <VibeDropdownItem divider />
-    <VibeDropdownItem header>Header 2</VibeDropdownItem>
-    <VibeDropdownItem href="#">Something else</VibeDropdownItem>
-  </VibeDropdown>
-</template>
-```
-
-### Dropup
-
-```vue
-<template>
-  <VibeDropdown id="dropup1" text="Dropup" direction="up">
-    <VibeDropdownItem href="#">Action</VibeDropdownItem>
-    <VibeDropdownItem href="#">Another action</VibeDropdownItem>
-  </VibeDropdown>
-</template>
-```
-
-### With Click Handlers
-
-```vue
 <script setup>
-const handleAction = (action) => {
-  console.log('Action:', action)
+const items = [
+  { text: 'Header 1', header: true },
+  { text: 'Action', href: '#' },
+  { text: 'Another action', href: '#' },
+  { divider: true },
+  { text: 'Header 2', header: true },
+  { text: 'Something else', href: '#' }
+]
+</script>
+```
+
+### Dropup and Directions
+
+```vue
+<template>
+  <!-- Dropup -->
+  <VibeDropdown id="dropup1" text="Dropup" direction="up" :items="items" />
+
+  <!-- Dropend -->
+  <VibeDropdown id="dropend1" text="Dropend" direction="end" :items="items" />
+
+  <!-- Dropstart -->
+  <VibeDropdown id="dropstart1" text="Dropstart" direction="start" :items="items" />
+</template>
+```
+
+### With Router Links
+
+```vue
+<template>
+  <VibeDropdown id="dropdown-router" text="Navigation" :items="navItems" />
+</template>
+
+<script setup>
+const navItems = [
+  { text: 'Home', to: { name: 'home' } },
+  { text: 'About', to: { name: 'about' } },
+  { divider: true },
+  { text: 'Contact', to: { name: 'contact' } }
+]
+</script>
+```
+
+### Active and Disabled Items
+
+```vue
+<template>
+  <VibeDropdown id="dropdown-states" text="Menu" :items="items" />
+</template>
+
+<script setup>
+const items = [
+  { text: 'Regular item', href: '#' },
+  { text: 'Active item', href: '#', active: true },
+  { text: 'Disabled item', href: '#', disabled: true }
+]
+</script>
+```
+
+### Custom Button Content
+
+Use the `button` slot for custom button rendering:
+
+```vue
+<template>
+  <VibeDropdown id="custom-button" variant="primary" :items="items">
+    <template #button>
+      <VibeIcon icon="gear" /> Settings
+    </template>
+  </VibeDropdown>
+</template>
+```
+
+### Custom Item Rendering
+
+Use scoped slots for rich content:
+
+```vue
+<template>
+  <VibeDropdown id="custom-items" text="Actions" :items="actions">
+    <template #item="{ item }">
+      <VibeIcon :icon="item.icon" class="me-2" />
+      {{ item.text }}
+    </template>
+  </VibeDropdown>
+</template>
+
+<script setup>
+const actions = [
+  { text: 'Edit', href: '#', icon: 'pencil' },
+  { text: 'Copy', href: '#', icon: 'clipboard' },
+  { text: 'Delete', href: '#', icon: 'trash' }
+]
+</script>
+```
+
+### With Event Handling
+
+```vue
+<template>
+  <VibeDropdown
+    id="dropdown-events"
+    text="Actions"
+    :items="items"
+    @item-click="handleAction"
+  />
+</template>
+
+<script setup>
+const items = [
+  { text: 'Edit', href: '#' },
+  { text: 'Copy', href: '#' },
+  { divider: true },
+  { text: 'Delete', href: '#' }
+]
+
+const handleAction = ({ item, index }) => {
+  console.log(`Action: ${item.text}`)
 }
 </script>
+```
 
+### Different Sizes
+
+```vue
 <template>
-  <VibeDropdown id="dropdown3" text="Actions">
-    <VibeDropdownItem @click="handleAction('edit')">Edit</VibeDropdownItem>
-    <VibeDropdownItem @click="handleAction('copy')">Copy</VibeDropdownItem>
-    <VibeDropdownItem @click="handleAction('delete')">Delete</VibeDropdownItem>
-  </VibeDropdown>
+  <VibeDropdown id="dropdown-sm" text="Small" size="sm" :items="items" />
+  <VibeDropdown id="dropdown-default" text="Default" :items="items" />
+  <VibeDropdown id="dropdown-lg" text="Large" size="lg" :items="items" />
 </template>
 ```
 

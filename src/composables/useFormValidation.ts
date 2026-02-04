@@ -1,8 +1,10 @@
-import { ref, computed } from 'vue'
+import { ref, computed, type Ref } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, FormValidationResult } from '../types'
 
-export function useFormValidation(initialValue: any = '') {
-  const value = ref(initialValue)
+export type FormFieldValue = string | number | boolean | null | undefined
+
+export function useFormValidation<T extends FormFieldValue = string>(initialValue: T = '' as T) {
+  const value: Ref<T> = ref(initialValue) as Ref<T>
   const validationState = ref<ValidationState>(null)
   const validationMessage = ref<string>('')
   const isDirty = ref(false)
@@ -87,10 +89,11 @@ export function useFormValidation(initialValue: any = '') {
 // Built-in validators
 export const validators = {
   required: (message = 'This field is required'): ValidationRule => ({
-    validator: (value: any) => {
+    validator: (value: unknown) => {
       if (Array.isArray(value)) return value.length > 0 || message
       if (typeof value === 'string') return value.trim().length > 0 || message
-      return value !== null && value !== undefined && value !== '' || message
+      // Explicit parentheses for clarity - checks that value is not null/undefined/empty string
+      return (value !== null && value !== undefined && value !== '') || message
     },
     message
   }),
@@ -121,17 +124,23 @@ export const validators = {
   }),
 
   min: (min: number, message?: string): ValidationRule => ({
-    validator: (value: number) => {
+    validator: (value: unknown) => {
+      // Skip validation for empty values (use required validator for that)
       if (value === null || value === undefined || value === '') return true
-      return Number(value) >= min || message || `Minimum value is ${min}`
+      const numValue = Number(value)
+      if (Number.isNaN(numValue)) return message || `Value must be a number`
+      return numValue >= min || message || `Minimum value is ${min}`
     },
     message
   }),
 
   max: (max: number, message?: string): ValidationRule => ({
-    validator: (value: number) => {
+    validator: (value: unknown) => {
+      // Skip validation for empty values (use required validator for that)
       if (value === null || value === undefined || value === '') return true
-      return Number(value) <= max || message || `Maximum value is ${max}`
+      const numValue = Number(value)
+      if (Number.isNaN(numValue)) return message || `Value must be a number`
+      return numValue <= max || message || `Maximum value is ${max}`
     },
     message
   }),
@@ -157,8 +166,8 @@ export const validators = {
     message
   }),
 
-  // Async validator example for API validation
-  async: (validatorFn: (value: any) => Promise<boolean | string>): ValidationRule => ({
+  // Async validator for API validation
+  async: (validatorFn: (value: unknown) => Promise<boolean | string>): ValidationRule => ({
     validator: validatorFn
   })
 }
