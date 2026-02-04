@@ -20,11 +20,12 @@ export default defineConfig({
       fileName: (format) => `vibeui.${format}.js`
     },
     rollupOptions: {
-      external: ['vue', /^quill/],
+      external: ['vue', /^quill/, /^bootstrap/],
       output: {
         globals: {
           vue: 'Vue',
-          quill: 'Quill'
+          quill: 'Quill',
+          bootstrap: 'bootstrap'
         }
       }
     }

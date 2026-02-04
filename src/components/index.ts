@@ -127,9 +127,11 @@ export {
   VibeFormWysiwyg
 }
 
+import type { App, Plugin } from 'vue'
+
 // Vue plugin for global registration
-export default {
-  install(app: any) {
+const VibeUIPlugin: Plugin = {
+  install(app: App) {
     // Core
     app.component('VibeAlert', VibeAlert)
     app.component('VibeBadge', VibeBadge)
@@ -194,3 +196,5 @@ export default {
     app.component('VibeFormWysiwyg', VibeFormWysiwyg)
   }
 }
+
+export default VibeUIPlugin

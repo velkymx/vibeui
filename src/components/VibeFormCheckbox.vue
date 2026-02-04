@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 
 const props = defineProps({
@@ -26,7 +27,7 @@ const props = defineProps({
   inline: { type: Boolean, default: false },
   validationState: { type: String as () => ValidationState, default: null },
   validationMessage: { type: String, default: undefined },
-  validationRules: { type: [Array, Function] as () => ValidationRule[] | ValidatorFunction | undefined, default: undefined },
+  validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
   validateOn: { type: String as () => 'change' | 'blur', default: 'blur' },
   helpText: { type: String, default: undefined },
   indeterminate: { type: Boolean, default: false }
@@ -34,13 +35,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change'])
 
-const internalValidationState = computed(() => props.validationState)
 
 const checkboxClass = computed(() => {
   const classes = ['form-check-input']
 
-  if (internalValidationState.value === 'valid') classes.push('is-valid')
-  if (internalValidationState.value === 'invalid') classes.push('is-invalid')
+  if (props.validationState === 'valid') classes.push('is-valid')
+  if (props.validationState === 'invalid') classes.push('is-invalid')
 
   return classes.join(' ')
 })
@@ -111,7 +111,7 @@ const handleFocus = (event: FocusEvent) => {
       :disabled="disabled"
       :required="required"
       :indeterminate="indeterminate"
-      :aria-invalid="internalValidationState === 'invalid'"
+      :aria-invalid="validationState === 'invalid'"
       :aria-describedby="validationMessage || helpText ? `${id}-feedback` : undefined"
       @change="handleChange"
       @blur="handleBlur"
@@ -124,10 +124,10 @@ const handleFocus = (event: FocusEvent) => {
     <div v-if="helpText && !validationMessage" :id="`${id}-feedback`" class="form-text">
       {{ helpText }}
     </div>
-    <div v-if="internalValidationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+    <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
       {{ validationMessage || 'Looks good!' }}
     </div>
-    <div v-if="internalValidationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+    <div v-if="validationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
       {{ validationMessage || 'You must check this box.' }}
     </div>
   </div>

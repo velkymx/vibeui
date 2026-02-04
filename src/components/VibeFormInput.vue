@@ -1,43 +1,30 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
+import type { PropType } from 'vue'
 import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 
 const props = defineProps({
   modelValue: {
-    type: [String, Number],
-    default: '',
-    validator: (value: any) => {
-      // Only validate in development mode
-      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
-        console.error(
-          `[VibeFormInput] Invalid prop: modelValue must be a string or number, received object. ` +
-          `If you're using useFormValidation(), bind to the .value property: ` +
-          `v-model="field.value" instead of v-model="field"`
-        )
-        return false
-      }
-      return true
-    }
+    type: [String, Number] as PropType<string | number>,
+    default: ''
   },
-  type: { type: String as () => InputType, default: 'text' },
+  type: { type: String as PropType<InputType>, default: 'text' },
   id: { type: String, required: true },
   label: { type: String, default: undefined },
   placeholder: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
   required: { type: Boolean, default: false },
-  size: { type: String as () => Size, default: undefined },
-  validationState: { type: String as () => ValidationState, default: null },
+  size: { type: String as PropType<Size>, default: undefined },
+  validationState: { type: String as PropType<ValidationState>, default: null },
   validationMessage: { type: String, default: undefined },
-  validationRules: { type: [Array, Function] as () => ValidationRule[] | ValidatorFunction | undefined, default: undefined },
-  validateOn: { type: String as () => 'input' | 'blur' | 'change', default: 'blur' },
+  validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
+  validateOn: { type: String as PropType<'input' | 'blur' | 'change'>, default: 'blur' },
   helpText: { type: String, default: undefined },
   plaintext: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
-
-const internalValidationState = computed(() => props.validationState)
 
 const inputClass = computed(() => {
   const classes: string[] = []
@@ -49,8 +36,8 @@ const inputClass = computed(() => {
     if (props.size) classes.push(`form-control-${props.size}`)
   }
 
-  if (internalValidationState.value === 'valid') classes.push('is-valid')
-  if (internalValidationState.value === 'invalid') classes.push('is-invalid')
+  if (props.validationState === 'valid') classes.push('is-valid')
+  if (props.validationState === 'invalid') classes.push('is-invalid')
 
   return classes.join(' ')
 })
@@ -102,7 +89,7 @@ const handleFocus = (event: FocusEvent) => {
       :disabled="disabled"
       :readonly="readonly || plaintext"
       :required="required"
-      :aria-invalid="internalValidationState === 'invalid'"
+      :aria-invalid="validationState === 'invalid'"
       :aria-describedby="validationMessage || helpText ? `${id}-feedback` : undefined"
       @input="handleInput"
       @change="handleChange"
@@ -112,10 +99,10 @@ const handleFocus = (event: FocusEvent) => {
     <div v-if="helpText && !validationMessage" :id="`${id}-feedback`" class="form-text">
       {{ helpText }}
     </div>
-    <div v-if="internalValidationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+    <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
       {{ validationMessage || 'Looks good!' }}
     </div>
-    <div v-if="internalValidationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+    <div v-if="validationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
       {{ validationMessage || 'Please provide a valid value.' }}
     </div>
   </div>
