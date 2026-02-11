@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive, provide } from 'vue'
 import type { Variant, Tag, NavbarPosition } from '../types'
 
 const props = defineProps({
@@ -11,6 +11,14 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['component-error'])
+
+// Provide reactive collapse state so VibeNavbarToggle and VibeCollapse
+// communicate through Vue reactivity instead of Bootstrap JS
+const collapseStates = reactive<Record<string, boolean>>({})
+const toggleCollapse = (id: string) => {
+  collapseStates[id] = !collapseStates[id]
+}
+provide('vibeNavbarCollapse', { collapseStates, toggleCollapse })
 
 const navbarClass = computed(() => {
   const classes = ['navbar']
