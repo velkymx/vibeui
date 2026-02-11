@@ -22,7 +22,7 @@ const navbarClass = computed(() => {
   }
 
   if (props.variant === 'dark' || props.variant === 'light') {
-    classes.push(`navbar-${props.variant}`)
+    classes.push(`navbar-${props.variant}`, `bg-${props.variant}`)
   } else {
     classes.push(`bg-${props.variant}`)
   }
