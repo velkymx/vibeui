@@ -97,12 +97,12 @@ onBeforeUnmount(() => {
 // Filtered items (based on search)
 const filteredItems = computed(() => {
   if (!props.searchable || !debouncedSearchQuery.value) {
-    return props.items
+    return props.items || []
   }
 
   const query = debouncedSearchQuery.value.toLowerCase()
-  return props.items.filter((item) => {
-    return props.columns.some((column) => {
+  return (props.items || []).filter((item) => {
+    return (props.columns || []).some((column) => {
       if (column.searchable === false) return false
       const value = item[column.key]
       if (value == null) return false
