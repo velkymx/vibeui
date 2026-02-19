@@ -123,6 +123,8 @@ watch(() => props.modelValue, (newValue) => {
     ref="modalRef"
     :id="id"
     class="modal fade"
+    :class="{ show: isVisible }"
+    :style="isVisible ? { display: 'block' } : {}"
     tabindex="-1"
     :aria-labelledby="`${id}-label`"
     :aria-hidden="!isVisible"
