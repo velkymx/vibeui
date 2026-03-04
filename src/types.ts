@@ -65,6 +65,7 @@ export interface NavItem {
   to?: string | object
   active?: boolean
   disabled?: boolean
+  children?: DropdownItem[]
 }
 
 export interface PaginationItem {

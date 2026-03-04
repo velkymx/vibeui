@@ -4,6 +4,7 @@ import type { Variant, Tag, NavbarPosition } from '../types'
 
 const props = defineProps({
   variant: { type: String as () => Variant | 'dark' | 'light', default: 'light' },
+  theme: { type: String as () => 'dark' | 'light', default: undefined },
   expand: { type: [Boolean, String], default: 'lg' },
   container: { type: [Boolean, String], default: true },
   position: { type: String as () => NavbarPosition, default: undefined },
@@ -29,17 +30,21 @@ const navbarClass = computed(() => {
     classes.push(`navbar-expand-${props.expand}`)
   }
 
-  if (props.variant === 'dark' || props.variant === 'light') {
-    classes.push(`navbar-${props.variant}`, `bg-${props.variant}`)
-  } else {
-    classes.push(`bg-${props.variant}`)
-  }
+  classes.push(`bg-${props.variant}`)
 
   if (props.position) {
     classes.push(props.position)
   }
 
   return classes.join(' ')
+})
+
+// Bootstrap 5.3 uses data-bs-theme instead of deprecated navbar-dark/navbar-light classes
+const navbarTheme = computed(() => {
+  if (props.theme) return props.theme
+  if (props.variant === 'dark') return 'dark'
+  if (props.variant === 'light') return 'light'
+  return undefined
 })
 
 const containerClass = computed(() => {
@@ -50,7 +55,7 @@ const containerClass = computed(() => {
 </script>
 
 <template>
-  <component :is="tag" :class="navbarClass">
+  <component :is="tag" :class="navbarClass" :data-bs-theme="navbarTheme">
     <div v-if="containerClass" :class="containerClass">
       <slot />
     </div>

@@ -23,7 +23,7 @@ const emit = defineEmits(['component-error'])
 
 const cardClass = computed(() => {
   const classes = ['card']
-  if (props.variant) classes.push(`bg-${props.variant}`)
+  if (props.variant) classes.push(`text-bg-${props.variant}`)
   if (props.border) classes.push(`border-${props.border}`)
   if (props.textVariant) classes.push(`text-${props.textVariant}`)
   return classes.join(' ')
