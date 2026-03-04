@@ -89,7 +89,7 @@ describe('VibeCard', () => {
       }
     })
 
-    expect(wrapper.find('.card').classes()).toContain('bg-primary')
+    expect(wrapper.find('.card').classes()).toContain('text-bg-primary')
   })
 
   it('applies border class', () => {
