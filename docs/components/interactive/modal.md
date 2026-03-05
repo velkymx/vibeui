@@ -1,12 +1,12 @@
 # VibeModal
 
-Modal dialogs for lightboxes, user notifications, or custom content. Requires Bootstrap JS.
+Modal dialogs for lightboxes, user notifications, or custom content.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `id` | `String` | Required | Unique identifier for the modal |
+| `id` | `String` | `Auto-generated` | Unique identifier for the modal |
 | `modelValue` | `Boolean` | `false` | Control visibility (v-model) |
 | `title` | `String` | `''` | Modal title |
 | `size` | `Size\|'xl'` | `undefined` | Modal size: `'sm'`, `'lg'`, `'xl'` |
@@ -16,6 +16,7 @@ Modal dialogs for lightboxes, user notifications, or custom content. Requires Bo
 | `staticBackdrop` | `Boolean` | `false` | Don't close on backdrop click |
 | `hideHeader` | `Boolean` | `false` | Hide header section |
 | `hideFooter` | `Boolean` | `false` | Hide footer section |
+| `teleport` | `Boolean\|String` | `'body'` | Destination for Vue Teleport |
 
 ## Events
 
@@ -37,11 +38,33 @@ Modal dialogs for lightboxes, user notifications, or custom content. Requires Bo
 
 ## Usage
 
-### Basic Modal
+### Reactive Usage (v-model)
 
 ```vue
 <template>
   <div>
+    <VibeButton variant="primary" @click="showModal = true">
+      Open Modal
+    </VibeButton>
+
+    <VibeModal v-model="showModal" title="Reactive Modal">
+      <p>This modal is controlled via Vue state.</p>
+    </VibeModal>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+const showModal = ref(false)
+</script>
+```
+
+### Basic Modal (Data Attributes)
+
+```vue
+<template>
+  <div>
+    <!-- You can still use standard Bootstrap data attributes -->
     <VibeButton variant="primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
       Launch Modal
     </VibeButton>
@@ -58,16 +81,12 @@ Modal dialogs for lightboxes, user notifications, or custom content. Requires Bo
 ```vue
 <template>
   <div>
-    <VibeModal id="smallModal" title="Small Modal" size="sm">
+    <VibeModal title="Small Modal" size="sm">
       Small modal content
     </VibeModal>
 
-    <VibeModal id="largeModal" title="Large Modal" size="lg">
+    <VibeModal title="Large Modal" size="lg">
       Large modal content
-    </VibeModal>
-
-    <VibeModal id="xlModal" title="Extra Large Modal" size="xl">
-      Extra large modal content
     </VibeModal>
   </div>
 </template>
@@ -77,7 +96,7 @@ Modal dialogs for lightboxes, user notifications, or custom content. Requires Bo
 
 ```vue
 <template>
-  <VibeModal id="centeredModal" title="Centered Modal" centered>
+  <VibeModal title="Centered Modal" centered>
     This modal is vertically centered.
   </VibeModal>
 </template>
@@ -87,38 +106,24 @@ Modal dialogs for lightboxes, user notifications, or custom content. Requires Bo
 
 ```vue
 <template>
-  <VibeModal id="customModal" title="Custom Footer">
+  <VibeModal title="Custom Footer">
     <p>Modal with custom footer buttons.</p>
 
     <template #footer>
-      <VibeButton variant="secondary" data-bs-dismiss="modal">Close</VibeButton>
+      <VibeButton variant="secondary" @click="showModal = false">Close</VibeButton>
       <VibeButton variant="primary">Save changes</VibeButton>
     </template>
   </VibeModal>
 </template>
 ```
 
-### Fullscreen Modal
+## Important Notes
 
-```vue
-<template>
-  <VibeModal id="fullscreenModal" title="Fullscreen Modal" fullscreen>
-    This is a fullscreen modal.
-  </VibeModal>
-</template>
-```
+**Automatic Initialization:** This component automatically initializes Bootstrap's Modal functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
-### Static Backdrop
+**Teleportation:** By default, this component teleports its DOM elements to the `<body>` to avoid stacking context issues. You can customize this with the `teleport` prop.
 
-```vue
-<template>
-  <VibeModal id="staticModal" title="Static Modal" static-backdrop>
-    Click outside won't close this modal.
-  </VibeModal>
-</template>
-```
-
-**Note:** Requires Bootstrap JavaScript to be included in your project.
+**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
 ## Bootstrap CSS Classes
 

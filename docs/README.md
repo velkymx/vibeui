@@ -25,183 +25,82 @@ createApp(App).use(VibeUI).mount('#app')
 
 ### Bootstrap JavaScript
 
-Some components require Bootstrap's JavaScript. Include it in your project:
+**VibeUI v0.6.0+ fully abstracts Bootstrap's JavaScript.** You do not need to manually import or initialize Bootstrap JS for VibeUI components. 
 
-```bash
-npm install bootstrap
-```
-
-Then import and initialize where needed:
-
-```javascript
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
-// Or import specific components
-import { Modal, Tooltip, Popover } from 'bootstrap'
-```
+The library handles:
+- **Dynamic Initialization:** Components initialize their own JS logic on mount.
+- **Reactive Configuration:** Re-initializes automatically when props like `placement` or `delay` change.
+- **Memory Cleanup:** Automatically disposes of Bootstrap instances on unmount.
+- **State Integrity:** Synchronizes internal Vue state with native Bootstrap events.
 
 ## Components
 
 ### [Core Components](./components/core/)
-
-Basic, essential components with no JavaScript dependencies:
-
-- [VibeAlert](./components/core/alert.md) - Alert messages with variants
-- [VibeBadge](./components/core/badge.md) - Badges and labels
-- [VibeButton](./components/core/button.md) - Buttons with variants and sizes
-- [VibeButtonGroup](./components/core/button-group.md) - Button groups
-- [VibeCloseButton](./components/core/close-button.md) - Close button
-- [VibeSpinner](./components/core/spinner.md) - Loading spinners
-- [VibePlaceholder](./components/core/placeholder.md) - Placeholder loading states
-
-### [Card Components](./components/card/)
-
-Flexible content containers:
-
-- [VibeCard](./components/card/card.md) - Card container with props and named slots
-
-### [Navigation Components](./components/navigation/)
-
-Navigation and pagination components:
-
-- [VibeBreadcrumb](./components/navigation/breadcrumb.md) - Breadcrumb navigation
-- [VibeNav](./components/navigation/nav.md) - Navigation tabs and pills
-- [VibeNavbar](./components/navigation/navbar.md) - Responsive navigation bar
-- [VibePagination](./components/navigation/pagination.md) - Pagination controls
-
-### [List Components](./components/list/)
-
-Display lists of content:
-
-- [VibeListGroup](./components/list/list-group.md) - Flexible list component
-
-### [Progress Components](./components/progress/)
-
-Progress indicators:
-
-- [VibeProgress](./components/progress/progress.md) - Progress bars
+- [VibeAlert](./components/core/alert.md)
+- [VibeBadge](./components/core/badge.md)
+- [VibeButton](./components/core/button.md)
+- [VibeButtonGroup](./components/core/button-group.md)
+- [VibeCloseButton](./components/core/close-button.md)
+- [VibeSpinner](./components/core/spinner.md)
+- [VibePlaceholder](./components/core/placeholder.md)
 
 ### [Interactive Components](./components/interactive/)
-
-Components requiring Bootstrap JavaScript:
-
-- [VibeAccordion](./components/interactive/accordion.md) - Collapsible accordion
-- [VibeCarousel](./components/interactive/carousel.md) - Image carousel
-- [VibeCollapse](./components/interactive/collapse.md) - Collapsible content
-- [VibeDropdown](./components/interactive/dropdown.md) - Dropdown menus
-- [VibeModal](./components/interactive/modal.md) - Modal dialogs
-- [VibeOffcanvas](./components/interactive/offcanvas.md) - Offcanvas sidebar
-- [VibeToast](./components/interactive/toast.md) - Toast notifications
+- [VibeAccordion](./components/interactive/accordion.md)
+- [VibeCarousel](./components/interactive/carousel.md)
+- [VibeCollapse](./components/interactive/collapse.md)
+- [VibeDropdown](./components/interactive/dropdown.md)
+- [VibeModal](./components/interactive/modal.md)
+- [VibeOffcanvas](./components/interactive/offcanvas.md)
+- [VibeToast](./components/interactive/toast.md)
 
 ### [Advanced Components](./components/advanced/)
-
-Advanced components requiring initialization:
-
-- [VibeTooltip](./components/advanced/tooltip.md) - Contextual tooltips
-- [VibePopover](./components/advanced/popover.md) - Rich popovers
-- [VibeScrollspy](./components/advanced/scrollspy.md) - Scroll-based navigation
+- [VibeTooltip](./components/advanced/tooltip.md)
+- [VibePopover](./components/advanced/popover.md)
+- [VibeScrollspy](./components/advanced/scrollspy.md)
 
 ### [Data Components](./components/data/)
+- [VibeDataTable](./components/data/datatable.md)
 
-Components for displaying and managing data:
-
-- [VibeDataTable](./components/data/datatable.md) - Powerful data table with search, sorting, and pagination
+### [Form Components](./forms/)
+- [VibeFormGroup](./forms/form-group.md) - Automated layout & accessibility
+- [VibeFormInput](./forms/form-input.md)
+- [VibeFormSelect](./forms/form-select.md)
+- [VibeFormWysiwyg](./forms/form-wysiwyg.md)
 
 ## Design Philosophy
 
-VibeUI follows these key principles:
-
-1. **Simplicity First** - Clean, intuitive API with minimal complexity
-2. **Lightweight** - No Bootstrap JS bundled; uses CDN via data-bs-* attributes
-3. **Consistent** - Same prop patterns across all components
-4. **Flexible** - Class passthrough and slots for customization
-5. **TypeScript** - Full type safety with comprehensive types
+1. **Full Abstraction** - No "reach-around" required; the library manages the framework engine.
+2. **Zero-Boilerplate** - Automatic IDs, Teleportation, and state syncing.
+3. **Smart Forms** - Context-aware form groups automate accessibility.
+4. **TypeScript First** - Comprehensive type definitions for all props and events.
 
 ## Common Patterns
 
-### Variants
-
-Most components support color variants:
-
-```vue
-<VibeButton variant="primary">Primary</VibeButton>
-<VibeButton variant="success">Success</VibeButton>
-<VibeButton variant="danger">Danger</VibeButton>
-```
-
-Available variants: `primary`, `secondary`, `success`, `danger`, `warning`, `info`, `light`, `dark`
-
-### Sizes
-
-Components that support sizing use a simple size prop:
-
-```vue
-<VibeButton size="sm">Small</VibeButton>
-<VibeButton>Normal</VibeButton>
-<VibeButton size="lg">Large</VibeButton>
-```
-
 ### v-model Support
-
-Components with visibility state support v-model:
+Most interactive and form components support `v-model` for two-way state synchronization.
 
 ```vue
-<script setup>
-import { ref } from 'vue'
-const showAlert = ref(true)
-</script>
+<VibeModal v-model="show" title="Hello" />
+```
 
+### Instance Exposure
+Advanced users can access the underlying Bootstrap instance via template refs:
+
+```vue
 <template>
-  <VibeAlert v-model="showAlert" dismissable>
-    This alert can be dismissed
-  </VibeAlert>
+  <VibeModal ref="myModal" />
 </template>
+
+<script setup>
+import { useTemplateRef, onMounted } from 'vue'
+const modal = useTemplateRef('myModal')
+
+onMounted(() => {
+  // Access native Bootstrap methods
+  modal.value.bsInstance.handleUpdate()
+})
+</script>
 ```
-
-### Class Passthrough
-
-All components support native class attribute merging:
-
-```vue
-<VibeButton variant="primary" class="my-custom-class">
-  Button with custom classes
-</VibeButton>
-```
-
-### Slots
-
-Components use slots for flexible content:
-
-```vue
-<VibeCard>
-  <template #header>
-    Custom Header
-  </template>
-
-  <template #body>
-    Main content
-  </template>
-
-  <template #footer>
-    Custom Footer
-  </template>
-</VibeCard>
-```
-
-## TypeScript Support
-
-VibeUI is fully typed. Import types as needed:
-
-```typescript
-import type { Variant, Size, Placement } from '@velkymx/vibeui'
-```
-
-Available types:
-- `Variant` - Color variants
-- `Size` - Component sizes
-- `Placement` - Tooltip/popover placement
-- `ButtonType` - Button types
-- `Direction` - Dropdown directions
-- And more...
 
 ## Contributing
 

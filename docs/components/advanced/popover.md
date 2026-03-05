@@ -113,12 +113,14 @@ Popovers for displaying rich content overlays. Requires Bootstrap JS and initial
 
 ## Important Notes
 
-**Bootstrap JS Required:** This component requires Bootstrap's JavaScript to be included in your project and popovers must be initialized:
+**Automatic Initialization:** This component automatically initializes Bootstrap's Popover functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
+
+**Manual Initialization (Optional):** If you are not using the automatic initialization or need to initialize popovers on non-VibeUI elements:
 
 ```javascript
 // Initialize all popovers
 import { Popover } from 'bootstrap'
-
+...
 const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
 const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new Popover(popoverTriggerEl))
 ```

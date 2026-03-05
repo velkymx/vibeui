@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, provide, ref } from 'vue'
 import type { ValidationState } from '../types'
+import { useId } from '../composables/useId'
 
 const props = defineProps({
   label: { type: String, default: undefined },
@@ -15,9 +16,30 @@ const props = defineProps({
   labelAlign: { type: String as () => 'start' | 'center' | 'end', default: undefined }
 })
 
+const computedId = computed(() => props.labelFor || useId('form-group'))
+const isIdConsumed = ref(false)
+
+/**
+ * Maturity Fix: "The First-Child Rule"
+ * Allows children to 'consume' the Group ID. Only the first child to call this
+ * gets the Group ID. Subsequent children get null, forcing them to generate their own.
+ */
+const consumeId = () => {
+  if (isIdConsumed.value) return null
+  isIdConsumed.value = true
+  return computedId.value
+}
+
+provide('vibeFormGroup', {
+  id: computedId,
+  consumeId,
+  hasLabel: computed(() => !!props.label),
+  hasValidation: computed(() => !!props.validationState),
+  hasHelp: computed(() => !!props.helpText)
+})
+
 const formGroupClass = computed(() => {
   const classes: string[] = []
-
   if (props.floating) {
     classes.push('form-floating')
   } else if (props.row) {
@@ -25,29 +47,20 @@ const formGroupClass = computed(() => {
   } else {
     classes.push('mb-3')
   }
-
   return classes.join(' ')
 })
 
 const labelClass = computed(() => {
   const classes: string[] = []
-
   if (props.floating) {
-    // Floating labels use their own class
     classes.push('form-label')
   } else if (props.row) {
-    // Row layout uses column classes
     classes.push('col-form-label')
-    if (props.labelCols) {
-      classes.push(`col-sm-${props.labelCols}`)
-    }
-    if (props.labelAlign) {
-      classes.push(`text-${props.labelAlign}`)
-    }
+    if (props.labelCols) classes.push(`col-sm-${props.labelCols}`)
+    if (props.labelAlign) classes.push(`text-${props.labelAlign}`)
   } else {
     classes.push('form-label')
   }
-
   return classes.join(' ')
 })
 
@@ -59,16 +72,14 @@ const contentClass = computed(() => {
   return ''
 })
 
-const feedbackId = computed(() => {
-  return props.labelFor ? `${props.labelFor}-feedback` : undefined
-})
+const feedbackId = computed(() => `${computedId.value}-feedback`)
 </script>
 
 <template>
   <div :class="formGroupClass">
     <label
       v-if="label && !floating"
-      :for="labelFor"
+      :for="computedId"
       :class="labelClass"
     >
       {{ label }}
@@ -94,7 +105,7 @@ const feedbackId = computed(() => {
 
       <label
         v-if="label && floating"
-        :for="labelFor"
+        :for="computedId"
         :class="labelClass"
       >
         {{ label }}

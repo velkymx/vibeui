@@ -1,90 +1,77 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { PropType } from 'vue'
+import { computed, inject } from 'vue'
+import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
+import { useId } from '../composables/useId'
 
 const props = defineProps({
   modelValue: {
     type: String,
-    default: '',
-    validator: (value: any) => {
-      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
-        console.error(
-          `[VibeFormTextarea] Invalid prop: modelValue must be a string, received object. ` +
-          `If you're using useFormValidation(), bind to the .value property: ` +
-          `v-model="field.value" instead of v-model="field"`
-        )
-        return false
-      }
-      return true
-    }
+    default: ''
   },
-  id: { type: String, required: true },
+  id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   placeholder: { type: String, default: undefined },
+  rows: { type: [Number, String], default: 3 },
+  maxlength: { type: [Number, String], default: undefined },
   disabled: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
   required: { type: Boolean, default: false },
-  rows: { type: Number, default: 3 },
-  maxlength: { type: Number, default: undefined },
-  size: { type: String as () => Size, default: undefined },
-  validationState: { type: String as () => ValidationState, default: null },
+  size: { type: String as PropType<Size>, default: undefined },
+  validationState: { type: String as PropType<ValidationState>, default: null },
   validationMessage: { type: String, default: undefined },
   validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
-  validateOn: { type: String as () => 'input' | 'blur' | 'change', default: 'blur' },
+  validateOn: { type: String as PropType<'input' | 'blur' | 'change'>, default: 'blur' },
   helpText: { type: String, default: undefined },
+  noResize: { type: Boolean, default: false },
   showCharCount: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
 
+const formGroup = inject<{
+  id: ComputedRef<string>
+  consumeId: () => string | null
+  hasLabel: ComputedRef<boolean>
+  hasValidation: ComputedRef<boolean>
+  hasHelp: ComputedRef<boolean>
+} | null>('vibeFormGroup', null)
+
+const computedId = computed(() => props.id || formGroup?.consumeId() || useId('textarea'))
+const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
+const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
+const shouldRenderHelp = computed(() => (!!props.helpText || props.showCharCount) && !formGroup?.hasHelp.value)
 
 const textareaClass = computed(() => {
   const classes = ['form-control']
-
   if (props.size) classes.push(`form-control-${props.size}`)
   if (props.validationState === 'valid') classes.push('is-valid')
   if (props.validationState === 'invalid') classes.push('is-invalid')
-
   return classes.join(' ')
 })
 
-const charCount = computed(() => {
-  const value = typeof props.modelValue === 'string' ? props.modelValue : ''
-  return value ? value.length : 0
+const textareaStyle = computed(() => {
+  if (props.noResize) return { resize: 'none' as const }
+  return undefined
 })
 
-const charCountText = computed(() => {
-  if (props.maxlength) {
-    return `${charCount.value} / ${props.maxlength}`
-  }
-  return `${charCount.value}`
-})
+const currentCount = computed(() => props.modelValue?.length || 0)
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLTextAreaElement
   emit('update:modelValue', target.value)
   emit('input', event)
-
-  if (props.validateOn === 'input') {
-    emit('validate')
-  }
+  if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
   emit('change', event)
-
-  if (props.validateOn === 'change') {
-    emit('validate')
-  }
+  if (props.validateOn === 'change') emit('validate')
 }
 
 const handleBlur = (event: FocusEvent) => {
   emit('blur', event)
-
-  if (props.validateOn === 'blur') {
-    emit('validate')
-  }
+  if (props.validateOn === 'blur') emit('validate')
 }
 
 const handleFocus = (event: FocusEvent) => {
@@ -93,39 +80,43 @@ const handleFocus = (event: FocusEvent) => {
 </script>
 
 <template>
-  <div class="mb-3">
-    <label v-if="label" :for="id" class="form-label">
+  <div :class="{ 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }">
+    <label v-if="shouldRenderLabel" :for="computedId" class="form-label">
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
     </label>
     <textarea
-      :id="id"
+      :id="computedId"
       :class="textareaClass"
+      :style="textareaStyle"
       :value="modelValue"
       :placeholder="placeholder"
+      :rows="rows"
+      :maxlength="maxlength"
       :disabled="disabled"
       :readonly="readonly"
       :required="required"
-      :rows="rows"
-      :maxlength="maxlength"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="validationMessage || helpText ? `${id}-feedback` : undefined"
+      :aria-describedby="validationMessage || helpText || showCharCount ? `${computedId}-feedback` : undefined"
       @input="handleInput"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
-    />
-    <div v-if="showCharCount" class="form-text">
-      {{ charCountText }}
+    ></textarea>
+    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text d-flex justify-content-between">
+      <span>{{ helpText }}</span>
+      <span v-if="showCharCount" class="ms-auto">
+        <template v-if="maxlength">{{ currentCount }} / {{ maxlength }}</template>
+        <template v-else>{{ currentCount }}</template>
+      </span>
     </div>
-    <div v-if="helpText && !validationMessage && !showCharCount" :id="`${id}-feedback`" class="form-text">
-      {{ helpText }}
-    </div>
-    <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
-      {{ validationMessage || 'Looks good!' }}
-    </div>
-    <div v-if="validationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
-      {{ validationMessage || 'Please provide a valid value.' }}
-    </div>
+    <template v-if="shouldRenderFeedback">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+        {{ validationMessage || 'Looks good!' }}
+      </div>
+      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+        {{ validationMessage || 'Please provide a valid value.' }}
+      </div>
+    </template>
   </div>
 </template>

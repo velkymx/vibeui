@@ -6,9 +6,10 @@ Collapsible accordion component for organizing content in a data-driven way.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `id` | `String` | Required | Unique identifier for the accordion |
+| `id` | `String` | `Auto-generated` | Unique identifier for the accordion |
 | `flush` | `Boolean` | `false` | Remove borders and rounded corners |
 | `items` | `AccordionItem[]` | Required | Array of accordion items |
+| `alwaysOpen` | `Boolean` | `false` | Don't collapse other items when one is opened |
 
 ### AccordionItem Interface
 
@@ -26,6 +27,10 @@ interface AccordionItem {
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `item-click` | `{ item, index }` | Emitted when an accordion item is clicked |
+| `show` | `id` | Emitted when an item starts showing |
+| `shown` | `id` | Emitted when an item is fully shown |
+| `hide` | `id` | Emitted when an item starts hiding |
+| `hidden` | `id` | Emitted when an item is fully hidden |
 
 ## Slots
 
@@ -40,7 +45,7 @@ interface AccordionItem {
 
 ```vue
 <template>
-  <VibeAccordion id="accordionExample" :items="accordionItems" />
+  <VibeAccordion :items="accordionItems" />
 </template>
 
 <script setup>
@@ -55,78 +60,26 @@ const accordionItems = [
     id: 'collapseTwo',
     title: 'Accordion Item #2',
     content: 'This is the second item\'s content.'
-  },
-  {
-    id: 'collapseThree',
-    title: 'Accordion Item #3',
-    content: 'This is the third item\'s content.'
   }
 ]
 </script>
 ```
 
-### Custom Title Rendering
+### Always Open
 
-Use the `title` scoped slot to customize how titles are rendered:
-
-```vue
-<template>
-  <VibeAccordion id="accordionCustom" :items="accordionItems">
-    <template #title="{ item, index }">
-      <VibeIcon icon="chevron-right" />
-      <strong>{{ item.title }}</strong>
-    </template>
-  </VibeAccordion>
-</template>
-```
-
-### Custom Content Rendering
-
-Use the `content` scoped slot for rich content:
+Items stay open when another item is opened:
 
 ```vue
 <template>
-  <VibeAccordion id="accordionRich" :items="accordionItems">
-    <template #content="{ item }">
-      <div class="p-3">
-        <h5>{{ item.title }}</h5>
-        <p>{{ item.content }}</p>
-        <VibeButton size="sm" variant="primary">Learn More</VibeButton>
-      </div>
-    </template>
-  </VibeAccordion>
+  <VibeAccordion always-open :items="accordionItems" />
 </template>
 ```
 
-### Flush Accordion
+## Important Notes
 
-Remove borders and rounded corners:
+**Automatic Initialization:** This component automatically initializes Bootstrap's Collapse functionality for each item when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
-```vue
-<template>
-  <VibeAccordion id="accordionFlush" flush :items="accordionItems" />
-</template>
-```
-
-### With Event Handling
-
-```vue
-<template>
-  <VibeAccordion
-    id="accordionEvents"
-    :items="accordionItems"
-    @item-click="handleItemClick"
-  />
-</template>
-
-<script setup>
-const handleItemClick = ({ item, index }) => {
-  console.log(`Clicked item ${index}: ${item.title}`)
-}
-</script>
-```
-
-**Note:** Requires Bootstrap JavaScript to be included in your project.
+**Reactivity:** The `show` property in the `AccordionItem` objects is watched. Changing it in your parent state will trigger the corresponding Bootstrap transition.
 
 ## Bootstrap CSS Classes
 

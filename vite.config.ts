@@ -33,6 +33,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    alias: {
+      'bootstrap': path.resolve(__dirname, 'tests/mocks/bootstrap.ts')
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

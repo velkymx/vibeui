@@ -23,6 +23,7 @@ interface NavItem {
   to?: string | object
   active?: boolean
   disabled?: boolean
+  children?: NavItem[] // Support for dropdowns
 }
 ```
 
@@ -30,7 +31,11 @@ interface NavItem {
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `item-click` | `{ item, index, event }` | Emitted when item is clicked (unless disabled) |
+| `item-click` | `{ item, index, event }` | Emitted when item is clicked |
+| `show` | `event` | Emitted when a tab starts showing |
+| `shown` | `event` | Emitted when a tab is fully shown |
+| `hide` | `event` | Emitted when a tab starts hiding |
+| `hidden` | `event` | Emitted when a tab is fully hidden |
 
 ## Slots
 
@@ -40,146 +45,42 @@ interface NavItem {
 
 ## Usage
 
-### Basic Navigation
+### Interactive Tabs
+
+When using the `tabs` or `pills` props, nav links with an `href` starting with `#` will automatically act as Bootstrap tab triggers.
 
 ```vue
 <template>
-  <VibeNav :items="navItems" />
+  <div>
+    <VibeNav tabs :items="navItems" />
+    
+    <VibeTabContent :panes="tabPanes" class="mt-3" />
+  </div>
 </template>
 
 <script setup>
 const navItems = [
-  { text: 'Active', href: '#', active: true },
-  { text: 'Link', href: '#' },
-  { text: 'Link', href: '#' },
-  { text: 'Disabled', disabled: true }
+  { text: 'Home', href: '#home', active: true },
+  { text: 'Profile', href: '#profile' }
+]
+
+const tabPanes = [
+  { id: 'home', content: 'Home content...', active: true },
+  { id: 'profile', content: 'Profile content...' }
 ]
 </script>
 ```
 
-### Tabs
+## Important Notes
 
-```vue
-<template>
-  <VibeNav tabs :items="tabItems" />
-</template>
+**Automatic Initialization:** When using `tabs` or `pills`, this component automatically initializes Bootstrap's Tab functionality for any items that target a local ID (e.g., `href="#my-tab"`).
 
-<script setup>
-const tabItems = [
-  { text: 'Tab 1', href: '#tab1', active: true },
-  { text: 'Tab 2', href: '#tab2' },
-  { text: 'Tab 3', href: '#tab3' }
-]
-</script>
-```
-
-### Pills
-
-```vue
-<template>
-  <VibeNav pills :items="pillItems" />
-</template>
-
-<script setup>
-const pillItems = [
-  { text: 'Pill 1', href: '#pill1', active: true },
-  { text: 'Pill 2', href: '#pill2' },
-  { text: 'Pill 3', href: '#pill3' }
-]
-</script>
-```
-
-### Vertical Navigation
-
-```vue
-<template>
-  <VibeNav vertical pills :items="navItems" />
-</template>
-```
-
-### Fill and Justified
-
-```vue
-<template>
-  <!-- Fill proportionally -->
-  <VibeNav fill :items="navItems" />
-
-  <!-- Fill equally -->
-  <VibeNav justified :items="navItems" />
-</template>
-```
-
-### With Router Links
-
-```vue
-<template>
-  <VibeNav tabs :items="routerItems" />
-</template>
-
-<script setup>
-const routerItems = [
-  { text: 'Home', to: { name: 'home' }, active: true },
-  { text: 'About', to: { name: 'about' } },
-  { text: 'Contact', to: { name: 'contact' } }
-]
-</script>
-```
-
-### Custom Item Rendering
-
-Use the `item` scoped slot for custom content:
-
-```vue
-<template>
-  <VibeNav tabs :items="navItems">
-    <template #item="{ item }">
-      <VibeIcon v-if="item.icon" :icon="item.icon" class="me-2" />
-      {{ item.text }}
-      <VibeBadge v-if="item.count" variant="danger" class="ms-2">
-        {{ item.count }}
-      </VibeBadge>
-    </template>
-  </VibeNav>
-</template>
-
-<script setup>
-const navItems = [
-  { text: 'Home', href: '#', icon: 'house-fill', active: true },
-  { text: 'Messages', href: '#', icon: 'envelope', count: 5 },
-  { text: 'Settings', href: '#', icon: 'gear' }
-]
-</script>
-```
-
-### With Event Handling
-
-```vue
-<template>
-  <VibeNav tabs :items="navItems" @item-click="handleClick" />
-</template>
-
-<script setup>
-const navItems = [
-  { text: 'Tab 1', href: '#tab1', active: true },
-  { text: 'Tab 2', href: '#tab2' },
-  { text: 'Tab 3', href: '#tab3' }
-]
-
-const handleClick = ({ item, index }) => {
-  console.log(`Clicked: ${item.text} at index ${index}`)
-}
-</script>
-```
+**State Management:** For complex tab state, combine `VibeNav` with `VibeTabContent` and manage the `active` state through your data.
 
 ## Bootstrap CSS Classes
 
 - `.nav`
 - `.nav-tabs`
 - `.nav-pills`
-- `.nav-fill`
-- `.nav-justified`
-- `.flex-column`
 - `.nav-item`
 - `.nav-link`
-- `.active`
-- `.disabled`
