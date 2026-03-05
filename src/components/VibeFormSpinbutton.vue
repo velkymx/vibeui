@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { PropType } from 'vue'
+import { computed, inject } from 'vue'
+import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
+import { useId } from '../composables/useId'
 
 const props = defineProps({
   modelValue: {
@@ -19,7 +20,7 @@ const props = defineProps({
       return true
     }
   },
-  id: { type: String, required: true },
+  id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
@@ -27,11 +28,11 @@ const props = defineProps({
   min: { type: Number, default: undefined },
   max: { type: Number, default: undefined },
   step: { type: Number, default: 1 },
-  size: { type: String as () => Size, default: undefined },
-  validationState: { type: String as () => ValidationState, default: null },
+  size: { type: String as PropType<Size>, default: undefined },
+  validationState: { type: String as PropType<ValidationState>, default: null },
   validationMessage: { type: String, default: undefined },
   validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
-  validateOn: { type: String as () => 'input' | 'blur' | 'change', default: 'blur' },
+  validateOn: { type: String as PropType<'input' | 'blur' | 'change'>, default: 'blur' },
   helpText: { type: String, default: undefined },
   wrap: { type: Boolean, default: false },
   vertical: { type: Boolean, default: false }
@@ -39,14 +40,24 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change', 'increment', 'decrement'])
 
+const formGroup = inject<{
+  id: ComputedRef<string>
+  consumeId: () => string | null
+  hasLabel: ComputedRef<boolean>
+  hasValidation: ComputedRef<boolean>
+  hasHelp: ComputedRef<boolean>
+} | null>('vibeFormGroup', null)
+
+const computedId = computed(() => props.id || formGroup?.consumeId() || useId('spinbutton'))
+const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
+const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
+const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
 
 const inputClass = computed(() => {
   const classes = ['form-control']
-
   if (props.size) classes.push(`form-control-${props.size}`)
   if (props.validationState === 'valid') classes.push('is-valid')
   if (props.validationState === 'invalid') classes.push('is-invalid')
-
   return classes.join(' ')
 })
 
@@ -74,36 +85,21 @@ const canIncrement = computed(() => {
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let newValue = target.value === '' ? 0 : Number(target.value)
-
-  if (props.min !== undefined && newValue < props.min) {
-    newValue = props.min
-  }
-  if (props.max !== undefined && newValue > props.max) {
-    newValue = props.max
-  }
-
+  if (props.min !== undefined && newValue < props.min) newValue = props.min
+  if (props.max !== undefined && newValue > props.max) newValue = props.max
   emit('update:modelValue', newValue)
   emit('input', event)
-
-  if (props.validateOn === 'input') {
-    emit('validate')
-  }
+  if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
   emit('change', event)
-
-  if (props.validateOn === 'change') {
-    emit('validate')
-  }
+  if (props.validateOn === 'change') emit('validate')
 }
 
 const handleBlur = (event: FocusEvent) => {
   emit('blur', event)
-
-  if (props.validateOn === 'blur') {
-    emit('validate')
-  }
+  if (props.validateOn === 'blur') emit('validate')
 }
 
 const handleFocus = (event: FocusEvent) => {
@@ -112,42 +108,30 @@ const handleFocus = (event: FocusEvent) => {
 
 const increment = () => {
   if (!canIncrement.value) return
-
   let newValue = props.modelValue + props.step
-
   if (props.max !== undefined && newValue > props.max) {
     newValue = props.wrap ? props.min ?? 0 : props.max
   }
-
   emit('update:modelValue', newValue)
   emit('increment', newValue)
-
-  if (props.validateOn === 'change') {
-    emit('validate')
-  }
+  if (props.validateOn === 'change') emit('validate')
 }
 
 const decrement = () => {
   if (!canDecrement.value) return
-
   let newValue = props.modelValue - props.step
-
   if (props.min !== undefined && newValue < props.min) {
     newValue = props.wrap ? props.max ?? 0 : props.min
   }
-
   emit('update:modelValue', newValue)
   emit('decrement', newValue)
-
-  if (props.validateOn === 'change') {
-    emit('validate')
-  }
+  if (props.validateOn === 'change') emit('validate')
 }
 </script>
 
 <template>
-  <div class="mb-3">
-    <label v-if="label" :for="id" class="form-label">
+  <div :class="{ 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }">
+    <label v-if="shouldRenderLabel" :for="computedId" class="form-label">
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
     </label>
@@ -162,7 +146,7 @@ const decrement = () => {
         <span aria-hidden="true">−</span>
       </button>
       <input
-        :id="id"
+        :id="computedId"
         type="number"
         :class="inputClass"
         :value="modelValue"
@@ -173,7 +157,7 @@ const decrement = () => {
         :max="max"
         :step="step"
         :aria-invalid="validationState === 'invalid'"
-        :aria-describedby="validationMessage || helpText ? `${id}-feedback` : undefined"
+        :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
         @input="handleInput"
         @change="handleChange"
         @blur="handleBlur"
@@ -189,15 +173,17 @@ const decrement = () => {
         <span aria-hidden="true">+</span>
       </button>
     </div>
-    <div v-if="helpText && !validationMessage" :id="`${id}-feedback`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
       {{ helpText }}
     </div>
-    <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
-      {{ validationMessage || 'Looks good!' }}
-    </div>
-    <div v-if="validationState === 'invalid'" :id="`${id}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
-      {{ validationMessage || 'Please provide a valid value.' }}
-    </div>
+    <template v-if="shouldRenderFeedback">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+        {{ validationMessage || 'Looks good!' }}
+      </div>
+      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+        {{ validationMessage || 'Please provide a valid value.' }}
+      </div>
+    </template>
   </div>
 </template>
 
@@ -205,7 +191,6 @@ const decrement = () => {
 .input-group-vertical {
   flex-direction: column;
 }
-
 .input-group-vertical > * {
   width: 100%;
 }

@@ -1,17 +1,19 @@
 # VibeToast
 
-Push notifications for lightweight alerts. Requires Bootstrap JS.
+Push notifications for lightweight alerts.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `id` | `String` | `undefined` | Unique identifier |
+| `id` | `String` | `Auto-generated` | Unique identifier |
 | `modelValue` | `Boolean` | `false` | Control visibility (v-model) |
 | `title` | `String` | `''` | Toast title |
 | `variant` | `Variant` | `undefined` | Color variant |
 | `autohide` | `Boolean` | `true` | Auto hide after delay |
 | `delay` | `Number` | `5000` | Delay in milliseconds |
+| `teleport` | `Boolean\|String` | `'body'` | Destination for Vue Teleport |
+| `placement` | `ToastPlacement` | `'top-end'` | Position of the toast |
 
 ## Events
 
@@ -32,13 +34,38 @@ Push notifications for lightweight alerts. Requires Bootstrap JS.
 
 ## Usage
 
-### Basic Toast
+### Reactive Usage (v-model)
 
 ```vue
 <template>
-  <VibeToast id="basicToast" title="Notification">
-    This is a toast message
-  </VibeToast>
+  <div>
+    <VibeButton @click="showToast = true">Show Toast</VibeButton>
+
+    <VibeToast v-model="showToast" title="Notification" variant="primary">
+      This toast is controlled via Vue state.
+    </VibeToast>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+const showToast = ref(false)
+</script>
+```
+
+### Placed Toasts
+
+```vue
+<template>
+  <div>
+    <VibeToast title="Success" variant="success" placement="bottom-end">
+      Operation completed successfully!
+    </VibeToast>
+
+    <VibeToast title="Center" variant="info" placement="middle-center">
+      I am in the middle of the screen
+    </VibeToast>
+  </div>
 </template>
 ```
 
@@ -47,16 +74,12 @@ Push notifications for lightweight alerts. Requires Bootstrap JS.
 ```vue
 <template>
   <div>
-    <VibeToast id="toast1" title="Success" variant="success">
+    <VibeToast title="Success" variant="success">
       Operation completed successfully!
     </VibeToast>
 
-    <VibeToast id="toast2" title="Warning" variant="warning">
+    <VibeToast title="Warning" variant="warning">
       Please review your changes
-    </VibeToast>
-
-    <VibeToast id="toast3" title="Error" variant="danger">
-      An error occurred
     </VibeToast>
   </div>
 </template>
@@ -66,56 +89,21 @@ Push notifications for lightweight alerts. Requires Bootstrap JS.
 
 ```vue
 <template>
-  <VibeToast id="delayToast" title="Quick Toast" :delay="2000">
+  <VibeToast title="Quick Toast" :delay="2000">
     This will auto-hide after 2 seconds
   </VibeToast>
 </template>
 ```
 
-### No Auto Hide
+## Important Notes
 
-```vue
-<template>
-  <VibeToast id="persistentToast" title="Important" :autohide="false">
-    This toast won't auto-hide
-  </VibeToast>
-</template>
-```
+**Automatic Initialization:** This component automatically initializes Bootstrap's Toast functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
-### Toast Container Example
+**Automatic Container:** Unlike raw Bootstrap, VibeToast automatically manages its own `toast-container` and positioning based on the `placement` prop.
 
-```vue
-<script setup>
-import { ref } from 'vue'
+**Teleportation:** By default, this component teleports to the `<body>` to ensure it is always visible on top of other elements.
 
-const showToast = ref(false)
-
-const triggerToast = () => {
-  showToast.value = true
-  setTimeout(() => showToast.value = false, 3000)
-}
-</script>
-
-<template>
-  <div>
-    <VibeButton @click="triggerToast">Show Toast</VibeButton>
-
-    <!-- Toast Container -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-      <VibeToast
-        v-if="showToast"
-        id="notificationToast"
-        title="Notification"
-        variant="primary"
-      >
-        Toast message content
-      </VibeToast>
-    </div>
-  </div>
-</template>
-```
-
-**Note:** Requires Bootstrap JavaScript to be included in your project.
+**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
 ## Bootstrap CSS Classes
 
@@ -123,3 +111,4 @@ const triggerToast = () => {
 - `.toast-header`
 - `.toast-body`
 - `.text-bg-{variant}`
+- `.toast-container`

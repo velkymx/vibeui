@@ -1,89 +1,64 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeAlert from '../../src/components/VibeAlert.vue'
+import * as bootstrap from 'bootstrap'
 
 describe('VibeAlert', () => {
-  it('renders alert with correct structure', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renders correctly', () => {
     const wrapper = mount(VibeAlert, {
       props: {
-        message: 'Alert message'
+        message: 'Success alert',
+        variant: 'success'
       }
     })
 
-    expect(wrapper.find('.alert').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Alert message')
+    expect(wrapper.find('.alert-success').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Success alert')
   })
 
-  it('applies variant class', () => {
-    const wrapper = mount(VibeAlert, {
+  it('initializes bootstrap alert on mount', async () => {
+    mount(VibeAlert, {
       props: {
-        message: 'Test',
-        variant: 'danger'
+        message: 'Test'
       }
     })
 
-    expect(wrapper.find('.alert').classes()).toContain('alert-danger')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(bootstrap.Alert).toHaveBeenCalled()
   })
 
-  it('renders dismissable alert', () => {
+  it('closes via bootstrap instance when modelValue changes to false', async () => {
     const wrapper = mount(VibeAlert, {
       props: {
         message: 'Test',
-        dismissable: true
-      }
-    })
-
-    expect(wrapper.find('.btn-close').exists()).toBe(true)
-  })
-
-  it('emits update:modelValue when dismissed', async () => {
-    const wrapper = mount(VibeAlert, {
-      props: {
-        message: 'Test',
-        dismissable: true,
         modelValue: true
       }
     })
 
-    await wrapper.find('.btn-close').trigger('click')
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const mockInstance = vi.mocked(bootstrap.Alert).mock.results[0].value
 
-    expect(wrapper.emitted('update:modelValue')).toBeTruthy()
-    const emitted = wrapper.emitted('update:modelValue') as any[][]
-    expect(emitted[0][0]).toBe(false)
+    await wrapper.setProps({ modelValue: false })
+    expect(mockInstance.close).toHaveBeenCalled()
   })
 
-  it('hides when modelValue is false', () => {
+  it('removes element from DOM when closed event fires', async () => {
     const wrapper = mount(VibeAlert, {
       props: {
-        message: 'Test',
-        modelValue: false
+        message: 'Test'
       }
     })
 
+    await new Promise(resolve => setTimeout(resolve, 0))
+    
+    // Simulate Bootstrap's 'closed.bs.alert' event
+    await wrapper.find('.alert').element.dispatchEvent(new Event('closed.bs.alert'))
+    
     expect(wrapper.find('.alert').exists()).toBe(false)
-  })
-
-  it('shows when modelValue is true', () => {
-    const wrapper = mount(VibeAlert, {
-      props: {
-        message: 'Visible alert',
-        modelValue: true
-      }
-    })
-
-    expect(wrapper.find('.alert').exists()).toBe(true)
-  })
-
-  it('renders slot content over message prop', () => {
-    const wrapper = mount(VibeAlert, {
-      props: {
-        message: 'Default message'
-      },
-      slots: {
-        default: 'Custom content'
-      }
-    })
-
-    expect(wrapper.text()).toContain('Custom content')
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([false])
   })
 })

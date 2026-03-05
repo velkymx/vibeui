@@ -1,22 +1,24 @@
 # VibeAlert
 
-Alert messages with Bootstrap 5.3 styling, supporting variants, dismissible functionality, and v-model binding.
+Alert messages with Bootstrap styling, supporting variants, dismissible functionality, and v-model binding.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `variant` | `Variant` | `'primary'` | Color variant: `'primary'`, `'secondary'`, `'success'`, `'danger'`, `'warning'`, `'info'`, `'light'`, `'dark'` |
+| `variant` | `Variant` | `'primary'` | Color variant |
 | `modelValue` | `Boolean` | `true` | Controls visibility (v-model support) |
 | `dismissable` | `Boolean` | `false` | Shows close button when true |
 | `message` | `String` | Required | Alert message text |
+| `fade` | `Boolean` | `true` | Use fade animation on dismissal |
 
 ## Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `update:modelValue` | `Boolean` | Emitted when alert is dismissed |
-| `component-error` | `Object` | Emitted when an error occurs |
+| `close` | - | Emitted when dismissal starts |
+| `closed` | - | Emitted when dismissal completes |
 
 ## Slots
 
@@ -39,7 +41,6 @@ Alert messages with Bootstrap 5.3 styling, supporting variants, dismissible func
 ```vue
 <script setup>
 import { ref } from 'vue'
-
 const showAlert = ref(true)
 </script>
 
@@ -53,36 +54,15 @@ const showAlert = ref(true)
 </template>
 ```
 
-### Using Slots
+## Important Notes
 
-```vue
-<template>
-  <VibeAlert variant="info" dismissable>
-    <strong>Hey!</strong> This is custom content.
-  </VibeAlert>
-</template>
-```
+**Automatic Initialization:** This component automatically initializes Bootstrap's Alert functionality when it is mounted, ensuring smooth dismissal animations.
 
-### All Variants
-
-```vue
-<template>
-  <div>
-    <VibeAlert variant="primary" message="Primary alert" />
-    <VibeAlert variant="secondary" message="Secondary alert" />
-    <VibeAlert variant="success" message="Success alert" />
-    <VibeAlert variant="danger" message="Danger alert" />
-    <VibeAlert variant="warning" message="Warning alert" />
-    <VibeAlert variant="info" message="Info alert" />
-    <VibeAlert variant="light" message="Light alert" />
-    <VibeAlert variant="dark" message="Dark alert" />
-  </div>
-</template>
-```
+**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
 ## Bootstrap CSS Classes
 
-This component uses the following Bootstrap classes:
 - `.alert`
 - `.alert-{variant}`
-- `.btn-close`
+- `.alert-dismissible`
+- `.fade`, `.show`

@@ -333,7 +333,7 @@ const getThStyle = (column: DataTableColumn) => {
             </td>
           </tr>
           <tr v-if="paginatedItems.length === 0 && showEmpty">
-            <td :colspan="columns.length" class="text-center">
+            <td :colspan="columns?.length || 1" class="text-center">
               {{ emptyText }}
             </td>
           </tr>

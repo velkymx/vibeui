@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Size } from '../types'
+import { useId } from '../composables/useId'
 
 interface BootstrapModal {
   show: () => void
   hide: () => void
   dispose: () => void
+  handleUpdate: () => void
 }
 
 const props = defineProps({
-  id: { type: String, required: true },
+  id: { type: String, default: () => useId('modal') },
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
   size: { type: String as () => Size | 'xl', default: undefined },
@@ -18,7 +20,8 @@ const props = defineProps({
   fullscreen: { type: [Boolean, String], default: false },
   staticBackdrop: { type: Boolean, default: false },
   hideHeader: { type: Boolean, default: false },
-  hideFooter: { type: Boolean, default: false }
+  hideFooter: { type: Boolean, default: false },
+  teleport: { type: [String, Boolean], default: 'body' }
 })
 
 const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
@@ -32,17 +35,14 @@ const dialogClass = computed(() => {
   if (props.size) classes.push(`modal-${props.size}`)
   if (props.centered) classes.push('modal-dialog-centered')
   if (props.scrollable) classes.push('modal-dialog-scrollable')
-
   if (props.fullscreen === true) {
     classes.push('modal-fullscreen')
   } else if (typeof props.fullscreen === 'string') {
     classes.push(`modal-fullscreen-${props.fullscreen}-down`)
   }
-
   return classes.join(' ')
 })
 
-// Event handlers for Bootstrap modal events
 const onShow = () => {
   isVisible.value = true
   emit('show')
@@ -63,34 +63,42 @@ const onHidden = () => {
   emit('update:modelValue', false)
 }
 
-onMounted(async () => {
+const initModal = async () => {
   if (!modalRef.value) return
 
+  // Cleanup existing instance
+  if (bsModal.value) {
+    bsModal.value.dispose()
+  }
+
   try {
-    // Dynamically import Bootstrap's Modal
     const bootstrap = await import('bootstrap')
     const Modal = bootstrap.Modal
 
     bsModal.value = new Modal(modalRef.value, {
       backdrop: props.staticBackdrop ? 'static' : true,
-      keyboard: !props.staticBackdrop
+      keyboard: !props.staticBackdrop,
+      focus: true
     }) as BootstrapModal
 
-    // Add event listeners
     modalRef.value.addEventListener('show.bs.modal', onShow)
     modalRef.value.addEventListener('shown.bs.modal', onShown)
     modalRef.value.addEventListener('hide.bs.modal', onHide)
     modalRef.value.addEventListener('hidden.bs.modal', onHidden)
 
-    // Show modal if modelValue is initially true
     if (props.modelValue) {
       bsModal.value.show()
     }
-  } catch {
-    // Bootstrap JS not available, fall back to data attributes
-    emit('component-error', 'Bootstrap JS not loaded. Modal will use data attributes only.')
+  } catch (error) {
+    emit('component-error', {
+      message: 'Bootstrap JS not loaded. Modal will use data attributes only.',
+      componentName: 'VibeModal',
+      originalError: error
+    })
   }
-})
+}
+
+onMounted(initModal)
 
 onBeforeUnmount(() => {
   if (modalRef.value) {
@@ -101,53 +109,64 @@ onBeforeUnmount(() => {
   }
 
   if (bsModal.value) {
+    if (isVisible.value) {
+      bsModal.value.hide()
+    }
     bsModal.value.dispose()
     bsModal.value = null
   }
 })
 
-// Watch modelValue to show/hide modal programmatically
 watch(() => props.modelValue, (newValue) => {
   if (!bsModal.value) return
-
   if (newValue && !isVisible.value) {
     bsModal.value.show()
   } else if (!newValue && isVisible.value) {
     bsModal.value.hide()
   }
 })
+
+// Re-init when config changes
+watch(() => props.staticBackdrop, initModal)
+
+const show = () => bsModal.value?.show()
+const hide = () => bsModal.value?.hide()
+const handleUpdate = () => bsModal.value?.handleUpdate()
+
+defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
 </script>
 
 <template>
-  <div
-    ref="modalRef"
-    :id="id"
-    class="modal fade"
-    :class="{ show: isVisible }"
-    :style="isVisible ? { display: 'block' } : {}"
-    tabindex="-1"
-    :aria-labelledby="`${id}-label`"
-    :aria-hidden="!isVisible"
-    :data-bs-backdrop="staticBackdrop ? 'static' : undefined"
-    :data-bs-keyboard="!staticBackdrop"
-  >
-    <div :class="dialogClass">
-      <div class="modal-content">
-        <div v-if="!hideHeader" class="modal-header">
-          <h5 :id="`${id}-label`" class="modal-title">
-            <slot name="header">{{ title }}</slot>
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <slot />
-        </div>
-        <div v-if="!hideFooter" class="modal-footer">
-          <slot name="footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          </slot>
+  <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
+    <div
+      ref="modalRef"
+      :id="id"
+      class="modal fade"
+      :class="{ show: isVisible }"
+      tabindex="-1"
+      :aria-labelledby="`${id}-label`"
+      :aria-hidden="!isVisible"
+      :data-bs-backdrop="staticBackdrop ? 'static' : undefined"
+      :data-bs-keyboard="!staticBackdrop"
+    >
+      <div :class="dialogClass">
+        <div class="modal-content">
+          <div v-if="!hideHeader" class="modal-header">
+            <h5 :id="`${id}-label`" class="modal-title">
+              <slot name="header">{{ title }}</slot>
+            </h5>
+            <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
+          </div>
+          <div class="modal-body">
+            <slot />
+          </div>
+          <div v-if="!hideFooter" class="modal-footer">
+            <slot name="footer">
+              <button type="button" class="btn btn-secondary" @click="hide">Close</button>
+            </slot>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>

@@ -1,12 +1,12 @@
 # VibeCollapse
 
-Toggle visibility of content.
+Toggle visibility of content with smooth transitions.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `id` | `String` | Required | Unique identifier |
+| `id` | `String` | `Auto-generated` | Unique identifier |
 | `modelValue` | `Boolean` | `false` | Control visibility (v-model) |
 | `tag` | `String` | `'div'` | HTML tag to render |
 | `horizontal` | `Boolean` | `false` | Horizontal collapse |
@@ -30,9 +30,32 @@ Toggle visibility of content.
 
 ## Usage
 
+### Reactive Usage (v-model)
+
+```vue
+<template>
+  <div>
+    <VibeButton variant="primary" @click="show = !show">
+      Toggle Collapse
+    </VibeButton>
+
+    <VibeCollapse v-model="show">
+      <div class="card card-body mt-2">
+        This content is controlled via Vue state with smooth animations.
+      </div>
+    </VibeCollapse>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+const show = ref(false)
+</script>
+```
+
 ### Inside a Navbar
 
-When used inside a `VibeNavbar`, add `is-nav` to get the `navbar-collapse` class and Vue-managed toggling via `VibeNavbarToggle`. No Bootstrap JS is needed.
+When used inside a `VibeNavbar`, add `is-nav` to get the `navbar-collapse` class. `VibeNavbarToggle` will automatically synchronize with this component.
 
 ```vue
 <template>
@@ -46,55 +69,6 @@ When used inside a `VibeNavbar`, add `is-nav` to get the `navbar-collapse` class
 </template>
 ```
 
-### Standalone with v-model
-
-Outside of a navbar, use `v-model` to control visibility:
-
-```vue
-<template>
-  <div>
-    <VibeButton variant="primary" @click="show = !show">
-      Toggle Collapse
-    </VibeButton>
-
-    <VibeCollapse id="collapseExample" v-model="show">
-      <div class="card card-body mt-2">
-        This content can be collapsed!
-      </div>
-    </VibeCollapse>
-  </div>
-</template>
-
-<script setup>
-import { ref } from 'vue'
-const show = ref(false)
-</script>
-```
-
-### Standalone with Bootstrap JS
-
-You can also use Bootstrap JS `data-bs-toggle` on a separate button to control a standalone collapse:
-
-```vue
-<template>
-  <div>
-    <VibeButton
-      variant="primary"
-      data-bs-toggle="collapse"
-      data-bs-target="#collapseExample"
-    >
-      Toggle Collapse
-    </VibeButton>
-
-    <VibeCollapse id="collapseExample">
-      <div class="card card-body mt-2">
-        This content can be collapsed!
-      </div>
-    </VibeCollapse>
-  </div>
-</template>
-```
-
 ### Horizontal Collapse
 
 ```vue
@@ -105,7 +79,7 @@ You can also use Bootstrap JS `data-bs-toggle` on a separate button to control a
     </VibeButton>
 
     <div style="min-height: 120px">
-      <VibeCollapse id="collapseWidthExample" v-model="show" horizontal>
+      <VibeCollapse v-model="show" horizontal>
         <div class="card card-body" style="width: 300px">
           This is horizontal collapse content!
         </div>
@@ -113,18 +87,15 @@ You can also use Bootstrap JS `data-bs-toggle` on a separate button to control a
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-const show = ref(false)
-</script>
 ```
 
 ## Important Notes
 
-- When used inside `VibeNavbar`, always add `is-nav`. This adds the `navbar-collapse` CSS class which Bootstrap needs for responsive behavior (`display: flex` above the navbar's expand breakpoint).
-- Inside a `VibeNavbar`, visibility is managed through Vue's provide/inject — `VibeNavbarToggle` and `VibeCollapse` stay in sync without Bootstrap JS.
-- Standalone usage supports both `v-model` and Bootstrap JS `data-bs-toggle` approaches.
+**Automatic Initialization:** This component automatically initializes Bootstrap's Collapse functionality when it is mounted, ensuring that smooth sliding transitions are used.
+
+**State Synchronization:** Refactored to ensure that clicking a toggle (like `VibeNavbarToggle`) updates both Vue's internal state and Bootstrap's JavaScript instance simultaneously.
+
+**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
 ## Bootstrap CSS Classes
 

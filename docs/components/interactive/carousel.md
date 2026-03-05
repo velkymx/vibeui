@@ -1,12 +1,13 @@
 # VibeCarousel
 
-Data-driven slideshow component for cycling through images or content. Requires Bootstrap JS.
+Data-driven slideshow component for cycling through images or content.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `id` | `String` | Required | Unique identifier |
+| `id` | `String` | `Auto-generated` | Unique identifier |
+| `modelValue` | `Number` | `0` | Active slide index (v-model) |
 | `controls` | `Boolean` | `true` | Show prev/next controls |
 | `indicators` | `Boolean` | `true` | Show slide indicators |
 | `ride` | `Boolean\|String` | `false` | Auto-play: `false`, `true`, or `'carousel'` |
@@ -36,6 +37,7 @@ interface CarouselItem {
 
 | Event | Payload | Description |
 |-------|---------|-------------|
+| `update:modelValue` | `Number` | Emitted when the active slide changes |
 | `slide` | - | Emitted when slide transition starts |
 | `slid` | - | Emitted when slide transition completes |
 
@@ -47,201 +49,40 @@ interface CarouselItem {
 
 ## Usage
 
+### Reactive Usage (v-model)
+
+```vue
+<template>
+  <div>
+    <VibeCarousel v-model="currentSlide" :items="carouselItems" />
+    
+    <div class="mt-3">
+      <VibeButton @click="currentSlide = 0">Go to Slide 1</VibeButton>
+      <VibeButton @click="currentSlide = 1">Go to Slide 2</VibeButton>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+const currentSlide = ref(0)
+const carouselItems = [...]
+</script>
+```
+
 ### Basic Carousel
 
 ```vue
 <template>
-  <VibeCarousel id="carousel1" :items="carouselItems" />
-</template>
-
-<script setup>
-const carouselItems = [
-  {
-    src: '/images/slide1.jpg',
-    alt: 'First slide',
-    active: true
-  },
-  {
-    src: '/images/slide2.jpg',
-    alt: 'Second slide'
-  },
-  {
-    src: '/images/slide3.jpg',
-    alt: 'Third slide'
-  }
-]
-</script>
-```
-
-### With Captions
-
-```vue
-<template>
-  <VibeCarousel id="carousel-captions" :items="carouselItems" />
-</template>
-
-<script setup>
-const carouselItems = [
-  {
-    src: '/images/slide1.jpg',
-    alt: 'First slide',
-    caption: 'First Slide',
-    captionText: 'Description for the first slide',
-    active: true
-  },
-  {
-    src: '/images/slide2.jpg',
-    alt: 'Second slide',
-    caption: 'Second Slide',
-    captionText: 'Description for the second slide'
-  },
-  {
-    src: '/images/slide3.jpg',
-    alt: 'Third slide',
-    caption: 'Third Slide',
-    captionText: 'Description for the third slide'
-  }
-]
-</script>
-```
-
-### Fade Transition
-
-```vue
-<template>
-  <VibeCarousel id="carousel-fade" fade :items="carouselItems" />
+  <VibeCarousel :items="carouselItems" />
 </template>
 ```
 
-### Auto-playing
+## Important Notes
 
-```vue
-<template>
-  <VibeCarousel
-    id="carousel-auto"
-    ride="carousel"
-    :interval="3000"
-    :items="carouselItems"
-  />
-</template>
-```
+**Automatic Initialization:** This component automatically initializes Bootstrap's Carousel functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
-### Without Controls or Indicators
-
-```vue
-<template>
-  <VibeCarousel
-    id="carousel-minimal"
-    :controls="false"
-    :indicators="false"
-    :items="carouselItems"
-  />
-</template>
-```
-
-### Dark Variant
-
-For use on light backgrounds:
-
-```vue
-<template>
-  <VibeCarousel id="carousel-dark" dark :items="carouselItems" />
-</template>
-```
-
-### Custom Captions
-
-Use the `caption` scoped slot for rich captions:
-
-```vue
-<template>
-  <VibeCarousel id="carousel-custom" :items="carouselItems">
-    <template #caption="{ item, index }">
-      <div class="p-3 bg-dark bg-opacity-75 rounded">
-        <h3>{{ item.caption }}</h3>
-        <p class="mb-0">{{ item.captionText }}</p>
-        <VibeButton size="sm" variant="primary" class="mt-2">
-          Learn More
-        </VibeButton>
-      </div>
-    </template>
-  </VibeCarousel>
-</template>
-```
-
-### Different Intervals Per Slide
-
-```vue
-<template>
-  <VibeCarousel id="carousel-intervals" ride="carousel" :items="carouselItems" />
-</template>
-
-<script setup>
-const carouselItems = [
-  {
-    src: '/images/slide1.jpg',
-    alt: 'Slow slide',
-    interval: 10000, // 10 seconds
-    active: true
-  },
-  {
-    src: '/images/slide2.jpg',
-    alt: 'Fast slide',
-    interval: 2000 // 2 seconds
-  },
-  {
-    src: '/images/slide3.jpg',
-    alt: 'Default speed'
-    // Uses carousel's default interval
-  }
-]
-</script>
-```
-
-### With Event Handling
-
-```vue
-<template>
-  <VibeCarousel
-    id="carousel-events"
-    :items="carouselItems"
-    @slide="handleSlide"
-    @slid="handleSlid"
-  />
-</template>
-
-<script setup>
-const carouselItems = [
-  { src: '/images/slide1.jpg', alt: 'Slide 1', active: true },
-  { src: '/images/slide2.jpg', alt: 'Slide 2' },
-  { src: '/images/slide3.jpg', alt: 'Slide 3' }
-]
-
-const handleSlide = () => {
-  console.log('Slide transition started')
-}
-
-const handleSlid = () => {
-  console.log('Slide transition completed')
-}
-</script>
-```
-
-### Responsive Example
-
-```vue
-<template>
-  <VibeContainer>
-    <VibeRow>
-      <VibeCol :cols="12" :lg="8" class="mx-auto">
-        <VibeCarousel id="carousel-responsive" :items="carouselItems" />
-      </VibeCol>
-    </VibeRow>
-  </VibeContainer>
-</template>
-```
-
-**Note:** Requires Bootstrap JavaScript to be included in your project.
+**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
 ## Bootstrap CSS Classes
 

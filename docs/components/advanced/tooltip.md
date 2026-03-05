@@ -75,12 +75,14 @@ Tooltips for displaying contextual information. Requires Bootstrap JS and initia
 
 ## Important Notes
 
-**Bootstrap JS Required:** This component requires Bootstrap's JavaScript to be included in your project and tooltips must be initialized:
+**Automatic Initialization:** This component automatically initializes Bootstrap's Tooltip functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
+
+**Manual Initialization (Optional):** If you are not using the automatic initialization or need to initialize tooltips on non-VibeUI elements:
 
 ```javascript
 // Initialize all tooltips
 import { Tooltip } from 'bootstrap'
-
+...
 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
 const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl))
 ```

@@ -1,17 +1,18 @@
 # VibeOffcanvas
 
-Hidden sidebar for navigation or additional content. Requires Bootstrap JS.
+Hidden sidebar for navigation or additional content.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `id` | `String` | Required | Unique identifier |
+| `id` | `String` | `Auto-generated` | Unique identifier |
 | `modelValue` | `Boolean` | `false` | Control visibility (v-model) |
 | `title` | `String` | `''` | Offcanvas title |
 | `placement` | `OffcanvasPlacement` | `'start'` | Placement: `'start'`, `'end'`, `'top'`, `'bottom'` |
 | `backdrop` | `Boolean\|String` | `true` | Backdrop: `true`, `false`, or `'static'` |
 | `scroll` | `Boolean` | `false` | Allow body scrolling |
+| `teleport` | `Boolean\|String` | `'body'` | Destination for Vue Teleport |
 
 ## Events
 
@@ -32,84 +33,44 @@ Hidden sidebar for navigation or additional content. Requires Bootstrap JS.
 
 ## Usage
 
-### Basic Offcanvas
+### Reactive Usage (v-model)
 
 ```vue
 <template>
   <div>
-    <VibeButton
-      variant="primary"
-      data-bs-toggle="offcanvas"
-      data-bs-target="#offcanvasExample"
-    >
+    <VibeButton variant="primary" @click="showOffcanvas = true">
       Open Offcanvas
     </VibeButton>
 
-    <VibeOffcanvas id="offcanvasExample" title="Offcanvas">
-      <p>Some text as placeholder content.</p>
+    <VibeOffcanvas v-model="showOffcanvas" title="Reactive Offcanvas">
+      This offcanvas is controlled via Vue state.
     </VibeOffcanvas>
   </div>
 </template>
+
+<script setup>
+import { ref } from 'vue'
+const showOffcanvas = ref(false)
+</script>
 ```
 
 ### Placement Options
 
 ```vue
 <template>
-  <div>
-    <!-- Start (default - left) -->
-    <VibeOffcanvas id="offcanvasStart" title="Left Side" placement="start">
-      Content on the left
-    </VibeOffcanvas>
-
-    <!-- End (right) -->
-    <VibeOffcanvas id="offcanvasEnd" title="Right Side" placement="end">
-      Content on the right
-    </VibeOffcanvas>
-
-    <!-- Top -->
-    <VibeOffcanvas id="offcanvasTop" title="Top" placement="top">
-      Content on top
-    </VibeOffcanvas>
-
-    <!-- Bottom -->
-    <VibeOffcanvas id="offcanvasBottom" title="Bottom" placement="bottom">
-      Content on bottom
-    </VibeOffcanvas>
-  </div>
-</template>
-```
-
-### Allow Body Scrolling
-
-```vue
-<template>
-  <VibeOffcanvas
-    id="offcanvasScroll"
-    title="Scrollable"
-    scroll
-    :backdrop="false"
-  >
-    Content with body scroll enabled
+  <VibeOffcanvas title="Right Side" placement="end">
+    Content on the right
   </VibeOffcanvas>
 </template>
 ```
 
-### Static Backdrop
+## Important Notes
 
-```vue
-<template>
-  <VibeOffcanvas
-    id="offcanvasStatic"
-    title="Static Backdrop"
-    backdrop="static"
-  >
-    Click outside won't close this offcanvas
-  </VibeOffcanvas>
-</template>
-```
+**Automatic Initialization:** This component automatically initializes Bootstrap's Offcanvas functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
-**Note:** Requires Bootstrap JavaScript to be included in your project.
+**Teleportation:** By default, this component teleports its DOM elements to the `<body>` to avoid stacking context issues. You can customize this with the `teleport` prop.
+
+**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
 ## Bootstrap CSS Classes
 
