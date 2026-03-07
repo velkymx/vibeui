@@ -4,6 +4,7 @@ export * from './components'
 export * from './types'
 export * from './composables/useFormValidation'
 export { useId } from './composables/useId'
+export { useColorMode } from './composables/useColorMode'
 
 // Export the plugin as default for app.use(VibeUI)
 export default VibeUIPlugin

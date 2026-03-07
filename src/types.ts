@@ -1,5 +1,7 @@
 // Shared TypeScript types for VibeUI components
 
+export type ColorMode = 'light' | 'dark' | 'auto'
+
 export type Variant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
 
 export type Size = 'sm' | 'lg'
