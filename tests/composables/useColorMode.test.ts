@@ -3,7 +3,6 @@ import { useColorMode, _resetColorMode } from '../../src/composables/useColorMod
 
 describe('useColorMode', () => {
   beforeEach(() => {
-    localStorage.clear()
     _resetColorMode()
   })
 
@@ -12,6 +11,13 @@ describe('useColorMode', () => {
   it('defaults to auto mode', () => {
     const { colorMode } = useColorMode()
     expect(colorMode.value).toBe('auto')
+  })
+
+  it('_resetColorMode syncs data-bs-theme to auto', () => {
+    const { setColorMode } = useColorMode()
+    setColorMode('dark')
+    _resetColorMode()
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
   })
 
   // --- setColorMode ---
@@ -66,6 +72,15 @@ describe('useColorMode', () => {
     expect(colorMode.value).toBe('light')
   })
 
+  it('falls back to auto if colorMode ref is somehow corrupted', () => {
+    const { colorMode, toggleColorMode } = useColorMode()
+    // @ts-expect-error simulating corrupted state
+    colorMode.value = 'corrupted'
+    toggleColorMode()
+    expect(colorMode.value).toBe('auto')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
+  })
+
   // --- initColorMode ---
 
   it('restores saved preference from localStorage', () => {
@@ -98,13 +113,48 @@ describe('useColorMode', () => {
     expect(colorMode.value).toBe('dark')
   })
 
+  // --- clearColorMode ---
+
+  it('resets mode to auto and removes localStorage entry', () => {
+    const { colorMode, setColorMode, clearColorMode } = useColorMode()
+    setColorMode('dark')
+    clearColorMode()
+    expect(colorMode.value).toBe('auto')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
+    expect(localStorage.getItem('vibe-color-mode')).toBeNull()
+  })
+
+  it('allows initColorMode to run again after clearColorMode', () => {
+    const { colorMode, initColorMode, clearColorMode } = useColorMode()
+    initColorMode()
+    clearColorMode()
+    localStorage.setItem('vibe-color-mode', 'light')
+    initColorMode()
+    expect(colorMode.value).toBe('light')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('light')
+  })
+
+  it('still resets ref and DOM even if localStorage.removeItem throws', () => {
+    const { colorMode, setColorMode, clearColorMode } = useColorMode()
+    setColorMode('dark')
+    vi.spyOn(localStorage, 'removeItem').mockImplementationOnce(() => {
+      throw new Error('storage error')
+    })
+    expect(() => clearColorMode()).not.toThrow()
+    expect(colorMode.value).toBe('auto')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
+  })
+
   // --- SSR guard ---
 
-  it('is a no-op when document is undefined', () => {
+  it('does not write DOM or localStorage when both are undefined', () => {
     vi.stubGlobal('document', undefined)
+    vi.stubGlobal('localStorage', undefined)
     try {
-      const { setColorMode } = useColorMode()
+      const { colorMode, setColorMode } = useColorMode()
       expect(() => setColorMode('dark')).not.toThrow()
+      // Reactive ref still updates — SSR can read current mode
+      expect(colorMode.value).toBe('dark')
     } finally {
       vi.unstubAllGlobals()
     }

@@ -25,16 +25,25 @@ function applyColorMode(mode: ColorMode) {
   document.documentElement.setAttribute('data-bs-theme', mode)
 }
 
+/** Sets the reactive ref and applies data-bs-theme to the DOM. Does not touch storage. */
+function applyAndUpdate(mode: ColorMode) {
+  colorMode.value = mode
+  applyColorMode(mode)
+}
+
+// Sync DOM with the initial default immediately on module load.
+// Prevents a flash where colorMode.value says 'auto' but <html> has no data-bs-theme.
+applyAndUpdate('auto')
+
 export function useColorMode() {
   function setColorMode(mode: ColorMode) {
     if (!(mode in NEXT_MODE)) return
-    colorMode.value = mode
     try {
       localStorage.setItem(STORAGE_KEY, mode)
     } catch {
       // localStorage may be unavailable (e.g. SSR or private browsing)
     }
-    applyColorMode(mode)
+    applyAndUpdate(mode)
   }
 
   function initColorMode() {
@@ -42,33 +51,50 @@ export function useColorMode() {
     let stored: ColorMode = 'auto'
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw === 'light' || raw === 'dark' || raw === 'auto') {
-        stored = raw
+      if (raw !== null && raw in NEXT_MODE) {
+        stored = raw as ColorMode
       }
     } catch {
       // ignore
     }
-    setColorMode(stored)
+    applyAndUpdate(stored)
     initialized = true
   }
 
+  function clearColorMode() {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // ignore — ref and DOM still reset even if storage removal fails
+    }
+    initialized = false
+    applyAndUpdate('auto')
+  }
+
   function toggleColorMode() {
-    setColorMode(NEXT_MODE[colorMode.value])
+    setColorMode(NEXT_MODE[colorMode.value] ?? 'auto')
   }
 
   return {
     colorMode,
     setColorMode,
     toggleColorMode,
-    initColorMode
+    initColorMode,
+    clearColorMode
   }
 }
 
-/** For testing only — not re-exported from the package index. */
+/**
+ * For testing only — not re-exported from the package index.
+ * Resets singleton state and removes the storage key.
+ * Must be called in beforeEach to guarantee clean state between tests.
+ */
 export function _resetColorMode() {
-  colorMode.value = 'auto'
-  initialized = false
-  if (typeof document !== 'undefined') {
-    document.documentElement.removeAttribute('data-bs-theme')
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore in SSR / stubbed environments
   }
+  initialized = false
+  applyAndUpdate('auto')
 }
