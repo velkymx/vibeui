@@ -17,8 +17,12 @@ npm install @velkymx/vibeui bootstrap
 ```javascript
 import { createApp } from 'vue'
 import App from './App.vue'
-import VibeUI from '@velkymx/vibeui'
+import VibeUI, { useColorMode } from '@velkymx/vibeui'
 import 'bootstrap/dist/css/bootstrap.min.css'
+
+// Restore saved color mode preference before mounting
+const { initColorMode } = useColorMode()
+initColorMode()
 
 createApp(App).use(VibeUI).mount('#app')
 ```
@@ -66,6 +70,12 @@ The library handles:
 - [VibeFormInput](./forms/form-input.md)
 - [VibeFormSelect](./forms/form-select.md)
 - [VibeFormWysiwyg](./forms/form-wysiwyg.md)
+
+## Composables
+
+Standalone utilities that can be used independently of any component.
+
+- [useColorMode](./composables/color-mode.md) - Manage Bootstrap light/dark/auto color modes
 
 ## Design Philosophy
 
