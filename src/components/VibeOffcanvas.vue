@@ -2,6 +2,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { OffcanvasPlacement } from '../types'
 import { useId } from '../composables/useId'
+import { useBackButton } from '../composables/useBackButton'
 
 interface BootstrapOffcanvas {
   show: () => void
@@ -114,6 +115,11 @@ watch([() => props.placement, () => props.backdrop, () => props.scroll], initOff
 
 const show = () => bsOffcanvas.value?.show()
 const hide = () => bsOffcanvas.value?.hide()
+
+// Support Android back button in hybrid mobile apps
+useBackButton(() => {
+  if (isVisible.value) hide()
+})
 
 defineExpose({ show, hide, bsInstance: bsOffcanvas })
 </script>

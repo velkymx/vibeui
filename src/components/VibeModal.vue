@@ -2,6 +2,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Size } from '../types'
 import { useId } from '../composables/useId'
+import { useBackButton } from '../composables/useBackButton'
 
 interface BootstrapModal {
   show: () => void
@@ -132,6 +133,11 @@ watch(() => props.staticBackdrop, initModal)
 const show = () => bsModal.value?.show()
 const hide = () => bsModal.value?.hide()
 const handleUpdate = () => bsModal.value?.handleUpdate()
+
+// Support Android back button in hybrid mobile apps
+useBackButton(() => {
+  if (isVisible.value) hide()
+})
 
 defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
 </script>

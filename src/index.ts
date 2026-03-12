@@ -6,6 +6,7 @@ export * from './composables/useFormValidation'
 export { useId } from './composables/useId'
 export { useColorMode } from './composables/useColorMode'
 export { useBreakpoints } from './composables/useBreakpoints'
+export { useBackButton } from './composables/useBackButton'
 
 // Export the plugin as default for app.use(VibeUI)
 export default VibeUIPlugin
