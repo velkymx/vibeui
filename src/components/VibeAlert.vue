@@ -8,6 +8,7 @@ interface BootstrapAlert {
 
 const props = defineProps({
   variant: { type: String, default: 'primary' },
+  subtle: { type: Boolean, default: false },
   modelValue: { type: Boolean, default: true },
   dismissable: { type: Boolean, default: false },
   message: { type: String, required: true },
@@ -81,13 +82,25 @@ const dismiss = () => {
     emit('closed')
   }
 }
+
+const alertClass = computed(() => {
+  const classes = ['alert']
+  if (props.subtle) {
+    classes.push(`bg-${props.variant}-subtle`, `text-${props.variant}-emphasis`, `border-${props.variant}-subtle`)
+  } else {
+    classes.push(`alert-${props.variant}`)
+  }
+  if (props.dismissable) classes.push('alert-dismissible')
+  if (props.fade) classes.push('fade', 'show')
+  return classes.join(' ')
+})
 </script>
 
 <template>
   <div
     v-if="isVisible"
     ref="alertRef"
-    :class="['alert', `alert-${variant}`, { 'alert-dismissible': dismissable, 'fade show': fade }]"
+    :class="alertClass"
     role="alert"
   >
     <slot>{{ message }}</slot>
