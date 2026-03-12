@@ -170,3 +170,13 @@ defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.modal.show .modal-dialog.modal-fullscreen {
+  height: 100dvh;
+}
+
+.modal.show .modal-dialog.modal-fullscreen .modal-content {
+  height: 100dvh;
+}
+</style>

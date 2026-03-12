@@ -141,3 +141,15 @@ defineExpose({ show, hide, bsInstance: bsOffcanvas })
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.offcanvas.offcanvas-start,
+.offcanvas.offcanvas-end {
+  height: 100dvh;
+}
+
+.offcanvas.offcanvas-top,
+.offcanvas.offcanvas-bottom {
+  max-height: 100dvh;
+}
+</style>
