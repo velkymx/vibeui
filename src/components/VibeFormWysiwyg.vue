@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed, inject } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 import { useId } from '../composables/useId'
+import { useBreakpoints } from '../composables/useBreakpoints'
 
 interface QuillInstance {
   root: HTMLElement
@@ -30,6 +31,7 @@ const props = defineProps({
   required: { type: Boolean, default: false },
   theme: { type: String as PropType<'snow' | 'bubble'>, default: 'snow' },
   toolbar: { type: [Array, String, Boolean] as PropType<unknown[] | string | boolean>, default: undefined },
+  mobileToolbar: { type: [Array, String, Boolean] as PropType<unknown[] | string | boolean>, default: undefined },
   validationState: { type: String as PropType<ValidationState>, default: null },
   validationMessage: { type: String, default: undefined },
   validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
@@ -48,6 +50,8 @@ const formGroup = inject<{
 } | null>('vibeFormGroup', null)
 
 const computedId = computed(() => props.id || formGroup?.id.value || useId('wysiwyg'))
+const { isMobile } = useBreakpoints()
+
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
@@ -79,8 +83,21 @@ const defaultToolbar = [
   ['clean']
 ]
 
+const defaultMobileToolbar = [
+  ['bold', 'italic', 'underline'],
+  [{ list: 'ordered' }, { list: 'bullet' }],
+  ['link', 'clean']
+]
+
 const getToolbarConfig = () => {
   if (props.toolbar === false) return false
+  
+  if (isMobile.value) {
+    if (props.mobileToolbar === false) return false
+    if (props.mobileToolbar !== undefined) return props.mobileToolbar
+    return defaultMobileToolbar
+  }
+
   if (props.toolbar === true || props.toolbar === undefined) return defaultToolbar
   return props.toolbar
 }
@@ -102,7 +119,7 @@ const getQuillContent = (): string => {
   return quillInstance.value.getSemanticHTML()
 }
 
-onMounted(async () => {
+const initQuill = async () => {
   try {
     const QuillModule = await import('quill')
     const Quill = QuillModule.default || QuillModule
@@ -156,7 +173,9 @@ onMounted(async () => {
     loadError.value = 'Failed to load WYSIWYG editor. Please install quill: npm install quill'
     isQuillLoaded.value = false
   }
-})
+}
+
+onMounted(initQuill)
 
 onBeforeUnmount(() => {
   if (quillInstance.value) {
@@ -199,6 +218,32 @@ watch(() => props.disabled, (newValue) => {
 watch(() => props.readonly, (newValue) => {
   if (quillInstance.value) {
     quillInstance.value.enable(!newValue)
+  }
+})
+
+// Watch for breakpoint changes and re-initialize Quill if toolbar needs to change
+watch(isMobile, async () => {
+  if (quillInstance.value) {
+    const content = getQuillContent()
+    
+    // Cleanup current instance
+    if (textChangeHandler.value) {
+      quillInstance.value.off('text-change', textChangeHandler.value)
+    }
+    if (blurHandler.value) {
+      quillInstance.value.root.removeEventListener('blur', blurHandler.value)
+    }
+    if (focusHandler.value) {
+      quillInstance.value.root.removeEventListener('focus', focusHandler.value)
+    }
+    const toolbar = editorContainer.value?.parentElement?.querySelector('.ql-toolbar')
+    if (toolbar) toolbar.remove()
+    
+    if (editorContainer.value) editorContainer.value.innerHTML = ''
+    
+    await nextTick()
+    await initQuill()
+    if (content) setQuillContent(content)
   }
 })
 </script>
