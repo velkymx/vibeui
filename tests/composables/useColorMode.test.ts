@@ -17,7 +17,7 @@ describe('useColorMode', () => {
     const { setColorMode } = useColorMode()
     setColorMode('dark')
     _resetColorMode()
-    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('light')
   })
 
   // --- setColorMode ---
@@ -78,7 +78,7 @@ describe('useColorMode', () => {
     colorMode.value = 'corrupted'
     toggleColorMode()
     expect(colorMode.value).toBe('auto')
-    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('light')
   })
 
   // --- initColorMode ---
@@ -95,7 +95,7 @@ describe('useColorMode', () => {
     const { colorMode, initColorMode } = useColorMode()
     initColorMode()
     expect(colorMode.value).toBe('auto')
-    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('light')
   })
 
   it('ignores invalid stored values', () => {
@@ -120,7 +120,7 @@ describe('useColorMode', () => {
     setColorMode('dark')
     clearColorMode()
     expect(colorMode.value).toBe('auto')
-    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('light')
     expect(localStorage.getItem('vibe-color-mode')).toBeNull()
   })
 
@@ -142,7 +142,7 @@ describe('useColorMode', () => {
     })
     expect(() => clearColorMode()).not.toThrow()
     expect(colorMode.value).toBe('auto')
-    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('auto')
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('light')
   })
 
   // --- SSR guard ---

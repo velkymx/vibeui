@@ -19,21 +19,39 @@ const NEXT_MODE: Record<ColorMode, ColorMode> = {
  */
 const colorMode = ref<ColorMode>('auto')
 let initialized = false
+const callbacks: ((mode: ColorMode) => void)[] = []
+
+function getSystemTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
 
 function applyColorMode(mode: ColorMode) {
   if (typeof document === 'undefined') return
-  document.documentElement.setAttribute('data-bs-theme', mode)
+  const activeMode = mode === 'auto' ? getSystemTheme() : mode
+  document.documentElement.setAttribute('data-bs-theme', activeMode)
 }
 
 /** Sets the reactive ref and applies data-bs-theme to the DOM. Does not touch storage. */
 function applyAndUpdate(mode: ColorMode) {
   colorMode.value = mode
   applyColorMode(mode)
+  callbacks.forEach(cb => cb(mode))
 }
 
 // Sync DOM with the initial default immediately on module load.
 // Prevents a flash where colorMode.value says 'auto' but <html> has no data-bs-theme.
 applyAndUpdate('auto')
+
+// Listen for system theme changes
+if (typeof window !== 'undefined') {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (colorMode.value === 'auto') {
+      applyColorMode('auto')
+      callbacks.forEach(cb => cb('auto'))
+    }
+  })
+}
 
 export function useColorMode() {
   function setColorMode(mode: ColorMode) {
@@ -75,12 +93,21 @@ export function useColorMode() {
     setColorMode(NEXT_MODE[colorMode.value] ?? 'auto')
   }
 
+  /**
+   * Register a callback to be called whenever the color mode changes.
+   * Useful for syncing native UI elements (like status bar) in hybrid apps.
+   */
+  function onColorModeChange(callback: (mode: ColorMode) => void) {
+    callbacks.push(callback)
+  }
+
   return {
     colorMode,
     setColorMode,
     toggleColorMode,
     initColorMode,
-    clearColorMode
+    clearColorMode,
+    onColorModeChange
   }
 }
 
