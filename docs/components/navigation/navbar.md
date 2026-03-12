@@ -88,6 +88,10 @@ const navItems = [
 
 **State Management:** Even when using Bootstrap JS for animations, the navbar remains fully reactive. You can still control the collapse state programmatically via the `VibeCollapse` `v-model`.
 
+## Mobile & Hybrid Optimization
+
+**Safe Areas:** When using `position="fixed-top"`, `fixed-bottom"`, or `sticky-top"`, the navbar automatically adds padding to account for device safe areas (notches) in hybrid environments like Capacitor.
+
 ## Bootstrap CSS Classes
 
 - `.navbar`
