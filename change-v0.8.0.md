@@ -58,6 +58,12 @@ First-class support for the Android hardware back button.
 ### Nav Underline
 - `VibeNav` now supports the `.nav-underline` style via the `underline` prop.
 
+## Bootswatch & Theme Support
+
+VibeUI is now fully compatible with custom Bootstrap themes (like Bootswatch **Darkly**).
+- **CSS Variables:** Replaced all remaining hardcoded hex colors in components (like `VibeDataTable` and `VibeFormWysiwyg`) with standard Bootstrap CSS variables (`--bs-border-color`, `--bs-body-bg`, etc.).
+- **Dynamic Adaptability:** Components will now automatically match the color palette of any included Bootstrap-compatible CSS theme.
+
 ## Bug Fixes & Improvements
 - **Modal/Offcanvas Height:** Switched to `dvh` (dynamic viewport height) units to fix layout issues with mobile browser bars.
 - **Improved Type Safety:** Refined TypeScript interfaces for all new props and components.
