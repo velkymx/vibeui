@@ -61,6 +61,7 @@ import VibeFormSwitch from './VibeFormSwitch.vue'
 import VibeFormGroup from './VibeFormGroup.vue'
 import VibeFormWysiwyg from './VibeFormWysiwyg.vue'
 import VibeInputGroup from './VibeInputGroup.vue'
+import VibeLink from './VibeLink.vue'
 
 // Export all components
 export {
@@ -126,7 +127,8 @@ export {
   VibeFormSwitch,
   VibeFormGroup,
   VibeFormWysiwyg,
-  VibeInputGroup
+  VibeInputGroup,
+  VibeLink
 }
 
 import type { App, Plugin } from 'vue'
@@ -197,6 +199,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeFormGroup', VibeFormGroup)
     app.component('VibeFormWysiwyg', VibeFormWysiwyg)
     app.component('VibeInputGroup', VibeInputGroup)
+    app.component('VibeLink', VibeLink)
   }
 }
 

@@ -23,7 +23,8 @@ const props = defineProps({
   validateOn: { type: String as PropType<'input' | 'blur' | 'change'>, default: 'blur' },
   helpText: { type: String, default: undefined },
   plaintext: { type: Boolean, default: false },
-  noWrapper: { type: Boolean, default: false }
+  noWrapper: { type: Boolean, default: false },
+  focusRing: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
@@ -52,6 +53,7 @@ const inputClass = computed(() => {
   }
   if (props.validationState === 'valid') classes.push('is-valid')
   if (props.validationState === 'invalid') classes.push('is-invalid')
+  if (props.focusRing) classes.push('focus-ring')
   return classes.join(' ')
 })
 

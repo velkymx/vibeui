@@ -10,7 +10,8 @@ const props = defineProps({
   type: { type: String as () => ButtonType, default: 'button' },
   href: { type: String, default: undefined },
   to: { type: [String, Object], default: undefined },
-  active: { type: Boolean, default: false }
+  active: { type: Boolean, default: false },
+  focusRing: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['click', 'component-error'])
@@ -32,6 +33,7 @@ const buttonClass = computed(() => {
 
   if (props.size) classes.push(`btn-${props.size}`)
   if (props.active) classes.push('active')
+  if (props.focusRing) classes.push('focus-ring')
 
   return classes.join(' ')
 })
