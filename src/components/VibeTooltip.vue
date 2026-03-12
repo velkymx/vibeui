@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { Placement } from '../types'
 
 interface BootstrapTooltip {
@@ -20,6 +20,17 @@ const emit = defineEmits(['component-error'])
 const tooltipRef = ref<HTMLElement | null>(null)
 const bsTooltip = ref<BootstrapTooltip | null>(null)
 
+const isTouchDevice = () => {
+  return typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+}
+
+const computedTrigger = computed(() => {
+  if (isTouchDevice() && props.trigger === 'hover focus') {
+    return 'click'
+  }
+  return props.trigger
+})
+
 const initTooltip = async () => {
   if (!tooltipRef.value) return
 
@@ -35,7 +46,7 @@ const initTooltip = async () => {
     bsTooltip.value = new Tooltip(tooltipRef.value, {
       title: props.text || props.content || '',
       placement: props.placement,
-      trigger: props.trigger,
+      trigger: computedTrigger.value,
       html: props.html
     }) as BootstrapTooltip
   } catch (error) {
