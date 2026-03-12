@@ -15,6 +15,7 @@ const props = defineProps({
   hover: { type: Boolean, default: false },
   small: { type: Boolean, default: false },
   responsive: { type: Boolean, default: true },
+  stack: { type: Boolean, default: false },
   variant: { type: String, default: undefined },
 
   // Features
@@ -213,6 +214,7 @@ const tableClass = computed(() => {
   if (props.borderless) classes.push('table-borderless')
   if (props.hover) classes.push('table-hover')
   if (props.small) classes.push('table-sm')
+  if (props.stack) classes.push('vibe-table-stack')
   if (props.variant) classes.push(`table-${props.variant}`)
   return classes.join(' ')
 })
@@ -326,6 +328,7 @@ const getThStyle = (column: DataTableColumn) => {
               :key="column.key"
               :class="column.class"
               :style="column.tdStyle"
+              :data-label="column.label"
             >
               <slot :name="`cell(${column.key})`" :item="item" :value="item[column.key]" :index="index">
                 {{ getCellValue(item, column) }}
@@ -409,5 +412,52 @@ const getThStyle = (column: DataTableColumn) => {
 .datatable-info {
   padding: 0.5rem 0;
   color: #6c757d;
+}
+
+/* Stack mode for mobile */
+@media (max-width: 767.98px) {
+  .vibe-table-stack,
+  .vibe-table-stack tbody,
+  .vibe-table-stack tr,
+  .vibe-table-stack td {
+    display: block;
+    width: 100%;
+  }
+
+  .vibe-table-stack thead {
+    display: none;
+  }
+
+  .vibe-table-stack tr {
+    margin-bottom: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #fff;
+  }
+
+  .vibe-table-stack td {
+    text-align: right;
+    padding: 0.5rem 1rem;
+    position: relative;
+    padding-left: 50%;
+    border-top: none;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .vibe-table-stack td:last-child {
+    border-bottom: none;
+  }
+
+  .vibe-table-stack td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 1rem;
+    width: 45%;
+    text-align: left;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 </style>
