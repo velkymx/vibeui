@@ -179,4 +179,12 @@ defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
 .modal.show .modal-dialog.modal-fullscreen .modal-content {
   height: 100dvh;
 }
+
+.modal-header {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0));
+}
+
+.modal-footer {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0));
+}
 </style>

@@ -152,4 +152,12 @@ defineExpose({ show, hide, bsInstance: bsOffcanvas })
 .offcanvas.offcanvas-bottom {
   max-height: 100dvh;
 }
+
+.offcanvas-header {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0));
+}
+
+.offcanvas-body {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+}
 </style>
