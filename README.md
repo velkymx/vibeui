@@ -41,19 +41,19 @@ createApp(App).use(VibeUI).mount('#app');
 
 ## Advanced Interactivity
 
-VibeUI v0.6.0+ fully abstracts Bootstrap's JavaScript. You no longer need to manually initialize tooltips, modals, or collapses.
+VibeUI v0.8.0 is optimized for mobile and hybrid apps, and fully abstracts Bootstrap's JavaScript. You no longer need to manually initialize tooltips, modals, or collapses.
 
 ```vue
 <template>
   <div>
-    <!-- Automatic tooltip initialization -->
+    <!-- Automatic tooltip initialization with touch optimization -->
     <VibeTooltip text="I just work!">
-      <VibeButton>Hover Me</VibeButton>
+      <VibeButton>Hover or Tap Me</VibeButton>
     </VibeTooltip>
 
-    <!-- Full v-model support for Modals -->
+    <!-- Full v-model support for Modals with Android back button support -->
     <VibeModal v-model="showModal" title="Hello!">
-      Fully reactive and automated.
+      Fully reactive, automated, and hybrid-ready.
     </VibeModal>
   </div>
 </template>
@@ -69,6 +69,11 @@ VibeUI handles accessibility and IDs for you.
   <VibeFormGroup label="Email Address">
     <VibeFormInput v-model="email" type="email" />
   </VibeFormGroup>
+
+  <!-- New in v0.8.0: Input Groups -->
+  <VibeInputGroup prepend="@">
+    <VibeFormInput v-model="username" noWrapper />
+  </VibeInputGroup>
 </template>
 ```
 
@@ -77,11 +82,11 @@ VibeUI handles accessibility and IDs for you.
 VibeUI includes all major Bootstrap 5.3 components, fully wrapped for Vue 3:
 
 * **Layout**: Container, Row, Col
-* **Core**: Alert, Badge, Button, ButtonGroup, CloseButton, Spinner, Placeholder, Icon
+* **Core**: Alert, Badge, Button, ButtonGroup, CloseButton, Spinner, Placeholder, Icon, Link
 * **Navigation**: Breadcrumb, Nav, Navbar, Pagination, Scrollspy
 * **Interactive**: Accordion, Collapse, Dropdown, Modal, Offcanvas, Toast, Carousel
-* **Data**: DataTable
-* **Forms**: Input, Select, Textarea, Spinbutton, Datepicker, Checkbox, Radio, Switch, Wysiwyg, FormGroup
+* **Data**: DataTable (with mobile Stack mode)
+* **Forms**: Input, InputGroup, Select, Textarea, Spinbutton, Datepicker, Checkbox, Radio, Switch, Wysiwyg, FormGroup
 
 ## Full Documentation
 

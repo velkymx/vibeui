@@ -29,7 +29,7 @@ createApp(App).use(VibeUI).mount('#app')
 
 ### Bootstrap JavaScript
 
-**VibeUI v0.6.0+ fully abstracts Bootstrap's JavaScript.** You do not need to manually import or initialize Bootstrap JS for VibeUI components. 
+**VibeUI v0.8.0+ is mobile-optimized and fully abstracts Bootstrap's JavaScript.** You do not need to manually import or initialize Bootstrap JS for VibeUI components. 
 
 The library handles:
 - **Dynamic Initialization:** Components initialize their own JS logic on mount.
