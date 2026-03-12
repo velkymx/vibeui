@@ -39,7 +39,8 @@ const content = ref('')
 | `readonly` | `Boolean` | `false` | Make readonly |
 | `required` | `Boolean` | `false` | Mark as required |
 | `theme` | `'snow' \| 'bubble'` | `'snow'` | Quill theme |
-| `toolbar` | `Array \| String \| Boolean` | default toolbar | Toolbar configuration |
+| `toolbar` | `Array \| String \| Boolean` | default toolbar | Full toolbar configuration |
+| `mobileToolbar` | `Array \| String \| Boolean` | default mobile toolbar | Simplified toolbar for small screens |
 | `height` | `String` | `'200px'` | Minimum height |
 | `validationState` | `'valid' \| 'invalid' \| null` | `null` | Validation state |
 | `validationMessage` | `String` | `undefined` | Validation message |

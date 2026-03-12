@@ -14,6 +14,7 @@ Button component with variants, sizes, and support for links and router-links.
 | `href` | `String` | `undefined` | Renders as anchor tag with href |
 | `to` | `String\|Object` | `undefined` | Renders as router-link with to prop |
 | `active` | `Boolean` | `false` | Apply active state styling |
+| `focusRing` | `Boolean` | `false` | Enable the Bootstrap 5.3 focus-ring helper |
 
 ## Events
 
@@ -123,3 +124,4 @@ const handleClick = () => {
 - `.btn-{variant}` or `.btn-outline-{variant}`
 - `.btn-{size}`
 - `.active`
+- `.focus-ring`

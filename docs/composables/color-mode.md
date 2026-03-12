@@ -18,6 +18,7 @@ import { useColorMode } from '@velkymx/vibeui'
 | `setColorMode(mode)` | `(mode: ColorMode) => void` | Set a specific mode. Persists to `localStorage` and updates `<html data-bs-theme>`. |
 | `toggleColorMode()` | `() => void` | Cycle through `light → dark → auto → light`. |
 | `initColorMode()` | `() => void` | Restore the saved preference from `localStorage`. **Call once at app startup.** Subsequent calls are no-ops. |
+| `onColorModeChange(cb)` | `(mode: ColorMode) => void` | Register a callback that fires whenever the mode changes. Useful for hybrid app status bars. |
 
 ## Type
 
@@ -130,10 +131,11 @@ Bootstrap's `data-bs-theme` attribute works on any element, not just `<html>`. F
   </div>
 </template>
 ```
-
 ## Behavior Notes
 
 - **Persistence** — the selected mode is stored in `localStorage` under the key `vibe-color-mode`. It survives page reloads.
+- **System Theme Reactivity** — when the mode is set to `'auto'`, VibeUI automatically listens for OS-level theme changes (via `matchMedia`) and updates the DOM immediately without a page reload.
 - **SSR-safe** — all `document` and `localStorage` access is guarded. The composable is safe to import in server-rendered environments; `applyColorMode` simply does nothing when `document` is undefined.
+...
 - **Invalid values** — `setColorMode` silently ignores any value that is not `'light'`, `'dark'`, or `'auto'`. No error is thrown.
 - **`initColorMode` is idempotent** — it is safe to call it multiple times (e.g. from multiple entry points). Only the first call reads `localStorage` and applies the theme. All subsequent calls are no-ops and do not overwrite changes the user made after initialization.

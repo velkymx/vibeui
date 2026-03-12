@@ -125,6 +125,14 @@ const showModal = ref(false)
 
 **Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
+## Mobile Optimization
+
+**Safe Areas:** In fullscreen mode, the modal header and footer automatically respect device safe areas (notches) in hybrid apps.
+
+**Hardware Back Button:** On Android devices in hybrid environments, the hardware back button will automatically close the modal if it is open.
+
+**Dynamic Height:** Fullscreen modals use `dvh` (dynamic viewport height) units to ensure they occupy the full screen height even when mobile browser bars are visible.
+
 ## Bootstrap CSS Classes
 
 - `.modal`

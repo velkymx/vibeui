@@ -8,6 +8,7 @@ Data-driven navigation tabs and pills for organizing content.
 |------|------|---------|-------------|
 | `tabs` | `Boolean` | `false` | Use tabs style |
 | `pills` | `Boolean` | `false` | Use pills style |
+| `underline` | `Boolean` | `false` | Use the new Bootstrap 5.3 underline style |
 | `fill` | `Boolean` | `false` | Fill available width proportionally |
 | `justified` | `Boolean` | `false` | Fill available width equally |
 | `vertical` | `Boolean` | `false` | Stack navigation vertically |
@@ -82,5 +83,6 @@ const tabPanes = [
 - `.nav`
 - `.nav-tabs`
 - `.nav-pills`
+- `.nav-underline`
 - `.nav-item`
 - `.nav-link`

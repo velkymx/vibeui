@@ -7,6 +7,7 @@ Small count and labeling component with Bootstrap 5.3 styling.
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `variant` | `Variant` | `'primary'` | Background color variant |
+| `subtle` | `Boolean` | `false` | Renders badge with subtle background and emphasis text |
 | `pill` | `Boolean` | `false` | Renders badge with rounded pill shape |
 | `tag` | `String` | `'span'` | HTML tag to render: `'span'`, `'a'`, or any valid tag |
 
@@ -75,4 +76,6 @@ Small count and labeling component with Bootstrap 5.3 styling.
 
 - `.badge`
 - `.bg-{variant}`
+- `.bg-{variant}-subtle` (when `subtle` is true)
+- `.text-{variant}-emphasis` (when `subtle` is true)
 - `.rounded-pill` (when `pill` is true)

@@ -23,6 +23,7 @@ VibeUI provides a complete set of form components that seamlessly integrate with
 | Component | Description | Documentation |
 |-----------|-------------|---------------|
 | **VibeFormInput** | Text, email, password, number, and other input types | [Docs](./form-input.md) |
+| **VibeInputGroup** | Input group for prepending/appending text or buttons | [Docs](./input-group.md) |
 | **VibeFormTextarea** | Multi-line text input | [Docs](./form-textarea.md) |
 | **VibeFormSelect** | Single and multiple selection dropdowns | [Docs](./form-select.md) |
 | **VibeFormSpinbutton** | Number input with increment/decrement buttons | [Docs](./form-spinbutton.md) |
@@ -71,6 +72,7 @@ const email = ref('')
 ### Component Documentation
 
 - [VibeFormInput](./form-input.md) - Text inputs with validation
+- [VibeInputGroup](./input-group.md) - Prepend/append groups
 - [VibeFormSelect](./form-select.md) - Select dropdowns
 - [VibeFormTextarea](./form-textarea.md) - Multi-line text input
 - [VibeFormSpinbutton](./form-spinbutton.md) - Number input with buttons
