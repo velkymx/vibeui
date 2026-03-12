@@ -411,7 +411,7 @@ const getThStyle = (column: DataTableColumn) => {
 
 .datatable-info {
   padding: 0.5rem 0;
-  color: #6c757d;
+  color: var(--bs-secondary-color);
 }
 
 /* Stack mode for mobile */
@@ -430,9 +430,9 @@ const getThStyle = (column: DataTableColumn) => {
 
   .vibe-table-stack tr {
     margin-bottom: 1rem;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--bs-border-color);
     border-radius: 0.375rem;
-    background-color: #fff;
+    background-color: var(--bs-body-bg);
   }
 
   .vibe-table-stack td {
@@ -441,7 +441,7 @@ const getThStyle = (column: DataTableColumn) => {
     position: relative;
     padding-left: 50%;
     border-top: none;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--bs-border-color);
   }
 
   .vibe-table-stack td:last-child {

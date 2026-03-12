@@ -283,17 +283,17 @@ watch(isMobile, async () => {
 
 <style scoped>
 .vibe-wysiwyg-container {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color);
   border-radius: 0.375rem;
 }
 .vibe-wysiwyg-container.is-valid {
-  border-color: #198754;
+  border-color: var(--bs-success);
 }
 .vibe-wysiwyg-container.is-invalid {
-  border-color: #dc3545;
+  border-color: var(--bs-danger);
 }
 .vibe-wysiwyg-container.disabled {
-  background-color: #e9ecef;
+  background-color: var(--bs-secondary-bg);
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -303,7 +303,7 @@ watch(isMobile, async () => {
 }
 .vibe-wysiwyg-container :deep(.ql-toolbar) {
   border: none;
-  border-bottom: 1px solid #ced4da;
+  border-bottom: 1px solid var(--bs-border-color);
   border-top-left-radius: 0.375rem;
   border-top-right-radius: 0.375rem;
 }
