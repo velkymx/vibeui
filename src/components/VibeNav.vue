@@ -14,6 +14,7 @@ const props = defineProps({
   vertical: { type: Boolean, default: false },
   justified: { type: Boolean, default: false },
   fill: { type: Boolean, default: false },
+  underline: { type: Boolean, default: false },
   tag: { type: String, default: 'ul' }
 })
 
@@ -29,6 +30,7 @@ const navClass = computed(() => {
   if (props.vertical) classes.push('flex-column')
   if (props.justified) classes.push('nav-justified')
   if (props.fill) classes.push('nav-fill')
+  if (props.underline) classes.push('nav-underline')
   return classes.join(' ')
 })
 

@@ -51,4 +51,15 @@ describe('VibeNav', () => {
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(bootstrap.Tab).not.toHaveBeenCalled()
   })
+
+  it('applies nav-underline class', () => {
+    const wrapper = mount(VibeNav, {
+      props: {
+        items: mockItems,
+        underline: true
+      }
+    })
+
+    expect(wrapper.find('.nav').classes()).toContain('nav-underline')
+  })
 })
