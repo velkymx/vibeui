@@ -115,6 +115,8 @@ Popovers for displaying rich content overlays. Requires Bootstrap JS and initial
 
 **Automatic Initialization:** This component automatically initializes Bootstrap's Popover functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
+**Touch Optimization:** On touch devices, if the trigger is set to `hover focus`, it automatically switches to `click` to ensure reliable behavior on mobile screens.
+
 **Manual Initialization (Optional):** If you are not using the automatic initialization or need to initialize popovers on non-VibeUI elements:
 
 ```javascript

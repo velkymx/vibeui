@@ -72,6 +72,14 @@ const showOffcanvas = ref(false)
 
 **Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
+## Mobile Optimization
+
+**Safe Areas:** When used in hybrid apps with `viewport-fit=cover`, the offcanvas header automatically adds padding to account for device notches.
+
+**Hardware Back Button:** On Android devices in hybrid environments, the hardware back button will automatically close the offcanvas if it is open.
+
+**Dynamic Height:** The offcanvas uses `dvh` (dynamic viewport height) units to ensure it occupies the full screen height even when mobile browser bars are visible.
+
 ## Bootstrap CSS Classes
 
 - `.offcanvas`

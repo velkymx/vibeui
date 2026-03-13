@@ -37,6 +37,8 @@ const name = ref('')
 | `validateOn` | `'input' \| 'blur' \| 'change'` | `'blur'` | When to validate |
 | `helpText` | `String` | `undefined` | Help text |
 | `plaintext` | `Boolean` | `false` | Display as plain text |
+| `noWrapper` | `Boolean` | `false` | Removes the wrapping div, label, and feedback. Useful inside `VibeInputGroup`. |
+| `focusRing` | `Boolean` | `false` | Enable the Bootstrap 5.3 focus-ring helper |
 
 ## Important Notes
 
@@ -50,3 +52,4 @@ const name = ref('')
 - `.form-control-{size}`
 - `.is-valid`, `.is-invalid`
 - `.form-control-plaintext`
+- `.focus-ring`

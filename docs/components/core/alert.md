@@ -7,6 +7,7 @@ Alert messages with Bootstrap styling, supporting variants, dismissible function
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `variant` | `Variant` | `'primary'` | Color variant |
+| `subtle` | `Boolean` | `false` | Renders alert with subtle background and emphasis text |
 | `modelValue` | `Boolean` | `true` | Controls visibility (v-model support) |
 | `dismissable` | `Boolean` | `false` | Shows close button when true |
 | `message` | `String` | Required | Alert message text |
@@ -64,5 +65,8 @@ const showAlert = ref(true)
 
 - `.alert`
 - `.alert-{variant}`
+- `.bg-{variant}-subtle` (when `subtle` is true)
+- `.text-{variant}-emphasis` (when `subtle` is true)
+- `.border-{variant}-subtle` (when `subtle` is true)
 - `.alert-dismissible`
 - `.fade`, `.show`

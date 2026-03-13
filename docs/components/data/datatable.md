@@ -32,6 +32,7 @@ Powerful data table component with search, sorting, and pagination - similar to 
 | `hover` | `Boolean` | `false` | Hover effect on rows |
 | `small` | `Boolean` | `false` | Compact table |
 | `responsive` | `Boolean` | `true` | Responsive table wrapper |
+| `stack` | `Boolean` | `false` | Transforms table into cards on mobile screens |
 | `variant` | `String` | `undefined` | Table color variant |
 
 ### Feature Props
@@ -401,6 +402,7 @@ const columns = [
 - `.table-sm` - Compact table
 - `.table-{variant}` - Color variants
 - `.table-responsive` - Responsive wrapper
+- `.vibe-table-stack` - Mobile card view transformation
 - `.pagination` - Pagination controls
 - `.form-control` - Search input
 - `.form-select` - Per-page selector

@@ -77,6 +77,8 @@ Tooltips for displaying contextual information. Requires Bootstrap JS and initia
 
 **Automatic Initialization:** This component automatically initializes Bootstrap's Tooltip functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
+**Touch Optimization:** On touch devices, the tooltip automatically switches its trigger from `hover focus` to `click` to ensure reliable behavior on mobile screens.
+
 **Manual Initialization (Optional):** If you are not using the automatic initialization or need to initialize tooltips on non-VibeUI elements:
 
 ```javascript
