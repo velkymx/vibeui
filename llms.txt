@@ -1,0 +1,357 @@
+# VibeUI
+
+A Vue 3 component library that wraps Bootstrap 5.3. Every Bootstrap component is exposed as a typed Vue component with reactive props, v-model support, automatic Bootstrap JS lifecycle management, and zero manual DOM work required.
+
+**Package:** `@velkymx/vibeui`
+**Stack:** Vue 3 (Composition API) + Bootstrap 5.3 + TypeScript + Vite
+**Current version:** 0.7.x
+
+---
+
+## Key Mental Model
+
+VibeUI is a thin but complete abstraction layer over Bootstrap. It does three things:
+
+1. **Wraps Bootstrap CSS** — components apply the correct Bootstrap classes based on Vue props.
+2. **Abstracts Bootstrap JS** — interactive components (`Modal`, `Offcanvas`, `Toast`, `Tooltip`, `Popover`, `Accordion`, `Carousel`, `Collapse`, `Dropdown`) initialize, configure, and destroy their own Bootstrap JS instances via `onMounted`/`onBeforeUnmount`. You never touch `new bootstrap.Modal(el)`.
+3. **Adds Vue reactivity** — props drive Bootstrap re-initialization, `v-model` syncs visibility state, and Bootstrap's native events are re-emitted as Vue events.
+
+---
+
+## Project Structure
+
+```
+vibeui/
+├── src/
+│   ├── index.ts                    # Package entry point — exports everything
+│   ├── types.ts                    # All shared TypeScript types
+│   ├── components/
+│   │   ├── index.ts                # Component registration + Vue plugin
+│   │   ├── VibeAlert.vue
+│   │   ├── VibeButton.vue          # Renders as <button>, <a>, or <router-link>
+│   │   ├── VibeBadge.vue
+│   │   ├── VibeButtonGroup.vue
+│   │   ├── VibeCard.vue
+│   │   ├── VibeCloseButton.vue
+│   │   ├── VibeSpinner.vue
+│   │   ├── VibePlaceholder.vue
+│   │   ├── VibeContainer.vue       # Layout
+│   │   ├── VibeRow.vue
+│   │   ├── VibeCol.vue
+│   │   ├── VibeBreadcrumb.vue      # Data-driven: accepts items[]
+│   │   ├── VibeNav.vue
+│   │   ├── VibeNavbar.vue
+│   │   ├── VibeNavbarBrand.vue
+│   │   ├── VibeNavbarToggle.vue
+│   │   ├── VibeNavbarNav.vue
+│   │   ├── VibePagination.vue      # v-model:currentPage
+│   │   ├── VibeTabContent.vue
+│   │   ├── VibeListGroup.vue       # Data-driven: accepts items[]
+│   │   ├── VibeProgress.vue        # Data-driven: accepts bars[]
+│   │   ├── VibeAccordion.vue       # Bootstrap JS — auto init/destroy
+│   │   ├── VibeCollapse.vue        # Bootstrap JS — v-model
+│   │   ├── VibeDropdown.vue        # Bootstrap JS — data-driven items[]
+│   │   ├── VibeModal.vue           # Bootstrap JS — v-model, Teleport to body
+│   │   ├── VibeOffcanvas.vue       # Bootstrap JS — v-model, Teleport to body
+│   │   ├── VibeToast.vue           # Bootstrap JS — v-model, Teleport to body
+│   │   ├── VibeCarousel.vue        # Bootstrap JS — v-model:activeIndex
+│   │   ├── VibeTooltip.vue         # Bootstrap JS — reactive re-init on prop change
+│   │   ├── VibePopover.vue         # Bootstrap JS — reactive re-init on prop change
+│   │   ├── VibeScrollspy.vue
+│   │   ├── VibeIcon.vue            # Renders Bootstrap Icons (bi-*)
+│   │   ├── VibeDataTable.vue       # Sortable, searchable, paginated table
+│   │   ├── VibeFormInput.vue
+│   │   ├── VibeFormSelect.vue
+│   │   ├── VibeFormTextarea.vue
+│   │   ├── VibeFormCheckbox.vue
+│   │   ├── VibeFormRadio.vue
+│   │   ├── VibeFormSwitch.vue
+│   │   ├── VibeFormSpinbutton.vue
+│   │   ├── VibeFormDatepicker.vue
+│   │   ├── VibeFormGroup.vue       # Context-aware — auto-links label to child input
+│   │   └── VibeFormWysiwyg.vue     # Powered by QuillJS (optional peer dep)
+│   └── composables/
+│       ├── useId.ts                # Generates unique IDs (SSR-safe)
+│       ├── useColorMode.ts         # Bootstrap color mode management (singleton)
+│       └── useFormValidation.ts    # Field-level validation + built-in validators
+├── tests/
+│   ├── components/                 # Component tests (Vitest + @vue/test-utils)
+│   └── composables/                # Composable tests
+├── docs/
+│   ├── README.md                   # Docs index — start here
+│   ├── components/                 # Per-component reference docs
+│   ├── forms/                      # Form + validation docs
+│   └── composables/
+│       └── color-mode.md
+├── examples/                       # Standalone HTML files (CDN-based, no build needed)
+│   ├── starter.html
+│   ├── dashboard.html
+│   ├── album.html
+│   └── pricing.html
+├── vite.config.ts                  # Also contains Vitest config
+└── llms.txt                        # This file
+```
+
+---
+
+## Installation & Setup
+
+```bash
+npm install @velkymx/vibeui bootstrap
+```
+
+```ts
+// main.ts
+import { createApp } from 'vue'
+import VibeUI, { useColorMode } from '@velkymx/vibeui'
+import 'bootstrap/dist/css/bootstrap.min.css'
+import App from './App.vue'
+
+// Restore saved light/dark/auto preference before first render
+const { initColorMode } = useColorMode()
+initColorMode()
+
+createApp(App).use(VibeUI).mount('#app')
+```
+
+Bootstrap CSS must be imported by the consumer. VibeUI does **not** bundle it.
+Bootstrap JS is handled internally via dynamic import — do **not** import `bootstrap/dist/js/bootstrap.bundle.min.js` yourself.
+
+---
+
+## Exports
+
+Everything is exported from the package root:
+
+```ts
+import VibeUI from '@velkymx/vibeui'              // Vue plugin (app.use)
+import { VibeButton, VibeModal, ... } from '@velkymx/vibeui'  // Individual components
+import { useColorMode, useFormValidation, useId, validators } from '@velkymx/vibeui'
+import type { Variant, ColorMode, Size, ... } from '@velkymx/vibeui'
+```
+
+---
+
+## Shared Types (`src/types.ts`)
+
+These types are used across all components. Always import from `@velkymx/vibeui`.
+
+```ts
+type Variant       = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
+type Size          = 'sm' | 'lg'
+type ColorMode     = 'light' | 'dark' | 'auto'
+type ButtonType    = 'button' | 'submit' | 'reset'
+type Tag           = 'div' | 'span' | 'section' | 'article' | 'nav' | 'aside' | 'header' | 'footer' | 'main'
+type Placement     = 'top' | 'bottom' | 'start' | 'end'
+type Direction     = 'up' | 'down' | 'start' | 'end'
+type SpinnerType   = 'border' | 'grow'
+type InputType     = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'date' | 'time' | ...
+type ValidationState = 'valid' | 'invalid' | null
+
+// Data-driven component item shapes
+interface BreadcrumbItem   { text, href?, to?, active? }
+interface NavItem          { text, href?, to?, active?, disabled?, children? }
+interface DropdownItem     { text?, href?, to?, active?, disabled?, divider?, header? }
+interface ListGroupItem    { text, href?, to?, active?, disabled?, variant? }
+interface AccordionItem    { id, title, content, show? }
+interface CarouselItem     { src, alt?, caption?, captionText?, active?, interval? }
+interface ProgressBar      { value, max?, variant?, striped?, animated?, label?, showValue? }
+interface DataTableColumn  { key, label, sortable?, searchable?, formatter?, class?, ... }
+```
+
+---
+
+## Core Patterns
+
+### v-model for visibility
+
+All interactive components (Modal, Offcanvas, Toast, Collapse, Alert) use `v-model` to control open/closed state:
+
+```vue
+<script setup>
+const show = ref(false)
+</script>
+
+<template>
+  <VibeButton @click="show = true">Open</VibeButton>
+  <VibeModal v-model="show" title="Hello">Content</VibeModal>
+</template>
+```
+
+### Data-driven components
+
+Components like `VibeBreadcrumb`, `VibeListGroup`, `VibeDropdown`, `VibeAccordion`, `VibeCarousel`, and `VibeProgress` accept an `items` or `bars` array prop rather than manual slot markup:
+
+```vue
+<VibeBreadcrumb :items="[
+  { text: 'Home', href: '/' },
+  { text: 'Products', href: '/products' },
+  { text: 'Details', active: true }
+]" />
+```
+
+### VibeFormGroup — automatic label linking
+
+`VibeFormGroup` uses Vue's `provide`/`inject` to share a generated ID with child inputs. This means `id` and `label-for` are optional — the group handles accessibility automatically:
+
+```vue
+<VibeFormGroup label="Email Address">
+  <VibeFormInput v-model="email" type="email" />
+  <!-- label is automatically linked to input, no id needed -->
+</VibeFormGroup>
+```
+
+### Accessing the Bootstrap instance
+
+Every interactive component exposes its Bootstrap instance via a template ref:
+
+```vue
+<template>
+  <VibeModal ref="modal" v-model="show" title="Advanced" />
+</template>
+
+<script setup>
+const modal = useTemplateRef('modal')
+// modal.value.bsInstance → native Bootstrap Modal instance
+</script>
+```
+
+### Teleportation
+
+`VibeModal`, `VibeOffcanvas`, and `VibeToast` render via `<Teleport to="body">` by default. This prevents CSS stacking context issues. No configuration needed.
+
+---
+
+## Composables
+
+### useColorMode
+
+Singleton. Sets `data-bs-theme` on `<html>`. Persists to `localStorage`.
+
+```ts
+const { colorMode, setColorMode, toggleColorMode, initColorMode } = useColorMode()
+
+// colorMode: Ref<'light' | 'dark' | 'auto'>
+// Call initColorMode() once in main.ts — subsequent calls are no-ops
+// toggleColorMode() cycles light → dark → auto → light
+```
+
+Full docs: `docs/composables/color-mode.md`
+
+### useFormValidation
+
+Per-field validation with reactive state.
+
+```ts
+const email = useFormValidation('')
+
+// email.value          — Ref<string>
+// email.validationState — Ref<'valid' | 'invalid' | null>
+// email.validationMessage — Ref<string>
+// email.isValid / email.isInvalid — computed booleans
+// email.isDirty / email.isTouched / email.isValidating — Ref<boolean>
+// await email.validate(rules)
+// email.reset()
+```
+
+### validators (built-in)
+
+```ts
+import { validators } from '@velkymx/vibeui'
+
+validators.required(message?)
+validators.email(message?)
+validators.minLength(n, message?)
+validators.maxLength(n, message?)
+validators.min(n, message?)
+validators.max(n, message?)
+validators.pattern(regex, message?)
+validators.url(message?)
+validators.async(fn: (value) => Promise<boolean | string>)
+```
+
+Validators return `true` on pass, or a string error message on failure.
+Full docs: `docs/forms/validation.md`
+
+### useId
+
+Generates a unique, SSR-safe ID string. Used internally by form components.
+
+```ts
+const id = useId('prefix') // → 'prefix-3-7'
+```
+
+---
+
+## Testing
+
+**Stack:** Vitest + @vue/test-utils + happy-dom
+
+**Run tests:**
+```bash
+npx vitest run         # single run
+npx vitest             # watch mode
+npx vitest --coverage  # coverage report
+```
+
+**Bootstrap JS is mocked** in tests. The mock lives at `tests/mocks/bootstrap.ts` and is aliased in `vite.config.ts`. Component tests never trigger real Bootstrap JS initialization.
+
+**Pattern for component tests:**
+```ts
+import { describe, it, expect } from 'vitest'
+import { mount } from '@vue/test-utils'
+import VibeButton from '../../src/components/VibeButton.vue'
+
+it('applies variant class', () => {
+  const wrapper = mount(VibeButton, { props: { variant: 'danger' } })
+  expect(wrapper.classes()).toContain('btn-danger')
+})
+```
+
+**Pattern for composable tests:**
+- Use `_resetColorMode()` (exported from `useColorMode.ts`, not from the package index) to reset singleton state between tests.
+- Use `vi.stubGlobal` + `try/finally` for environment mocking (e.g. SSR simulation).
+
+---
+
+## Build
+
+```bash
+npm run build   # outputs to dist/ as ESM + UMD + type declarations
+npm run dev     # Vite dev server for the src/App.vue playground
+```
+
+Build output:
+- `dist/vibeui.es.js` — ESM for bundlers
+- `dist/vibeui.umd.js` — UMD for CDN / script tag usage
+- `dist/vibeui.d.ts` — TypeScript declarations
+
+Vue and Bootstrap are **external** — not bundled. Consumers provide their own.
+
+---
+
+## Adding a New Component
+
+1. Create `src/components/VibeFoo.vue`
+2. Follow the pattern: `defineProps` with typed props, `computed` for class assembly, `<component :is="tag">` if the element type is configurable
+3. Export from `src/components/index.ts` (named export + `app.component(...)` registration)
+4. Export from `src/index.ts` (re-export via `export * from './components'` covers it automatically)
+5. Add types to `src/types.ts` if new shared types are needed
+6. Add tests in `tests/components/VibeFoo.test.ts`
+7. Add docs in `docs/components/{category}/foo.md`
+
+If the component uses Bootstrap JS:
+- Dynamically import: `const { Foo } = await import('bootstrap')`
+- Initialize in `onMounted`, dispose in `onBeforeUnmount`
+- Watch functional props and call `instance.dispose()` + reinitialize on change
+- Expose `bsInstance` via `defineExpose`
+
+---
+
+## What VibeUI Does NOT Do
+
+- Does not bundle Bootstrap CSS or JS
+- Does not require Bootstrap Icons (optional peer dep for `VibeIcon`)
+- Does not require Vue Router (optional peer dep for `href`/`to` props on `VibeButton`)
+- Does not require QuillJS (optional peer dep for `VibeFormWysiwyg`)
+- Does not provide a theme system beyond Bootstrap's `data-bs-theme` color modes

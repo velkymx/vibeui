@@ -62,3 +62,14 @@ const containerClass = computed(() => {
     <slot v-else />
   </component>
 </template>
+
+<style scoped>
+.navbar.fixed-top,
+.navbar.sticky-top {
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.navbar.fixed-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+</style>

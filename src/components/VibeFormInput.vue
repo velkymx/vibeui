@@ -22,7 +22,9 @@ const props = defineProps({
   validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
   validateOn: { type: String as PropType<'input' | 'blur' | 'change'>, default: 'blur' },
   helpText: { type: String, default: undefined },
-  plaintext: { type: Boolean, default: false }
+  plaintext: { type: Boolean, default: false },
+  noWrapper: { type: Boolean, default: false },
+  focusRing: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
@@ -51,6 +53,7 @@ const inputClass = computed(() => {
   }
   if (props.validationState === 'valid') classes.push('is-valid')
   if (props.validationState === 'invalid') classes.push('is-invalid')
+  if (props.focusRing) classes.push('focus-ring')
   return classes.join(' ')
 })
 
@@ -78,7 +81,7 @@ const handleFocus = (event: FocusEvent) => {
 </script>
 
 <template>
-  <div :class="{ 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }">
+  <div v-if="!noWrapper" :class="{ 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }">
     <label v-if="shouldRenderLabel" :for="computedId" class="form-label">
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
@@ -111,4 +114,21 @@ const handleFocus = (event: FocusEvent) => {
       </div>
     </template>
   </div>
+
+  <input
+    v-else
+    :id="computedId"
+    :type="type"
+    :class="inputClass"
+    :value="modelValue"
+    :placeholder="placeholder"
+    :disabled="disabled"
+    :readonly="readonly || plaintext"
+    :required="required"
+    :aria-invalid="validationState === 'invalid'"
+    @input="handleInput"
+    @change="handleChange"
+    @blur="handleBlur"
+    @focus="handleFocus"
+  />
 </template>

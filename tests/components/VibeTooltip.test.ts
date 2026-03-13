@@ -87,4 +87,27 @@ describe('VibeTooltip', () => {
     wrapper.unmount()
     expect(mockInstance.dispose).toHaveBeenCalled()
   })
+
+  it('switches trigger to click on touch devices', async () => {
+    // Simulate touch support
+    vi.stubGlobal('ontouchstart', {})
+    
+    const wrapper = mount(VibeTooltip, {
+      props: {
+        content: 'Tooltip Content'
+      },
+      slots: {
+        default: '<button>Hover me</button>'
+      }
+    })
+
+    // Wait for initialization
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(bootstrap.Tooltip).toHaveBeenCalledWith(expect.any(HTMLElement), expect.objectContaining({
+      trigger: 'click'
+    }))
+
+    vi.unstubAllGlobals()
+  })
 })

@@ -2,6 +2,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Size } from '../types'
 import { useId } from '../composables/useId'
+import { useBackButton } from '../composables/useBackButton'
 
 interface BootstrapModal {
   show: () => void
@@ -133,6 +134,11 @@ const show = () => bsModal.value?.show()
 const hide = () => bsModal.value?.hide()
 const handleUpdate = () => bsModal.value?.handleUpdate()
 
+// Support Android back button in hybrid mobile apps
+useBackButton(() => {
+  if (isVisible.value) hide()
+})
+
 defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
 </script>
 
@@ -170,3 +176,21 @@ defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.modal.show .modal-dialog.modal-fullscreen {
+  height: 100dvh;
+}
+
+.modal.show .modal-dialog.modal-fullscreen .modal-content {
+  height: 100dvh;
+}
+
+.modal-header {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0));
+}
+
+.modal-footer {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0));
+}
+</style>

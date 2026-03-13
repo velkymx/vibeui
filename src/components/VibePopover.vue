@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { Placement } from '../types'
 
 interface BootstrapPopover {
@@ -21,6 +21,17 @@ const emit = defineEmits(['component-error'])
 const popoverRef = ref<HTMLElement | null>(null)
 const bsPopover = ref<BootstrapPopover | null>(null)
 
+const isTouchDevice = () => {
+  return typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+}
+
+const computedTrigger = computed(() => {
+  if (isTouchDevice() && props.trigger === 'hover focus') {
+    return 'click'
+  }
+  return props.trigger
+})
+
 const initPopover = async () => {
   if (!popoverRef.value) return
 
@@ -36,7 +47,7 @@ const initPopover = async () => {
       title: props.title,
       content: props.text || props.content || '',
       placement: props.placement,
-      trigger: props.trigger,
+      trigger: computedTrigger.value,
       html: props.html
     }) as BootstrapPopover
   } catch (error) {

@@ -394,6 +394,14 @@ describe('VibeDataTable', () => {
 
       expect(wrapper.find('.table-responsive').exists()).toBe(true)
     })
+
+    it('applies stack class when stack prop is true', () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, stack: true }
+      })
+
+      expect(wrapper.find('table.vibe-table-stack').exists()).toBe(true)
+    })
   })
 
   describe('events', () => {

@@ -17,8 +17,12 @@ npm install @velkymx/vibeui bootstrap
 ```javascript
 import { createApp } from 'vue'
 import App from './App.vue'
-import VibeUI from '@velkymx/vibeui'
+import VibeUI, { useColorMode } from '@velkymx/vibeui'
 import 'bootstrap/dist/css/bootstrap.min.css'
+
+// Restore saved color mode preference before mounting
+const { initColorMode } = useColorMode()
+initColorMode()
 
 createApp(App).use(VibeUI).mount('#app')
 ```
@@ -67,6 +71,14 @@ The library handles:
 - [VibeFormSelect](./forms/form-select.md)
 - [VibeFormWysiwyg](./forms/form-wysiwyg.md)
 
+## Composables
+
+Standalone utilities that can be used independently of any component.
+
+- [useColorMode](./composables/color-mode.md) - Manage Bootstrap light/dark/auto color modes
+- `useBreakpoints` - Programmatic breakpoint detection (xs, sm, md, lg, xl, xxl)
+- `useBackButton` - Handle Android hardware back button in hybrid mobile apps
+
 ## Design Philosophy
 
 1. **Full Abstraction** - No "reach-around" required; the library manages the framework engine.
@@ -102,8 +114,31 @@ onMounted(() => {
 </script>
 ```
 
-## Contributing
+## Mobile & Hybrid App Support
 
+VibeUI is optimized for mobile-first development and hybrid environments like **Capacitor**.
+
+### Programmatic Breakpoints
+Use the `useBreakpoints` composable to adapt your UI based on the viewport size.
+
+```javascript
+import { useBreakpoints } from '@velkymx/vibeui'
+const { isMobile, isTablet, isLg } = useBreakpoints()
+```
+
+### Safe Areas
+Components like `VibeNavbar`, `VibeOffcanvas`, and `VibeModal` automatically respect device safe areas (notches) when your app is configured with `viewport-fit=cover`.
+
+### Hybrid Navigation
+Use `useBackButton` to ensure Android hardware back button events correctly close active UI layers like modals and sidebars.
+
+```javascript
+import { useBackButton } from '@velkymx/vibeui'
+// Registered automatically inside VibeModal and VibeOffcanvas
+```
+
+## Contributing
+...
 Contributions are welcome! Please visit the [GitHub repository](https://github.com/velkymx/vibeui) to report issues or submit pull requests.
 
 ## License
