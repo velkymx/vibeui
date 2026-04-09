@@ -14,7 +14,10 @@
     "./dist/style.css": "./dist/vibeui.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "llms.txt",
+    "CLAUDE.md",
+    "docs"
   ],
   "scripts": {
     "dev": "vite",
