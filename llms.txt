@@ -4,7 +4,7 @@ A Vue 3 component library that wraps Bootstrap 5.3. Every Bootstrap component is
 
 **Package:** `@velkymx/vibeui`
 **Stack:** Vue 3 (Composition API) + Bootstrap 5.3 + TypeScript + Vite
-**Current version:** 0.7.x
+**Current version:** 0.8.x
 
 ---
 
@@ -157,6 +157,71 @@ interface AccordionItem    { id, title, content, show? }
 interface CarouselItem     { src, alt?, caption?, captionText?, active?, interval? }
 interface ProgressBar      { value, max?, variant?, striped?, animated?, label?, showValue? }
 interface DataTableColumn  { key, label, sortable?, searchable?, formatter?, class?, ... }
+```
+
+---
+
+## Layout Components
+
+### VibeContainer
+
+Wraps Bootstrap's `.container`, `.container-fluid`, and `.container-{breakpoint}`.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `fluid` | `boolean \| ContainerType` | `false` | `false` = fixed, `true` = fluid, or breakpoint string |
+| `tag` | `Tag` | `'div'` | HTML element |
+
+```vue
+<VibeContainer>Fixed width</VibeContainer>
+<VibeContainer fluid>Full width</VibeContainer>
+<VibeContainer fluid="md">Fluid until md breakpoint</VibeContainer>
+```
+
+### VibeRow
+
+Bootstrap grid row with gutters, row-columns, and alignment.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `tag` | `Tag` | `'div'` | HTML element |
+| `gutters` | `GutterSize` | — | Both-axis gutter (`0`-`5`) |
+| `guttersX` / `guttersY` | `GutterSize` | — | Per-axis gutter |
+| `gutters{X\|Y}{Sm\|Md\|Lg\|Xl\|Xxl}` | `GutterSize` | — | Responsive gutters |
+| `rowCols` | `RowColsSize` | — | Columns per row (`1`-`6`) |
+| `rowCols{Sm\|Md\|Lg\|Xl\|Xxl}` | `RowColsSize` | — | Responsive row-cols |
+| `alignItems` | `AlignItems` | — | Vertical alignment |
+| `justifyContent` | `JustifyContent` | — | Horizontal distribution |
+
+Types: `GutterSize = 0-5`, `RowColsSize = 1-6`, `AlignItems = 'start' | 'center' | 'end' | 'baseline' | 'stretch'`, `JustifyContent = 'start' | 'center' | 'end' | 'around' | 'between' | 'evenly'`
+
+### VibeCol
+
+Bootstrap grid column with responsive sizing, offsets, ordering, and alignment.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `tag` | `Tag` | `'div'` | HTML element |
+| `cols` | `ColSize \| boolean` | — | Base width (`1`-`12`, `'auto'`, or `true`) |
+| `sm` / `md` / `lg` / `xl` / `xxl` | `ColSize \| boolean` | — | Responsive width |
+| `offset` | `Number` | — | Base offset (`0`-`11`) |
+| `offset{Sm\|Md\|Lg\|Xl\|Xxl}` | `Number` | — | Responsive offsets |
+| `order` | `OrderValue` | — | Visual order |
+| `order{Sm\|Md\|Lg\|Xl\|Xxl}` | `OrderValue` | — | Responsive order |
+| `alignSelf` | `AlignItems` | — | Individual vertical alignment |
+
+Types: `ColSize = 1-12 | 'auto'`, `OrderValue = 0-5 | 'first' | 'last'`
+
+When no sizing props are provided, `VibeCol` defaults to equal-width (`col` class).
+
+```vue
+<VibeContainer>
+  <VibeRow :gutters="3">
+    <VibeCol :cols="12" :md="6" :lg="4">Responsive</VibeCol>
+    <VibeCol :cols="12" :md="6" :lg="4">Responsive</VibeCol>
+    <VibeCol :cols="12" :md="12" :lg="4">Responsive</VibeCol>
+  </VibeRow>
+</VibeContainer>
 ```
 
 ---

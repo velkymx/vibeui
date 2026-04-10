@@ -4,6 +4,7 @@ import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 import { useId } from '../composables/useId'
 import { useBreakpoints } from '../composables/useBreakpoints'
+import Quill from 'quill'
 
 interface QuillInstance {
   root: HTMLElement
@@ -16,6 +17,7 @@ interface QuillInstance {
   on: (event: string, handler: (...args: unknown[]) => void) => void
   off: (event: string, handler: (...args: unknown[]) => void) => void
   enable: (enabled: boolean) => void
+  selection: unknown
 }
 
 const props = defineProps({
@@ -65,6 +67,7 @@ const isUpdatingFromProp = ref(false)
 const blurHandler = ref<(() => void) | null>(null)
 const focusHandler = ref<(() => void) | null>(null)
 const textChangeHandler = ref<((...args: unknown[]) => void) | null>(null)
+const selectionChangeHandler = ref<((...args: unknown[]) => void) | null>(null)
 
 const containerClass = computed(() => {
   const classes = ['vibe-wysiwyg-container']
@@ -165,6 +168,9 @@ const initQuill = async () => {
       }
       quillInstance.value.root.addEventListener('focus', focusHandler.value)
 
+      selectionChangeHandler.value = () => {}
+      quillInstance.value.on('selection-change', selectionChangeHandler.value)
+
       isQuillLoaded.value = true
       emit('ready', quillInstance.value)
     }
@@ -179,9 +185,16 @@ onMounted(initQuill)
 
 onBeforeUnmount(() => {
   if (quillInstance.value) {
+    // Disable the editor first to prevent selection updates on detached DOM
+    quillInstance.value.enable(false)
+
     if (textChangeHandler.value) {
       quillInstance.value.off('text-change', textChangeHandler.value)
       textChangeHandler.value = null
+    }
+    if (selectionChangeHandler.value) {
+      quillInstance.value.off('selection-change', selectionChangeHandler.value)
+      selectionChangeHandler.value = null
     }
     if (blurHandler.value) {
       quillInstance.value.root.removeEventListener('blur', blurHandler.value)
@@ -191,6 +204,8 @@ onBeforeUnmount(() => {
       quillInstance.value.root.removeEventListener('focus', focusHandler.value)
       focusHandler.value = null
     }
+    // Null out the selection module to prevent Quill from accessing removed DOM
+    quillInstance.value.selection = null
     if (editorContainer.value) {
       const toolbar = editorContainer.value.parentElement?.querySelector('.ql-toolbar')
       if (toolbar) {
