@@ -48,6 +48,7 @@
   },
   "homepage": "https://github.com/velkymx/vibeui#readme",
   "dependencies": {
+    "@floating-ui/dom": "^1.7.6",
     "vue": "^3.5.0"
   },
   "devDependencies": {
