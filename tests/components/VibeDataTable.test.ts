@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeDataTable from '../../src/components/VibeDataTable.vue'
-import { nextTick, ref } from 'vue'
+import type { DataTableColumn, DataTableCellSlotProps } from '../../src/types'
+import { nextTick, ref, h } from 'vue'
 
 describe('VibeDataTable', () => {
   const columns = [
@@ -426,6 +427,60 @@ describe('VibeDataTable', () => {
       })
 
       expect(wrapper.find('tbody td').exists()).toBe(true)
+    })
+
+    it('passes typed value, item, and index to cell slot', () => {
+      const captured: Array<{ value: unknown; item: unknown; index: unknown }> = []
+      mount(VibeDataTable, {
+        props: { columns: [{ key: 'name', label: 'Name' }], items, paginated: false },
+        slots: {
+          'cell(name)': (slotProps: DataTableCellSlotProps<typeof items[number]>) => {
+            captured.push({ value: slotProps.value, item: slotProps.item, index: slotProps.index })
+            return h('span', { class: 'slot-render' }, String(slotProps.value).toUpperCase())
+          }
+        }
+      })
+
+      expect(captured.length).toBe(items.length)
+      expect(captured[0]).toEqual({ value: 'Alice', item: items[0], index: 0 })
+      expect(captured[2].value).toBe('Charlie')
+    })
+  })
+
+  describe('type-level: generic column typing', () => {
+    interface User extends Record<string, unknown> {
+      id: number
+      name: string
+      active: boolean
+    }
+
+    it('DataTableColumn<T> restricts key to keyof T & string', () => {
+      const col: DataTableColumn<User> = { key: 'name', label: 'Name' }
+      expectTypeOf(col.key).toEqualTypeOf<'id' | 'name' | 'active'>()
+    })
+
+    it('DataTableColumn<T> formatter types value as T[keyof T] and row as T', () => {
+      const col: DataTableColumn<User> = {
+        key: 'id',
+        label: 'ID',
+        formatter: (value, row) => {
+          expectTypeOf(value).toEqualTypeOf<User[keyof User]>()
+          expectTypeOf(row).toEqualTypeOf<User>()
+          return String(value)
+        }
+      }
+      expect(col.formatter?.(42, { id: 42, name: 'X', active: true })).toBe('42')
+    })
+
+    it('DataTableCellSlotProps<T> typed as { item: T, value: T[keyof T], index: number }', () => {
+      expectTypeOf<DataTableCellSlotProps<User>['item']>().toEqualTypeOf<User>()
+      expectTypeOf<DataTableCellSlotProps<User>['value']>().toEqualTypeOf<User[keyof User]>()
+      expectTypeOf<DataTableCellSlotProps<User>['index']>().toEqualTypeOf<number>()
+    })
+
+    it('DataTableColumn defaults to Record<string, unknown> for back-compat', () => {
+      const col: DataTableColumn = { key: 'anything', label: 'Anything' }
+      expectTypeOf(col.key).toEqualTypeOf<string>()
     })
   })
 
