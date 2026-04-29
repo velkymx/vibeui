@@ -132,6 +132,7 @@ export {
 }
 
 import type { App, Plugin } from 'vue'
+import { vTooltip } from '../directives/vTooltip'
 
 // Vue plugin for global registration
 const VibeUIPlugin: Plugin = {
@@ -200,6 +201,9 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeFormWysiwyg', VibeFormWysiwyg)
     app.component('VibeInputGroup', VibeInputGroup)
     app.component('VibeLink', VibeLink)
+
+    // Directives
+    app.directive('vibe-tooltip', vTooltip)
   }
 }
 
