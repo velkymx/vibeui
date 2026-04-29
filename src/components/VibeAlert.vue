@@ -11,7 +11,7 @@ const props = defineProps({
   subtle: { type: Boolean, default: false },
   modelValue: { type: Boolean, default: true },
   dismissable: { type: Boolean, default: false },
-  message: { type: String, required: true },
+  message: { type: String, default: '' },
   fade: { type: Boolean, default: true }
 })
 
