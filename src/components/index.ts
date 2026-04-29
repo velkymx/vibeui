@@ -25,6 +25,8 @@ import VibeNavbarToggle from './VibeNavbarToggle.vue'
 import VibeNavbarNav from './VibeNavbarNav.vue'
 import VibePagination from './VibePagination.vue'
 import VibeTabContent from './VibeTabContent.vue'
+import VibeTabs from './VibeTabs.vue'
+import VibeTab from './VibeTab.vue'
 
 // List Components
 import VibeListGroup from './VibeListGroup.vue'
@@ -94,6 +96,8 @@ export {
   VibeNavbarNav,
   VibePagination,
   VibeTabContent,
+  VibeTabs,
+  VibeTab,
 
   // List
   VibeListGroup,
@@ -168,6 +172,8 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeNavbarNav', VibeNavbarNav)
     app.component('VibePagination', VibePagination)
     app.component('VibeTabContent', VibeTabContent)
+    app.component('VibeTabs', VibeTabs)
+    app.component('VibeTab', VibeTab)
 
     // List
     app.component('VibeListGroup', VibeListGroup)
