@@ -111,4 +111,46 @@ describe('VibeButton', () => {
     // Disabled buttons don't emit click events
     expect(wrapper.emitted('click')).toBeFalsy()
   })
+
+  describe('variant="link"', () => {
+    it('renders .btn-link class', () => {
+      const wrapper = mount(VibeButton, {
+        props: { variant: 'link' }
+      })
+
+      const classes = wrapper.find('button').classes()
+      expect(classes).toContain('btn')
+      expect(classes).toContain('btn-link')
+    })
+
+    it('does not emit btn-outline-link when outline is true (no such class)', () => {
+      const wrapper = mount(VibeButton, {
+        props: { variant: 'link', outline: true }
+      })
+
+      const classes = wrapper.find('button').classes()
+      expect(classes).toContain('btn-link')
+      expect(classes).not.toContain('btn-outline-link')
+      expect(classes).not.toContain('btn-link-link')
+    })
+
+    it('combines size with link variant', () => {
+      const wrapper = mount(VibeButton, {
+        props: { variant: 'link', size: 'sm' }
+      })
+
+      const classes = wrapper.find('button').classes()
+      expect(classes).toContain('btn-link')
+      expect(classes).toContain('btn-sm')
+    })
+
+    it('still emits click for link variant', async () => {
+      const wrapper = mount(VibeButton, {
+        props: { variant: 'link' }
+      })
+
+      await wrapper.find('button').trigger('click')
+      expect(wrapper.emitted('click')).toBeTruthy()
+    })
+  })
 })

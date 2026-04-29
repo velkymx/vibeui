@@ -3,6 +3,7 @@
 export type ColorMode = 'light' | 'dark' | 'auto'
 
 export type Variant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
+export type ButtonVariant = Variant | 'link'
 
 export type Size = 'sm' | 'lg'
 
