@@ -1,8 +1,30 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import type { PropType, ComputedRef } from 'vue'
-import type { FormSelectOption, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
+import type { FormSelectOption, FormSelectOptionValue, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useId } from '../composables/useId'
+
+const NULL_SENTINEL = '\0__vibe_null__\0'
+const UNDEF_SENTINEL = '\0__vibe_undef__\0'
+const BOOL_TRUE_SENTINEL = '\0__vibe_true__\0'
+const BOOL_FALSE_SENTINEL = '\0__vibe_false__\0'
+
+const encodeValue = (v: FormSelectOptionValue): string => {
+  if (v === null) return NULL_SENTINEL
+  if (v === undefined) return UNDEF_SENTINEL
+  if (v === true) return BOOL_TRUE_SENTINEL
+  if (v === false) return BOOL_FALSE_SENTINEL
+  return String(v)
+}
+
+const decodeValue = (encoded: string, options: FormSelectOption[]): FormSelectOptionValue => {
+  if (encoded === NULL_SENTINEL) return null
+  if (encoded === UNDEF_SENTINEL) return undefined
+  if (encoded === BOOL_TRUE_SENTINEL) return true
+  if (encoded === BOOL_FALSE_SENTINEL) return false
+  const match = options.find(opt => encodeValue(opt.value) === encoded)
+  return match ? match.value : encoded
+}
 
 const props = defineProps({
   modelValue: {
@@ -51,14 +73,21 @@ const selectClass = computed(() => {
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLSelectElement
-  let newValue: any
+  let newValue: unknown
   if (props.multiple) {
-    newValue = Array.from(target.selectedOptions).map(option => option.value)
+    newValue = Array.from(target.selectedOptions).map(option => decodeValue(option.value, props.options))
   } else {
-    newValue = target.value
+    newValue = decodeValue(target.value, props.options)
   }
   emit('update:modelValue', newValue)
 }
+
+const encodedModelValue = computed(() => {
+  if (Array.isArray(props.modelValue)) {
+    return props.modelValue.map((v: FormSelectOptionValue) => encodeValue(v))
+  }
+  return encodeValue(props.modelValue as FormSelectOptionValue)
+})
 
 const handleChange = (event: Event) => {
   emit('change', event)
@@ -84,7 +113,7 @@ const handleFocus = (event: FocusEvent) => {
     <select
       :id="computedId"
       :class="selectClass"
-      :value="modelValue"
+      :value="encodedModelValue"
       :multiple="multiple"
       :size="htmlSize || selectSize"
       :disabled="disabled"
@@ -98,7 +127,12 @@ const handleFocus = (event: FocusEvent) => {
     >
       <option v-if="placeholder" value="" disabled selected>{{ placeholder }}</option>
       <slot>
-        <option v-for="option in options" :key="String(option.value)" :value="option.value" :disabled="option.disabled">
+        <option
+          v-for="(option, idx) in options"
+          :key="`${idx}-${encodeValue(option.value)}`"
+          :value="encodeValue(option.value)"
+          :disabled="option.disabled"
+        >
           {{ option.text }}
         </option>
       </slot>

@@ -201,4 +201,103 @@ describe('VibeFormSelect', () => {
 
     expect(wrapper.find('.text-danger').text()).toBe('*')
   })
+
+  describe('null / undefined / boolean option values', () => {
+    it('accepts null value and emits null on selection', async () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { text: '— None —', value: null },
+            { text: 'Alpha', value: 'a' }
+          ],
+          modelValue: 'a'
+        }
+      })
+
+      const options = wrapper.findAll('option')
+      expect(options).toHaveLength(2)
+
+      const select = wrapper.find('select').element as HTMLSelectElement
+      select.selectedIndex = 0
+      await wrapper.find('select').trigger('input')
+      await wrapper.find('select').trigger('change')
+
+      const emitted = wrapper.emitted('update:modelValue') as unknown[][]
+      expect(emitted).toBeTruthy()
+      expect(emitted[0][0]).toBeNull()
+    })
+
+    it('accepts undefined value and emits undefined on selection', async () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { text: '— Not set —', value: undefined },
+            { text: 'Beta', value: 'b' }
+          ],
+          modelValue: 'b'
+        }
+      })
+
+      const select = wrapper.find('select').element as HTMLSelectElement
+      select.selectedIndex = 0
+      await wrapper.find('select').trigger('input')
+
+      const emitted = wrapper.emitted('update:modelValue') as unknown[][]
+      expect(emitted[0][0]).toBeUndefined()
+    })
+
+    it('accepts boolean values and preserves type on emit', async () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { text: 'Yes', value: true },
+            { text: 'No', value: false }
+          ],
+          modelValue: true
+        }
+      })
+
+      const select = wrapper.find('select').element as HTMLSelectElement
+      select.selectedIndex = 1
+      await wrapper.find('select').trigger('input')
+
+      const emitted = wrapper.emitted('update:modelValue') as unknown[][]
+      expect(emitted[0][0]).toBe(false)
+      expect(typeof emitted[0][0]).toBe('boolean')
+    })
+
+    it('preserves selection of null modelValue across renders', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { text: '— None —', value: null },
+            { text: 'A', value: 'a' }
+          ],
+          modelValue: null
+        }
+      })
+
+      const select = wrapper.find('select').element as HTMLSelectElement
+      expect(select.selectedIndex).toBe(0)
+    })
+
+    it('still emits string values unchanged for plain string options', async () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: mockOptions,
+          modelValue: ''
+        }
+      })
+
+      await wrapper.find('select').setValue('2')
+
+      const emitted = wrapper.emitted('update:modelValue') as unknown[][]
+      expect(emitted[0][0]).toBe('2')
+    })
+  })
 })

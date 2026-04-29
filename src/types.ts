@@ -154,8 +154,10 @@ export interface FormValidationResult {
   message?: string
 }
 
+export type FormSelectOptionValue = string | number | boolean | null | undefined
+
 export interface FormSelectOption {
-  value: string | number
+  value: FormSelectOptionValue
   text: string
   disabled?: boolean
 }
