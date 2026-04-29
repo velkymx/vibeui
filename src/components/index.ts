@@ -61,6 +61,7 @@ import VibeFormSpinbutton from './VibeFormSpinbutton.vue'
 import VibeFormDatepicker from './VibeFormDatepicker.vue'
 import VibeFileInput from './VibeFileInput.vue'
 import VibeSlider from './VibeSlider.vue'
+import VibeStepper from './VibeStepper.vue'
 import VibeFormCheckbox from './VibeFormCheckbox.vue'
 import VibeFormRadio from './VibeFormRadio.vue'
 import VibeFormSwitch from './VibeFormSwitch.vue'
@@ -134,6 +135,7 @@ export {
   VibeFormDatepicker,
   VibeFileInput,
   VibeSlider,
+  VibeStepper,
   VibeFormCheckbox,
   VibeFormRadio,
   VibeFormSwitch,
@@ -212,6 +214,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeFormDatepicker', VibeFormDatepicker)
     app.component('VibeFileInput', VibeFileInput)
     app.component('VibeSlider', VibeSlider)
+    app.component('VibeStepper', VibeStepper)
     app.component('VibeFormCheckbox', VibeFormCheckbox)
     app.component('VibeFormRadio', VibeFormRadio)
     app.component('VibeFormSwitch', VibeFormSwitch)
