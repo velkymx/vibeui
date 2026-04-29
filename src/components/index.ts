@@ -67,6 +67,7 @@ import VibeSortable from './VibeSortable.vue'
 import VibeDraggable from './VibeDraggable.vue'
 import VibeDroppable from './VibeDroppable.vue'
 import VibeResizable from './VibeResizable.vue'
+import VibeDatePicker from './VibeDatePicker.vue'
 import VibeFormCheckbox from './VibeFormCheckbox.vue'
 import VibeFormRadio from './VibeFormRadio.vue'
 import VibeFormSwitch from './VibeFormSwitch.vue'
@@ -146,6 +147,7 @@ export {
   VibeDraggable,
   VibeDroppable,
   VibeResizable,
+  VibeDatePicker,
   VibeFormCheckbox,
   VibeFormRadio,
   VibeFormSwitch,
@@ -230,6 +232,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeDraggable', VibeDraggable)
     app.component('VibeDroppable', VibeDroppable)
     app.component('VibeResizable', VibeResizable)
+    app.component('VibeDatePicker', VibeDatePicker)
     app.component('VibeFormCheckbox', VibeFormCheckbox)
     app.component('VibeFormRadio', VibeFormRadio)
     app.component('VibeFormSwitch', VibeFormSwitch)
