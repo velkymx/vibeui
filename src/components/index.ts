@@ -41,6 +41,7 @@ import VibeDropdown from './VibeDropdown.vue'
 import VibeModal from './VibeModal.vue'
 import VibeOffcanvas from './VibeOffcanvas.vue'
 import VibeToast from './VibeToast.vue'
+import VibeToastHost from './VibeToastHost.vue'
 import VibeCarousel from './VibeCarousel.vue'
 
 // Advanced Components
@@ -112,6 +113,7 @@ export {
   VibeModal,
   VibeOffcanvas,
   VibeToast,
+  VibeToastHost,
   VibeCarousel,
 
   // Advanced
@@ -188,6 +190,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeModal', VibeModal)
     app.component('VibeOffcanvas', VibeOffcanvas)
     app.component('VibeToast', VibeToast)
+    app.component('VibeToastHost', VibeToastHost)
     app.component('VibeCarousel', VibeCarousel)
 
     // Advanced
