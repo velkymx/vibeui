@@ -6,6 +6,7 @@ import VibeButtonGroup from './VibeButtonGroup.vue'
 import VibeCloseButton from './VibeCloseButton.vue'
 import VibeSpinner from './VibeSpinner.vue'
 import VibePlaceholder from './VibePlaceholder.vue'
+import VibeSkeleton from './VibeSkeleton.vue'
 
 // Layout Components
 import VibeContainer from './VibeContainer.vue'
@@ -73,6 +74,7 @@ export {
   VibeCloseButton,
   VibeSpinner,
   VibePlaceholder,
+  VibeSkeleton,
 
   // Layout
   VibeContainer,
@@ -145,6 +147,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeCloseButton', VibeCloseButton)
     app.component('VibeSpinner', VibeSpinner)
     app.component('VibePlaceholder', VibePlaceholder)
+    app.component('VibeSkeleton', VibeSkeleton)
 
     // Layout
     app.component('VibeContainer', VibeContainer)
