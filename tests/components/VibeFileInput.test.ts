@@ -140,4 +140,36 @@ describe('VibeFileInput', () => {
       expect(wrapper.find('input').attributes('disabled')).toBeDefined()
     })
   })
+
+  describe('H6 same-file re-select', () => {
+    it('clears input.value after processing so the same file fires change again', async () => {
+      const wrapper = mount(VibeFileInput)
+      const input = wrapper.find('input').element as HTMLInputElement
+      const f = makeFile('a.txt', 10)
+      await setFiles(input, [f])
+      expect(input.value).toBe('')
+    })
+  })
+
+  describe('H7 dropzone click recursion', () => {
+    it('clicking dropzone opens file dialog exactly once (no recursive bubble)', async () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { dragDrop: true },
+        attachTo: document.body
+      })
+
+      let clickCount = 0
+      const input = wrapper.find('input[type="file"]').element as HTMLInputElement
+      input.addEventListener('click', () => {
+        clickCount += 1
+      })
+
+      await wrapper.find('.vibe-file-input-dropzone').trigger('click')
+      // Wait a microtask for any cascading bubble
+      await Promise.resolve()
+
+      expect(clickCount).toBe(1)
+      wrapper.unmount()
+    })
+  })
 })

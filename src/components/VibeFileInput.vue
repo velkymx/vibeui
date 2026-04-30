@@ -55,6 +55,8 @@ const handleChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   const files = target.files ? Array.from(target.files) : []
   processFiles(files)
+  // Reset so that re-selecting the same file fires `change` again.
+  target.value = ''
 }
 
 const handleDrop = (event: DragEvent) => {
@@ -108,28 +110,20 @@ const dropzoneClass = computed(() => {
       <slot name="dropzone">
         <p class="mb-0">{{ dropzoneText }}</p>
       </slot>
-      <input
-        :id="computedId"
-        ref="inputRef"
-        type="file"
-        :class="inputClass"
-        :multiple="multiple"
-        :accept="accept"
-        :disabled="disabled"
-        style="display: none"
-        @change="handleChange"
-      />
     </div>
 
+    <!-- Hidden input is a SIBLING of the dropzone (not a child) so the
+         programmatic .click() it dispatches cannot bubble back into the
+         dropzone's @click handler and re-trigger this method. -->
     <input
-      v-else
       :id="computedId"
       ref="inputRef"
       type="file"
-      :class="inputClass"
+      :class="dragDrop ? '' : inputClass"
       :multiple="multiple"
       :accept="accept"
       :disabled="disabled"
+      :style="dragDrop ? 'display: none' : undefined"
       @change="handleChange"
     />
 
