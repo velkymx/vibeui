@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type PropType } from 'vue'
+import { computed, ref, watch, type PropType } from 'vue'
 
 type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
@@ -33,6 +33,20 @@ const startX = ref(0)
 const startY = ref(0)
 const startW = ref(0)
 const startH = ref(0)
+
+watch(
+  () => props.width,
+  (val) => {
+    if (val !== currentWidth.value) currentWidth.value = val
+  }
+)
+
+watch(
+  () => props.height,
+  (val) => {
+    if (val !== currentHeight.value) currentHeight.value = val
+  }
+)
 
 const snap = (v: number): number => Math.round(v / props.grid) * props.grid
 

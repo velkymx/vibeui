@@ -140,4 +140,36 @@ describe('VibeResizable', () => {
     expect(wrapper.emitted('resize')).toBeFalsy()
     wrapper.unmount()
   })
+
+  describe('H9 external prop sync', () => {
+    it('updates internal width when props.width changes', async () => {
+      const wrapper = mount(VibeResizable, {
+        props: { width: 100, height: 100 }
+      })
+
+      await wrapper.setProps({ width: 250 })
+      const root = wrapper.find('.vibe-resizable').element as HTMLElement
+      expect(root.style.width).toBe('250px')
+    })
+
+    it('updates internal height when props.height changes', async () => {
+      const wrapper = mount(VibeResizable, {
+        props: { width: 100, height: 100 }
+      })
+
+      await wrapper.setProps({ height: 175 })
+      const root = wrapper.find('.vibe-resizable').element as HTMLElement
+      expect(root.style.height).toBe('175px')
+    })
+
+    it('does not emit update events when external prop drives the change', async () => {
+      const wrapper = mount(VibeResizable, {
+        props: { width: 100, height: 100 }
+      })
+
+      await wrapper.setProps({ width: 200 })
+      // External change should NOT loop emit back through update:width
+      expect(wrapper.emitted('update:width')).toBeFalsy()
+    })
+  })
 })
