@@ -207,4 +207,150 @@ describe('VibeStepper', () => {
       expect(body.exists()).toBe(true)
     })
   })
+
+  describe('H1 jumpTo runs guards', () => {
+    it('forward jump runs beforeNext; blocked when guard returns false', async () => {
+      const Harness = defineComponent({
+        components: { VibeStepper },
+        data() {
+          return { active: 0, callsNext: 0, callsPrev: 0 }
+        },
+        methods: {
+          guardNext(): boolean {
+            this.callsNext += 1
+            return false
+          },
+          guardPrev(): boolean {
+            this.callsPrev += 1
+            return true
+          }
+        },
+        render() {
+          return h(VibeStepper as never, {
+            steps: baseSteps,
+            modelValue: this.active,
+            linear: false,
+            'onUpdate:modelValue': (v: number) => {
+              this.active = v
+            },
+            beforeNext: this.guardNext,
+            beforePrev: this.guardPrev
+          })
+        }
+      })
+      const wrapper = mount(Harness)
+      await wrapper.findAll('.vibe-stepper-step')[2].trigger('click')
+      await nextTick()
+      const vm = wrapper.vm as unknown as { active: number; callsNext: number; callsPrev: number }
+      expect(vm.callsNext).toBe(1)
+      expect(vm.callsPrev).toBe(0)
+      expect(vm.active).toBe(0)
+    })
+
+    it('backward jump runs beforePrev; blocked when guard returns false', async () => {
+      const Harness = defineComponent({
+        components: { VibeStepper },
+        data() {
+          return { active: 2, callsPrev: 0 }
+        },
+        methods: {
+          guardPrev(): boolean {
+            this.callsPrev += 1
+            return false
+          }
+        },
+        render() {
+          return h(VibeStepper as never, {
+            steps: baseSteps,
+            modelValue: this.active,
+            'onUpdate:modelValue': (v: number) => {
+              this.active = v
+            },
+            beforePrev: this.guardPrev
+          })
+        }
+      })
+      const wrapper = mount(Harness)
+      await wrapper.findAll('.vibe-stepper-step')[0].trigger('click')
+      await nextTick()
+      const vm = wrapper.vm as unknown as { active: number; callsPrev: number }
+      expect(vm.callsPrev).toBe(1)
+      expect(vm.active).toBe(2)
+    })
+
+    it('forward jump allowed when beforeNext returns true', async () => {
+      const Harness = defineComponent({
+        components: { VibeStepper },
+        data() {
+          return { active: 0 }
+        },
+        methods: {
+          guardNext(): boolean {
+            return true
+          }
+        },
+        render() {
+          return h(VibeStepper as never, {
+            steps: baseSteps,
+            modelValue: this.active,
+            linear: false,
+            'onUpdate:modelValue': (v: number) => {
+              this.active = v
+            },
+            beforeNext: this.guardNext
+          })
+        }
+      })
+      const wrapper = mount(Harness)
+      await wrapper.findAll('.vibe-stepper-step')[2].trigger('click')
+      await nextTick()
+      const vm = wrapper.vm as unknown as { active: number }
+      expect(vm.active).toBe(2)
+    })
+  })
+
+  describe('H2 concurrency guard on async beforeNext', () => {
+    it('ignores additional Next clicks while a guard promise is pending', async () => {
+      let resolveGate: ((v: boolean) => void) | undefined
+      const guard = () => new Promise<boolean>(resolve => {
+        resolveGate = resolve
+      })
+      const Harness = defineComponent({
+        components: { VibeStepper },
+        data() {
+          return { active: 0, calls: 0 }
+        },
+        methods: {
+          run() {
+            this.calls += 1
+            return guard()
+          }
+        },
+        render() {
+          return h(VibeStepper as never, {
+            steps: baseSteps,
+            modelValue: this.active,
+            'onUpdate:modelValue': (v: number) => {
+              this.active = v
+            },
+            beforeNext: this.run
+          })
+        }
+      })
+      const wrapper = mount(Harness)
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await wrapper.find('[data-stepper-next]').trigger('click')
+
+      const vm = wrapper.vm as unknown as { active: number; calls: number }
+      expect(vm.calls).toBe(1)
+      expect(vm.active).toBe(0)
+
+      resolveGate?.(true)
+      await new Promise(r => setTimeout(r, 0))
+      await nextTick()
+
+      expect(vm.active).toBe(1)
+    })
+  })
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type PropType } from 'vue'
+import { computed, ref, type PropType } from 'vue'
 
 export interface StepperStep {
   label: string
@@ -33,6 +33,8 @@ const stepperClass = computed(() => {
   return c.join(' ')
 })
 
+const transitioning = ref(false)
+
 const isLast = computed(() => props.modelValue >= props.steps.length - 1)
 const isFirst = computed(() => props.modelValue <= 0)
 
@@ -61,26 +63,48 @@ const runGuard = async (
 }
 
 const goNext = async () => {
+  if (transitioning.value) return
   if (isLast.value) {
     emit('finish')
     return
   }
-  const allowed = await runGuard(props.beforeNext, 'next')
-  if (!allowed) return
-  emit('update:modelValue', props.modelValue + 1)
+  transitioning.value = true
+  try {
+    const allowed = await runGuard(props.beforeNext, 'next')
+    if (!allowed) return
+    emit('update:modelValue', props.modelValue + 1)
+  } finally {
+    transitioning.value = false
+  }
 }
 
 const goPrev = async () => {
+  if (transitioning.value) return
   if (isFirst.value) return
-  const allowed = await runGuard(props.beforePrev, 'prev')
-  if (!allowed) return
-  emit('update:modelValue', props.modelValue - 1)
+  transitioning.value = true
+  try {
+    const allowed = await runGuard(props.beforePrev, 'prev')
+    if (!allowed) return
+    emit('update:modelValue', props.modelValue - 1)
+  } finally {
+    transitioning.value = false
+  }
 }
 
 const jumpTo = async (idx: number) => {
+  if (transitioning.value) return
   if (!canJumpTo(idx)) return
   if (idx === props.modelValue) return
-  emit('update:modelValue', idx)
+  transitioning.value = true
+  try {
+    const direction: 'next' | 'prev' = idx > props.modelValue ? 'next' : 'prev'
+    const guard = direction === 'next' ? props.beforeNext : props.beforePrev
+    const allowed = await runGuard(guard, direction)
+    if (!allowed) return
+    emit('update:modelValue', idx)
+  } finally {
+    transitioning.value = false
+  }
 }
 
 const activeStep = computed(() => props.steps[props.modelValue])
