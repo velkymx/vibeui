@@ -35,6 +35,7 @@ const results: Ref<T[]> = ref([]) as Ref<T[]>
 const highlightedIndex = ref(-1)
 const isOpen = ref(false)
 const debounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+let queryToken = 0
 
 watch(
   () => props.modelValue,
@@ -55,13 +56,21 @@ const filterArray = (arr: T[], query: string): T[] => {
 
 const runQuery = async (query: string) => {
   if (typeof props.source === 'function') {
+    queryToken += 1
+    const myToken = queryToken
     const out = await (props.source as SourceFn<T>)(query)
+    if (myToken !== queryToken) return
     results.value = out.slice(0, props.maxResults)
   } else {
+    queryToken += 1
     results.value = filterArray(props.source as T[], query)
   }
   highlightedIndex.value = -1
   isOpen.value = true
+}
+
+const cancelInFlight = () => {
+  queryToken += 1
 }
 
 const scheduleQuery = (query: string) => {
@@ -81,6 +90,7 @@ const onInput = (event: Event) => {
   inputValue.value = target.value
   emit('update:modelValue', target.value)
   if (target.value.length < props.minChars) {
+    cancelInFlight()
     results.value = []
     isOpen.value = false
     return
@@ -95,6 +105,7 @@ const onFocus = () => {
 }
 
 const closeMenu = () => {
+  cancelInFlight()
   isOpen.value = false
   highlightedIndex.value = -1
 }

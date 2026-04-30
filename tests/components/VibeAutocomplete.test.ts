@@ -146,4 +146,88 @@ describe('VibeAutocomplete', () => {
       expect(wrapper.find('.empty-msg').exists()).toBe(true)
     })
   })
+
+  describe('async race protection (C1)', () => {
+    type Resolver = (val: string[]) => void
+
+    const makeControllable = () => {
+      const calls: Array<{ query: string; resolve: Resolver }> = []
+      const source = (query: string) => new Promise<string[]>(resolve => {
+        calls.push({ query, resolve })
+      })
+      return { source, calls }
+    }
+
+    it('drops stale results when an older request resolves after a newer one', async () => {
+      const { source, calls } = makeControllable()
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source, minChars: 1, debounce: 0 }
+      })
+
+      await wrapper.find('input').setValue('first')
+      await flush(0)
+      await wrapper.find('input').setValue('second')
+      await flush(0)
+
+      expect(calls).toHaveLength(2)
+
+      // Resolve second (newer) first
+      calls[1].resolve(['second-A', 'second-B'])
+      await flush(0)
+      expect(wrapper.findAll('.vibe-autocomplete-item').map(i => i.text()))
+        .toEqual(['second-A', 'second-B'])
+
+      // Now resolve first (stale) — must NOT overwrite
+      calls[0].resolve(['stale-1', 'stale-2'])
+      await flush(0)
+      expect(wrapper.findAll('.vibe-autocomplete-item').map(i => i.text()))
+        .toEqual(['second-A', 'second-B'])
+    })
+
+    it('does not reopen the menu when a stale result resolves after closeMenu', async () => {
+      const { source, calls } = makeControllable()
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source, minChars: 1, debounce: 0 }
+      })
+
+      await wrapper.find('input').setValue('q')
+      await flush(0)
+      expect(calls).toHaveLength(1)
+
+      await wrapper.find('input').trigger('keydown', { key: 'Escape' })
+      expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
+
+      calls[0].resolve(['ghost-1'])
+      await flush(0)
+      // Stale result post-close must not render anything
+      expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
+    })
+
+    it('drops stale results triggered by onFocus when input has changed', async () => {
+      const { source, calls } = makeControllable()
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source, minChars: 1, debounce: 0, modelValue: 'a' }
+      })
+
+      // Focus triggers a runQuery for current value
+      await wrapper.find('input').trigger('focus')
+      await flush(0)
+      expect(calls).toHaveLength(1)
+
+      // User types — newer query
+      await wrapper.find('input').setValue('ab')
+      await flush(0)
+      expect(calls).toHaveLength(2)
+
+      // Resolve the newer one first
+      calls[1].resolve(['live'])
+      await flush(0)
+      expect(wrapper.findAll('.vibe-autocomplete-item').map(i => i.text())).toEqual(['live'])
+
+      // Stale focus result must not clobber
+      calls[0].resolve(['stale'])
+      await flush(0)
+      expect(wrapper.findAll('.vibe-autocomplete-item').map(i => i.text())).toEqual(['live'])
+    })
+  })
 })
