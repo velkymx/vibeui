@@ -44,42 +44,85 @@ The library handles:
 - [VibeBadge](./components/core/badge.md)
 - [VibeButton](./components/core/button.md)
 - [VibeButtonGroup](./components/core/button-group.md)
-- [VibeLink](./components/core/link.md)
 - [VibeCloseButton](./components/core/close-button.md)
-- [VibeSpinner](./components/core/spinner.md)
+- [VibeLink](./components/core/link.md)
 - [VibePlaceholder](./components/core/placeholder.md)
+- [VibeSkeleton](./components/core/skeleton.md) *(v0.9)*
+- [VibeSpinner](./components/core/spinner.md)
 
 ### [Interactive Components](./components/interactive/)
 - [VibeAccordion](./components/interactive/accordion.md)
 - [VibeCarousel](./components/interactive/carousel.md)
 - [VibeCollapse](./components/interactive/collapse.md)
+- [VibeDatePicker](./components/interactive/date-picker.md) *(v0.9)*
+- [VibeDraggable / VibeDroppable](./components/interactive/draggable.md) *(v0.9)*
 - [VibeDropdown](./components/interactive/dropdown.md)
 - [VibeModal](./components/interactive/modal.md)
 - [VibeOffcanvas](./components/interactive/offcanvas.md)
+- [VibeResizable](./components/interactive/resizable.md) *(v0.9)*
+- [VibeSlider](./components/interactive/slider.md) *(v0.9)*
+- [VibeSortable](./components/interactive/sortable.md) *(v0.9)*
+- [VibeStepper](./components/interactive/stepper.md) *(v0.9)*
+- [VibeTabs / VibeTab](./components/interactive/tabs.md) *(v0.9)*
 - [VibeToast](./components/interactive/toast.md)
 
 ### [Advanced Components](./components/advanced/)
-- [VibeTooltip](./components/advanced/tooltip.md)
 - [VibePopover](./components/advanced/popover.md)
 - [VibeScrollspy](./components/advanced/scrollspy.md)
+- [VibeTooltip](./components/advanced/tooltip.md)
+
+### [Card](./components/card/)
+- [VibeCard](./components/card/card.md)
+
+### [List](./components/list/)
+- [VibeListGroup](./components/list/list-group.md)
+
+### [Navigation](./components/navigation/)
+- [VibeBreadcrumb](./components/navigation/breadcrumb.md)
+- [VibeNav](./components/navigation/nav.md)
+- [VibeNavbar](./components/navigation/navbar.md)
+- [VibePagination](./components/navigation/pagination.md)
 
 ### [Data Components](./components/data/)
 - [VibeDataTable](./components/data/datatable.md)
 
+### [Progress](./components/progress/)
+- [VibeProgress](./components/progress/progress.md)
+
 ### [Form Components](./forms/)
+- [VibeAutocomplete](./forms/autocomplete.md) *(v0.9)*
+- [VibeFileInput](./forms/file-input.md) *(v0.9)*
+- [VibeFormCheckbox](./forms/form-checkbox.md)
+- [VibeFormDatepicker](./forms/form-datepicker.md) (native input)
 - [VibeFormGroup](./forms/form-group.md) - Automated layout & accessibility
 - [VibeFormInput](./forms/form-input.md)
-- [VibeInputGroup](./forms/input-group.md)
+- [VibeFormRadio](./forms/form-radio.md)
 - [VibeFormSelect](./forms/form-select.md)
+- [VibeFormSpinbutton](./forms/form-spinbutton.md)
+- [VibeFormSwitch](./forms/form-switch.md)
+- [VibeFormTextarea](./forms/form-textarea.md)
 - [VibeFormWysiwyg](./forms/form-wysiwyg.md)
+- [VibeInputGroup](./forms/input-group.md)
+- [Validation rules](./forms/validation.md)
 
 ## Composables
 
 Standalone utilities that can be used independently of any component.
 
-- [useColorMode](./composables/color-mode.md) - Manage Bootstrap light/dark/auto color modes
-- `useBreakpoints` - Programmatic breakpoint detection (xs, sm, md, lg, xl, xxl)
-- `useBackButton` - Handle Android hardware back button in hybrid mobile apps
+- [useBackButton](./composables/back-button.md) - Android hardware back button handling
+- [useBreakpoints](./composables/breakpoints.md) - Programmatic breakpoint detection
+- [useColorMode](./composables/color-mode.md) - Bootstrap light/dark/auto color modes
+- [useForm](./composables/use-form.md) *(v0.9)* - Multi-field form state with validation
+- [usePosition](./composables/use-position.md) *(v0.9)* - Floating-UI based anchor positioning
+- [useToast](./composables/use-toast.md) *(v0.9)* - Global toast service
+
+## Directives
+
+- [v-vibe-tooltip](./directives/v-tooltip.md) *(v0.9)* - Inline tooltip directive
+
+## Utilities
+
+- [Position utility classes](./utilities/position.md) - Bootstrap position-* / top-* / translate-middle reference
 
 ## Design Philosophy
 
