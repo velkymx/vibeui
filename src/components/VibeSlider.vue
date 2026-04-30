@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type PropType } from 'vue'
+import { computed, onMounted, ref, type PropType } from 'vue'
 
 type SliderValue = number | [number, number]
 
@@ -21,8 +21,30 @@ const emit = defineEmits<{
 const trackRef = ref<HTMLElement | null>(null)
 const activeHandle = ref<0 | 1 | null>(null)
 
+onMounted(() => {
+  const expectArray = props.range
+  const isArray = Array.isArray(props.modelValue)
+  if (expectArray && !isArray) {
+    console.warn(
+      '[VibeSlider] range=true expects modelValue as [low, high] tuple; received non-array. Slider will be inert.'
+    )
+  } else if (!expectArray && isArray) {
+    console.warn(
+      '[VibeSlider] range=false expects modelValue as a number; received array. Use range=true for tuple model.'
+    )
+  }
+  if (props.max <= props.min) {
+    console.warn(
+      `[VibeSlider] max (${props.max}) must be greater than min (${props.min}). Slider is rendered but inert.`
+    )
+  }
+})
+
+const range01 = computed(() => Math.max(0, props.max - props.min))
+
 const clamp = (v: number) => Math.min(props.max, Math.max(props.min, v))
 const stepSnap = (v: number) => {
+  if (range01.value === 0 || props.step <= 0) return clamp(v)
   const stepped = Math.round((v - props.min) / props.step) * props.step + props.min
   return clamp(stepped)
 }
@@ -37,8 +59,13 @@ const highValue = computed(() => {
   return clamp(props.modelValue)
 })
 
-const lowPercent = computed(() => ((lowValue.value - props.min) / (props.max - props.min)) * 100)
-const highPercent = computed(() => ((highValue.value - props.min) / (props.max - props.min)) * 100)
+const safePercent = (value: number): number => {
+  if (range01.value === 0) return 0
+  return ((value - props.min) / range01.value) * 100
+}
+
+const lowPercent = computed(() => safePercent(lowValue.value))
+const highPercent = computed(() => safePercent(highValue.value))
 
 const sliderClass = computed(() => {
   const c = ['vibe-slider']

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeSlider from '../../src/components/VibeSlider.vue'
 
@@ -127,6 +127,49 @@ describe('VibeSlider', () => {
         props: { modelValue: 50, disabled: true }
       })
       expect(wrapper.find('[role="slider"]').attributes('aria-disabled')).toBe('true')
+    })
+  })
+
+  describe('H10 model shape validation', () => {
+    it('warns when range=true but modelValue is a number', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mount(VibeSlider, {
+        props: { range: true, modelValue: 50 }
+      })
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('VibeSlider')
+      )
+      warn.mockRestore()
+    })
+
+    it('warns when range=false but modelValue is an array', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mount(VibeSlider, {
+        props: { range: false, modelValue: [10, 20] as unknown as number }
+      })
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('VibeSlider')
+      )
+      warn.mockRestore()
+    })
+  })
+
+  describe('H11 divide-by-zero guard', () => {
+    it('does not produce NaN styles when min === max', async () => {
+      const wrapper = mount(VibeSlider, {
+        props: { modelValue: 5, min: 5, max: 5 }
+      })
+      const handle = wrapper.find('[role="slider"]').element as HTMLElement
+      expect(handle.style.left).not.toContain('NaN')
+      expect(handle.style.left).not.toBe('')
+    })
+
+    it('keyboard arrow does nothing when range is zero', async () => {
+      const wrapper = mount(VibeSlider, {
+        props: { modelValue: 5, min: 5, max: 5 }
+      })
+      await wrapper.find('[role="slider"]').trigger('keydown', { key: 'ArrowRight' })
+      expect(wrapper.emitted('update:modelValue')).toBeFalsy()
     })
   })
 })
