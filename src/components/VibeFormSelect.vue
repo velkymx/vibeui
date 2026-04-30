@@ -4,26 +4,25 @@ import type { PropType, ComputedRef } from 'vue'
 import type { FormSelectOption, FormSelectOptionValue, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useId } from '../composables/useId'
 
-const NULL_SENTINEL = '\0__vibe_null__\0'
-const UNDEF_SENTINEL = '\0__vibe_undef__\0'
-const BOOL_TRUE_SENTINEL = '\0__vibe_true__\0'
-const BOOL_FALSE_SENTINEL = '\0__vibe_false__\0'
+// Per-option DOM value is the option's array index ("vi:0", "vi:1", ...).
+// The `vi:` prefix prevents collision with the placeholder's empty-string value
+// and clearly distinguishes our encoded values from user-supplied strings.
+const PLACEHOLDER_VALUE = ''
+const VI_PREFIX = 'vi:'
 
-const encodeValue = (v: FormSelectOptionValue): string => {
-  if (v === null) return NULL_SENTINEL
-  if (v === undefined) return UNDEF_SENTINEL
-  if (v === true) return BOOL_TRUE_SENTINEL
-  if (v === false) return BOOL_FALSE_SENTINEL
-  return String(v)
+const encodeIndex = (idx: number): string => `${VI_PREFIX}${idx}`
+
+const indexFromEncoded = (encoded: string): number => {
+  if (!encoded.startsWith(VI_PREFIX)) return -1
+  const n = Number(encoded.slice(VI_PREFIX.length))
+  return Number.isInteger(n) && n >= 0 ? n : -1
 }
 
-const decodeValue = (encoded: string, options: FormSelectOption[]): FormSelectOptionValue => {
-  if (encoded === NULL_SENTINEL) return null
-  if (encoded === UNDEF_SENTINEL) return undefined
-  if (encoded === BOOL_TRUE_SENTINEL) return true
-  if (encoded === BOOL_FALSE_SENTINEL) return false
-  const match = options.find(opt => encodeValue(opt.value) === encoded)
-  return match ? match.value : encoded
+const findIndexForValue = (options: FormSelectOption[], value: FormSelectOptionValue): number => {
+  for (let i = 0; i < options.length; i++) {
+    if (Object.is(options[i].value, value)) return i
+  }
+  return -1
 }
 
 const props = defineProps({
@@ -71,22 +70,35 @@ const selectClass = computed(() => {
   return classes.join(' ')
 })
 
+const decodeOption = (encoded: string): FormSelectOptionValue => {
+  const idx = indexFromEncoded(encoded)
+  if (idx >= 0 && idx < props.options.length) return props.options[idx].value
+  // Placeholder selected (or unknown encoded value) — surface as empty string for back-compat
+  return ''
+}
+
 const handleInput = (event: Event) => {
   const target = event.target as HTMLSelectElement
   let newValue: unknown
   if (props.multiple) {
-    newValue = Array.from(target.selectedOptions).map(option => decodeValue(option.value, props.options))
+    newValue = Array.from(target.selectedOptions).map(option => decodeOption(option.value))
   } else {
-    newValue = decodeValue(target.value, props.options)
+    newValue = decodeOption(target.value)
   }
   emit('update:modelValue', newValue)
 }
 
 const encodedModelValue = computed(() => {
   if (Array.isArray(props.modelValue)) {
-    return props.modelValue.map((v: FormSelectOptionValue) => encodeValue(v))
+    return props.modelValue
+      .map((v: FormSelectOptionValue) => {
+        const idx = findIndexForValue(props.options, v)
+        return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
+      })
+      .filter(v => v !== PLACEHOLDER_VALUE)
   }
-  return encodeValue(props.modelValue as FormSelectOptionValue)
+  const idx = findIndexForValue(props.options, props.modelValue as FormSelectOptionValue)
+  return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
 })
 
 const handleChange = (event: Event) => {
@@ -129,8 +141,8 @@ const handleFocus = (event: FocusEvent) => {
       <slot>
         <option
           v-for="(option, idx) in options"
-          :key="`${idx}-${encodeValue(option.value)}`"
-          :value="encodeValue(option.value)"
+          :key="idx"
+          :value="encodeIndex(idx)"
           :disabled="option.disabled"
         >
           {{ option.text }}
