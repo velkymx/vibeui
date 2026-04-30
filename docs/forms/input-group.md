@@ -47,5 +47,25 @@ Input groups allow you to prepend or append text, buttons, or other elements to 
 </VibeInputGroup>
 ```
 
+## Icon-Prepend + Button-Append (Composer Pattern)
+
+For chat / comment composers and search bars where you need an icon on the left and a button on the right alongside the text input. Wrap the icon in `<span class="input-group-text">` so Bootstrap renders the correct connected border-radius.
+
+```vue
+<VibeInputGroup>
+  <template #prepend>
+    <span class="input-group-text">
+      <VibeIcon name="chat" />
+    </span>
+  </template>
+  <VibeFormInput noWrapper v-model="comment" placeholder="Add a comment..." />
+  <template #append>
+    <VibeButton variant="primary" @click="post">Post</VibeButton>
+  </template>
+</VibeInputGroup>
+```
+
+The slot pattern accepts any element. The `prepend` and `append` props remain available as a shortcut for plain `.input-group-text` content.
+
 ## Mobile Note
 Input groups work seamlessly with the `noWrapper` prop on `VibeFormInput`, ensuring that the Bootstrap `.input-group` classes apply correctly without extra wrapping divs breaking the layout.
