@@ -151,6 +151,79 @@ describe('VibeFileInput', () => {
     })
   })
 
+  describe('H8 accept validation', () => {
+    it('rejects files whose MIME does not match accept="image/*" via drop', async () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { dragDrop: true, multiple: true, accept: 'image/*' },
+        attachTo: document.body
+      })
+
+      const img = makeFile('a.png', 10, 'image/png')
+      const pdf = makeFile('b.pdf', 10, 'application/pdf')
+
+      const dt = new DataTransfer()
+      dt.items.add(img)
+      dt.items.add(pdf)
+      const dropEvent = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent
+      Object.defineProperty(dropEvent, 'dataTransfer', { value: dt })
+
+      wrapper.find('.vibe-file-input-dropzone').element.dispatchEvent(dropEvent)
+      await Promise.resolve()
+
+      const accepted = wrapper.emitted('update:modelValue') as File[][][]
+      expect(accepted[0][0]).toHaveLength(1)
+      expect(accepted[0][0][0].name).toBe('a.png')
+
+      const invalid = wrapper.emitted('invalid') as File[][][]
+      expect(invalid).toBeTruthy()
+      expect(invalid[0][0][0].name).toBe('b.pdf')
+
+      wrapper.unmount()
+    })
+
+    it('rejects files whose extension does not match accept=".pdf,.docx"', async () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { multiple: true, accept: '.pdf,.docx' }
+      })
+
+      const pdf = makeFile('doc.pdf', 10, 'application/pdf')
+      const txt = makeFile('notes.txt', 10, 'text/plain')
+
+      await setFiles(wrapper.find('input').element as HTMLInputElement, [pdf, txt])
+
+      const accepted = wrapper.emitted('update:modelValue') as File[][][]
+      expect(accepted[0][0].map(f => f.name)).toEqual(['doc.pdf'])
+      const invalid = wrapper.emitted('invalid') as File[][][]
+      expect(invalid[0][0].map(f => f.name)).toEqual(['notes.txt'])
+    })
+
+    it('accepts every file when no accept prop is set', async () => {
+      const wrapper = mount(VibeFileInput, { props: { multiple: true } })
+      await setFiles(wrapper.find('input').element as HTMLInputElement, [
+        makeFile('a.png', 10, 'image/png'),
+        makeFile('b.exe', 10, 'application/octet-stream')
+      ])
+      const accepted = wrapper.emitted('update:modelValue') as File[][][]
+      expect(accepted[0][0]).toHaveLength(2)
+    })
+
+    it('combines size and type rejection into a single invalid emit', async () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { multiple: true, accept: 'image/*', maxSize: 100 }
+      })
+      const okImg = makeFile('ok.png', 50, 'image/png')
+      const bigImg = makeFile('big.png', 500, 'image/png')
+      const wrongType = makeFile('doc.pdf', 50, 'application/pdf')
+
+      await setFiles(wrapper.find('input').element as HTMLInputElement, [okImg, bigImg, wrongType])
+
+      const accepted = wrapper.emitted('update:modelValue') as File[][][]
+      expect(accepted[0][0].map(f => f.name)).toEqual(['ok.png'])
+      const invalid = wrapper.emitted('invalid') as File[][][]
+      expect(invalid[0][0].map(f => f.name).sort()).toEqual(['big.png', 'doc.pdf'])
+    })
+  })
+
   describe('H7 dropzone click recursion', () => {
     it('clicking dropzone opens file dialog exactly once (no recursive bubble)', async () => {
       const wrapper = mount(VibeFileInput, {

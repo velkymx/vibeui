@@ -33,13 +33,41 @@ const inputClass = computed(() => {
   return c.join(' ')
 })
 
+const matchesAccept = (file: File, accept: string): boolean => {
+  // accept is a comma-separated list of MIME types ("image/*", "text/plain")
+  // and/or extensions (".pdf", ".docx").
+  const tokens = accept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+  if (tokens.length === 0) return true
+  const fileType = file.type.toLowerCase()
+  const fileName = file.name.toLowerCase()
+  for (const token of tokens) {
+    if (token.startsWith('.')) {
+      if (fileName.endsWith(token)) return true
+      continue
+    }
+    if (token.endsWith('/*')) {
+      const prefix = token.slice(0, token.length - 1) // keep trailing slash
+      if (fileType.startsWith(prefix)) return true
+      continue
+    }
+    if (fileType === token) return true
+  }
+  return false
+}
+
 const partition = (files: File[]): { accepted: File[]; rejected: File[] } => {
-  if (props.maxSize === undefined) return { accepted: files, rejected: [] }
   const accepted: File[] = []
   const rejected: File[] = []
   for (const f of files) {
-    if (f.size > props.maxSize) rejected.push(f)
-    else accepted.push(f)
+    if (props.maxSize !== undefined && f.size > props.maxSize) {
+      rejected.push(f)
+      continue
+    }
+    if (props.accept && !matchesAccept(f, props.accept)) {
+      rejected.push(f)
+      continue
+    }
+    accepted.push(f)
   }
   return { accepted, rejected }
 }
