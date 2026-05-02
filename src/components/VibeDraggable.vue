@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, type PropType } from 'vue'
 import { setActiveDrag, clearActiveDrag } from './dndStore'
 
 const props = defineProps({
-  payload: { type: null, default: undefined } as {
-    type: null
-    default?: unknown
-  },
+  payload: { type: null as unknown as PropType<unknown>, default: undefined },
   group: { type: String, default: 'default' },
   disabled: { type: Boolean, default: false },
   tag: { type: String, default: 'div' }
