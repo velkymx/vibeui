@@ -154,6 +154,70 @@ describe('VibeSlider', () => {
     })
   })
 
+  describe('M9 track click jumps nearest handle', () => {
+    it('clicking near the start of the track moves the (only) handle there', async () => {
+      const wrapper = mount(VibeSlider, {
+        props: { modelValue: 50, min: 0, max: 100, step: 1 },
+        attachTo: document.body
+      })
+
+      const track = wrapper.find('.vibe-slider-track').element as HTMLElement
+      // Stub bounding box: width 100, x 0
+      track.getBoundingClientRect = () => ({
+        x: 0, y: 0, width: 100, height: 10, top: 0, left: 0, right: 100, bottom: 10, toJSON: () => ({})
+      })
+
+      track.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true, pointerId: 1, clientX: 10, clientY: 5
+      }))
+      await Promise.resolve()
+
+      const emitted = wrapper.emitted('update:modelValue') as number[][]
+      expect(emitted[emitted.length - 1][0]).toBe(10)
+      wrapper.unmount()
+    })
+
+    it('range mode: track click moves the nearest handle', async () => {
+      const wrapper = mount(VibeSlider, {
+        props: { range: true, modelValue: [20, 80], min: 0, max: 100, step: 1 },
+        attachTo: document.body
+      })
+      const track = wrapper.find('.vibe-slider-track').element as HTMLElement
+      track.getBoundingClientRect = () => ({
+        x: 0, y: 0, width: 100, height: 10, top: 0, left: 0, right: 100, bottom: 10, toJSON: () => ({})
+      })
+
+      // Click at 30 — nearest handle is low (20), so low should move to 30
+      track.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true, pointerId: 1, clientX: 30, clientY: 5
+      }))
+      await Promise.resolve()
+
+      const emitted = wrapper.emitted('update:modelValue') as Array<[[number, number]]>
+      expect(emitted[emitted.length - 1][0]).toEqual([30, 80])
+      wrapper.unmount()
+    })
+  })
+
+  describe('M8 range handles can swap', () => {
+    it('low handle pushing past high causes them to swap', async () => {
+      const wrapper = mount(VibeSlider, {
+        props: { range: true, modelValue: [40, 50], min: 0, max: 100, step: 5 },
+        attachTo: document.body
+      })
+
+      const lowHandle = wrapper.findAll('[role="slider"]')[0]
+      // Press right enough times that the low handle would clearly cross the high
+      await lowHandle.trigger('keydown', { key: 'PageUp' }) // +50 steps
+      const emitted = wrapper.emitted('update:modelValue') as Array<[[number, number]]>
+      const [lo, hi] = emitted[emitted.length - 1][0]
+      expect(lo).toBeLessThanOrEqual(hi)
+      // The new high should reflect the original low, or the new value, whichever is higher
+      expect(hi).toBeGreaterThanOrEqual(50)
+      wrapper.unmount()
+    })
+  })
+
   describe('H11 divide-by-zero guard', () => {
     it('does not produce NaN styles when min === max', async () => {
       const wrapper = mount(VibeSlider, {

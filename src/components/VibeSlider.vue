@@ -97,25 +97,64 @@ const highHandleStyle = computed(() => (props.vertical
 const emitValue = (handleIdx: 0 | 1, next: number) => {
   if (props.range && Array.isArray(props.modelValue)) {
     const [lo, hi] = props.modelValue
+    const snapped = stepSnap(next)
+    let newLo: number
+    let newHi: number
+    let newActive: 0 | 1 = handleIdx
     if (handleIdx === 0) {
-      const clamped = Math.min(stepSnap(next), hi)
-      if (clamped === lo) return
-      const out: [number, number] = [clamped, hi]
-      emit('update:modelValue', out)
-      emit('change', out)
+      // If user pushes low past high, swap roles so the gesture continues smoothly.
+      if (snapped > hi) {
+        newLo = hi
+        newHi = snapped
+        newActive = 1
+      } else {
+        newLo = snapped
+        newHi = hi
+      }
     } else {
-      const clamped = Math.max(stepSnap(next), lo)
-      if (clamped === hi) return
-      const out: [number, number] = [lo, clamped]
-      emit('update:modelValue', out)
-      emit('change', out)
+      if (snapped < lo) {
+        newLo = snapped
+        newHi = lo
+        newActive = 0
+      } else {
+        newLo = lo
+        newHi = snapped
+      }
     }
+    if (newLo === lo && newHi === hi) return
+    if (newActive !== handleIdx && activeHandle.value !== null) {
+      activeHandle.value = newActive
+    }
+    const out: [number, number] = [newLo, newHi]
+    emit('update:modelValue', out)
+    emit('change', out)
     return
   }
   const snapped = stepSnap(next)
   if (snapped === lowValue.value) return
   emit('update:modelValue', snapped)
   emit('change', snapped)
+}
+
+const trackClickToValue = (event: PointerEvent): number => {
+  if (!trackRef.value) return props.min
+  const rect = trackRef.value.getBoundingClientRect()
+  const ratio = props.vertical
+    ? 1 - (event.clientY - rect.top) / rect.height
+    : (event.clientX - rect.left) / rect.width
+  return props.min + ratio * (props.max - props.min)
+}
+
+const onTrackPointerDown = (event: PointerEvent) => {
+  if (props.disabled) return
+  // Skip if the click landed on a handle (handle has its own pointerdown).
+  const target = event.target as HTMLElement
+  if (target.classList.contains('vibe-slider-handle')) return
+  const value = trackClickToValue(event)
+  const targetHandle: 0 | 1 = props.range
+    ? (Math.abs(value - lowValue.value) <= Math.abs(value - highValue.value) ? 0 : 1)
+    : 0
+  emitValue(targetHandle, value)
 }
 
 const handleKeydown = (handleIdx: 0 | 1, event: KeyboardEvent) => {
@@ -175,7 +214,11 @@ const handlePointerUp = (event: PointerEvent) => {
 
 <template>
   <div :class="sliderClass">
-    <div class="vibe-slider-track" ref="trackRef">
+    <div
+      class="vibe-slider-track"
+      ref="trackRef"
+      @pointerdown="onTrackPointerDown"
+    >
       <div class="vibe-slider-fill" :style="fillStyle" />
       <div
         class="vibe-slider-handle"
