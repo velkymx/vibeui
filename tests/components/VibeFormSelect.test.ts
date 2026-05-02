@@ -366,6 +366,31 @@ describe('VibeFormSelect', () => {
       expect(select.selectedIndex).toBe(0)
     })
 
+    it('H19 — option with value:"" does not collide with placeholder', async () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          placeholder: 'Pick one',
+          options: [
+            { text: 'Empty string option', value: '' },
+            { text: 'Real value', value: 'real' }
+          ],
+          modelValue: ''
+        }
+      })
+
+      const select = wrapper.find('select').element as HTMLSelectElement
+      // The selected index should be the user's empty-string option, NOT the placeholder
+      const placeholderIdx = Array.from(select.options).findIndex(o => o.text === 'Pick one')
+      const emptyOptIdx = Array.from(select.options).findIndex(o => o.text === 'Empty string option')
+      expect(select.selectedIndex).toBe(emptyOptIdx)
+      expect(select.selectedIndex).not.toBe(placeholderIdx)
+
+      // Switching modelValue to something not in options should fall back to placeholder
+      await wrapper.setProps({ modelValue: 'no-match-anywhere' })
+      expect(select.selectedIndex).toBe(placeholderIdx)
+    })
+
     it('preserves typed primitives across re-render cycles', async () => {
       const wrapper = mount(VibeFormSelect, {
         props: {
