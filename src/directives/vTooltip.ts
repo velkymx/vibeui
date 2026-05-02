@@ -17,9 +17,9 @@ interface TooltipOptions {
 
 type TooltipBindingValue = string | TooltipOptions | undefined
 
-const INSTANCE_KEY = '__vibeTooltipInstance__'
-const PENDING_KEY = '__vibeTooltipPending__'
-const OPTS_KEY = '__vibeTooltipOpts__'
+const INSTANCE_KEY: unique symbol = Symbol('vibeTooltipInstance')
+const PENDING_KEY: unique symbol = Symbol('vibeTooltipPending')
+const OPTS_KEY: unique symbol = Symbol('vibeTooltipOpts')
 
 interface AugmentedElement extends HTMLElement {
   [INSTANCE_KEY]?: BootstrapTooltipInstance | null
@@ -79,9 +79,11 @@ const destroy = (el: AugmentedElement): void => {
 const applyDataAttrs = (el: AugmentedElement, opts: TooltipOptions): void => {
   el.setAttribute('data-bs-toggle', 'tooltip')
   if (opts.title) el.setAttribute('data-bs-title', opts.title)
+  else el.removeAttribute('data-bs-title')
   el.setAttribute('data-bs-placement', opts.placement || 'top')
   el.setAttribute('data-bs-trigger', resolveTrigger(opts.trigger))
   if (opts.html) el.setAttribute('data-bs-html', 'true')
+  else el.removeAttribute('data-bs-html')
 }
 
 export const vTooltip: Directive<AugmentedElement, TooltipBindingValue> = {

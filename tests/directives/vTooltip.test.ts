@@ -185,4 +185,58 @@ describe('v-vibe-tooltip directive', () => {
       expect(instance.setContent).toHaveBeenCalledWith({ '.tooltip-inner': 'B' })
     })
   })
+
+  describe('M17 stale data-bs-* attrs', () => {
+    it('removes data-bs-html when html flips from true to false', async () => {
+      const Component = defineComponent({
+        directives: { 'vibe-tooltip': vTooltip },
+        props: ['opts'],
+        template: '<button v-vibe-tooltip="opts">x</button>'
+      })
+
+      const wrapper = mount(Component, {
+        props: { opts: { title: 'X', html: true } }
+      })
+      await flushAsync()
+      expect(wrapper.find('button').attributes('data-bs-html')).toBe('true')
+
+      await wrapper.setProps({ opts: { title: 'X', html: false } })
+      await flushAsync()
+      expect(wrapper.find('button').attributes('data-bs-html')).toBeUndefined()
+    })
+
+    it('removes data-bs-title when title becomes empty', async () => {
+      const Component = defineComponent({
+        directives: { 'vibe-tooltip': vTooltip },
+        props: ['opts'],
+        template: '<button v-vibe-tooltip="opts">x</button>'
+      })
+
+      const wrapper = mount(Component, {
+        props: { opts: { title: 'X' } }
+      })
+      await flushAsync()
+      expect(wrapper.find('button').attributes('data-bs-title')).toBe('X')
+
+      await wrapper.setProps({ opts: { title: '' } })
+      await flushAsync()
+      expect(wrapper.find('button').attributes('data-bs-title')).toBeUndefined()
+    })
+  })
+
+  describe('M16 element-property keys are symbols', () => {
+    it('does not write enumerable string properties to the element', async () => {
+      const Component = defineComponent({
+        directives: { 'vibe-tooltip': vTooltip },
+        template: '<button v-vibe-tooltip="\'X\'">x</button>'
+      })
+      const wrapper = mount(Component)
+      await flushAsync()
+
+      const el = wrapper.find('button').element as HTMLElement & Record<string, unknown>
+      const ownKeys = Object.getOwnPropertyNames(el)
+      const tooltipKeys = ownKeys.filter(k => k.toLowerCase().includes('tooltip'))
+      expect(tooltipKeys).toHaveLength(0)
+    })
+  })
 })
