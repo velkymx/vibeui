@@ -120,4 +120,69 @@ describe('v-vibe-tooltip directive', () => {
     wrapper.unmount()
     expect(() => wrapper.unmount()).not.toThrow()
   })
+
+  describe('H14 dynamic structural option changes', () => {
+    it('re-creates the Bootstrap instance when placement changes', async () => {
+      const Component = defineComponent({
+        directives: { 'vibe-tooltip': vTooltip },
+        props: ['opts'],
+        template: '<button v-vibe-tooltip="opts">x</button>'
+      })
+
+      const wrapper = mount(Component, {
+        props: { opts: { title: 'X', placement: 'top' } }
+      })
+      await flushAsync()
+      const instance1 = vi.mocked(bootstrap.Tooltip).mock.results[0].value
+      expect(vi.mocked(bootstrap.Tooltip).mock.calls.length).toBe(1)
+
+      await wrapper.setProps({ opts: { title: 'X', placement: 'bottom' } })
+      await flushAsync()
+
+      // First instance disposed, new one created with new placement
+      expect(instance1.dispose).toHaveBeenCalled()
+      expect(vi.mocked(bootstrap.Tooltip).mock.calls.length).toBe(2)
+      const newOpts = vi.mocked(bootstrap.Tooltip).mock.calls[1][1] as { placement: string }
+      expect(newOpts.placement).toBe('bottom')
+    })
+
+    it('re-creates when trigger changes', async () => {
+      const Component = defineComponent({
+        directives: { 'vibe-tooltip': vTooltip },
+        props: ['opts'],
+        template: '<button v-vibe-tooltip="opts">x</button>'
+      })
+
+      const wrapper = mount(Component, {
+        props: { opts: { title: 'X', trigger: 'hover' } }
+      })
+      await flushAsync()
+      const initialCalls = vi.mocked(bootstrap.Tooltip).mock.calls.length
+
+      await wrapper.setProps({ opts: { title: 'X', trigger: 'click' } })
+      await flushAsync()
+
+      expect(vi.mocked(bootstrap.Tooltip).mock.calls.length).toBe(initialCalls + 1)
+    })
+
+    it('does NOT re-create when only the title changes', async () => {
+      const Component = defineComponent({
+        directives: { 'vibe-tooltip': vTooltip },
+        props: ['opts'],
+        template: '<button v-vibe-tooltip="opts">x</button>'
+      })
+
+      const wrapper = mount(Component, {
+        props: { opts: { title: 'A', placement: 'top' } }
+      })
+      await flushAsync()
+      const instance = vi.mocked(bootstrap.Tooltip).mock.results[0].value
+      const initialCalls = vi.mocked(bootstrap.Tooltip).mock.calls.length
+
+      await wrapper.setProps({ opts: { title: 'B', placement: 'top' } })
+
+      expect(vi.mocked(bootstrap.Tooltip).mock.calls.length).toBe(initialCalls)
+      expect(instance.setContent).toHaveBeenCalledWith({ '.tooltip-inner': 'B' })
+    })
+  })
 })
