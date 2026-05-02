@@ -23,11 +23,11 @@ export interface UseFormReturn<T extends Record<string, unknown>> {
   setField: <K extends keyof T>(key: K, value: T[K]) => void
 }
 
-const cloneInitial = <T extends Record<string, unknown>>(obj: T): T => {
-  const out: Record<string, unknown> = {}
-  for (const k of Object.keys(obj)) out[k] = obj[k]
-  return out as T
-}
+// Deep clone via JSON-roundtrip. Works on Vue reactive proxies (which
+// structuredClone rejects) and is sufficient for typical form state
+// (primitives, arrays, plain objects). Drops functions, Map/Set, and circular
+// references — fields containing those are not supported.
+const deepClone = <T>(obj: T): T => JSON.parse(JSON.stringify(obj)) as T
 
 const runRules = async (
   value: unknown,
@@ -43,8 +43,8 @@ const runRules = async (
 }
 
 export function useForm<T extends Record<string, unknown>>(initial: T): UseFormReturn<T> {
-  const initialSnapshot = cloneInitial(initial)
-  const fields = reactive(cloneInitial(initial)) as T
+  const initialSnapshot = deepClone(initial)
+  const fields = reactive(deepClone(initial)) as T
 
   const errorsInit = {} as Record<keyof T, string>
   const touchedInit = {} as Record<keyof T, boolean>
@@ -59,17 +59,13 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
   const isDirty = computed(() => dirtyFlag.value)
 
   watch(
-    () => ({ ...fields }),
-    (next) => {
-      for (const k of Object.keys(initialSnapshot) as Array<keyof T>) {
-        if (next[k] !== initialSnapshot[k]) {
-          dirtyFlag.value = true
-          return
-        }
-      }
-      dirtyFlag.value = false
+    () => JSON.stringify(fields),
+    () => {
+      const fieldsJson = JSON.stringify(fields)
+      const initialJson = JSON.stringify(initialSnapshot)
+      dirtyFlag.value = fieldsJson !== initialJson
     },
-    { deep: true }
+    { deep: true, immediate: true }
   )
 
   const isValid = computed(() => {
@@ -108,7 +104,8 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
 
   const reset = () => {
     for (const k of Object.keys(initialSnapshot) as Array<keyof T>) {
-      ;(fields as Record<string, unknown>)[k as string] = initialSnapshot[k]
+      // Re-clone the snapshot value so subsequent mutations don't bleed back
+      ;(fields as Record<string, unknown>)[k as string] = deepClone(initialSnapshot[k])
       errors[k] = ''
       touched[k] = false
     }

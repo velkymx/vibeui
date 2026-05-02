@@ -161,4 +161,57 @@ describe('useForm', () => {
       expect(form.isDirty.value).toBe(false)
     })
   })
+
+  describe('H12 deep clone of initial', () => {
+    it('mutating a field array does NOT mutate the initial snapshot', async () => {
+      const initial = { tags: [] as string[] }
+      const form = useForm(initial)
+
+      ;(form.fields.tags as string[]).push('x')
+      // Original input untouched
+      expect(initial.tags).toEqual([])
+      // Reset restores empty array
+      form.reset()
+      await nextTick()
+      expect(form.fields.tags).toEqual([])
+    })
+
+    it('mutating a nested object field does NOT mutate the initial snapshot', async () => {
+      const initial = { profile: { city: 'NYC', zip: '10001' } }
+      const form = useForm(initial)
+
+      ;(form.fields.profile as { city: string; zip: string }).city = 'LA'
+      expect(initial.profile.city).toBe('NYC')
+      form.reset()
+      await nextTick()
+      expect((form.fields.profile as { city: string }).city).toBe('NYC')
+    })
+  })
+
+  describe('H13 dirty tracking with structural fields', () => {
+    it('starts isDirty=false even when initial fields contain arrays/objects', () => {
+      const form = useForm({ tags: [] as string[], profile: { name: '' } })
+      expect(form.isDirty.value).toBe(false)
+    })
+
+    it('isDirty becomes true after array mutation, then false after reset', async () => {
+      const form = useForm({ tags: [] as string[] })
+      ;(form.fields.tags as string[]).push('hello')
+      await nextTick()
+      expect(form.isDirty.value).toBe(true)
+
+      form.reset()
+      await nextTick()
+      expect(form.isDirty.value).toBe(false)
+    })
+
+    it('isDirty stays false when reactive object is read but not changed', async () => {
+      const form = useForm({ profile: { name: 'A' } })
+      // Just reading the object should not trigger dirty
+      const _ = (form.fields.profile as { name: string }).name
+      void _
+      await nextTick()
+      expect(form.isDirty.value).toBe(false)
+    })
+  })
 })
