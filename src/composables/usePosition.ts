@@ -58,45 +58,82 @@ export interface UsePositionReturn {
   stop: () => void
 }
 
+interface SavedStyle {
+  position: string
+  left: string
+  top: string
+}
+
 export function usePosition(
   target: Ref<HTMLElement | null> | ComputedRef<HTMLElement | null>,
   anchor: Ref<HTMLElement | null> | ComputedRef<HTMLElement | null>,
-  options: UsePositionOptions = {}
+  options: UsePositionOptions | (() => UsePositionOptions) = {}
 ): UsePositionReturn {
-  const my = options.my ?? 'top center'
-  const at = options.at ?? 'bottom center'
-  const placement = ref<Placement>(resolvePlacement(my, at))
+  const readOptions = (): UsePositionOptions =>
+    typeof options === 'function' ? options() : options
+
+  const initialOpts = readOptions()
+  const initialMy = initialOpts.my ?? 'top center'
+  const initialAt = initialOpts.at ?? 'bottom center'
+
+  const placement = ref<Placement>(resolvePlacement(initialMy, initialAt))
   const x = ref(0)
   const y = ref(0)
 
   let cleanup: (() => void) | null = null
+  let savedStyle: SavedStyle | null = null
+  let savedFor: HTMLElement | null = null
 
-  const buildMiddleware = () => {
+  const buildMiddleware = (opts: UsePositionOptions) => {
     const mw = []
-    if (options.offset) {
-      const [skid, dist] = options.offset
+    if (opts.offset) {
+      const [skid, dist] = opts.offset
       mw.push(offsetMiddleware({ mainAxis: dist, crossAxis: skid }))
     }
-    const collide = options.collision ?? 'flip+shift'
+    const collide = opts.collision ?? 'flip+shift'
     if (collide === 'flip' || collide === 'flip+shift') mw.push(flipMiddleware())
     if (collide === 'shift' || collide === 'flip+shift') mw.push(shiftMiddleware())
     return mw
+  }
+
+  const captureStyle = (el: HTMLElement) => {
+    if (savedFor === el) return
+    savedFor = el
+    savedStyle = {
+      position: el.style.position,
+      left: el.style.left,
+      top: el.style.top
+    }
+  }
+
+  const restoreStyle = () => {
+    if (savedFor && savedStyle) {
+      savedFor.style.position = savedStyle.position
+      savedFor.style.left = savedStyle.left
+      savedFor.style.top = savedStyle.top
+    }
+    savedStyle = null
+    savedFor = null
   }
 
   const update = async (): Promise<void> => {
     const t = target.value
     const a = anchor.value
     if (!t || !a) return
+    const opts = readOptions()
+    const my = opts.my ?? 'top center'
+    const at = opts.at ?? 'bottom center'
+    captureStyle(t)
     const result = await computePosition(a, t, {
       placement: resolvePlacement(my, at),
-      strategy: options.strategy ?? 'absolute',
-      middleware: buildMiddleware()
+      strategy: opts.strategy ?? 'absolute',
+      middleware: buildMiddleware(opts)
     })
     x.value = result.x
     y.value = result.y
     placement.value = result.placement
     Object.assign(t.style, {
-      position: options.strategy ?? 'absolute',
+      position: opts.strategy ?? 'absolute',
       left: `${result.x}px`,
       top: `${result.y}px`
     })
@@ -107,16 +144,21 @@ export function usePosition(
       cleanup()
       cleanup = null
     }
+    restoreStyle()
   }
 
   watch(
-    [target, anchor],
+    [target, anchor, () => readOptions()],
     () => {
-      stop()
+      if (cleanup) {
+        cleanup()
+        cleanup = null
+      }
       const t = target.value
       const a = anchor.value
       if (!t || !a) return
-      if (options.autoUpdate !== false) {
+      const opts = readOptions()
+      if (opts.autoUpdate !== false) {
         cleanup = autoUpdate(a, t, () => {
           void update()
         })
@@ -124,7 +166,7 @@ export function usePosition(
         void update()
       }
     },
-    { immediate: true, flush: 'post' }
+    { immediate: true, flush: 'post', deep: true }
   )
 
   onBeforeUnmount(() => {
