@@ -192,4 +192,174 @@ describe('VibeDatePicker', () => {
       expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(false)
     })
   })
+
+  describe('H3 click outside closes popover', () => {
+    it('mousedown outside the picker closes the popover', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(true)
+
+      const outside = document.createElement('div')
+      document.body.appendChild(outside)
+      outside.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      await Promise.resolve()
+
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(false)
+      expect(wrapper.emitted('close')).toBeTruthy()
+      outside.remove()
+      wrapper.unmount()
+    })
+
+    it('mousedown inside the popover does NOT close it', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(true)
+
+      wrapper.find('.vibe-datepicker-popover').element.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true })
+      )
+      await Promise.resolve()
+
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(true)
+      wrapper.unmount()
+    })
+  })
+
+  describe('H5 Escape closes popover', () => {
+    it('Escape key on popover closes it', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(true)
+
+      await wrapper.find('.vibe-datepicker-popover').trigger('keydown', { key: 'Escape' })
+
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(false)
+      wrapper.unmount()
+    })
+  })
+
+  describe('H4 keyboard navigation in grid', () => {
+    const fireKey = async (
+      wrapper: ReturnType<typeof mount>,
+      key: string
+    ) => {
+      const focused = wrapper.find('.vibe-datepicker-day-focused, .vibe-datepicker-day-selected')
+      const target = focused.exists() ? focused : wrapper.find('.vibe-datepicker-day')
+      await target.trigger('keydown', { key })
+    }
+
+    const focusedIso = (wrapper: ReturnType<typeof mount>): string | null => {
+      const el = wrapper.find('.vibe-datepicker-day-focused')
+      return el.exists() ? el.attributes('data-iso') ?? null : null
+    }
+
+    it('ArrowRight moves focus by one day', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+
+      await fireKey(wrapper, 'ArrowRight')
+      expect(focusedIso(wrapper)).toBe('2026-04-16')
+      wrapper.unmount()
+    })
+
+    it('ArrowLeft moves focus back one day', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+
+      await fireKey(wrapper, 'ArrowLeft')
+      expect(focusedIso(wrapper)).toBe('2026-04-14')
+      wrapper.unmount()
+    })
+
+    it('ArrowDown moves focus 7 days forward', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+
+      await fireKey(wrapper, 'ArrowDown')
+      expect(focusedIso(wrapper)).toBe('2026-04-22')
+      wrapper.unmount()
+    })
+
+    it('ArrowUp moves focus 7 days back', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+
+      await fireKey(wrapper, 'ArrowUp')
+      expect(focusedIso(wrapper)).toBe('2026-04-08')
+      wrapper.unmount()
+    })
+
+    it('PageDown jumps to the same day next month', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+
+      await fireKey(wrapper, 'PageDown')
+      expect(focusedIso(wrapper)).toBe('2026-05-15')
+      wrapper.unmount()
+    })
+
+    it('PageUp jumps to the same day previous month', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+
+      await fireKey(wrapper, 'PageUp')
+      expect(focusedIso(wrapper)).toBe('2026-03-15')
+      wrapper.unmount()
+    })
+
+    it('Enter selects the focused date', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-15' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+
+      await fireKey(wrapper, 'ArrowRight')
+      await fireKey(wrapper, 'Enter')
+
+      const emitted = wrapper.emitted('update:modelValue') as string[][]
+      expect(emitted[emitted.length - 1][0]).toBe('2026-04-16')
+      wrapper.unmount()
+    })
+
+    it('Arrow key crossing month boundary updates view', async () => {
+      const wrapper = mount(VibeDatePicker, {
+        props: { modelValue: '2026-04-30' },
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+
+      await fireKey(wrapper, 'ArrowRight')
+      // Should now be focused on May 1st; view should have advanced
+      expect(focusedIso(wrapper)).toBe('2026-05-01')
+      wrapper.unmount()
+    })
+  })
 })
