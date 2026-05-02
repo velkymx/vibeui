@@ -2,6 +2,8 @@
 import { ref, computed, watch, onBeforeUnmount, type PropType, type Ref } from 'vue'
 import { useId } from '../composables/useId'
 
+type AutocompleteRoot = HTMLElement | null
+
 type SourceFn<T> = (query: string) => T[] | Promise<T[]>
 
 const props = defineProps({
@@ -35,6 +37,7 @@ const results: Ref<T[]> = ref([]) as Ref<T[]>
 const highlightedIndex = ref(-1)
 const isOpen = ref(false)
 const debounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const rootRef = ref<AutocompleteRoot>(null)
 let queryToken = 0
 
 watch(
@@ -54,7 +57,23 @@ const filterArray = (arr: T[], query: string): T[] => {
   return arr.filter(item => labelOf(item).toLowerCase().includes(q)).slice(0, props.maxResults)
 }
 
+const previousHighlightLabel = (): string | null => {
+  if (highlightedIndex.value < 0) return null
+  const item = results.value[highlightedIndex.value]
+  return item === undefined ? null : labelOf(item)
+}
+
+const reseatHighlight = (previousLabel: string | null) => {
+  if (previousLabel === null) {
+    highlightedIndex.value = -1
+    return
+  }
+  const idx = results.value.findIndex(item => labelOf(item) === previousLabel)
+  highlightedIndex.value = idx
+}
+
 const runQuery = async (query: string) => {
+  const previousLabel = previousHighlightLabel()
   if (typeof props.source === 'function') {
     queryToken += 1
     const myToken = queryToken
@@ -65,7 +84,7 @@ const runQuery = async (query: string) => {
     queryToken += 1
     results.value = filterArray(props.source as T[], query)
   }
-  highlightedIndex.value = -1
+  reseatHighlight(previousLabel)
   isOpen.value = true
 }
 
@@ -140,15 +159,34 @@ const onKeydown = (event: KeyboardEvent) => {
   }
 }
 
+const onDocumentMousedown = (event: MouseEvent) => {
+  if (!isOpen.value) return
+  const root = rootRef.value
+  if (root && event.target instanceof Node && root.contains(event.target)) return
+  closeMenu()
+}
+
+watch(isOpen, (open) => {
+  if (typeof document === 'undefined') return
+  if (open) {
+    document.addEventListener('mousedown', onDocumentMousedown)
+  } else {
+    document.removeEventListener('mousedown', onDocumentMousedown)
+  }
+})
+
 onBeforeUnmount(() => {
   if (debounceTimer.value !== null) clearTimeout(debounceTimer.value)
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('mousedown', onDocumentMousedown)
+  }
 })
 
 const showEmpty = computed(() => isOpen.value && inputValue.value.length >= props.minChars && results.value.length === 0)
 </script>
 
 <template>
-  <div class="vibe-autocomplete">
+  <div class="vibe-autocomplete" ref="rootRef">
     <label v-if="label" :for="computedId" class="form-label">{{ label }}</label>
     <input
       :id="computedId"
@@ -164,7 +202,6 @@ const showEmpty = computed(() => isOpen.value && inputValue.value.length >= prop
       @input="onInput"
       @focus="onFocus"
       @keydown="onKeydown"
-      @blur="closeMenu"
     />
     <ul v-if="isOpen && results.length > 0" class="vibe-autocomplete-menu" role="listbox">
       <li

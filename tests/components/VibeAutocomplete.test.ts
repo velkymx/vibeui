@@ -147,6 +147,68 @@ describe('VibeAutocomplete', () => {
     })
   })
 
+  describe('M1 close on outside click, not blur', () => {
+    it('clicking outside the component closes the menu', async () => {
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: ['apple', 'apricot'], minChars: 1, debounce: 0 },
+        attachTo: document.body
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+      expect(wrapper.findAll('.vibe-autocomplete-item').length).toBeGreaterThan(0)
+
+      const outside = document.createElement('div')
+      document.body.appendChild(outside)
+      outside.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      await flush(0)
+
+      expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
+      outside.remove()
+      wrapper.unmount()
+    })
+
+    it('clicking inside the menu does NOT close it', async () => {
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: ['apple', 'apricot'], minChars: 1, debounce: 0 },
+        attachTo: document.body
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+
+      const menu = wrapper.find('.vibe-autocomplete-menu').element
+      menu.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      await flush(0)
+
+      expect(wrapper.findAll('.vibe-autocomplete-item').length).toBeGreaterThan(0)
+      wrapper.unmount()
+    })
+  })
+
+  describe('M2 highlight preserved across queries', () => {
+    it('keeps highlight on the same label when a query update returns it again', async () => {
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: ['apple', 'apricot', 'banana'], minChars: 1, debounce: 0 }
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+
+      // Highlight 'apricot'
+      await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' })
+      await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' })
+
+      let highlighted = wrapper.find('.vibe-autocomplete-item-highlighted')
+      expect(highlighted.text()).toBe('apricot')
+
+      // Type more — apricot still in result list
+      await wrapper.find('input').setValue('ap')
+      await flush(20)
+
+      highlighted = wrapper.find('.vibe-autocomplete-item-highlighted')
+      expect(highlighted.exists()).toBe(true)
+      expect(highlighted.text()).toBe('apricot')
+    })
+  })
+
   describe('async race protection (C1)', () => {
     type Resolver = (val: string[]) => void
 
