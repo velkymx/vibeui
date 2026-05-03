@@ -41,10 +41,23 @@ const fromIso = (iso: IsoDate): Date => {
   return new Date(y, m - 1, d)
 }
 
+const ISO_FORMAT = /^\d{4}-\d{2}-\d{2}$/
+const validateIsoString = (value: string | undefined, propName: string): void => {
+  if (value !== undefined && !ISO_FORMAT.test(value)) {
+    console.warn(
+      `[VibeDatePicker] Invalid ${propName} prop "${value}". Expected zero-padded YYYY-MM-DD; comparisons are lexical and will be wrong otherwise.`
+    )
+  }
+}
+validateIsoString(props.min, 'min')
+validateIsoString(props.max, 'max')
+
 const isOpen = ref(false)
-const today = new Date()
-const viewYear = ref(today.getFullYear())
-const viewMonth = ref(today.getMonth())
+// today is computed fresh each grid eval so a long-lived datepicker that
+// crosses midnight reflects the current day.
+const todayDate = (): Date => new Date()
+const viewYear = ref(todayDate().getFullYear())
+const viewMonth = ref(todayDate().getMonth())
 const focusedIso = ref<IsoDate | null>(null)
 const rootRef = ref<HTMLElement | null>(null)
 const popoverRef = ref<HTMLElement | null>(null)
@@ -96,7 +109,7 @@ const monthGrid = computed<DayCell[]>(() => {
   const dayOfWeek = firstOfMonth.getDay()
   const offset = (dayOfWeek - props.weekStart + 7) % 7
   const start = new Date(viewYear.value, viewMonth.value, 1 - offset)
-  const todayIso = toIso(today)
+  const todayIso = toIso(todayDate())
 
   for (let i = 0; i < 42; i++) {
     const d = new Date(start)
@@ -228,14 +241,14 @@ const setFocusedDate = async (iso: IsoDate) => {
 }
 
 const shiftFocusedDays = async (days: number) => {
-  const baseIso = focusedIso.value || lowDate.value || toIso(today)
+  const baseIso = focusedIso.value || lowDate.value || toIso(todayDate())
   const d = fromIso(baseIso)
   d.setDate(d.getDate() + days)
   await setFocusedDate(toIso(d))
 }
 
 const shiftFocusedMonths = async (months: number) => {
-  const baseIso = focusedIso.value || lowDate.value || toIso(today)
+  const baseIso = focusedIso.value || lowDate.value || toIso(todayDate())
   const d = fromIso(baseIso)
   const targetMonth = d.getMonth() + months
   const targetYear = d.getFullYear() + Math.floor(targetMonth / 12)
@@ -272,7 +285,7 @@ const handleGridKeydown = async (event: KeyboardEvent) => {
       break
     case 'Home': {
       event.preventDefault()
-      const baseIso = focusedIso.value || lowDate.value || toIso(today)
+      const baseIso = focusedIso.value || lowDate.value || toIso(todayDate())
       const d = fromIso(baseIso)
       const offset = (d.getDay() - props.weekStart + 7) % 7
       d.setDate(d.getDate() - offset)
@@ -281,7 +294,7 @@ const handleGridKeydown = async (event: KeyboardEvent) => {
     }
     case 'End': {
       event.preventDefault()
-      const baseIso = focusedIso.value || lowDate.value || toIso(today)
+      const baseIso = focusedIso.value || lowDate.value || toIso(todayDate())
       const d = fromIso(baseIso)
       const offset = (d.getDay() - props.weekStart + 7) % 7
       d.setDate(d.getDate() + (6 - offset))
@@ -314,7 +327,7 @@ const onDocumentMousedown = (event: MouseEvent) => {
 watch(isOpen, (open) => {
   if (typeof document === 'undefined') return
   if (open) {
-    focusedIso.value = lowDate.value || toIso(today)
+    focusedIso.value = lowDate.value || toIso(todayDate())
     document.addEventListener('mousedown', onDocumentMousedown)
   } else {
     focusedIso.value = null

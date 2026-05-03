@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeDatePicker from '../../src/components/VibeDatePicker.vue'
 
@@ -190,6 +190,29 @@ describe('VibeDatePicker', () => {
       const wrapper = mount(VibeDatePicker, { props: { disabled: true } })
       await wrapper.find('input').trigger('click')
       expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(false)
+    })
+  })
+
+  describe('M4 prop validator on min/max format', () => {
+    it('warns when min is not zero-padded YYYY-MM-DD', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mount(VibeDatePicker, { props: { min: '2026-1-1' } })
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('min'))
+      warn.mockRestore()
+    })
+
+    it('warns when max is not zero-padded YYYY-MM-DD', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mount(VibeDatePicker, { props: { max: '2026-12-1' } })
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('max'))
+      warn.mockRestore()
+    })
+
+    it('does NOT warn for properly-formatted min/max', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mount(VibeDatePicker, { props: { min: '2026-01-01', max: '2026-12-31' } })
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
     })
   })
 
