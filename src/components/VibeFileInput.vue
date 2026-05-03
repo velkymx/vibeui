@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type PropType } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
 import { useId } from '../composables/useId'
 import type { Size } from '../types'
 
@@ -119,6 +119,24 @@ const dropzoneClass = computed(() => {
   if (isDragging.value) c.push('vibe-file-input-dropzone-active')
   if (props.disabled) c.push('vibe-file-input-dropzone-disabled')
   return c.join(' ')
+})
+
+// Document-level safety net: if a drag escapes the dropzone (off the page,
+// dropped on a different target, ESC), our local @dragleave doesn't always fire.
+const onDocumentDragEnd = () => {
+  isDragging.value = false
+}
+
+onMounted(() => {
+  if (typeof document === 'undefined') return
+  document.addEventListener('dragend', onDocumentDragEnd)
+  document.addEventListener('drop', onDocumentDragEnd)
+})
+
+onBeforeUnmount(() => {
+  if (typeof document === 'undefined') return
+  document.removeEventListener('dragend', onDocumentDragEnd)
+  document.removeEventListener('drop', onDocumentDragEnd)
 })
 </script>
 

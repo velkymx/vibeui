@@ -151,6 +151,45 @@ describe('VibeFileInput', () => {
     })
   })
 
+  describe('M19 dragend / drop document safety net', () => {
+    it('isDragging resets when dragend fires anywhere on the document', async () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { dragDrop: true },
+        attachTo: document.body
+      })
+
+      const zone = wrapper.find('.vibe-file-input-dropzone')
+      await zone.trigger('dragenter')
+      expect(zone.classes()).toContain('vibe-file-input-dropzone-active')
+
+      // User drags off the page entirely; document dragend fires.
+      document.dispatchEvent(new DragEvent('dragend', { bubbles: true }))
+      await Promise.resolve()
+
+      expect(wrapper.find('.vibe-file-input-dropzone').classes())
+        .not.toContain('vibe-file-input-dropzone-active')
+      wrapper.unmount()
+    })
+
+    it('isDragging resets when drop fires somewhere else on the document', async () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { dragDrop: true },
+        attachTo: document.body
+      })
+
+      const zone = wrapper.find('.vibe-file-input-dropzone')
+      await zone.trigger('dragenter')
+      expect(zone.classes()).toContain('vibe-file-input-dropzone-active')
+
+      document.dispatchEvent(new DragEvent('drop', { bubbles: true }))
+      await Promise.resolve()
+
+      expect(wrapper.find('.vibe-file-input-dropzone').classes())
+        .not.toContain('vibe-file-input-dropzone-active')
+      wrapper.unmount()
+    })
+  })
+
   describe('H8 accept validation', () => {
     it('rejects files whose MIME does not match accept="image/*" via drop', async () => {
       const wrapper = mount(VibeFileInput, {
