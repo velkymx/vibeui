@@ -21,6 +21,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "examples": "npm run build && cd examples && python3 -m http.server 8000",
+    "smoke": "npm run build && cp dist/vibeui.es.js dist/vibeui.css smoke/dist/ && cd smoke && python3 -m http.server 8001",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
