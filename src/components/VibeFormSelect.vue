@@ -137,7 +137,7 @@ const handleFocus = (event: FocusEvent) => {
       @blur="handleBlur"
       @focus="handleFocus"
     >
-      <option v-if="placeholder" value="" disabled selected>{{ placeholder }}</option>
+      <option v-if="placeholder && !multiple" value="" disabled selected>{{ placeholder }}</option>
       <slot>
         <option
           v-for="(option, idx) in options"

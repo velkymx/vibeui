@@ -391,6 +391,24 @@ describe('VibeFormSelect', () => {
       expect(select.selectedIndex).toBe(placeholderIdx)
     })
 
+    it('M13 — placeholder is suppressed in multiple-select mode', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          placeholder: 'Pick',
+          multiple: true,
+          options: [
+            { text: 'A', value: 'a' },
+            { text: 'B', value: 'b' }
+          ]
+        }
+      })
+      const optionTexts = Array.from(wrapper.find('select').element.querySelectorAll('option'))
+        .map(o => o.textContent)
+      expect(optionTexts).not.toContain('Pick')
+      expect(optionTexts).toEqual(['A', 'B'])
+    })
+
     it('preserves typed primitives across re-render cycles', async () => {
       const wrapper = mount(VibeFormSelect, {
         props: {
