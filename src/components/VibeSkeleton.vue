@@ -25,10 +25,14 @@ const baseClasses = computed(() => {
 
 const lineCount = computed(() => Math.max(1, props.lines))
 
-const circleSize = computed(() => {
+// Circle width: explicit width wins, otherwise CSS default (.vibe-skeleton-circle).
+const circleWidth = computed(() => (props.variant === 'circle' ? toCss(props.width) : undefined))
+// Circle height: explicit height wins, otherwise mirror the width to keep 1:1.
+const circleHeight = computed(() => {
   if (props.variant !== 'circle') return undefined
-  const w = toCss(props.width)
-  return w
+  const h = toCss(props.height)
+  if (h !== undefined) return h
+  return toCss(props.width)
 })
 
 const sharedAttrs = {
@@ -67,7 +71,7 @@ const sharedAttrs = {
   <div
     v-else-if="variant === 'circle'"
     :class="[...baseClasses, 'vibe-skeleton-circle']"
-    :style="{ width: circleSize, height: circleSize || toCss(height) }"
+    :style="{ width: circleWidth, height: circleHeight }"
     v-bind="sharedAttrs"
   />
 

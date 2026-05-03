@@ -61,6 +61,15 @@ describe('VibeSkeleton', () => {
       expect(el.style.width).toBe('64px')
       expect(el.style.height).toBe('64px')
     })
+
+    it('M18 — circle respects explicit height when both width and height set', () => {
+      const wrapper = mount(VibeSkeleton, {
+        props: { variant: 'circle', width: 64, height: 32 }
+      })
+      const el = wrapper.find('.vibe-skeleton').element as HTMLElement
+      expect(el.style.width).toBe('64px')
+      expect(el.style.height).toBe('32px')
+    })
   })
 
   describe('card variant', () => {
