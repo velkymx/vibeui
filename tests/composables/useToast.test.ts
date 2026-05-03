@@ -97,4 +97,19 @@ describe('useToast', () => {
     const s2 = show('2')
     expect(s2.id).not.toBe(s1.id)
   })
+
+  describe('M11 SSR helpers', () => {
+    it('exports resetToastStoreForSSR for per-request cleanup', async () => {
+      const mod = await import('../../src/composables/useToast')
+      expect(typeof mod.resetToastStoreForSSR).toBe('function')
+
+      const { show } = useToast()
+      show('one')
+      show('two')
+      expect(mod.__toastStore.toasts).toHaveLength(2)
+
+      mod.resetToastStoreForSSR()
+      expect(mod.__toastStore.toasts).toHaveLength(0)
+    })
+  })
 })

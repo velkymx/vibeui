@@ -88,4 +88,18 @@ export const __resetToastStoreForTests = (): void => {
   counter = 0
 }
 
+/**
+ * Resets the toast store between SSR requests. The toast queue is a module
+ * singleton, so the same instance is shared across requests in an SSR runtime.
+ * Call this in your server entry's per-request reset hook to avoid leaking
+ * one request's pending toasts into another's render output.
+ *
+ * Multi-app browser usage shares the same queue; if this is undesirable, use
+ * the component-form `<VibeToast v-model="...">` for app-local toasts.
+ */
+export const resetToastStoreForSSR = (): void => {
+  clear()
+  counter = 0
+}
+
 export const __toastStore = store
