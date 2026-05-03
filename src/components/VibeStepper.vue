@@ -117,6 +117,8 @@ const activeStep = computed(() => props.steps[props.modelValue])
         v-for="(step, idx) in steps"
         :key="idx"
         :class="stepClass(idx)"
+        :tabindex="canJumpTo(idx) || idx === modelValue ? 0 : -1"
+        :aria-disabled="(canJumpTo(idx) || idx === modelValue) ? undefined : 'true'"
         @click="jumpTo(idx)"
       >
         <span class="vibe-stepper-marker">

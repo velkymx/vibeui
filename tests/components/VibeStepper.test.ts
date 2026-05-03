@@ -309,6 +309,43 @@ describe('VibeStepper', () => {
     })
   })
 
+  describe('M20 locked / disabled steps a11y', () => {
+    it('locked step (linear ahead) gets aria-disabled and tabindex=-1', () => {
+      const wrapper = mount(VibeStepper, {
+        props: { steps: baseSteps, modelValue: 0, linear: true }
+      })
+      const headers = wrapper.findAll('.vibe-stepper-step')
+      const locked = headers[2]
+      expect(locked.classes()).toContain('vibe-stepper-locked')
+      expect(locked.attributes('aria-disabled')).toBe('true')
+      expect(locked.attributes('tabindex')).toBe('-1')
+    })
+
+    it('disabled step gets aria-disabled and tabindex=-1', () => {
+      const steps = [...baseSteps]
+      steps[1] = { ...steps[1], disabled: true }
+      const wrapper = mount(VibeStepper, {
+        props: { steps, modelValue: 0, linear: false }
+      })
+      const headers = wrapper.findAll('.vibe-stepper-step')
+      const disabled = headers[1]
+      expect(disabled.attributes('aria-disabled')).toBe('true')
+      expect(disabled.attributes('tabindex')).toBe('-1')
+    })
+
+    it('active / completed steps remain interactive', () => {
+      const wrapper = mount(VibeStepper, {
+        props: { steps: baseSteps, modelValue: 1, linear: true }
+      })
+      const headers = wrapper.findAll('.vibe-stepper-step')
+      // 0 is completed, 1 is active — both should be interactable
+      expect(headers[0].attributes('tabindex')).toBe('0')
+      expect(headers[1].attributes('tabindex')).toBe('0')
+      expect(headers[0].attributes('aria-disabled')).toBeUndefined()
+      expect(headers[1].attributes('aria-disabled')).toBeUndefined()
+    })
+  })
+
   describe('H2 concurrency guard on async beforeNext', () => {
     it('ignores additional Next clicks while a guard promise is pending', async () => {
       let resolveGate: ((v: boolean) => void) | undefined
