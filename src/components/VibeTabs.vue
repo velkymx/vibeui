@@ -76,7 +76,8 @@ provide('vibeTabsContext', {
   },
   isActive: (name: string) => internalActive.value === name,
   hasBeenActive: (name: string) => visited.has(name),
-  lazy: props.lazy
+  // Reading via getter so child VibeTab re-evaluates when props.lazy changes.
+  get lazy() { return props.lazy }
 })
 </script>
 

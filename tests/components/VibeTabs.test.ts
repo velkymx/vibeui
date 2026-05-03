@@ -184,6 +184,32 @@ describe('VibeTabs', () => {
     })
   })
 
+  describe('M10 lazy is reactive in provided context', () => {
+    it('flipping lazy from false → true after mount keeps already-rendered tabs but stops mounting new ones until visited', async () => {
+      const wrapper = mount(VibeTabs, {
+        props: { lazy: false },
+        slots: {
+          default: `
+            <VibeTab name="a" label="A"><span class="a-body">A</span></VibeTab>
+            <VibeTab name="b" label="B"><span class="b-body">B</span></VibeTab>
+          `
+        },
+        global: { components: { VibeTab } }
+      })
+      await nextTick()
+      expect(wrapper.find('.a-body').exists()).toBe(true)
+      expect(wrapper.find('.b-body').exists()).toBe(true)
+
+      await wrapper.setProps({ lazy: true })
+      await nextTick()
+
+      // Already-mounted tabs stay; lazy gating only affects future renders
+      // because hasBeenActive('b') is still false (b was never active),
+      // so b-body should now be hidden under lazy mode.
+      expect(wrapper.find('.b-body').exists()).toBe(false)
+    })
+  })
+
   it('throws when VibeTab is used outside VibeTabs', () => {
     const consoleSpy = console.error
     console.error = () => {}
