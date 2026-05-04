@@ -296,6 +296,62 @@ const modal = useTemplateRef('modal')
 
 `VibeModal`, `VibeOffcanvas`, and `VibeToast` render via `<Teleport to="body">` by default. This prevents CSS stacking context issues. No configuration needed.
 
+### Toast service (v0.9)
+
+Mount `<VibeToastHost />` once at the app root, then dispatch from anywhere via the `useToast` composable. Toasts at the same placement stack inside one shared `.toast-container`.
+
+```vue
+<!-- App.vue -->
+<template>
+  <RouterView />
+  <VibeToastHost />
+</template>
+```
+
+```ts
+import { useToast } from '@velkymx/vibeui'
+const toast = useToast()
+toast.success('Saved')
+toast.error('Network error', { delay: 8000 })
+const sticky = toast.warn('Long export…', { autohide: false })
+toast.dismiss(sticky.id)
+```
+
+The component-form `<VibeToast v-model="show">` still works for app-local toasts.
+
+### Drag & drop (v0.9)
+
+Two layers depending on use case:
+
+- **Single-list reorder** → `<VibeSortable v-model="items">` with a scoped slot per item.
+- **Cross-list moves** (kanban, builders) → `<VibeDraggable :payload>` paired with `<VibeDroppable @drop>`. Match by `group` (default `'default'`) or `acceptGroups` whitelist. Payloads pass through a shared module store, so they can be typed objects, refs, or non-serializable values — no DataTransfer string round-trip.
+
+A document-level `dragend` / `drop` listener installed by `setActiveDrag` clears stale payloads if a drag aborts (escape, page nav, browser bug).
+
+### Calendar popover (v0.9)
+
+`VibeDatePicker` is a fully custom calendar (distinct from `VibeFormDatepicker` which wraps `<input type=date>`). ISO `YYYY-MM-DD` model, `range` mode emits `[start, end]`, full keyboard nav (arrows / PageUp+Down / Home+End / Enter / Escape), click-outside-to-close.
+
+```vue
+<VibeDatePicker v-model="due" :min="'2026-01-01'" :max="'2026-12-31'" />
+<VibeDatePicker v-model="window" range />
+```
+
+### Floating UI anchoring (v0.9)
+
+For ad-hoc anchoring when CSS position utilities aren't enough. Wraps `@floating-ui/dom` with a natural-language anchor-point API.
+
+```ts
+const { x, y, placement, update, stop } = usePosition(targetRef, anchorRef, () => ({
+  my: 'top center',
+  at: 'bottom center',
+  offset: [0, 8],
+  collision: 'flip+shift'
+}))
+```
+
+Pass options as a getter to keep `my` / `at` reactive.
+
 ---
 
 ## Composables
@@ -357,6 +413,77 @@ Generates a unique, SSR-safe ID string. Used internally by form components.
 const id = useId('prefix') // → 'prefix-3-7'
 ```
 
+### useForm (v0.9)
+
+Multi-field form state with reactive `fields`, `errors`, `touched` maps. `fields` is a Vue `reactive` so its properties auto-unwrap in templates.
+
+```ts
+const { fields, errors, touched, isDirty, isValid, validate, validateField, reset, markAllTouched, setField, values }
+  = useForm({ name: '', email: '', age: 0 })
+
+const result = await validate({
+  name:  [validators.required('Name is required')],
+  email: [validators.required(), validators.email()],
+  age:   [validators.min(18, 'Must be 18+')]
+})
+// result.valid: boolean
+// result.errors: Partial<Record<K, string>>
+```
+
+`reset` deep-clones the initial values back in (works for object / array fields). Dirty tracking uses structural compare (`JSON.stringify`) so non-primitive fields don't read as permanently dirty.
+
+For **single-field** validation, prefer `useFormValidation` (older API) and destructure at the call site to keep templates clean.
+
+### useToast (v0.9)
+
+```ts
+const { show, success, error, warn, info, dismiss, clear, toasts } = useToast()
+
+success(body, { id?, title?, placement?, autohide?, delay? })
+toasts // DeepReadonly<ToastSpec[]>
+```
+
+The store is a module singleton (per app per JS realm). For SSR, call `resetToastStoreForSSR()` from the server entry's per-request reset hook. Multi-app browser usage shares the same queue — use the component form for app-local notifications.
+
+### usePosition (v0.9)
+
+```ts
+const { x, y, placement, update, stop } = usePosition(target, anchor, options)
+```
+
+`options` accepts a plain object (static) **or** a getter `() => UsePositionOptions` (reactive). The getter is re-evaluated on every `update()` and is part of the watch dependency set.
+
+The composable owns `position` / `left` / `top` on the target element while alive. `stop()` (and `onBeforeUnmount`) restore the previous inline values.
+
+### useBreakpoints (v0.8)
+
+```ts
+const { isXs, isSm, isMd, isLg, isXl, isXxl, isMobile, isTablet } = useBreakpoints()
+```
+
+Reactive booleans driven by `window.matchMedia` against Bootstrap's standard breakpoints.
+
+### useBackButton (v0.8)
+
+Hooks Android's hardware back button (Capacitor / Cordova) into Vue components — `VibeModal` and `VibeOffcanvas` register their close handlers automatically.
+
+---
+
+## Directives
+
+### v-vibe-tooltip (v0.9)
+
+Inline tooltip directive registered globally by `app.use(VibeUI)`.
+
+```vue
+<button v-vibe-tooltip="'Save changes'">Save</button>
+<span v-vibe-tooltip="{ title: 'Open in new tab', placement: 'right', html: true }">↗</span>
+```
+
+Re-creates the underlying Bootstrap Tooltip when `placement` / `trigger` / `html` change; title-only changes use the cheap `setContent` path. Touch devices auto-swap `hover focus` → `click`.
+
+For component-form usage with rich slot content, use `<VibeTooltip>`.
+
 ---
 
 ## Testing
@@ -402,7 +529,15 @@ Build output:
 - `dist/vibeui.umd.js` — UMD for CDN / script tag usage
 - `dist/vibeui.d.ts` — TypeScript declarations
 
-Vue and Bootstrap are **external** — not bundled. Consumers provide their own.
+Vue and Bootstrap are **external** — not bundled. Consumers provide their own. `@floating-ui/dom` is a runtime dependency (used by `usePosition`).
+
+### Smoke testing
+
+```bash
+npm run smoke   # rebuilds the lib + serves smoke/ on :8001
+```
+
+`smoke/index.html` mounts every component with realistic data and a status badge for runtime errors. Bootstrap, Quill, and Vue are loaded from CDN via an importmap (Bootstrap and Quill via `esm.sh` so transitive deps like `@popperjs/core` resolve automatically).
 
 ---
 
