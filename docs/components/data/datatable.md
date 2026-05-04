@@ -19,8 +19,21 @@ Powerful data table component with search, sorting, and pagination - similar to 
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `items` | `Array<any>` | `[]` | Array of data objects to display |
-| `columns` | `DataTableColumn[]` | Required | Column definitions |
+| `items` | `T[]` | `[]` | Array of data objects to display |
+| `columns` | `DataTableColumn<T>[]` | Required | Column definitions |
+
+> **Typing tip**: `DataTableColumn` is generic over your row type. For full slot-prop / formatter typing, annotate the column array:
+>
+> ```ts
+> import type { DataTableColumn } from '@velkymx/vibeui'
+> interface User { id: number; name: string; active: boolean }
+> const columns: DataTableColumn<User>[] = [
+>   { key: 'name', label: 'Name' },              // key narrowed to keyof User
+>   { key: 'active', label: 'Active', formatter: v => v ? 'Yes' : 'No' }
+> ]
+> ```
+>
+> Without the annotation, `T` defaults to `Record<string, unknown>` and slot props arrive as `unknown`.
 
 ### Table Styling Props
 

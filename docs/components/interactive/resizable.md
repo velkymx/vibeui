@@ -55,6 +55,10 @@ const h = ref(200)
 </template>
 ```
 
+## Layout caveat
+
+Handles are positioned just outside the box (negative top/right/bottom/left) so they sit *on* the edge for easier grabbing. If the resizable lives inside a parent with `overflow: hidden`, or sits at the viewport edge, the handles may clip. Either lift `overflow` from the parent or wrap the resizable in extra padding.
+
 ### Aspect-locked image preview
 
 ```vue

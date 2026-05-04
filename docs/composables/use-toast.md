@@ -75,3 +75,17 @@ router.afterEach(() => toast.clear())
 ## Coexistence with `<VibeToast>`
 
 The component-form `<VibeToast v-model="show">` still works — useful when a toast lives logically inside a single view. `useToast` is for app-wide notifications dispatched from composables, async handlers, or non-component code.
+
+> Mixing both in the same app produces two `.toast-container`s at the same placement (one from `<VibeToastHost>`, one per standalone `<VibeToast>`), which Bootstrap stacks side-by-side rather than vertically. If that's visually unwanted, pick one form per app.
+
+## SSR
+
+The toast queue is a module-level singleton. In SSR runtimes the same store is reused across requests; call `resetToastStoreForSSR()` from your server entry's per-request reset hook to avoid leaking one request's pending toasts into another's render output.
+
+```ts
+import { resetToastStoreForSSR } from '@velkymx/vibeui'
+
+// In your server's request handler:
+resetToastStoreForSSR()
+const app = createSSRApp(/* ... */)
+```

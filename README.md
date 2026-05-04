@@ -39,9 +39,41 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 createApp(App).use(VibeUI).mount('#app');
 ```
 
+## What's New in v0.9
+
+A big release driven by real-app migration feedback and a jQuery UI parity push.
+
+**New components**
+- `VibeFileInput` — file picker with drag-drop, accept enforcement, size limit
+- `VibeSkeleton` — text / rect / circle / card loading placeholders with shimmer
+- `VibeDatePicker` — calendar popover with single + range mode, keyboard nav
+- `VibeAutocomplete` — search-as-you-type, sync or async source, debounced
+- `VibeTabs` / `VibeTab` — tab container with content switching, lazy mode
+- `VibeStepper` — multi-step wizard with sync/async guards
+- `VibeSortable` — drag-to-reorder list
+- `VibeDraggable` / `VibeDroppable` — kanban / builder primitives
+- `VibeResizable` — corner / edge handle resizing with aspect / grid
+- `VibeSlider` — single + range slider with handle swap, track click, keyboard
+- `VibeToastHost` — host component for the new toast service
+
+**New composables / directive**
+- `useForm` — multi-field forms with reactive `fields`, `errors`, `touched`
+- `useToast` — `toast.success() / error() / warn() / info() / dismiss()`
+- `usePosition` — floating-ui-backed anchor positioning
+- `v-vibe-tooltip` — inline tooltip directive
+
+**API improvements**
+- `VibeAlert`: rich slot content; `dismissible` (correctly spelled) alias
+- `VibeButton`: `variant="link"`
+- `VibeDataTable`: generic columns (`DataTableColumn<MyRow>`)
+- `VibeFormSelect`: typed primitive option values (`null`, `undefined`, `boolean`)
+- `VibeFormWysiwyg`: toolbar string presets (`'minimal' | 'standard' | 'full'`)
+
+**Dependency**: `@floating-ui/dom` added (used by `usePosition`).
+
 ## Advanced Interactivity
 
-VibeUI v0.8.0 is optimized for mobile and hybrid apps, and fully abstracts Bootstrap's JavaScript. You no longer need to manually initialize tooltips, modals, or collapses.
+VibeUI fully abstracts Bootstrap's JavaScript — you don't manually initialize tooltips, modals, or collapses. Touch devices get sensible defaults out of the box.
 
 ```vue
 <template>
@@ -50,6 +82,9 @@ VibeUI v0.8.0 is optimized for mobile and hybrid apps, and fully abstracts Boots
     <VibeTooltip text="I just work!">
       <VibeButton>Hover or Tap Me</VibeButton>
     </VibeTooltip>
+
+    <!-- Or as a directive (v0.9) -->
+    <VibeButton v-vibe-tooltip="'Inline tooltip'">Save</VibeButton>
 
     <!-- Full v-model support for Modals with Android back button support -->
     <VibeModal v-model="showModal" title="Hello!">
@@ -70,12 +105,29 @@ VibeUI handles accessibility and IDs for you.
     <VibeFormInput v-model="email" type="email" />
   </VibeFormGroup>
 
-  <!-- New in v0.8.0: Input Groups -->
   <VibeInputGroup prepend="@">
     <VibeFormInput v-model="username" noWrapper />
   </VibeInputGroup>
+
+  <!-- New in v0.9: useForm composable for multi-field state -->
+  <script setup>
+  import { useForm, validators } from '@velkymx/vibeui'
+  const { fields, errors, validate, isDirty } = useForm({ name: '', email: '' })
+  </script>
 </template>
 ```
+
+## Toasts (v0.9 service form)
+
+```ts
+import { useToast } from '@velkymx/vibeui'
+
+const toast = useToast()
+toast.success('Saved')
+toast.error('Network error', { delay: 8000 })
+```
+
+Mount `<VibeToastHost />` once at the root and dispatch from anywhere.
 
 ## Components
 

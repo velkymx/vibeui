@@ -47,3 +47,5 @@ Items get `data-vibe-sortable-item` for testability and styling. The currently d
 
 - **VibeSortable**: a single ordered list whose only operation is reorder.
 - **VibeDraggable + VibeDroppable**: cross-list moves, kanban boards, builders, anywhere the source and target are different containers.
+
+> **v0.9 scope**: VibeSortable handles in-list reorder only. Cross-list moves between two `<VibeSortable>` instances are not supported — use `VibeDraggable` + `VibeDroppable` for that.
