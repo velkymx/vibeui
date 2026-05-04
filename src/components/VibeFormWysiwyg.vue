@@ -11,6 +11,7 @@ interface QuillInstance {
   getSemanticHTML: () => string
   clipboard: {
     dangerouslyPasteHTML: (html: string, source?: string) => void
+    convert: (input: { html?: string; text?: string }) => unknown
   }
   setContents: (delta: unknown, source?: string) => void
   on: (event: string, handler: (...args: unknown[]) => void) => void
@@ -138,10 +139,13 @@ const getToolbarConfig = () => {
 const setQuillContent = (html: string) => {
   if (!quillInstance.value) return
   isUpdatingFromProp.value = true
-  quillInstance.value.setContents([], 'silent')
-  if (html) {
-    quillInstance.value.clipboard.dangerouslyPasteHTML(html, 'silent')
-  }
+  // Quill 2.x: setContents([]) followed by dangerouslyPasteHTML triggers a
+  // selection update against the (now-empty) document, which crashes inside
+  // selection.normalizedToRange when the input format includes a wrapping
+  // <p>. Convert the HTML to a Delta and atomically replace via setContents
+  // — this is the supported path and emits a single text-change.
+  const delta = quillInstance.value.clipboard.convert({ html: html || '' })
+  quillInstance.value.setContents(delta, 'silent')
   isUpdatingFromProp.value = false
 }
 
