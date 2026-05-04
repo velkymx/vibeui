@@ -6,10 +6,10 @@
     <title>VibeUI v0.9 — Smoke Test</title>
 
     <!-- Bootstrap 5.3 CSS + Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
     <!-- Quill (used by VibeFormWysiwyg) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" />
     <!-- VibeUI styles -->
     <link rel="stylesheet" href="./dist/vibeui.css" />
 
@@ -28,13 +28,20 @@
       .smoke-status { font-family: ui-monospace, monospace; font-size: .85rem; padding: .25rem .5rem; border-radius: .25rem; background: var(--bs-secondary-bg); }
     </style>
 
-    <!-- Import map: pin Vue + Bootstrap so the ESM bundle's bare imports resolve. -->
+    <!-- Import map: resolve VibeUI's externalised bare imports.
+         - bootstrap and quill via esm.sh, which auto-resolves their nested
+           deps (popperjs for bootstrap, parchment + lodash for quill) into a
+           single bundled ESM URL. Avoids hand-pinning every transitive.
+         - The wysiwyg bundle also calls `await import('quill/dist/quill.snow.css')`;
+           browsers can't natively import .css as JS, so we map that path to a
+           data:-URL no-op JS module. The actual CSS is loaded above via <link>. -->
     <script type="importmap">
       {
         "imports": {
-          "vue":       "https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.esm-browser.prod.js",
-          "bootstrap": "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.esm.min.js",
-          "quill":     "https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"
+          "vue":                          "https://cdn.jsdelivr.net/npm/vue@3.5/dist/vue.esm-browser.prod.js",
+          "bootstrap":                    "https://esm.sh/bootstrap@5.3.8",
+          "quill":                        "https://esm.sh/quill@2.0.3",
+          "quill/dist/quill.snow.css":    "data:text/javascript,export default {}"
         }
       }
     </script>
@@ -46,6 +53,7 @@
         <span class="navbar-brand fw-bold">VibeUI v0.9 Smoke Test</span>
         <div class="d-flex align-items-center gap-3">
           <span class="smoke-status" id="suite-status">loading…</span>
+          <span class="smoke-status text-bg-warning d-none" id="suite-errors"></span>
           <button id="theme-toggle" class="btn btn-outline-secondary btn-sm">Toggle theme</button>
         </div>
       </div>
@@ -760,22 +768,60 @@
 
       app.use(VibeUI)
 
-      let renderError = null
-      app.config.errorHandler = (err) => {
-        renderError = err
-        console.error(err)
+      // Surface render errors AND the component-error events that VibeUI
+      // emits when a Bootstrap / Quill dynamic import fails.
+      const errorBag = []
+      const errorBadge = document.getElementById('suite-errors')
+      const flushErrors = () => {
+        if (errorBag.length === 0) return
+        errorBadge.textContent = `${errorBag.length} runtime error(s) — see console`
+        errorBadge.classList.remove('d-none')
       }
+
+      app.config.errorHandler = (err, _instance, info) => {
+        errorBag.push(`${info}: ${String(err)}`)
+        console.error('[VibeUI smoke]', info, err)
+        flushErrors()
+      }
+      app.config.warnHandler = (msg, _instance, trace) => {
+        console.warn('[VibeUI smoke]', msg, trace)
+      }
+      window.addEventListener('error', (event) => {
+        errorBag.push(String(event.error || event.message))
+        console.error('[VibeUI smoke] window error', event.error || event.message)
+        flushErrors()
+      })
+      window.addEventListener('unhandledrejection', (event) => {
+        errorBag.push(`unhandled rejection: ${String(event.reason)}`)
+        console.error('[VibeUI smoke] unhandled rejection', event.reason)
+        flushErrors()
+      })
 
       app.mount('#app')
 
-      // Hook a status badge
+      // Status badge — count globally registered components
       const status = document.getElementById('suite-status')
-      const allComponents = Object.keys(app._context.components || {}).length
-      status.textContent = renderError
-        ? `error: ${String(renderError).slice(0, 80)}`
-        : `${allComponents} components mounted`
-      status.classList.toggle('text-bg-danger', !!renderError)
-      status.classList.toggle('text-bg-success', !renderError)
+      const componentCount = Object.keys(app._context.components || {}).length
+      status.textContent = `${componentCount} components mounted`
+      status.classList.add('text-bg-success')
+
+      // Sanity-probe Bootstrap & Quill so the user knows whether the
+      // importmap resolution actually worked.
+      Promise.allSettled([
+        import('bootstrap').then(m => `bootstrap ${m.default?.Tooltip || m.Tooltip ? 'ok' : 'no Tooltip export'}`),
+        import('quill').then(m => `quill ${m.default || m.Quill ? 'ok' : 'no default export'}`)
+      ]).then(results => {
+        const summary = results.map((r, i) => {
+          const name = ['bootstrap', 'quill'][i]
+          if (r.status === 'fulfilled') return `${r.value}`
+          return `${name} FAILED: ${String(r.reason).slice(0, 120)}`
+        }).join(' • ')
+        status.textContent = `${componentCount} components • ${summary}`
+        if (results.some(r => r.status === 'rejected')) {
+          status.classList.remove('text-bg-success')
+          status.classList.add('text-bg-danger')
+        }
+      })
 
       // Theme toggle
       document.getElementById('theme-toggle').addEventListener('click', () => {
