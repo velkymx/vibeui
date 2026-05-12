@@ -6,6 +6,7 @@ import VibeButtonGroup from './VibeButtonGroup.vue'
 import VibeCloseButton from './VibeCloseButton.vue'
 import VibeSpinner from './VibeSpinner.vue'
 import VibePlaceholder from './VibePlaceholder.vue'
+import VibeSkeleton from './VibeSkeleton.vue'
 
 // Layout Components
 import VibeContainer from './VibeContainer.vue'
@@ -24,6 +25,8 @@ import VibeNavbarToggle from './VibeNavbarToggle.vue'
 import VibeNavbarNav from './VibeNavbarNav.vue'
 import VibePagination from './VibePagination.vue'
 import VibeTabContent from './VibeTabContent.vue'
+import VibeTabs from './VibeTabs.vue'
+import VibeTab from './VibeTab.vue'
 
 // List Components
 import VibeListGroup from './VibeListGroup.vue'
@@ -38,6 +41,7 @@ import VibeDropdown from './VibeDropdown.vue'
 import VibeModal from './VibeModal.vue'
 import VibeOffcanvas from './VibeOffcanvas.vue'
 import VibeToast from './VibeToast.vue'
+import VibeToastHost from './VibeToastHost.vue'
 import VibeCarousel from './VibeCarousel.vue'
 
 // Advanced Components
@@ -55,6 +59,15 @@ import VibeFormSelect from './VibeFormSelect.vue'
 import VibeFormTextarea from './VibeFormTextarea.vue'
 import VibeFormSpinbutton from './VibeFormSpinbutton.vue'
 import VibeFormDatepicker from './VibeFormDatepicker.vue'
+import VibeFileInput from './VibeFileInput.vue'
+import VibeSlider from './VibeSlider.vue'
+import VibeStepper from './VibeStepper.vue'
+import VibeAutocomplete from './VibeAutocomplete.vue'
+import VibeSortable from './VibeSortable.vue'
+import VibeDraggable from './VibeDraggable.vue'
+import VibeDroppable from './VibeDroppable.vue'
+import VibeResizable from './VibeResizable.vue'
+import VibeDatePicker from './VibeDatePicker.vue'
 import VibeFormCheckbox from './VibeFormCheckbox.vue'
 import VibeFormRadio from './VibeFormRadio.vue'
 import VibeFormSwitch from './VibeFormSwitch.vue'
@@ -73,6 +86,7 @@ export {
   VibeCloseButton,
   VibeSpinner,
   VibePlaceholder,
+  VibeSkeleton,
 
   // Layout
   VibeContainer,
@@ -91,6 +105,8 @@ export {
   VibeNavbarNav,
   VibePagination,
   VibeTabContent,
+  VibeTabs,
+  VibeTab,
 
   // List
   VibeListGroup,
@@ -105,6 +121,7 @@ export {
   VibeModal,
   VibeOffcanvas,
   VibeToast,
+  VibeToastHost,
   VibeCarousel,
 
   // Advanced
@@ -122,6 +139,15 @@ export {
   VibeFormTextarea,
   VibeFormSpinbutton,
   VibeFormDatepicker,
+  VibeFileInput,
+  VibeSlider,
+  VibeStepper,
+  VibeAutocomplete,
+  VibeSortable,
+  VibeDraggable,
+  VibeDroppable,
+  VibeResizable,
+  VibeDatePicker,
   VibeFormCheckbox,
   VibeFormRadio,
   VibeFormSwitch,
@@ -132,6 +158,7 @@ export {
 }
 
 import type { App, Plugin } from 'vue'
+import { vTooltip } from '../directives/vTooltip'
 
 // Vue plugin for global registration
 const VibeUIPlugin: Plugin = {
@@ -144,6 +171,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeCloseButton', VibeCloseButton)
     app.component('VibeSpinner', VibeSpinner)
     app.component('VibePlaceholder', VibePlaceholder)
+    app.component('VibeSkeleton', VibeSkeleton)
 
     // Layout
     app.component('VibeContainer', VibeContainer)
@@ -162,6 +190,8 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeNavbarNav', VibeNavbarNav)
     app.component('VibePagination', VibePagination)
     app.component('VibeTabContent', VibeTabContent)
+    app.component('VibeTabs', VibeTabs)
+    app.component('VibeTab', VibeTab)
 
     // List
     app.component('VibeListGroup', VibeListGroup)
@@ -176,6 +206,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeModal', VibeModal)
     app.component('VibeOffcanvas', VibeOffcanvas)
     app.component('VibeToast', VibeToast)
+    app.component('VibeToastHost', VibeToastHost)
     app.component('VibeCarousel', VibeCarousel)
 
     // Advanced
@@ -193,6 +224,15 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeFormTextarea', VibeFormTextarea)
     app.component('VibeFormSpinbutton', VibeFormSpinbutton)
     app.component('VibeFormDatepicker', VibeFormDatepicker)
+    app.component('VibeFileInput', VibeFileInput)
+    app.component('VibeSlider', VibeSlider)
+    app.component('VibeStepper', VibeStepper)
+    app.component('VibeAutocomplete', VibeAutocomplete)
+    app.component('VibeSortable', VibeSortable)
+    app.component('VibeDraggable', VibeDraggable)
+    app.component('VibeDroppable', VibeDroppable)
+    app.component('VibeResizable', VibeResizable)
+    app.component('VibeDatePicker', VibeDatePicker)
     app.component('VibeFormCheckbox', VibeFormCheckbox)
     app.component('VibeFormRadio', VibeFormRadio)
     app.component('VibeFormSwitch', VibeFormSwitch)
@@ -200,6 +240,9 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeFormWysiwyg', VibeFormWysiwyg)
     app.component('VibeInputGroup', VibeInputGroup)
     app.component('VibeLink', VibeLink)
+
+    // Directives
+    app.directive('vibe-tooltip', vTooltip)
   }
 }
 

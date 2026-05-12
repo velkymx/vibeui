@@ -1,8 +1,29 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
 import type { PropType, ComputedRef } from 'vue'
-import type { FormSelectOption, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
+import type { FormSelectOption, FormSelectOptionValue, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useId } from '../composables/useId'
+
+// Per-option DOM value is the option's array index ("vi:0", "vi:1", ...).
+// The `vi:` prefix prevents collision with the placeholder's empty-string value
+// and clearly distinguishes our encoded values from user-supplied strings.
+const PLACEHOLDER_VALUE = ''
+const VI_PREFIX = 'vi:'
+
+const encodeIndex = (idx: number): string => `${VI_PREFIX}${idx}`
+
+const indexFromEncoded = (encoded: string): number => {
+  if (!encoded.startsWith(VI_PREFIX)) return -1
+  const n = Number(encoded.slice(VI_PREFIX.length))
+  return Number.isInteger(n) && n >= 0 ? n : -1
+}
+
+const findIndexForValue = (options: FormSelectOption[], value: FormSelectOptionValue): number => {
+  for (let i = 0; i < options.length; i++) {
+    if (Object.is(options[i].value, value)) return i
+  }
+  return -1
+}
 
 const props = defineProps({
   modelValue: {
@@ -49,16 +70,36 @@ const selectClass = computed(() => {
   return classes.join(' ')
 })
 
+const decodeOption = (encoded: string): FormSelectOptionValue => {
+  const idx = indexFromEncoded(encoded)
+  if (idx >= 0 && idx < props.options.length) return props.options[idx].value
+  // Placeholder selected (or unknown encoded value) — surface as empty string for back-compat
+  return ''
+}
+
 const handleInput = (event: Event) => {
   const target = event.target as HTMLSelectElement
-  let newValue: any
+  let newValue: unknown
   if (props.multiple) {
-    newValue = Array.from(target.selectedOptions).map(option => option.value)
+    newValue = Array.from(target.selectedOptions).map(option => decodeOption(option.value))
   } else {
-    newValue = target.value
+    newValue = decodeOption(target.value)
   }
   emit('update:modelValue', newValue)
 }
+
+const encodedModelValue = computed(() => {
+  if (Array.isArray(props.modelValue)) {
+    return props.modelValue
+      .map((v: FormSelectOptionValue) => {
+        const idx = findIndexForValue(props.options, v)
+        return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
+      })
+      .filter(v => v !== PLACEHOLDER_VALUE)
+  }
+  const idx = findIndexForValue(props.options, props.modelValue as FormSelectOptionValue)
+  return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
+})
 
 const handleChange = (event: Event) => {
   emit('change', event)
@@ -84,7 +125,7 @@ const handleFocus = (event: FocusEvent) => {
     <select
       :id="computedId"
       :class="selectClass"
-      :value="modelValue"
+      :value="encodedModelValue"
       :multiple="multiple"
       :size="htmlSize || selectSize"
       :disabled="disabled"
@@ -96,9 +137,14 @@ const handleFocus = (event: FocusEvent) => {
       @blur="handleBlur"
       @focus="handleFocus"
     >
-      <option v-if="placeholder" value="" disabled selected>{{ placeholder }}</option>
+      <option v-if="placeholder && !multiple" value="" disabled selected>{{ placeholder }}</option>
       <slot>
-        <option v-for="option in options" :key="String(option.value)" :value="option.value" :disabled="option.disabled">
+        <option
+          v-for="(option, idx) in options"
+          :key="idx"
+          :value="encodeIndex(idx)"
+          :disabled="option.disabled"
+        >
           {{ option.text }}
         </option>
       </slot>

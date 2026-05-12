@@ -50,4 +50,42 @@ describe('VibeFormWysiwyg', () => {
 
     expect(wrapper.props('mobileToolbar')).toEqual(customMobileToolbar)
   })
+
+  describe('toolbar presets', () => {
+    it('accepts "minimal" preset', () => {
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: { toolbar: 'minimal' }
+      })
+      expect(wrapper.props('toolbar')).toBe('minimal')
+    })
+
+    it('accepts "standard" preset', () => {
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: { toolbar: 'standard' }
+      })
+      expect(wrapper.props('toolbar')).toBe('standard')
+    })
+
+    it('accepts "full" preset', () => {
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: { toolbar: 'full' }
+      })
+      expect(wrapper.props('toolbar')).toBe('full')
+    })
+
+    it('accepts custom array (preserves Quill format)', () => {
+      const custom = [['bold'], [{ header: 1 }]]
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: { toolbar: custom }
+      })
+      expect(wrapper.props('toolbar')).toEqual(custom)
+    })
+
+    it('accepts toolbar=false to disable', () => {
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: { toolbar: false }
+      })
+      expect(wrapper.props('toolbar')).toBe(false)
+    })
+  })
 })

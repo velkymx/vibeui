@@ -5,7 +5,7 @@ import type { DataTableColumn } from '../types'
 const props = defineProps({
   // Data
   items: { type: Array as () => T[], default: () => [] },
-  columns: { type: Array as () => DataTableColumn[], required: true },
+  columns: { type: Array as () => DataTableColumn<T>[], required: true },
   rowKey: { type: String, default: 'id' }, // Key to use for unique row identification
 
   // Table styling
@@ -220,7 +220,7 @@ const tableClass = computed(() => {
 })
 
 // Methods
-const handleSort = (column: DataTableColumn) => {
+const handleSort = (column: DataTableColumn<T>) => {
   if (!props.sortable || column.sortable === false) return
 
   if (sortBy.value === column.key) {
@@ -244,7 +244,7 @@ const handleRowClick = (item: T, index: number) => {
   emit('row-clicked', item, index)
 }
 
-const getCellValue = (item: T, column: DataTableColumn) => {
+const getCellValue = (item: T, column: DataTableColumn<T>) => {
   const value = item[column.key]
   if (column.formatter) {
     return column.formatter(value, item)
@@ -252,13 +252,13 @@ const getCellValue = (item: T, column: DataTableColumn) => {
   return value
 }
 
-const getSortIcon = (column: DataTableColumn) => {
+const getSortIcon = (column: DataTableColumn<T>) => {
   if (!props.sortable || column.sortable === false) return ''
   if (sortBy.value !== column.key) return '⇅'
   return sortDesc.value ? '↓' : '↑'
 }
 
-const getThStyle = (column: DataTableColumn) => {
+const getThStyle = (column: DataTableColumn<T>) => {
   const style = { ...column.thStyle }
   if (props.sortable && column.sortable !== false) {
     style.cursor = 'pointer'

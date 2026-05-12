@@ -1,6 +1,6 @@
 {
   "name": "@velkymx/vibeui",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "A lightweight Vue 3 component library for Bootstrap 5.3 with dual-mode support (shorthand props and composable slots)",
   "main": "./dist/vibeui.umd.js",
   "module": "./dist/vibeui.es.js",
@@ -24,6 +24,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "examples": "npm run build && cd examples && python3 -m http.server 8000",
+    "smoke": "npm run build && cp dist/vibeui.es.js dist/vibeui.css smoke/dist/ && cd smoke && python3 -m http.server 8001",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
@@ -51,6 +52,7 @@
   },
   "homepage": "https://github.com/velkymx/vibeui#readme",
   "dependencies": {
+    "@floating-ui/dom": "^1.7.6",
     "vue": "^3.5.0"
   },
   "devDependencies": {

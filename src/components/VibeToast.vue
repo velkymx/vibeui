@@ -17,7 +17,10 @@ const props = defineProps({
   autohide: { type: Boolean, default: true },
   delay: { type: Number, default: 5000 },
   teleport: { type: [String, Boolean], default: 'body' },
-  placement: { type: String as () => ToastPlacement, default: 'top-end' }
+  placement: { type: String as () => ToastPlacement, default: 'top-end' },
+  // When true, render only the .toast element (no Teleport, no .toast-container wrapper).
+  // Used by VibeToastHost to group multiple toasts under a single shared container.
+  noContainer: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
@@ -132,7 +135,33 @@ defineExpose({ show, hide, bsInstance: bsToast })
 </script>
 
 <template>
-  <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
+  <div
+    v-if="noContainer"
+    ref="toastRef"
+    :id="id"
+    :class="toastClass"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+    :data-bs-autohide="autohide"
+    :data-bs-delay="delay"
+  >
+    <div v-if="title || $slots.header" class="toast-header">
+      <slot name="header">
+        <strong class="me-auto">{{ title }}</strong>
+      </slot>
+      <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
+    </div>
+    <div class="toast-body">
+      <slot />
+    </div>
+  </div>
+
+  <Teleport
+    v-else
+    :to="teleport === true ? 'body' : (teleport || undefined)"
+    :disabled="!teleport"
+  >
     <div :class="containerClass" style="z-index: 1090">
       <div
         ref="toastRef"

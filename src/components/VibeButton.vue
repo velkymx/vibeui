@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Variant, Size, ButtonType } from '../types'
+import type { ButtonVariant, Size, ButtonType } from '../types'
 
 const props = defineProps({
-  variant: { type: String as () => Variant, default: 'primary' },
+  variant: { type: String as () => ButtonVariant, default: 'primary' },
   size: { type: String as () => Size, default: undefined },
   outline: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
@@ -25,7 +25,9 @@ const tag = computed(() => {
 const buttonClass = computed(() => {
   const classes = ['btn']
 
-  if (props.outline) {
+  if (props.variant === 'link') {
+    classes.push('btn-link')
+  } else if (props.outline) {
     classes.push(`btn-outline-${props.variant}`)
   } else {
     classes.push(`btn-${props.variant}`)

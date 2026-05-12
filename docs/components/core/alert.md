@@ -10,7 +10,7 @@ Alert messages with Bootstrap styling, supporting variants, dismissible function
 | `subtle` | `Boolean` | `false` | Renders alert with subtle background and emphasis text |
 | `modelValue` | `Boolean` | `true` | Controls visibility (v-model support) |
 | `dismissable` | `Boolean` | `false` | Shows close button when true |
-| `message` | `String` | Required | Alert message text |
+| `message` | `String` | `''` | Alert message text. Optional when default slot is used. |
 | `fade` | `Boolean` | `true` | Use fade animation on dismissal |
 
 ## Events
@@ -52,6 +52,20 @@ const showAlert = ref(true)
     v-model="showAlert"
     message="This alert can be dismissed"
   />
+</template>
+```
+
+### Rich Content via Default Slot
+
+When the default slot is provided, it overrides the `message` prop. Use this for inline buttons, links, icons, or any rich VNode content.
+
+```vue
+<template>
+  <VibeAlert variant="warning" dismissable>
+    <strong>Sprint locked.</strong>
+    Changes are frozen until release.
+    <VibeButton size="sm" variant="primary" @click="unlock">Unlock</VibeButton>
+  </VibeAlert>
 </template>
 ```
 

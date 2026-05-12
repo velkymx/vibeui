@@ -12,6 +12,7 @@ interface QuillInstance {
   getSemanticHTML: () => string
   clipboard: {
     dangerouslyPasteHTML: (html: string, source?: string) => void
+    convert: (input: { html?: string; text?: string }) => unknown
   }
   setContents: (delta: unknown, source?: string) => void
   on: (event: string, handler: (...args: unknown[]) => void) => void
@@ -92,26 +93,62 @@ const defaultMobileToolbar = [
   ['link', 'clean']
 ]
 
+const toolbarPresets: Record<string, unknown[]> = {
+  minimal: [
+    ['bold', 'italic', 'underline'],
+    ['link', 'clean']
+  ],
+  standard: [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    ['link', 'clean']
+  ],
+  full: [
+    [{ header: [1, 2, 3, 4, 5, 6, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+    [{ color: [] }, { background: [] }],
+    [{ align: [] }],
+    ['blockquote', 'code-block'],
+    ['link', 'image', 'video'],
+    ['clean']
+  ]
+}
+
+const resolveToolbar = (value: unknown[] | string | boolean | undefined, fallback: unknown[]) => {
+  if (value === false) return false
+  if (value === true || value === undefined) return fallback
+  if (typeof value === 'string') {
+    return toolbarPresets[value] ?? fallback
+  }
+  return value
+}
+
 const getToolbarConfig = () => {
   if (props.toolbar === false) return false
-  
+
   if (isMobile.value) {
     if (props.mobileToolbar === false) return false
-    if (props.mobileToolbar !== undefined) return props.mobileToolbar
+    if (props.mobileToolbar !== undefined) {
+      return resolveToolbar(props.mobileToolbar, defaultMobileToolbar)
+    }
     return defaultMobileToolbar
   }
 
-  if (props.toolbar === true || props.toolbar === undefined) return defaultToolbar
-  return props.toolbar
+  return resolveToolbar(props.toolbar, defaultToolbar)
 }
 
 const setQuillContent = (html: string) => {
   if (!quillInstance.value) return
   isUpdatingFromProp.value = true
-  quillInstance.value.setContents([], 'silent')
-  if (html) {
-    quillInstance.value.clipboard.dangerouslyPasteHTML(html, 'silent')
-  }
+  // Quill 2.x: setContents([]) followed by dangerouslyPasteHTML triggers a
+  // selection update against the (now-empty) document, which crashes inside
+  // selection.normalizedToRange when the input format includes a wrapping
+  // <p>. Convert the HTML to a Delta and atomically replace via setContents
+  // — this is the supported path and emits a single text-change.
+  const delta = quillInstance.value.clipboard.convert({ html: html || '' })
+  quillInstance.value.setContents(delta, 'silent')
   isUpdatingFromProp.value = false
 }
 

@@ -3,6 +3,7 @@
 export type ColorMode = 'light' | 'dark' | 'auto'
 
 export type Variant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
+export type ButtonVariant = Variant | 'link'
 
 export type Size = 'sm' | 'lg'
 
@@ -36,16 +37,22 @@ export type JustifyContent = 'start' | 'center' | 'end' | 'around' | 'between' |
 // DataTable types
 export type SortDirection = 'asc' | 'desc' | null
 
-export interface DataTableColumn {
-  key: string
+export interface DataTableColumn<T extends Record<string, unknown> = Record<string, unknown>> {
+  key: keyof T & string
   label: string
   sortable?: boolean
   searchable?: boolean
-  formatter?: (value: any, row: any) => string | number
+  formatter?: (value: T[keyof T], row: T) => string | number
   class?: string
   headerClass?: string
   thStyle?: Record<string, string>
   tdStyle?: Record<string, string>
+}
+
+export interface DataTableCellSlotProps<T extends Record<string, unknown> = Record<string, unknown>> {
+  item: T
+  value: T[keyof T]
+  index: number
 }
 
 export interface DataTableSort {
@@ -147,8 +154,10 @@ export interface FormValidationResult {
   message?: string
 }
 
+export type FormSelectOptionValue = string | number | boolean | null | undefined
+
 export interface FormSelectOption {
-  value: string | number
+  value: FormSelectOptionValue
   text: string
   disabled?: boolean
 }
