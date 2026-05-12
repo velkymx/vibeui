@@ -39,6 +39,11 @@ The library handles:
 
 ## Components
 
+### [Layout Components](./components/layout/)
+- [VibeContainer](./components/layout/container.md)
+- [VibeRow](./components/layout/row.md)
+- [VibeCol](./components/layout/col.md)
+
 ### [Core Components](./components/core/)
 - [VibeAlert](./components/core/alert.md)
 - [VibeBadge](./components/core/badge.md)
