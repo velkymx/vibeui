@@ -38,13 +38,17 @@ export function mockResizeObserver() {
   let callback: ResizeObserverCallback | null = null
   const observe = vi.fn()
   const disconnect = vi.fn()
-  vi.stubGlobal(
-    'ResizeObserver',
-    vi.fn((cb: ResizeObserverCallback) => {
+
+  class MockResizeObserver {
+    constructor(cb: ResizeObserverCallback) {
       callback = cb
-      return { observe, disconnect }
-    })
-  )
+    }
+    observe = observe
+    disconnect = disconnect
+  }
+
+  vi.stubGlobal('ResizeObserver', MockResizeObserver)
+
   return {
     observe,
     disconnect,
