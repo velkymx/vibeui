@@ -161,3 +161,17 @@ export interface FormSelectOption {
   text: string
   disabled?: boolean
 }
+
+// Chart types
+export interface ChartDataset {
+  label: string
+  data: number[]
+  color?: string
+}
+
+export interface ChartData {
+  labels: string[]
+  datasets: ChartDataset[]
+}
+
+export type ChartLegendPosition = 'top' | 'bottom' | 'none'
