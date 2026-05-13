@@ -28,16 +28,7 @@ const emit = defineEmits(['click', 'component-error'])
 const iconClass = computed(() => {
   const classes = ['bi', `bi-${props.icon}`]
 
-  // Size classes
-  if (props.size) {
-    // Handle numeric sizes (1x, 2x, etc)
-    if (['1x', '2x', '3x', '4x', '5x'].includes(props.size)) {
-      // These need custom font-size via style
-    } else {
-      // Bootstrap utilities for sm/lg
-      classes.push(`bi-${props.size}`)
-    }
-  }
+  // Size handled via iconStyle (font-size), no class needed
 
   // Custom class
   if (props.customClass) {
@@ -56,6 +47,8 @@ const iconStyle = computed(() => {
   } else if (props.size) {
     // Map size prop to font-size
     const sizeMap: Record<string, string> = {
+      'sm': '0.875rem',
+      'lg': '1.25rem',
       '1x': '1rem',
       '2x': '2rem',
       '3x': '3rem',
