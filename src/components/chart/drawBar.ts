@@ -91,7 +91,7 @@ export function drawBar(
       let yOffset = pad.top + chartH
       const bx = pad.left + i * groupW + (groupW * GROUP_PADDING) / 2
       for (const [di, ds] of data.datasets.entries()) {
-        const v = ds.data[i] ?? 0
+        const v = Math.max(0, ds.data[i] ?? 0)
         const bh = (v / maxVal) * chartH
         ctx.fillStyle = colors[di]
         ctx.fillRect(bx, yOffset - bh, barW, bh)
@@ -102,7 +102,7 @@ export function drawBar(
     for (const [di, ds] of data.datasets.entries()) {
       ctx.fillStyle = colors[di]
       for (let i = 0; i < n; i++) {
-        const v = ds.data[i] ?? 0
+        const v = Math.max(0, ds.data[i] ?? 0)
         const bh = (v / maxVal) * chartH
         const bx = pad.left + i * groupW + (groupW * GROUP_PADDING) / 2 + di * barW
         ctx.fillRect(bx, pad.top + chartH - bh, barW, bh)

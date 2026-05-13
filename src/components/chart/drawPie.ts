@@ -10,8 +10,10 @@ export function drawPie(
 ): void {
   ctx.clearRect(0, 0, w, h)
 
-  const values = data.datasets[0]?.data ?? []
-  const total = values.reduce((s, v) => s + v, 0) || 1
+  const raw = data.datasets[0]?.data ?? []
+  const values = raw.map((v) => Math.max(0, v))
+  const total = values.reduce((s, v) => s + v, 0)
+  if (total === 0) return
   const cx = w / 2
   const cy = h / 2
   const r = Math.min(w, h) * 0.4
@@ -48,8 +50,10 @@ export function hitTestPie(
   const dy = y - cy
   if (Math.hypot(dx, dy) > r) return null
 
-  const values = data.datasets[0]?.data ?? []
-  const total = values.reduce((s, v) => s + v, 0) || 1
+  const raw = data.datasets[0]?.data ?? []
+  const values = raw.map((v) => Math.max(0, v))
+  const total = values.reduce((s, v) => s + v, 0)
+  if (total === 0) return null
 
   // Normalize angle so 0 = top (-PI/2), going clockwise
   let angle = (Math.atan2(dy, dx) + Math.PI * 2.5) % (Math.PI * 2)
