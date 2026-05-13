@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, onActivated } from 'vue'
 import type { Tag } from '../types'
 
 interface BootstrapScrollSpy {
@@ -60,12 +60,12 @@ onBeforeUnmount(() => {
   }
 })
 
-// Provide a way to refresh the ScrollSpy if content changes
 const refresh = () => {
-  if (bsScrollspy.value) {
-    bsScrollspy.value.refresh()
-  }
+  bsScrollspy.value?.refresh()
 }
+
+// Refresh when reactivated inside KeepAlive so positions are recalculated
+onActivated(refresh)
 
 defineExpose({ refresh })
 </script>
