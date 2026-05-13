@@ -168,4 +168,23 @@ describe('VibePagination', () => {
 
     expect(wrapper.find('nav').attributes('aria-label')).toBe('Custom pagination')
   })
+
+  it('disables both prev and next when totalPages is 0', () => {
+    const wrapper = mount(VibePagination, {
+      props: { totalPages: 0, currentPage: 1 }
+    })
+
+    const buttons = wrapper.findAll('button.page-link')
+    expect(buttons[0].attributes('disabled')).toBeDefined()
+    expect(buttons[buttons.length - 1].attributes('disabled')).toBeDefined()
+  })
+
+  it('disables next when currentPage exceeds totalPages', () => {
+    const wrapper = mount(VibePagination, {
+      props: { totalPages: 3, currentPage: 5 }
+    })
+
+    const buttons = wrapper.findAll('button.page-link')
+    expect(buttons[buttons.length - 1].attributes('disabled')).toBeDefined()
+  })
 })
