@@ -12,7 +12,8 @@ const props = defineProps({
   offset: { type: Number, default: 10 },
   method: { type: String, default: 'auto' },
   smoothScroll: { type: Boolean, default: false },
-  tag: { type: String as () => Tag, default: 'div' }
+  tag: { type: String as () => Tag, default: 'div' },
+  height: { type: String, default: '100%' }
 })
 
 const emit = defineEmits(['activate', 'component-error'])
@@ -79,7 +80,7 @@ defineExpose({ refresh })
     :data-bs-method="method"
     :data-bs-smooth-scroll="smoothScroll"
     tabindex="0"
-    style="position: relative; height: 100%; overflow: auto;"
+    :style="{ position: 'relative', height: height, overflow: 'auto' }"
   >
     <slot />
   </component>
