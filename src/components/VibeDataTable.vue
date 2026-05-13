@@ -231,6 +231,12 @@ const handleSort = (column: DataTableColumn<T>) => {
   }
 }
 
+watch(totalPages, (newTotal) => {
+  if (newTotal > 0 && currentPage.value > newTotal) {
+    currentPage.value = newTotal
+  }
+})
+
 const handlePageChange = (page: number) => {
   if (page < 1 || page > totalPages.value) return
   currentPage.value = page
