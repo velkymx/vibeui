@@ -58,11 +58,10 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
   const dirtyFlag = ref(false)
   const isDirty = computed(() => dirtyFlag.value)
 
+  const initialJson = JSON.stringify(initialSnapshot)
   watch(
     () => JSON.stringify(fields),
-    () => {
-      const fieldsJson = JSON.stringify(fields)
-      const initialJson = JSON.stringify(initialSnapshot)
+    (fieldsJson) => {
       dirtyFlag.value = fieldsJson !== initialJson
     },
     { deep: true, immediate: true }

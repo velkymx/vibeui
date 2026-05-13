@@ -30,7 +30,9 @@ const emit = defineEmits<{
   (e: 'select', item: T): void
 }>()
 
-const computedId = computed(() => props.id || useId('autocomplete'))
+const _generatedId = useId('autocomplete')
+const computedId = computed(() => props.id || _generatedId)
+const listboxId = computed(() => `${computedId.value}-listbox`)
 
 const inputValue = ref(props.modelValue)
 const results: Ref<T[]> = ref([]) as Ref<T[]>
@@ -198,15 +200,18 @@ const showEmpty = computed(() => isOpen.value && inputValue.value.length >= prop
       :disabled="disabled"
       :aria-expanded="isOpen"
       :aria-autocomplete="'list'"
+      :aria-controls="isOpen && results.length > 0 ? listboxId : undefined"
+      :aria-activedescendant="highlightedIndex >= 0 ? `${computedId}-option-${highlightedIndex}` : undefined"
       role="combobox"
       @input="onInput"
       @focus="onFocus"
       @keydown="onKeydown"
     />
-    <ul v-if="isOpen && results.length > 0" class="vibe-autocomplete-menu" role="listbox">
+    <ul v-if="isOpen && results.length > 0" :id="listboxId" class="vibe-autocomplete-menu" role="listbox">
       <li
         v-for="(item, idx) in results"
         :key="idx"
+        :id="`${computedId}-option-${idx}`"
         :class="[
           'vibe-autocomplete-item',
           idx === highlightedIndex ? 'vibe-autocomplete-item-highlighted' : ''

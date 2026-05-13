@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, ref, inject, onMounted, onBeforeUnmount } from 'vue'
+import { computed, watch, ref, inject, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import type { Tag } from '../types'
 import { useId } from '../composables/useId'
 
@@ -27,6 +27,7 @@ const navbar = inject<{
 const collapseRef = ref<HTMLElement | null>(null)
 const bsCollapse = ref<BootstrapCollapse | null>(null)
 const isVisible = ref(false)
+const bsInitialized = ref(false)
 
 const onShow = () => {
   isVisible.value = true
@@ -68,10 +69,16 @@ onMounted(async () => {
       ? navbar.collapseStates[props.id] 
       : props.modelValue
 
+    // Signal pre-boot fallback to stop; let Vue flush before calling show()
+    // so Bootstrap doesn't see our fallback 'show' class and short-circuit.
+    bsInitialized.value = true
+    await nextTick()
+
     if (initialState) {
       bsCollapse.value.show()
     }
   } catch (error) {
+    bsInitialized.value = true
     emit('component-error', {
       message: 'Bootstrap JS not loaded. Collapse will use CSS classes only.',
       componentName: 'VibeCollapse',
@@ -116,9 +123,9 @@ const collapseClass = computed(() => {
   const classes = ['collapse']
   if (props.isNav) classes.push('navbar-collapse')
   if (props.horizontal) classes.push('collapse-horizontal')
-  // We don't add 'show' manually here if we use Bootstrap JS, 
-  // as it will manage the classes. But for initial state or fallback:
-  if (!bsCollapse.value && targetState.value) classes.push('show')
+  // Pre-Bootstrap fallback: add 'show' so content is visible on initial render.
+  // Once bsInitialized, Bootstrap owns the class; Vue stops touching it.
+  if (!bsInitialized.value && targetState.value) classes.push('show')
   return classes.join(' ')
 })
 </script>

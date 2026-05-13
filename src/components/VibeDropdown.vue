@@ -150,7 +150,7 @@ defineExpose({ show, hide, toggle })
     </template>
 
     <ul :class="menuClass" :aria-labelledby="id">
-      <template v-for="(item, index) in items" :key="index">
+      <template v-for="(item, index) in items" :key="item.text || item.href || String(item.to) || index">
         <li v-if="item.divider"><hr class="dropdown-divider"></li>
         <li v-else-if="item.header">
           <h6 class="dropdown-header">
