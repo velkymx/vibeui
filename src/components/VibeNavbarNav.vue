@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { NavItem, DropdownItem } from '../types'
+
+interface BootstrapDropdown {
+  dispose: () => void
+}
 
 const props = defineProps({
   tag: { type: String, default: 'ul' },
@@ -7,6 +12,43 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['item-click', 'dropdown-item-click', 'component-error'])
+
+const navbarNavRef = ref<HTMLElement | null>(null)
+const bsDropdowns = new Map<HTMLElement, BootstrapDropdown>()
+
+const initDropdowns = async () => {
+  if (!navbarNavRef.value) return
+  try {
+    const bootstrap = await import('bootstrap')
+    const Dropdown = bootstrap.Dropdown
+    const toggleEls = navbarNavRef.value.querySelectorAll<HTMLElement>('[data-bs-toggle="dropdown"]')
+    toggleEls.forEach(el => {
+      if (!bsDropdowns.has(el)) {
+        bsDropdowns.set(el, new Dropdown(el) as BootstrapDropdown)
+      }
+    })
+  } catch (error) {
+    emit('component-error', {
+      message: 'Bootstrap JS not loaded. Dropdowns will use data attributes only.',
+      componentName: 'VibeNavbarNav',
+      originalError: error
+    })
+  }
+}
+
+onMounted(initDropdowns)
+
+onBeforeUnmount(() => {
+  bsDropdowns.forEach(d => d.dispose())
+  bsDropdowns.clear()
+})
+
+watch(() => props.items, async () => {
+  bsDropdowns.forEach(d => d.dispose())
+  bsDropdowns.clear()
+  await nextTick()
+  await initDropdowns()
+}, { deep: true })
 
 const getItemClass = (item: NavItem) => {
   const classes = ['nav-item']
@@ -49,7 +91,7 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
 </script>
 
 <template>
-  <component :is="tag" class="navbar-nav">
+  <component :is="tag" ref="navbarNavRef" class="navbar-nav">
     <!-- Data-driven mode: generate from items array -->
     <template v-if="items && items.length > 0">
       <li v-for="(item, index) in items" :key="index" :class="getItemClass(item)">
