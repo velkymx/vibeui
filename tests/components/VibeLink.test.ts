@@ -19,11 +19,11 @@ describe('VibeLink', () => {
     expect(wrapper.classes()).toContain('link-primary')
   })
 
-  it('applies link-underline-0 when underline is false', () => {
+  it('applies link-underline-opacity-0 when underline is false', () => {
     const wrapper = mount(VibeLink, {
       props: { underline: false }
     })
-    expect(wrapper.classes()).toContain('link-underline-0')
+    expect(wrapper.classes()).toContain('link-underline-opacity-0')
   })
 
   it('applies offset class', () => {
