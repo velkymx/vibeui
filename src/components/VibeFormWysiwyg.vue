@@ -215,6 +215,11 @@ const initQuill = async () => {
     console.error('Failed to load Quill editor:', error)
     loadError.value = 'Failed to load WYSIWYG editor. Please install quill: npm install quill'
     isQuillLoaded.value = false
+    emit('component-error', {
+      message: 'Quill not loaded. Install quill: npm install quill',
+      componentName: 'VibeFormWysiwyg',
+      originalError: error
+    })
   }
 }
 

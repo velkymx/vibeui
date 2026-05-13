@@ -253,7 +253,8 @@ const shiftFocusedMonths = async (months: number) => {
   const targetMonth = d.getMonth() + months
   const targetYear = d.getFullYear() + Math.floor(targetMonth / 12)
   const normalisedMonth = ((targetMonth % 12) + 12) % 12
-  d.setFullYear(targetYear, normalisedMonth, Math.min(d.getDate(), 28))
+  const lastDay = new Date(targetYear, normalisedMonth + 1, 0).getDate()
+  d.setFullYear(targetYear, normalisedMonth, Math.min(d.getDate(), lastDay))
   await setFocusedDate(toIso(d))
 }
 
