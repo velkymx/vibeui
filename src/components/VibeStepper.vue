@@ -97,6 +97,8 @@ const goPrev = async () => {
   }
 }
 
+// jumpTo runs ONE guard (beforeNext or beforePrev) regardless of how many steps
+// are skipped. Intermediate-step guards are intentionally not run on a jump.
 const jumpTo = async (idx: number) => {
   if (transitioning.value) return
   if (!canJumpTo(idx)) return

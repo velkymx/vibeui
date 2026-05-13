@@ -187,4 +187,35 @@ describe('VibePagination', () => {
     const buttons = wrapper.findAll('button.page-link')
     expect(buttons[buttons.length - 1].attributes('disabled')).toBeDefined()
   })
+
+  it('shows ellipsis for large page counts', () => {
+    const wrapper = mount(VibePagination, {
+      props: { totalPages: 20, currentPage: 10, maxVisiblePages: 7 }
+    })
+
+    // Should not render all 20 page buttons
+    const pageButtons = wrapper.findAll('button.page-link')
+    // prev + 5 page buttons + next = 7 (not 22)
+    expect(pageButtons.length).toBeLessThan(12)
+
+    // Ellipsis spans should be present
+    expect(wrapper.findAll('span.page-link').length).toBeGreaterThan(0)
+
+    // First and last pages always shown
+    expect(wrapper.text()).toContain('1')
+    expect(wrapper.text()).toContain('20')
+
+    // Current page shown
+    expect(wrapper.text()).toContain('10')
+  })
+
+  it('shows all pages when totalPages <= maxVisiblePages', () => {
+    const wrapper = mount(VibePagination, {
+      props: { totalPages: 5, currentPage: 3, maxVisiblePages: 7 }
+    })
+
+    // All 5 pages shown + prev + next
+    expect(wrapper.findAll('.page-item')).toHaveLength(7)
+    expect(wrapper.findAll('span.page-link').length).toBe(0)
+  })
 })
