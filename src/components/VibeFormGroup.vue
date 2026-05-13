@@ -74,6 +74,7 @@ const contentClass = computed(() => {
 })
 
 const feedbackId = computed(() => `${computedId.value}-feedback`)
+const helpId = computed(() => `${computedId.value}-help`)
 </script>
 
 <template>
@@ -90,7 +91,7 @@ const feedbackId = computed(() => `${computedId.value}-feedback`)
     <div v-if="row && labelCols" :class="contentClass">
       <slot />
 
-      <div v-if="helpText && !validationMessage" :id="feedbackId" class="form-text">
+      <div v-if="helpText && !validationMessage" :id="helpId" class="form-text">
         {{ helpText }}
       </div>
       <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
@@ -113,7 +114,7 @@ const feedbackId = computed(() => `${computedId.value}-feedback`)
         <span v-if="required" class="text-danger">*</span>
       </label>
 
-      <div v-if="helpText && !validationMessage" :id="feedbackId" class="form-text">
+      <div v-if="helpText && !validationMessage" :id="helpId" class="form-text">
         {{ helpText }}
       </div>
       <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
