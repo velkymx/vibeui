@@ -16,7 +16,8 @@ const props = defineProps({
   labelAlign: { type: String as () => 'start' | 'center' | 'end', default: undefined }
 })
 
-const computedId = computed(() => props.labelFor || useId('form-group'))
+const _generatedId = useId('form-group')
+const computedId = computed(() => props.labelFor || _generatedId)
 const isIdConsumed = ref(false)
 
 /**
