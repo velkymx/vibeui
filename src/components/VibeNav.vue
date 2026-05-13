@@ -101,7 +101,7 @@ defineExpose({ bsInstances: bsTabs, refresh: initTabs })
   <component :is="tag" ref="navRef" :class="navClass">
     <li
       v-for="(item, index) in items"
-      :key="index"
+      :key="item.href || item.text"
       class="nav-item"
       :class="{ dropdown: item.children && item.children.length > 0 }"
     >
