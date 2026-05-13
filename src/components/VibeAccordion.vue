@@ -22,10 +22,32 @@ const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'comp
 const accordionRef = ref<HTMLElement | null>(null)
 const bsCollapses = new Map<string, BootstrapCollapse>()
 
+interface CollapseHandlers {
+  show: EventListener
+  shown: EventListener
+  hide: EventListener
+  hidden: EventListener
+}
+const collapseHandlers = new Map<string, CollapseHandlers>()
+
 const onShow = (id: string) => emit('show', id)
 const onShown = (id: string) => emit('shown', id)
 const onHide = (id: string) => emit('hide', id)
 const onHidden = (id: string) => emit('hidden', id)
+
+const disposeItem = (id: string) => {
+  const el = document.getElementById(id)
+  const h = collapseHandlers.get(id)
+  if (el && h) {
+    el.removeEventListener('show.bs.collapse', h.show)
+    el.removeEventListener('shown.bs.collapse', h.shown)
+    el.removeEventListener('hide.bs.collapse', h.hide)
+    el.removeEventListener('hidden.bs.collapse', h.hidden)
+  }
+  collapseHandlers.delete(id)
+  bsCollapses.get(id)?.dispose()
+  bsCollapses.delete(id)
+}
 
 const initItems = async () => {
   if (!accordionRef.value) return
@@ -46,10 +68,18 @@ const initItems = async () => {
 
         bsCollapses.set(id, bsCollapse)
 
-        el.addEventListener('show.bs.collapse', () => onShow(id))
-        el.addEventListener('shown.bs.collapse', () => onShown(id))
-        el.addEventListener('hide.bs.collapse', () => onHide(id))
-        el.addEventListener('hidden.bs.collapse', () => onHidden(id))
+        const handlers: CollapseHandlers = {
+          show: () => onShow(id),
+          shown: () => onShown(id),
+          hide: () => onHide(id),
+          hidden: () => onHidden(id)
+        }
+        collapseHandlers.set(id, handlers)
+
+        el.addEventListener('show.bs.collapse', handlers.show)
+        el.addEventListener('shown.bs.collapse', handlers.shown)
+        el.addEventListener('hide.bs.collapse', handlers.hide)
+        el.addEventListener('hidden.bs.collapse', handlers.hidden)
 
         // Check initial state from props
         const item = props.items.find(i => i.id === id)
@@ -70,23 +100,21 @@ const initItems = async () => {
 onMounted(initItems)
 
 onBeforeUnmount(() => {
-  bsCollapses.forEach((bsCollapse, id) => {
-    const el = document.getElementById(id)
-    if (el) {
-      el.removeEventListener('show.bs.collapse', () => onShow(id))
-      el.removeEventListener('shown.bs.collapse', () => onShown(id))
-      el.removeEventListener('hide.bs.collapse', () => onHide(id))
-      el.removeEventListener('hidden.bs.collapse', () => onHidden(id))
-    }
-    bsCollapse.dispose()
-  })
-  bsCollapses.clear()
+  bsCollapses.forEach((_, id) => disposeItem(id))
 })
 
 // Watch for changes in items array length or individual items
 watch(() => props.items, async (newItems, oldItems) => {
-  // If items were added, we need to initialize them
-  if (newItems.length !== oldItems?.length) {
+  // Dispose Collapse instances for removed items
+  const newIds = new Set(newItems.map(i => i.id))
+  oldItems?.forEach(oldItem => {
+    if (!newIds.has(oldItem.id)) {
+      disposeItem(oldItem.id)
+    }
+  })
+
+  // If items were added, initialize them
+  if (newItems.length > (oldItems?.length ?? 0)) {
     await nextTick()
     await initItems()
   }
@@ -98,7 +126,6 @@ watch(() => props.items, async (newItems, oldItems) => {
       if (item.show) {
         bsCollapse.show()
       } else if (!props.alwaysOpen) {
-        // Only hide programmatically if not always-open (or handle as needed)
         bsCollapse.hide()
       }
     }

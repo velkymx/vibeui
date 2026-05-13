@@ -58,4 +58,24 @@ describe('VibeAccordion', () => {
     const mockInstance2 = vi.mocked(bootstrap.Collapse).mock.results[1].value
     expect(mockInstance2.show).not.toHaveBeenCalled()
   })
+
+  it('disposes Collapse instance for removed items', async () => {
+    const items = [
+      { id: 'item1', title: 'T1', content: 'C1', show: false },
+      { id: 'item2', title: 'T2', content: 'C2', show: false }
+    ]
+    const wrapper = mount(VibeAccordion, {
+      props: { id: 'test-accordion', items }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const instance1 = vi.mocked(bootstrap.Collapse).mock.results[0].value
+    const instance2 = vi.mocked(bootstrap.Collapse).mock.results[1].value
+
+    await wrapper.setProps({ items: [{ id: 'item2', title: 'T2', content: 'C2', show: false }] })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(instance1.dispose).toHaveBeenCalled()
+    expect(instance2.dispose).not.toHaveBeenCalled()
+  })
 })
