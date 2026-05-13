@@ -3,6 +3,7 @@ import { ref, type PropType } from 'vue'
 
 const props = defineProps({
   modelValue: { type: Array as PropType<T[]>, required: true },
+  itemKey: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
   tag: { type: String, default: 'div' },
   itemTag: { type: String, default: 'div' }
@@ -54,7 +55,7 @@ const onDragEnd = () => {
     <component
       :is="itemTag"
       v-for="(item, index) in modelValue"
-      :key="index"
+      :key="itemKey ? (item as any)[itemKey] : index"
       class="vibe-sortable-item"
       :class="{ 'vibe-sortable-dragging': draggingIndex === index }"
       :draggable="!disabled"
