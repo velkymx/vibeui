@@ -41,9 +41,11 @@ const buttonClass = computed(() => {
 })
 
 const handleClick = (event: Event) => {
-  if (!props.disabled) {
-    emit('click', event)
+  if (props.disabled) {
+    event.preventDefault()
+    return
   }
+  emit('click', event)
 }
 </script>
 
