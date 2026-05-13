@@ -92,10 +92,25 @@ const onPointerMove = (event: PointerEvent) => {
   if (handle.includes('s')) nextH = startH.value + dy
   if (handle.includes('n')) nextH = startH.value - dy
 
-  const widthDriven = handle.includes('e') || handle.includes('w')
-  const aspected = applyAspect(nextW, nextH, widthDriven)
-  nextW = clampW(snap(aspected.w))
-  nextH = clampH(snap(aspected.h))
+  const hasHoriz = handle.includes('e') || handle.includes('w')
+  const hasVert = handle.includes('n') || handle.includes('s')
+  const isCorner = hasHoriz && hasVert
+  const widthDriven = hasHoriz && (!isCorner || !props.aspectRatio || Math.abs(dx) >= Math.abs(dy))
+
+  if (props.aspectRatio) {
+    if (widthDriven) {
+      nextW = snap(nextW)
+      nextH = nextW / props.aspectRatio
+    } else {
+      nextH = snap(nextH)
+      nextW = nextH * props.aspectRatio
+    }
+  } else {
+    nextW = snap(nextW)
+    nextH = snap(nextH)
+  }
+  nextW = clampW(nextW)
+  nextH = clampH(nextH)
 
   if (nextW !== currentWidth.value) {
     currentWidth.value = nextW
