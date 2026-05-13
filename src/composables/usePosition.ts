@@ -6,7 +6,7 @@ import {
   offset as offsetMiddleware,
   type Placement
 } from '@floating-ui/dom'
-import { ref, watch, onBeforeUnmount, type Ref, type ComputedRef } from 'vue'
+import { ref, watchEffect, onBeforeUnmount, type Ref, type ComputedRef } from 'vue'
 
 type AnchorPoint =
   | 'top start' | 'top center' | 'top end'
@@ -147,26 +147,27 @@ export function usePosition(
     restoreStyle()
   }
 
-  watch(
-    [target, anchor, () => readOptions()],
-    () => {
-      if (cleanup) {
-        cleanup()
-        cleanup = null
-      }
+  watchEffect(
+    (onCleanup) => {
       const t = target.value
       const a = anchor.value
-      if (!t || !a) return
       const opts = readOptions()
+      if (!t || !a) return
+      let localCleanup: (() => void) | null = null
       if (opts.autoUpdate !== false) {
-        cleanup = autoUpdate(a, t, () => {
+        localCleanup = autoUpdate(a, t, () => {
           void update()
         })
       } else {
         void update()
       }
+      onCleanup(() => {
+        localCleanup?.()
+        localCleanup = null
+        cleanup = null
+      })
     },
-    { immediate: true, flush: 'post', deep: true }
+    { flush: 'post' }
   )
 
   onBeforeUnmount(() => {
