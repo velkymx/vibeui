@@ -21,10 +21,7 @@ const onDragStart = (event: DragEvent, index: number) => {
     return
   }
   draggingIndex.value = index
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', String(index))
-  }
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
 }
 
 const onDragOver = (event: DragEvent) => {
