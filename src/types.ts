@@ -9,7 +9,7 @@ export type Size = 'sm' | 'lg'
 
 export type ButtonType = 'button' | 'submit' | 'reset'
 
-export type Placement = 'top' | 'bottom' | 'start' | 'end'
+export type TooltipPlacement = 'top' | 'bottom' | 'start' | 'end'
 
 export type Tag = 'div' | 'span' | 'section' | 'article' | 'nav' | 'aside' | 'header' | 'footer' | 'main'
 

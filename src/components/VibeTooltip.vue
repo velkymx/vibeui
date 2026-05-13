@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-import type { Placement } from '../types'
+import type { TooltipPlacement } from '../types'
 
 interface BootstrapTooltip {
   dispose: () => void
@@ -10,7 +10,7 @@ interface BootstrapTooltip {
 const props = defineProps({
   content: { type: String, default: undefined },
   text: { type: String, default: undefined },
-  placement: { type: String as () => Placement, default: 'top' },
+  placement: { type: String as () => TooltipPlacement, default: 'top' },
   trigger: { type: String, default: 'hover focus' },
   html: { type: Boolean, default: false }
 })

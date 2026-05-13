@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-import type { Placement } from '../types'
+import type { TooltipPlacement } from '../types'
 
 interface BootstrapPopover {
   dispose: () => void
@@ -11,7 +11,7 @@ const props = defineProps({
   title: { type: String, default: undefined },
   content: { type: String, default: undefined },
   text: { type: String, default: undefined },
-  placement: { type: String as () => Placement, default: 'top' },
+  placement: { type: String as () => TooltipPlacement, default: 'top' },
   trigger: { type: String, default: 'click' },
   html: { type: Boolean, default: false }
 })

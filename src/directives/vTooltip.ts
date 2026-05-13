@@ -1,5 +1,5 @@
 import type { Directive, DirectiveBinding } from 'vue'
-import type { Placement } from '../types'
+import type { TooltipPlacement } from '../types'
 
 interface BootstrapTooltipInstance {
   dispose: () => void
@@ -10,7 +10,7 @@ interface TooltipOptions {
   title?: string
   text?: string
   content?: string
-  placement?: Placement
+  placement?: TooltipPlacement
   trigger?: string
 }
 
