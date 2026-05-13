@@ -43,15 +43,27 @@ function applyAndUpdate(mode: ColorMode) {
 // Prevents a flash where colorMode.value says 'auto' but <html> has no data-bs-theme.
 applyAndUpdate('auto')
 
-// Listen for system theme changes
-if (typeof window !== 'undefined') {
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (colorMode.value === 'auto') {
-      applyColorMode('auto')
-      callbacks.forEach(cb => cb('auto'))
-    }
-  })
+const onSystemThemeChange = () => {
+  if (colorMode.value === 'auto') {
+    applyColorMode('auto')
+    callbacks.forEach(cb => cb('auto'))
+  }
 }
+
+let systemThemeMq: MediaQueryList | null = null
+
+function attachSystemListener() {
+  if (typeof window === 'undefined') return
+  systemThemeMq = window.matchMedia('(prefers-color-scheme: dark)')
+  systemThemeMq.addEventListener('change', onSystemThemeChange)
+}
+
+function detachSystemListener() {
+  systemThemeMq?.removeEventListener('change', onSystemThemeChange)
+  systemThemeMq = null
+}
+
+attachSystemListener()
 
 export function useColorMode() {
   function setColorMode(mode: ColorMode) {
@@ -122,6 +134,8 @@ export function _resetColorMode() {
   } catch {
     // ignore in SSR / stubbed environments
   }
+  detachSystemListener()
   initialized = false
   applyAndUpdate('auto')
+  attachSystemListener()
 }
