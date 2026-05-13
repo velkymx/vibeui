@@ -25,6 +25,7 @@ const props = defineProps({
 const emit = defineEmits<{
   (e: 'update:modelValue', index: number): void
   (e: 'finish'): void
+  (e: 'component-error', error: unknown): void
 }>()
 
 const stepperClass = computed(() => {
@@ -58,8 +59,13 @@ const runGuard = async (
   direction: 'next' | 'prev'
 ): Promise<boolean> => {
   if (!guard) return true
-  const result = guard(props.modelValue, direction)
-  return result instanceof Promise ? await result : result
+  try {
+    const result = guard(props.modelValue, direction)
+    return result instanceof Promise ? await result : result
+  } catch (err) {
+    emit('component-error', err)
+    return false
+  }
 }
 
 const goNext = async () => {
@@ -107,7 +113,10 @@ const jumpTo = async (idx: number) => {
   }
 }
 
-const activeStep = computed(() => props.steps[props.modelValue])
+const activeStep = computed(() => {
+  const idx = Math.max(0, Math.min(props.modelValue, props.steps.length - 1))
+  return props.steps[idx]
+})
 </script>
 
 <template>
