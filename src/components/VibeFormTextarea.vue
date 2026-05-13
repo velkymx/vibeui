@@ -37,7 +37,9 @@ const formGroup = inject<{
   hasHelp: ComputedRef<boolean>
 } | null>('vibeFormGroup', null)
 
-const computedId = computed(() => props.id || formGroup?.consumeId() || useId('textarea'))
+const _groupId = formGroup?.consumeId()
+const _generatedId = useId('textarea')
+const computedId = computed(() => props.id || _groupId || _generatedId)
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => (!!props.helpText || props.showCharCount) && !formGroup?.hasHelp.value)

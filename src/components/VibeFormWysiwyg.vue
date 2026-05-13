@@ -52,7 +52,7 @@ const formGroup = inject<{
   hasHelp: ComputedRef<boolean>
 } | null>('vibeFormGroup', null)
 
-const computedId = computed(() => props.id || formGroup?.id.value || useId('wysiwyg'))
+const computedId = computed(() => props.id || formGroup?.id.value)
 const { isMobile } = useBreakpoints()
 
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
