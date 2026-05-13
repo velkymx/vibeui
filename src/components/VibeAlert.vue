@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 
 interface BootstrapAlert {
   close: () => void
@@ -37,20 +37,17 @@ const onClose = () => {
 }
 
 const onClosed = () => {
+  bsAlert.value = null
   isVisible.value = false
   emit('update:modelValue', false)
   emit('closed')
 }
 
-onMounted(async () => {
-  if (!alertRef.value) return
-
+const setupBootstrap = async () => {
+  if (!alertRef.value || bsAlert.value) return
   try {
     const bootstrap = await import('bootstrap')
-    const Alert = bootstrap.Alert
-
-    bsAlert.value = new Alert(alertRef.value) as BootstrapAlert
-
+    bsAlert.value = new bootstrap.Alert(alertRef.value) as BootstrapAlert
     alertRef.value.addEventListener('close.bs.alert', onClose)
     alertRef.value.addEventListener('closed.bs.alert', onClosed)
   } catch (error) {
@@ -60,6 +57,10 @@ onMounted(async () => {
       originalError: error
     })
   }
+}
+
+onMounted(() => {
+  if (isVisible.value) void setupBootstrap()
 })
 
 onBeforeUnmount(() => {
@@ -74,9 +75,11 @@ onBeforeUnmount(() => {
   }
 })
 
-watch(() => props.modelValue, (newVal) => {
+watch(() => props.modelValue, async (newVal) => {
   if (newVal) {
     isVisible.value = true
+    await nextTick()
+    void setupBootstrap()
   } else if (bsAlert.value && isVisible.value) {
     bsAlert.value.close()
   } else {
