@@ -96,6 +96,13 @@ watch(() => props.items, async () => {
   await initTabs()
 }, { deep: true })
 
+const getTabTarget = (item: NavItem): string | undefined => {
+  if (item.href?.startsWith('#')) return item.href
+  if (item.target) return item.target
+  if (typeof item.to === 'string' && item.to.startsWith('#')) return item.to
+  return undefined
+}
+
 const handleItemClick = (item: NavItem, index: number, event: Event) => {
   if (!item.disabled) {
     emit('item-click', { item, index, event })
@@ -156,8 +163,8 @@ defineExpose({ bsInstances: bsTabs, refresh: initTabs })
           :to="item.to"
           :type="!item.href && !item.to ? 'button' : undefined"
           :aria-current="item.active ? 'page' : undefined"
-          :data-bs-toggle="(tabs || pills) && (item.href && item.href.startsWith('#')) ? (tabs ? 'tab' : 'pill') : undefined"
-          :data-bs-target="item.href && item.href.startsWith('#') ? item.href : undefined"
+          :data-bs-toggle="(tabs || pills) && getTabTarget(item) ? (tabs ? 'tab' : 'pill') : undefined"
+          :data-bs-target="getTabTarget(item)"
           @click="handleItemClick(item, index, $event)"
         >
           {{ item.text }}

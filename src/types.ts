@@ -72,6 +72,8 @@ export interface NavItem {
   text: string
   href?: string
   to?: string | object
+  /** Tab panel ID (e.g. '#panel-id') for tabs/pills mode when using router-link */
+  target?: string
   active?: boolean
   disabled?: boolean
   children?: DropdownItem[]

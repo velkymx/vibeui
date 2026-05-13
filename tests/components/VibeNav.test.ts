@@ -63,6 +63,42 @@ describe('VibeNav', () => {
     expect(wrapper.find('.nav').classes()).toContain('nav-underline')
   })
 
+  it('initializes bootstrap tab for router-link items with target field', async () => {
+    const wrapper = mount(VibeNav, {
+      props: {
+        items: [
+          { text: 'Route Tab', to: '/some-route', target: '#pane1' }
+        ],
+        tabs: true
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(bootstrap.Tab).toHaveBeenCalledTimes(1)
+
+    const link = wrapper.find('.nav-link')
+    expect(link.attributes('data-bs-toggle')).toBe('tab')
+    expect(link.attributes('data-bs-target')).toBe('#pane1')
+  })
+
+  it('initializes bootstrap tab for items with to starting with #', async () => {
+    const wrapper = mount(VibeNav, {
+      props: {
+        items: [
+          { text: 'Hash Tab', to: '#pane1' }
+        ],
+        tabs: true
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(bootstrap.Tab).toHaveBeenCalledTimes(1)
+
+    const link = wrapper.find('.nav-link')
+    expect(link.attributes('data-bs-toggle')).toBe('tab')
+    expect(link.attributes('data-bs-target')).toBe('#pane1')
+  })
+
   it('disposes old Tab instances when items change', async () => {
     const wrapper = mount(VibeNav, {
       props: { items: mockItems, tabs: true }
