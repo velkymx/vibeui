@@ -20,7 +20,9 @@ const props = defineProps({
   // Flip and rotate
   flipH: { type: Boolean, default: false },
   flipV: { type: Boolean, default: false },
-  rotate: { type: Number as PropType<90 | 180 | 270>, default: undefined }
+  rotate: { type: Number as PropType<90 | 180 | 270>, default: undefined },
+  ariaHidden: { type: Boolean, default: true },
+  ariaLabel: { type: String, default: undefined }
 })
 
 const emit = defineEmits(['click', 'component-error'])
@@ -88,7 +90,9 @@ const handleClick = (event: Event) => {
   <i
     :class="iconClass"
     :style="iconStyle"
-    :aria-hidden="true"
+    :aria-hidden="ariaHidden ? 'true' : undefined"
+    :aria-label="ariaLabel"
+    :role="ariaLabel ? 'img' : undefined"
     @click="handleClick"
   ></i>
 </template>
