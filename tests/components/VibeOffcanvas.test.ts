@@ -68,6 +68,22 @@ describe('VibeOffcanvas', () => {
     expect(mockInstance.show).toHaveBeenCalled()
   })
 
+  it('does not stack event listeners on re-init (placement change)', async () => {
+    const wrapper = mount(VibeOffcanvas, {
+      props: { id: 'test-offcanvas', placement: 'start', teleport: false }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    await wrapper.setProps({ placement: 'end' })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    wrapper.find('.offcanvas').element.dispatchEvent(new Event('shown.bs.offcanvas'))
+
+    const emitted = wrapper.emitted('update:modelValue')
+    expect(emitted).toHaveLength(1)
+    expect(emitted![0]).toEqual([true])
+  })
+
   it('hides when modelValue changes to false', async () => {
     const wrapper = mount(VibeOffcanvas, {
       props: {

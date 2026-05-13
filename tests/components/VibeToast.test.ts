@@ -49,6 +49,22 @@ describe('VibeToast', () => {
     expect(mockInstance.show).toHaveBeenCalled()
   })
 
+  it('does not stack event listeners on re-init (delay change)', async () => {
+    const wrapper = mount(VibeToast, {
+      props: { delay: 3000, teleport: false }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    await wrapper.setProps({ delay: 5000 })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    wrapper.find('.toast').element.dispatchEvent(new Event('shown.bs.toast'))
+
+    const emitted = wrapper.emitted('update:modelValue')
+    expect(emitted).toHaveLength(1)
+    expect(emitted![0]).toEqual([true])
+  })
+
   it('toggles when modelValue changes', async () => {
     const wrapper = mount(VibeToast, {
       props: {
