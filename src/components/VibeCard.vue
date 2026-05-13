@@ -15,7 +15,7 @@ const props = defineProps({
   // Image props
   imgSrc: { type: String, default: undefined },
   imgAlt: { type: String, default: '' },
-  imgTop: { type: Boolean, default: true },
+  imgTop: { type: Boolean, default: false },
   imgBottom: { type: Boolean, default: false }
 })
 
@@ -46,7 +46,7 @@ const cardClass = computed(() => {
     </div>
 
     <!-- Body -->
-    <div v-if="title || body || $slots.default || $slots.body" class="card-body">
+    <div v-if="title || body || $slots.title || $slots.body || $slots.default?.()?.length" class="card-body">
       <h5 v-if="title || $slots.title" class="card-title">
         <slot name="title">{{ title }}</slot>
       </h5>
