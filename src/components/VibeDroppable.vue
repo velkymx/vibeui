@@ -29,6 +29,9 @@ const readActiveDrag = (): { payload: unknown; group: string } | null => getActi
 
 const onDragEnter = (event: DragEvent) => {
   if (props.disabled) return
+  const active = readActiveDrag()
+  const incomingGroup = active?.group ?? props.group
+  if (!groupAccepted(incomingGroup)) return
   dragCounter += 1
   isOver.value = true
   emit('dragenter', event)
@@ -41,13 +44,13 @@ const onDragOver = (event: DragEvent) => {
 }
 
 const onDragLeave = (event: DragEvent) => {
-  if (props.disabled) return
+  if (props.disabled || dragCounter === 0) return
   dragCounter -= 1
   if (dragCounter <= 0) {
     isOver.value = false
     dragCounter = 0
+    emit('dragleave', event)
   }
-  emit('dragleave', event)
 }
 
 const onDrop = (event: DragEvent) => {
