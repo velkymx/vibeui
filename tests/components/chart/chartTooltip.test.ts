@@ -39,9 +39,10 @@ describe('bindTooltip', () => {
     cleanup()
   })
 
-  it('calls redraw on mousemove', () => {
+  it('calls redraw on mousemove when hit state changes', () => {
+    const hit: TooltipHit = { datasetIndex: 0, pointIndex: 0, value: 10, label: 'A' }
     const redraw = vi.fn()
-    bindTooltip(canvas, () => null, redraw)
+    bindTooltip(canvas, () => hit, redraw)
     canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50 }))
     expect(redraw).toHaveBeenCalled()
   })
@@ -53,9 +54,12 @@ describe('bindTooltip', () => {
     expect(hitTest).toHaveBeenCalledWith(50, 50)
   })
 
-  it('calls redraw on mouseleave', () => {
+  it('calls redraw on mouseleave when a hit was active', () => {
+    const hit: TooltipHit = { datasetIndex: 0, pointIndex: 0, value: 10, label: 'A' }
     const redraw = vi.fn()
-    bindTooltip(canvas, () => null, redraw)
+    bindTooltip(canvas, () => hit, redraw)
+    canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50 }))
+    redraw.mockClear()
     canvas.dispatchEvent(new MouseEvent('mouseleave'))
     expect(redraw).toHaveBeenCalled()
   })

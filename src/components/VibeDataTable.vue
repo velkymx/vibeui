@@ -340,7 +340,7 @@ const getThStyle = (column: DataTableColumn<T>) => {
             v-for="(item, index) in paginatedItems"
             :key="getRowKey(item, index)"
             :style="isRowClickable ? { cursor: 'pointer' } : undefined"
-            @click="isRowClickable ? handleRowClick(item, index) : undefined"
+            @click="handleRowClick(item, index)"
           >
             <td
               v-for="column in columns"

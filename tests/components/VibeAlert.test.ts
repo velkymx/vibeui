@@ -103,9 +103,9 @@ describe('VibeAlert', () => {
     expect(wrapper.find('.only-slot').exists()).toBe(true)
   })
 
-  it('renders dismissable close button alongside slot content', () => {
+  it('renders dismissible close button alongside slot content', () => {
     const wrapper = mount(VibeAlert, {
-      props: { dismissable: true },
+      props: { dismissible: true },
       slots: { default: '<span>body</span>' }
     })
 
@@ -122,8 +122,8 @@ describe('VibeAlert', () => {
     expect(alert.text()).toBe('')
   })
 
-  describe('M15 dismissible alias', () => {
-    it('dismissible (correctly spelled) shows the close button', () => {
+  describe('dismissible', () => {
+    it('shows close button when dismissible=true', () => {
       const wrapper = mount(VibeAlert, {
         props: { message: 'x', dismissible: true }
       })
@@ -131,29 +131,11 @@ describe('VibeAlert', () => {
       expect(wrapper.find('button.btn-close').exists()).toBe(true)
     })
 
-    it('dismissable (legacy) still works', () => {
+    it('hides close button when dismissible=false', () => {
       const wrapper = mount(VibeAlert, {
-        props: { message: 'x', dismissable: true }
+        props: { message: 'x', dismissible: false }
       })
-      expect(wrapper.find('.alert-dismissible').exists()).toBe(true)
-    })
-
-    it('either prop being true is sufficient', () => {
-      const wrapper = mount(VibeAlert, {
-        props: { message: 'x', dismissable: false, dismissible: true }
-      })
-      expect(wrapper.find('button.btn-close').exists()).toBe(true)
-    })
-
-    it('using dismissable emits a deprecation warning in dev', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      mount(VibeAlert, {
-        props: { message: 'x', dismissable: true }
-      })
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('dismissable')
-      )
-      warn.mockRestore()
+      expect(wrapper.find('button.btn-close').exists()).toBe(false)
     })
   })
 })
