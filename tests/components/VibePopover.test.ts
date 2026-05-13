@@ -76,6 +76,26 @@ describe('VibePopover', () => {
     })
   })
 
+  it('never passes html:true to Bootstrap regardless of content', async () => {
+    mount(VibePopover, {
+      props: { content: '<b>bold</b>' },
+      slots: { default: '<button>x</button>' }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(bootstrap.Popover).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.not.objectContaining({ html: true })
+    )
+  })
+
+  it('does not set data-bs-html attribute on element', () => {
+    const wrapper = mount(VibePopover, {
+      props: { content: 'Safe content' },
+      slots: { default: '<button>x</button>' }
+    })
+    expect(wrapper.find('[data-bs-toggle="popover"]').attributes('data-bs-html')).toBeUndefined()
+  })
+
   it('cleans up bootstrap popover on unmount', async () => {
     const wrapper = mount(VibePopover, {
       props: {

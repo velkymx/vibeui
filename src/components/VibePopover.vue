@@ -12,8 +12,7 @@ const props = defineProps({
   content: { type: String, default: undefined },
   text: { type: String, default: undefined },
   placement: { type: String as () => TooltipPlacement, default: 'top' },
-  trigger: { type: String, default: 'click' },
-  html: { type: Boolean, default: false }
+  trigger: { type: String, default: 'click' }
 })
 
 const emit = defineEmits(['component-error'])
@@ -48,7 +47,7 @@ const initPopover = async () => {
       content: props.text || props.content || '',
       placement: props.placement,
       trigger: computedTrigger.value,
-      html: props.html
+      html: false
     }) as BootstrapPopover
   } catch (error) {
     emit('component-error', {
@@ -78,7 +77,7 @@ watch([() => props.content, () => props.text, () => props.title], () => {
   }
 })
 
-watch([() => props.placement, () => props.trigger, () => props.html], initPopover)
+watch([() => props.placement, () => props.trigger], initPopover)
 
 defineExpose({ bsInstance: bsPopover })
 </script>
@@ -91,7 +90,6 @@ defineExpose({ bsInstance: bsPopover })
     :data-bs-title="title"
     :data-bs-content="text || content"
     :data-bs-trigger="trigger"
-    :data-bs-html="html"
   >
     <slot />
   </span>

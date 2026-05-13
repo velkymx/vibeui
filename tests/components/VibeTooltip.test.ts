@@ -88,6 +88,26 @@ describe('VibeTooltip', () => {
     expect(mockInstance.dispose).toHaveBeenCalled()
   })
 
+  it('never passes html:true to Bootstrap regardless of content', async () => {
+    mount(VibeTooltip, {
+      props: { content: '<b>bold</b>' },
+      slots: { default: '<button>x</button>' }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(bootstrap.Tooltip).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.not.objectContaining({ html: true })
+    )
+  })
+
+  it('does not set data-bs-html attribute on element', () => {
+    const wrapper = mount(VibeTooltip, {
+      props: { content: 'Safe content' },
+      slots: { default: '<button>x</button>' }
+    })
+    expect(wrapper.find('[data-bs-toggle="tooltip"]').attributes('data-bs-html')).toBeUndefined()
+  })
+
   it('switches trigger to click on touch devices', async () => {
     // Simulate touch support
     vi.stubGlobal('ontouchstart', {})

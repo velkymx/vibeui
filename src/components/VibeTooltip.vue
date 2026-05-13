@@ -11,8 +11,7 @@ const props = defineProps({
   content: { type: String, default: undefined },
   text: { type: String, default: undefined },
   placement: { type: String as () => TooltipPlacement, default: 'top' },
-  trigger: { type: String, default: 'hover focus' },
-  html: { type: Boolean, default: false }
+  trigger: { type: String, default: 'hover focus' }
 })
 
 const emit = defineEmits(['component-error'])
@@ -47,7 +46,7 @@ const initTooltip = async () => {
       title: props.text || props.content || '',
       placement: props.placement,
       trigger: computedTrigger.value,
-      html: props.html
+      html: false
     }) as BootstrapTooltip
   } catch (error) {
     emit('component-error', {
@@ -75,7 +74,7 @@ watch([() => props.content, () => props.text], () => {
 })
 
 // Watch for functional changes that require re-initialization
-watch([() => props.placement, () => props.trigger, () => props.html], initTooltip)
+watch([() => props.placement, () => props.trigger], initTooltip)
 
 defineExpose({ bsInstance: bsTooltip })
 </script>
@@ -87,7 +86,6 @@ defineExpose({ bsInstance: bsTooltip })
     :data-bs-placement="placement"
     :data-bs-title="text || content"
     :data-bs-trigger="trigger"
-    :data-bs-html="html"
   >
     <slot />
   </span>
