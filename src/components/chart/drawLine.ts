@@ -27,8 +27,8 @@ export function drawLine(
   const chartH = h - pad.top - pad.bottom
 
   const allValues = data.datasets.flatMap((ds) => ds.data)
-  const minVal = Math.min(0, ...allValues)
-  const maxVal = Math.max(0, ...allValues)
+  const minVal = allValues.reduce((acc, v) => Math.min(acc, v), 0)
+  const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), 0)
   const range = maxVal - minVal || 1
   const n = data.labels.length
   const xStep = chartW / Math.max(n - 1, 1)
@@ -139,8 +139,8 @@ export function hitTestLine(
   const chartH = h - pad.top - pad.bottom
 
   const allValues = data.datasets.flatMap((ds) => ds.data)
-  const minVal = Math.min(0, ...allValues)
-  const maxVal = Math.max(0, ...allValues)
+  const minVal = allValues.reduce((acc, v) => Math.min(acc, v), 0)
+  const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), 0)
   const range = maxVal - minVal || 1
   const n = data.labels.length
   const xStep = chartW / Math.max(n - 1, 1)
