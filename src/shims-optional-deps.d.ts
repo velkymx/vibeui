@@ -210,6 +210,7 @@ declare module 'quill' {
     getSemanticHTML(): string
     setContents(delta: unknown, source?: string): void
     clipboard: {
+      /** WARNING: XSS surface — sanitize html before passing (e.g. DOMPurify) */
       dangerouslyPasteHTML(html: string, source?: string): void
     }
     on(event: string, handler: (...args: unknown[]) => void): void

@@ -9,7 +9,9 @@ interface BootstrapScrollSpy {
 
 const props = defineProps({
   target: { type: String, required: true },
-  offset: { type: Number, default: 10 },
+  /** @deprecated Bootstrap 5.2+ uses rootMargin. Use rootMargin instead. */
+  offset: { type: Number, default: undefined },
+  rootMargin: { type: String, default: '0px 0px -25%' },
   method: { type: String, default: 'auto' },
   smoothScroll: { type: Boolean, default: false },
   tag: { type: String as () => Tag, default: 'div' },
@@ -32,9 +34,13 @@ onMounted(async () => {
     const bootstrap = await import('bootstrap')
     const ScrollSpy = bootstrap.ScrollSpy
 
+    if (props.offset !== undefined) {
+      console.warn('[VibeScrollspy] The `offset` prop is deprecated (Bootstrap 5.2+). Use `rootMargin` instead.')
+    }
+
     bsScrollspy.value = new ScrollSpy(scrollspyRef.value, {
       target: props.target,
-      offset: props.offset,
+      rootMargin: props.rootMargin,
       method: props.method,
       smoothScroll: props.smoothScroll
     }) as BootstrapScrollSpy
@@ -76,7 +82,7 @@ defineExpose({ refresh })
     ref="scrollspyRef"
     data-bs-spy="scroll"
     :data-bs-target="target"
-    :data-bs-offset="offset"
+    :data-bs-root-margin="rootMargin"
     :data-bs-method="method"
     :data-bs-smooth-scroll="smoothScroll"
     tabindex="0"
