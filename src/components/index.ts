@@ -50,6 +50,11 @@ import VibePopover from './VibePopover.vue'
 import VibeScrollspy from './VibeScrollspy.vue'
 import VibeIcon from './VibeIcon.vue'
 
+// Chart Components
+import VibeChartLine from './VibeChartLine.vue'
+import VibeChartBar from './VibeChartBar.vue'
+import VibeChartPie from './VibeChartPie.vue'
+
 // Data Components
 import VibeDataTable from './VibeDataTable.vue'
 
@@ -129,6 +134,11 @@ export {
   VibePopover,
   VibeScrollspy,
   VibeIcon,
+
+  // Chart
+  VibeChartLine,
+  VibeChartBar,
+  VibeChartPie,
 
   // Data
   VibeDataTable,
@@ -214,6 +224,11 @@ const VibeUIPlugin: Plugin = {
     app.component('VibePopover', VibePopover)
     app.component('VibeScrollspy', VibeScrollspy)
     app.component('VibeIcon', VibeIcon)
+
+    // Chart
+    app.component('VibeChartLine', VibeChartLine)
+    app.component('VibeChartBar', VibeChartBar)
+    app.component('VibeChartPie', VibeChartPie)
 
     // Data
     app.component('VibeDataTable', VibeDataTable)
