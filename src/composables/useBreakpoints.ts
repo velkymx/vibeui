@@ -18,8 +18,6 @@ export function useBreakpoints() {
   const isXl = ref(false)
   const isXxl = ref(false)
 
-  const queries: Record<string, MediaQueryList> = {}
-
   const update = () => {
     if (typeof window === 'undefined') return
     isSm.value = window.matchMedia(`(min-width: ${breakpoints.sm}px)`).matches
@@ -36,21 +34,22 @@ export function useBreakpoints() {
   const isMobile = computed(() => !isMd.value)
   const isTablet = computed(() => isMd.value && !isLg.value)
 
-  // Use matchMedia listeners for efficiency
+  const cleanups: Array<() => void> = []
+
   if (typeof window !== 'undefined') {
-    Object.entries(breakpoints).forEach(([key, value]) => {
+    Object.values(breakpoints).forEach((value) => {
       const query = window.matchMedia(`(min-width: ${value}px)`)
-      const listener = () => {
-        update()
-      }
+      const listener = () => update()
       query.addEventListener('change', listener)
-      
-      // Automatic cleanup if in component context
-      if (getCurrentInstance()) {
-        onUnmounted(() => query.removeEventListener('change', listener))
-      }
+      cleanups.push(() => query.removeEventListener('change', listener))
     })
+
+    if (getCurrentInstance()) {
+      onUnmounted(() => cleanups.forEach(fn => fn()))
+    }
   }
+
+  const cleanup = () => cleanups.forEach(fn => fn())
 
   return {
     isXs,
@@ -60,6 +59,7 @@ export function useBreakpoints() {
     isXl,
     isXxl,
     isMobile,
-    isTablet
+    isTablet,
+    cleanup
   }
 }

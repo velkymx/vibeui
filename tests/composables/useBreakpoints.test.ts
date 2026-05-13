@@ -27,7 +27,7 @@ describe('useBreakpoints', () => {
 
   it('updates reactively when matchMedia changes', () => {
     const { isSm } = useBreakpoints()
-    
+
     // Simulate media query match
     vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query) => ({
       matches: query.includes('576px'),
@@ -41,5 +41,22 @@ describe('useBreakpoints', () => {
     }
 
     expect(isSm.value).toBe(true)
+  })
+
+  it('cleanup() removes all matchMedia listeners', () => {
+    const addSpy = vi.fn()
+    const removeSpy = vi.fn()
+    vi.stubGlobal('matchMedia', vi.fn().mockImplementation(() => ({
+      matches: false,
+      addEventListener: addSpy,
+      removeEventListener: removeSpy,
+    })))
+
+    const { cleanup } = useBreakpoints()
+    const addCalls = addSpy.mock.calls.length // should be 5 (one per breakpoint)
+    cleanup()
+
+    // removeEventListener called once per listener registered
+    expect(removeSpy.mock.calls.length).toBe(addCalls)
   })
 })
