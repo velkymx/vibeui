@@ -176,6 +176,30 @@ describe('VibeDataTable', () => {
 
       expect(wrapper.text()).toContain('Showing 1 to')
     })
+
+    it('shows correct info after filter-to-zero then clear', async () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, searchable: true, searchDebounce: 0, paginated: true, perPage: 2, showInfo: true }
+      })
+
+      const input = wrapper.find('input[type="search"]')
+      await input.setValue('zzznomatch')
+      await input.trigger('input')
+      await nextTick()
+      await new Promise(r => setTimeout(r, 10))
+
+      // empty-state row is the only row when no results
+      expect(wrapper.text()).toContain('No data available')
+      expect(wrapper.text()).not.toContain('Showing 1 to')
+
+      await input.setValue('')
+      await input.trigger('input')
+      await nextTick()
+      await new Promise(r => setTimeout(r, 10))
+
+      expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+      expect(wrapper.text()).toContain('Showing 1 to')
+    })
   })
 
   describe('sorting functionality', () => {
