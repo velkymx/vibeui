@@ -122,6 +122,24 @@ describe('VibeAlert', () => {
     expect(alert.text()).toBe('')
   })
 
+  it('initializes Bootstrap instance when modelValue transitions false→true', async () => {
+    const wrapper = mount(VibeAlert, {
+      props: { message: 'Test', modelValue: false }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(bootstrap.Alert).not.toHaveBeenCalled()
+
+    await wrapper.setProps({ modelValue: true })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(bootstrap.Alert).toHaveBeenCalled()
+    const mockInstance = vi.mocked(bootstrap.Alert).mock.results[0].value
+
+    await wrapper.setProps({ modelValue: false })
+    expect(mockInstance.close).toHaveBeenCalled()
+  })
+
   describe('dismissible', () => {
     it('shows close button when dismissible=true', () => {
       const wrapper = mount(VibeAlert, {
