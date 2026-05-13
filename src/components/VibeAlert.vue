@@ -10,21 +10,12 @@ const props = defineProps({
   variant: { type: String, default: 'primary' },
   subtle: { type: Boolean, default: false },
   modelValue: { type: Boolean, default: true },
-  // Misspelled prop kept for back-compat. Prefer `dismissible`. Will be
-  // removed in v1.0.
-  dismissable: { type: Boolean, default: false },
   dismissible: { type: Boolean, default: false },
   message: { type: String, default: '' },
   fade: { type: Boolean, default: true }
 })
 
-const isDismissible = computed(() => props.dismissible || props.dismissable)
-
-if (props.dismissable && !props.dismissible) {
-  console.warn(
-    '[VibeAlert] The `dismissable` prop is deprecated due to a typo; use `dismissible`. Both work in v0.9 but `dismissable` will be removed in v1.0.'
-  )
-}
+const isDismissible = computed(() => props.dismissible)
 
 const emit = defineEmits(['update:modelValue', 'close', 'closed', 'component-error'])
 
