@@ -192,4 +192,35 @@ describe('VibeFormCheckbox', () => {
 
     expect(wrapper.emitted('change')).toBeTruthy()
   })
+
+  it('emits false (not null) when string value unchecked in scalar mode', async () => {
+    const wrapper = mount(VibeFormCheckbox, {
+      props: {
+        id: 'checkbox',
+        modelValue: 'myValue',
+        value: 'myValue'
+      }
+    })
+
+    await wrapper.find('input').setValue(false)
+
+    const emitted = wrapper.emitted('update:modelValue') as any[][]
+    expect(emitted[0][0]).toBe(false)
+    expect(emitted[0][0]).not.toBeNull()
+  })
+
+  it('emits false when boolean value unchecked', async () => {
+    const wrapper = mount(VibeFormCheckbox, {
+      props: {
+        id: 'checkbox',
+        modelValue: true,
+        value: true
+      }
+    })
+
+    await wrapper.find('input').setValue(false)
+
+    const emitted = wrapper.emitted('update:modelValue') as any[][]
+    expect(emitted[0][0]).toBe(false)
+  })
 })

@@ -74,7 +74,7 @@ const handleChange = (event: Event) => {
       if (index > -1) newValue.splice(index, 1)
     }
   } else {
-    newValue = target.checked ? props.value : (props.value === true ? false : null)
+    newValue = target.checked ? props.value : false
   }
   emit('update:modelValue', newValue)
   emit('change', event)
