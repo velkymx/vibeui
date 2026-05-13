@@ -64,15 +64,15 @@ const runGuard = async (
 
 const goNext = async () => {
   if (transitioning.value) return
-  if (isLast.value) {
-    emit('finish')
-    return
-  }
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforeNext, 'next')
     if (!allowed) return
-    emit('update:modelValue', props.modelValue + 1)
+    if (isLast.value) {
+      emit('finish')
+    } else {
+      emit('update:modelValue', props.modelValue + 1)
+    }
   } finally {
     transitioning.value = false
   }
