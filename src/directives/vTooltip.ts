@@ -12,7 +12,6 @@ interface TooltipOptions {
   content?: string
   placement?: Placement
   trigger?: string
-  html?: boolean
 }
 
 type TooltipBindingValue = string | TooltipOptions | undefined
@@ -46,7 +45,6 @@ const resolveTrigger = (trigger?: string): string => {
 const structuralChanged = (a: TooltipOptions, b: TooltipOptions): boolean => {
   if ((a.placement || 'top') !== (b.placement || 'top')) return true
   if (resolveTrigger(a.trigger) !== resolveTrigger(b.trigger)) return true
-  if (!!a.html !== !!b.html) return true
   return false
 }
 
@@ -59,7 +57,7 @@ const create = async (el: AugmentedElement, opts: TooltipOptions): Promise<void>
       title: opts.title || '',
       placement: opts.placement || 'top',
       trigger: resolveTrigger(opts.trigger),
-      html: opts.html || false
+      html: false
     }) as unknown as BootstrapTooltipInstance
     el[OPTS_KEY] = opts
   } catch {
@@ -82,8 +80,7 @@ const applyDataAttrs = (el: AugmentedElement, opts: TooltipOptions): void => {
   else el.removeAttribute('data-bs-title')
   el.setAttribute('data-bs-placement', opts.placement || 'top')
   el.setAttribute('data-bs-trigger', resolveTrigger(opts.trigger))
-  if (opts.html) el.setAttribute('data-bs-html', 'true')
-  else el.removeAttribute('data-bs-html')
+  el.removeAttribute('data-bs-html')
 }
 
 export const vTooltip: Directive<AugmentedElement, TooltipBindingValue> = {
