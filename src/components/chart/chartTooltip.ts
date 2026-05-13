@@ -1,18 +1,29 @@
 import type { TooltipHit } from './chartTypes'
 
+function sameHit(a: TooltipHit | null, b: TooltipHit | null): boolean {
+  if (a === null && b === null) return true
+  if (a === null || b === null) return false
+  return a.datasetIndex === b.datasetIndex && a.pointIndex === b.pointIndex
+}
+
 export function bindTooltip(
   canvas: HTMLCanvasElement,
   hitTest: (x: number, y: number) => TooltipHit | null,
   redraw: () => void
 ): () => void {
+  let lastHit: TooltipHit | null = null
+
   const onMove = (e: MouseEvent) => {
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
 
+    const hit = hitTest(x, y)
+    if (sameHit(hit, lastHit)) return
+    lastHit = hit
+
     redraw()
 
-    const hit = hitTest(x, y)
     if (!hit) return
 
     const ctx = canvas.getContext('2d')
@@ -36,7 +47,11 @@ export function bindTooltip(
     ctx.restore()
   }
 
-  const onLeave = () => redraw()
+  const onLeave = () => {
+    if (lastHit === null) return
+    lastHit = null
+    redraw()
+  }
 
   canvas.addEventListener('mousemove', onMove)
   canvas.addEventListener('mouseleave', onLeave)
