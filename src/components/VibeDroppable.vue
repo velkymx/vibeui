@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { getActiveDrag } from './dndStore'
 
 const props = defineProps({
@@ -17,6 +17,13 @@ const emit = defineEmits<{
 
 const isOver = ref(false)
 let dragCounter = 0
+
+watch(() => props.disabled, (disabled) => {
+  if (disabled) {
+    dragCounter = 0
+    isOver.value = false
+  }
+})
 
 const groupAccepted = (group: string): boolean => {
   if (props.acceptGroups && props.acceptGroups.length > 0) {
