@@ -62,4 +62,25 @@ describe('VibeNav', () => {
 
     expect(wrapper.find('.nav').classes()).toContain('nav-underline')
   })
+
+  it('disposes old Tab instances when items change', async () => {
+    const wrapper = mount(VibeNav, {
+      props: { items: mockItems, tabs: true }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const firstCallCount = vi.mocked(bootstrap.Tab).mock.results.length
+    const firstInstances = vi.mocked(bootstrap.Tab).mock.results.slice(0, firstCallCount).map(r => r.value)
+
+    await wrapper.setProps({ items: [
+      { text: 'New 1', href: '#newpane1' },
+      { text: 'New 2', href: '#newpane2' }
+    ]})
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Old instances should have been disposed when items changed
+    firstInstances.forEach(instance => {
+      expect(instance.dispose).toHaveBeenCalled()
+    })
+  })
 })

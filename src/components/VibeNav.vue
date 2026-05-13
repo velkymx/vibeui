@@ -84,6 +84,14 @@ onBeforeUnmount(() => {
 
 // Watch for items changes to re-initialize tabs
 watch(() => props.items, async () => {
+  bsTabs.forEach((bsTab, el) => {
+    el.removeEventListener('show.bs.tab', onShow)
+    el.removeEventListener('shown.bs.tab', onShown)
+    el.removeEventListener('hide.bs.tab', onHide)
+    el.removeEventListener('hidden.bs.tab', onHidden)
+    bsTab.dispose()
+  })
+  bsTabs.clear()
   await nextTick()
   await initTabs()
 }, { deep: true })
