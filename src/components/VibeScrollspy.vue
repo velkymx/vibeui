@@ -43,7 +43,7 @@ onMounted(async () => {
       rootMargin: props.rootMargin,
       method: props.method,
       smoothScroll: props.smoothScroll
-    }) as BootstrapScrollSpy
+    } as any) as BootstrapScrollSpy
 
     scrollspyRef.value.addEventListener('activate.bs.scrollspy', onActivate)
   } catch (error) {

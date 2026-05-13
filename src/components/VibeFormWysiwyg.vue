@@ -43,7 +43,7 @@ const props = defineProps({
   height: { type: String, default: '200px' }
 })
 
-const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change', 'ready'])
+const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change', 'ready', 'component-error'])
 
 const formGroup = inject<{
   id: ComputedRef<string>
