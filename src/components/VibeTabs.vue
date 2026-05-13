@@ -72,7 +72,19 @@ provide('vibeTabsContext', {
   },
   unregister: (name: string) => {
     const idx = registry.findIndex(t => t.name === name)
-    if (idx >= 0) registry.splice(idx, 1)
+    if (idx < 0) return
+    const wasActive = internalActive.value === name
+    registry.splice(idx, 1)
+    if (wasActive) {
+      const next = registry.find(t => !t.disabled)
+      const nextName = next?.name
+      internalActive.value = nextName
+      if (nextName !== undefined) {
+        visited.add(nextName)
+        emit('update:modelValue', nextName)
+        emit('change', nextName)
+      }
+    }
   },
   isActive: (name: string) => internalActive.value === name,
   hasBeenActive: (name: string) => visited.has(name),
