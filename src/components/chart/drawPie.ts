@@ -18,6 +18,8 @@ export function drawPie(
   const cy = h / 2
   const r = Math.min(w, h) * 0.4
 
+  ctx.strokeStyle = '#fff'
+  ctx.lineWidth = 2
   let angle = -Math.PI / 2
 
   for (const [i, v] of values.entries()) {
@@ -28,8 +30,6 @@ export function drawPie(
     ctx.closePath()
     ctx.fillStyle = colors[i]
     ctx.fill()
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 2
     ctx.stroke()
     angle += slice
   }
