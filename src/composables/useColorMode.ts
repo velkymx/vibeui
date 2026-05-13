@@ -39,9 +39,14 @@ function applyAndUpdate(mode: ColorMode) {
   callbacks.forEach(cb => cb(mode))
 }
 
-// Sync DOM with the initial default immediately on module load.
-// Prevents a flash where colorMode.value says 'auto' but <html> has no data-bs-theme.
-applyAndUpdate('auto')
+// Read stored preference immediately to prevent flash on first render.
+let _initial: ColorMode = 'auto'
+try {
+  const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
+  if (raw !== null && raw in NEXT_MODE) _initial = raw as ColorMode
+} catch { /* ignore SSR / private browsing */ }
+applyAndUpdate(_initial)
+initialized = true
 
 const onSystemThemeChange = () => {
   if (colorMode.value === 'auto') {
