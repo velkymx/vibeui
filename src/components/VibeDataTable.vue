@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
 import type { DataTableColumn } from '../types'
 
 const props = defineProps({
@@ -44,6 +44,9 @@ const sortBy = defineModel<string | undefined>('sortBy', { default: undefined })
 const sortDesc = defineModel<boolean>('sortDesc', { default: false })
 
 const emit = defineEmits(['row-clicked', 'component-error'])
+
+const _instance = getCurrentInstance()
+const isRowClickable = computed(() => typeof _instance?.vnode.props?.onRowClicked === 'function')
 
 // Local state for search
 const searchQuery = ref('')
@@ -206,6 +209,16 @@ const infoString = computed(() => {
     .replace('{totalRows}', String(totalRows.value))
 })
 
+const visiblePages = computed(() => {
+  const lo = currentPage.value - 2
+  const hi = currentPage.value + 2
+  const pages: number[] = []
+  for (let p = Math.max(1, lo); p <= Math.min(totalPages.value, hi); p++) {
+    pages.push(p)
+  }
+  return pages
+})
+
 // Table classes
 const tableClass = computed(() => {
   const classes = ['table']
@@ -326,8 +339,8 @@ const getThStyle = (column: DataTableColumn<T>) => {
           <tr
             v-for="(item, index) in paginatedItems"
             :key="getRowKey(item, index)"
-            @click="handleRowClick(item, index)"
-            :style="{ cursor: 'pointer' }"
+            :style="isRowClickable ? { cursor: 'pointer' } : undefined"
+            @click="isRowClickable ? handleRowClick(item, index) : undefined"
           >
             <td
               v-for="column in columns"
@@ -376,9 +389,7 @@ const getThStyle = (column: DataTableColumn<T>) => {
 
             <!-- Page numbers around current page -->
             <li
-              v-for="page in Array.from({ length: totalPages }, (_, i) => i + 1).filter(
-                p => p >= currentPage - 2 && p <= currentPage + 2
-              )"
+              v-for="page in visiblePages"
               :key="page"
               class="page-item"
               :class="{ active: page === currentPage }"
