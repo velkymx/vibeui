@@ -30,7 +30,7 @@ const navbarClass = computed(() => {
     classes.push(`navbar-expand-${props.expand}`)
   }
 
-  classes.push(`bg-${props.variant}`)
+  if (props.variant) classes.push(`bg-${props.variant}`)
 
   if (props.position) {
     classes.push(props.position)
