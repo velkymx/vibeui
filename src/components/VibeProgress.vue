@@ -32,7 +32,11 @@ const getBarStyle = (bar: ProgressBar) => {
 
 const getBarLabel = (bar: ProgressBar) => {
   if (bar.label) return bar.label
-  if (bar.showValue) return `${bar.value}%`
+  if (bar.showValue) {
+    const max = bar.max || 100
+    const percentage = Math.min(100, Math.max(0, Math.round((bar.value / max) * 100)))
+    return `${percentage}%`
+  }
   return ''
 }
 </script>
