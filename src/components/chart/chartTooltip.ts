@@ -15,7 +15,8 @@ export function bindTooltip(
     const hit = hitTest(x, y)
     if (!hit) return
 
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     const text = `${hit.label}: ${hit.value}`
     ctx.save()
     ctx.font = '12px sans-serif'

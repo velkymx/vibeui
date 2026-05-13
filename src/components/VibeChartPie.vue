@@ -29,8 +29,10 @@ const resolvedColors = computed(() =>
 )
 
 function redraw() {
-  const canvas = canvasEl.value!
-  const ctx = canvas.getContext('2d')!
+  if (!canvasEl.value || !currentW || !currentH) return
+  const canvas = canvasEl.value
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
   const dpr = window.devicePixelRatio || 1
   canvas.width = currentW * dpr
   canvas.height = currentH * dpr
@@ -45,11 +47,13 @@ useChartResize(containerEl, canvasEl, (w, h) => {
 })
 
 onMounted(() => {
-  cleanupTooltip = bindTooltip(
-    canvasEl.value!,
-    (x, y) => hitTestPie(x, y, props.data, currentW, currentH),
-    redraw
-  )
+  if (canvasEl.value) {
+    cleanupTooltip = bindTooltip(
+      canvasEl.value,
+      (x, y) => hitTestPie(x, y, props.data, currentW, currentH),
+      redraw
+    )
+  }
 })
 
 watch(() => props.data, redraw, { deep: true })

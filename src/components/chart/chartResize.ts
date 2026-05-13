@@ -14,7 +14,7 @@ export function useChartResize(
       const { width, height } = entry.contentRect
       onResize(width, height)
     })
-    observer.observe(container.value!)
+    if (container.value) observer.observe(container.value)
   })
 
   onUnmounted(() => {
