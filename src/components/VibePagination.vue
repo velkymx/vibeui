@@ -31,8 +31,8 @@ const handlePageClick = (page: number) => {
   }
 }
 
-const isPrevDisabled = computed(() => props.currentPage === 1)
-const isNextDisabled = computed(() => props.currentPage === props.totalPages)
+const isPrevDisabled = computed(() => props.totalPages === 0 || props.currentPage <= 1)
+const isNextDisabled = computed(() => props.totalPages === 0 || props.currentPage >= props.totalPages)
 </script>
 
 <template>
