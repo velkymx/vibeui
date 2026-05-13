@@ -25,7 +25,7 @@ const getLinkClass = (item: NavItem) => {
 const getItemTag = (item: NavItem) => {
   if (item.href) return 'a'
   if (item.to) return 'router-link'
-  return 'a'
+  return 'button'
 }
 
 const getDropdownItemClass = (child: DropdownItem) => {
@@ -98,8 +98,9 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
           v-else
           :is="getItemTag(item)"
           :class="getLinkClass(item)"
-          :href="item.href"
+          :href="item.href || undefined"
           :to="item.to"
+          :type="!item.href && !item.to ? 'button' : undefined"
           :aria-current="item.active ? 'page' : undefined"
           :aria-disabled="item.disabled"
           @click="handleItemClick(item, index, $event)"
