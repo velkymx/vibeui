@@ -4,7 +4,7 @@ A Vue 3 component library that wraps Bootstrap 5.3. Every Bootstrap component is
 
 **Package:** `@velkymx/vibeui`
 **Stack:** Vue 3 (Composition API) + Bootstrap 5.3 + TypeScript + Vite
-**Current version:** 0.9.0
+**Current version:** 1.0.0
 
 ---
 
@@ -85,7 +85,10 @@ vibeui/
 │   │   ├── VibeFormGroup.vue       # Context-aware — auto-links label to child input
 │   │   ├── VibeInputGroup.vue      # prepend/append slots; pairs with noWrapper inputs
 │   │   ├── VibeLink.vue
-│   │   └── VibeFormWysiwyg.vue     # Quill 2.x — toolbar string presets in v0.9
+│   │   ├── VibeFormWysiwyg.vue     # Quill 2.x — toolbar string presets in v0.9
+│   │   ├── VibeChartLine.vue       # v1.0: canvas line chart, smooth/fill, Bootstrap color cycling
+│   │   ├── VibeChartBar.vue        # v1.0: canvas bar chart, grouped + stacked
+│   │   └── VibeChartPie.vue        # v1.0: canvas pie chart, Bootstrap color cycling
 │   ├── composables/
 │   │   ├── useId.ts                # Generates unique IDs (SSR-safe)
 │   │   ├── useColorMode.ts         # Bootstrap color mode management (singleton)
@@ -166,7 +169,8 @@ import {
   VibeTabs, VibeTab, VibeStepper,
   VibeSortable, VibeDraggable, VibeDroppable,
   VibeResizable, VibeSlider,
-  VibeToast, VibeToastHost
+  VibeToast, VibeToastHost,
+  VibeChartLine, VibeChartBar, VibeChartPie
   /* ... */
 } from '@velkymx/vibeui'
 
@@ -186,7 +190,8 @@ import type {
   DataTableColumn, DataTableCellSlotProps,
   FormSelectOption, FormSelectOptionValue,
   ToastSpec, ToastShowOptions, UseToastReturn,
-  UsePositionOptions, UsePositionReturn
+  UsePositionOptions, UsePositionReturn,
+  ChartData, ChartDataset, ChartLegendPosition
 } from '@velkymx/vibeui'
 ```
 
@@ -212,7 +217,8 @@ type ValidationState = 'valid' | 'invalid' | null
 
 // Data-driven component item shapes
 interface BreadcrumbItem   { text, href?, to?, active? }
-interface NavItem          { text, href?, to?, active?, disabled?, children? }
+interface NavItem          { text, href?, to?, target?, active?, disabled?, children? }
+//   target?: string — tab panel selector (e.g. '#panel-id') for tabs/pills mode with router-link items
 interface DropdownItem     { text?, href?, to?, active?, disabled?, divider?, header? }
 interface ListGroupItem    { text, href?, to?, active?, disabled?, variant? }
 interface AccordionItem    { id, title, content, show? }
@@ -227,6 +233,11 @@ interface DataTableCellSlotProps<T> { item: T, value: T[keyof T], index: number 
 // Form select primitive — accepts null / undefined / boolean (v0.9)
 type FormSelectOptionValue = string | number | boolean | null | undefined
 interface FormSelectOption  { value: FormSelectOptionValue, text, disabled? }
+
+// v1.0 charts
+interface ChartDataset      { label: string, data: number[], color?: string }
+interface ChartData         { labels: string[], datasets: ChartDataset[] }
+type ChartLegendPosition    = 'top' | 'bottom' | 'none'
 
 // v0.9 stepper / toast / position
 interface StepperStep       { label, description?, disabled?, icon? }
@@ -621,6 +632,44 @@ If the component uses Bootstrap JS:
 - Initialize in `onMounted`, dispose in `onBeforeUnmount`
 - Watch functional props and call `instance.dispose()` + reinitialize on change
 - Expose `bsInstance` via `defineExpose`
+
+---
+
+## Canvas Charts (v1.0)
+
+Three chart components drawn directly on `<canvas>` — no Chart.js or other dependency.
+
+```vue
+<VibeChartLine :data="data" smooth fill legend="top" />
+<VibeChartBar  :data="data" stacked />
+<VibeChartPie  :data="data" />
+```
+
+All three share the same `ChartData` shape:
+
+```ts
+const data: ChartData = {
+  labels: ['Jan', 'Feb', 'Mar'],
+  datasets: [
+    { label: 'Revenue', data: [100, 150, 130], color: '#0d6efd' }  // color optional
+  ]
+}
+```
+
+When `color` is omitted, colors cycle through Bootstrap CSS variables (`--bs-primary`, `--bs-success`, `--bs-danger`, ...) from the component's computed style — automatically matching your Bootstrap theme and dark mode.
+
+| Prop | Line | Bar | Pie | Description |
+|------|------|-----|-----|-------------|
+| `data` | ✓ | ✓ | ✓ | `ChartData` — required |
+| `legend` | ✓ | ✓ | ✓ | `'top' \| 'bottom' \| 'none'` (default `'bottom'`) |
+| `height` | ✓ | ✓ | ✓ | Number/String px or `'auto'` (default). Line/Bar → 16:9, Pie → 1:1 |
+| `showAxes` | ✓ | ✓ | — | Show X/Y axes (default `true`) |
+| `showGrid` | ✓ | ✓ | — | Show grid lines (default `true`) |
+| `smooth` | ✓ | — | — | Bezier curves instead of straight lines |
+| `fill` | ✓ | — | — | Fill area under line |
+| `stacked` | — | ✓ | — | Stack datasets instead of grouping |
+
+All charts are responsive via `ResizeObserver`, render at device pixel ratio for crisp HiDPI output, and show hover tooltips on data points/slices/bars.
 
 ---
 

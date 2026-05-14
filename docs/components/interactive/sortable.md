@@ -7,6 +7,7 @@ Drag-and-drop reorderable list. Generic over the row type; binds an ordered arra
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `modelValue` | `T[]` | required | Ordered array (v-model) |
+| `itemKey` | `String` | `undefined` | Property name on each item to use as the `:key`. When omitted, index is used as key. Set this when items have a stable unique identifier to avoid key conflicts during reorder. |
 | `disabled` | `Boolean` | `false` | Disable dragging |
 | `tag` | `String` | `'div'` | Container element |
 | `itemTag` | `String` | `'div'` | Element wrapping each item |

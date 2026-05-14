@@ -13,6 +13,7 @@ Data-driven pagination component with v-model support.
 | `showPrevNext` | `Boolean` | `true` | Show previous/next buttons |
 | `prevText` | `String` | `'Previous'` | Text for previous button |
 | `nextText` | `String` | `'Next'` | Text for next button |
+| `maxVisiblePages` | `Number` | `7` | Maximum page buttons to show before collapsing to ellipsis |
 
 ## Events
 
@@ -84,6 +85,21 @@ const currentPage = ref(1)
     prev-text="← Back"
     next-text="Forward →"
     v-model:current-page="currentPage"
+  />
+</template>
+```
+
+### Large Page Counts (Ellipsis)
+
+When `totalPages` exceeds `maxVisiblePages`, intermediate pages are replaced with ellipsis (`…`). First and last pages are always shown, and the window of visible pages tracks the current page.
+
+```vue
+<template>
+  <!-- 100 pages, only 7 buttons max — ellipsis collapses the rest -->
+  <VibePagination
+    :total-pages="100"
+    v-model:current-page="currentPage"
+    :max-visible-pages="7"
   />
 </template>
 ```

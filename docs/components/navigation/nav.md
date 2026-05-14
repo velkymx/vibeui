@@ -22,6 +22,8 @@ interface NavItem {
   text: string
   href?: string
   to?: string | object
+  /** Tab panel selector (e.g. '#panel-id') for tabs/pills mode with router-link items */
+  target?: string
   active?: boolean
   disabled?: boolean
   children?: NavItem[] // Support for dropdowns
@@ -72,9 +74,36 @@ const tabPanes = [
 </script>
 ```
 
+### Tabs with Vue Router Links
+
+Items using `to` (router-link) also work in tabs/pills mode. Provide a `target` field pointing to the panel ID, and Bootstrap Tab events (`show`, `shown`, `hide`, `hidden`) will fire correctly:
+
+```vue
+<template>
+  <VibeNav tabs :items="navItems" @shown="onShown" />
+  <div class="tab-content mt-3">
+    <div id="overview-pane" class="tab-pane fade show active">Overview content</div>
+    <div id="settings-pane" class="tab-pane fade">Settings content</div>
+  </div>
+</template>
+
+<script setup>
+const navItems = [
+  { text: 'Overview', to: '/overview', target: '#overview-pane', active: true },
+  { text: 'Settings', to: '/settings', target: '#settings-pane' }
+]
+
+const onShown = (event) => {
+  console.log('Tab shown:', event.target)
+}
+</script>
+```
+
+Items with `to` starting with `#` are also treated as tab targets without needing an explicit `target` field.
+
 ## Important Notes
 
-**Automatic Initialization:** When using `tabs` or `pills`, this component automatically initializes Bootstrap's Tab functionality for any items that target a local ID (e.g., `href="#my-tab"`).
+**Automatic Initialization:** When using `tabs` or `pills`, this component automatically initializes Bootstrap's Tab functionality for items that target a local panel ID via `href="#..."`, `target="#..."`, or `to="#..."`.
 
 **State Management:** For complex tab state, combine `VibeNav` with `VibeTabContent` and manage the `active` state through your data.
 
