@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>VibeUI v0.9 — Smoke Test</title>
+    <title>VibeUI v1.0 — Smoke Test</title>
 
     <!-- Bootstrap 5.3 CSS + Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
@@ -50,7 +50,7 @@
   <body>
     <nav class="navbar navbar-expand bg-body-tertiary border-bottom sticky-top">
       <div class="container-fluid">
-        <span class="navbar-brand fw-bold">VibeUI v0.9 Smoke Test</span>
+        <span class="navbar-brand fw-bold">VibeUI v1.0 Smoke Test</span>
         <div class="d-flex align-items-center gap-3">
           <span class="smoke-status" id="suite-status">loading…</span>
           <span class="smoke-status text-bg-warning d-none" id="suite-errors"></span>
@@ -78,6 +78,7 @@
             <a href="#data-table">DataTable</a>
             <a href="#forms">Forms</a>
             <a href="#wysiwyg">Wysiwyg</a>
+            <a href="#charts">Charts</a>
             <a href="#composables">Composables</a>
             <a href="#toast">Toast</a>
           </nav>
@@ -217,7 +218,7 @@
             <div class="card smoke-card">
               <div class="card-header">VibePagination</div>
               <div class="card-body">
-                <vibe-pagination v-model="page" :total-rows="120" :per-page="10" />
+                <vibe-pagination v-model:current-page="page" :total-pages="20" :max-visible-pages="7" />
               </div>
             </div>
           </section>
@@ -545,6 +546,38 @@
             </div>
           </section>
 
+          <!-- ===================== CHARTS ===================== -->
+          <section id="charts" class="smoke-section mb-5">
+            <h2>Charts (v1.0)</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeChartLine</div>
+              <div class="card-body">
+                <vibe-chart-line :data="chartLineData" smooth fill legend="top" />
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeChartBar (grouped + stacked)</div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <p class="small text-muted mb-1">Grouped</p>
+                    <vibe-chart-bar :data="chartBarData" />
+                  </div>
+                  <div class="col-md-6">
+                    <p class="small text-muted mb-1">Stacked</p>
+                    <vibe-chart-bar :data="chartBarData" stacked />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeChartPie</div>
+              <div class="card-body" style="max-width: 320px">
+                <vibe-chart-pie :data="chartPieData" />
+              </div>
+            </div>
+          </section>
+
           <!-- ===================== COMPOSABLES ===================== -->
           <section id="composables" class="smoke-section mb-5">
             <h2>Composables</h2>
@@ -760,6 +793,25 @@
             // composables
             multiForm,
             validateMultiForm,
+            // charts
+            chartLineData: {
+              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+              datasets: [
+                { label: 'Revenue', data: [12000, 18000, 15000, 22000, 19000, 27000] },
+                { label: 'Costs',   data: [8000,  10000, 9500,  12000, 11000, 14000] }
+              ]
+            },
+            chartBarData: {
+              labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+              datasets: [
+                { label: 'Product A', data: [120, 145, 132, 170] },
+                { label: 'Product B', data: [80,  95,  88,  105] }
+              ]
+            },
+            chartPieData: {
+              labels: ['Direct', 'Organic', 'Referral', 'Social'],
+              datasets: [{ label: 'Traffic', data: [40, 30, 20, 10] }]
+            },
             // toast
             toast
           }
