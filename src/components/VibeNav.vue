@@ -109,14 +109,27 @@ const handleItemClick = (item: NavItem, index: number, event: Event) => {
   }
 }
 
-defineExpose({ bsInstances: bsTabs, refresh: initTabs })
+const refresh = async () => {
+  bsTabs.forEach((bsTab, el) => {
+    el.removeEventListener('show.bs.tab', onShow)
+    el.removeEventListener('shown.bs.tab', onShown)
+    el.removeEventListener('hide.bs.tab', onHide)
+    el.removeEventListener('hidden.bs.tab', onHidden)
+    bsTab.dispose()
+  })
+  bsTabs.clear()
+  await nextTick()
+  await initTabs()
+}
+
+defineExpose({ bsInstances: bsTabs, refresh })
 </script>
 
 <template>
   <component :is="tag" ref="navRef" :class="navClass">
     <li
       v-for="(item, index) in items"
-      :key="item.href || item.text"
+      :key="item.href || (item.to ? String(item.to) : undefined) || item.text || String(index)"
       class="nav-item"
       :class="{ dropdown: item.children && item.children.length > 0 }"
     >
@@ -124,7 +137,7 @@ defineExpose({ bsInstances: bsTabs, refresh: initTabs })
         <a
           class="nav-link dropdown-toggle"
           data-bs-toggle="dropdown"
-          href="#"
+          href="javascript:void(0)"
           role="button"
           aria-expanded="false"
           :class="{ active: item.active, disabled: item.disabled }"
@@ -132,7 +145,7 @@ defineExpose({ bsInstances: bsTabs, refresh: initTabs })
           {{ item.text }}
         </a>
         <ul class="dropdown-menu">
-          <li v-for="(child, childIndex) in item.children" :key="childIndex">
+          <li v-for="(child, childIndex) in item.children" :key="child.href || child.text || String(childIndex)">
             <template v-if="child.divider">
               <hr class="dropdown-divider">
             </template>

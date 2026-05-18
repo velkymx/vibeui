@@ -31,6 +31,12 @@ const modalRef = ref<HTMLElement | null>(null)
 const bsModal = ref<BootstrapModal | null>(null)
 const isVisible = ref(false)
 
+// Bug 1: in-flight guard to prevent concurrent async init races
+let initInFlight = false
+
+// Bug 4: track whether listeners are attached to prevent stacking
+let listenersAttached = false
+
 const dialogClass = computed(() => {
   const classes = ['modal-dialog']
   if (props.size) classes.push(`modal-${props.size}`)
@@ -44,12 +50,13 @@ const dialogClass = computed(() => {
   return classes.join(' ')
 })
 
+// Bug 3: isVisible is now set in onShown (not onShow) to align with modelValue emit
 const onShow = () => {
-  isVisible.value = true
   emit('show')
 }
 
 const onShown = () => {
+  isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
 }
@@ -64,15 +71,42 @@ const onHidden = () => {
   emit('update:modelValue', false)
 }
 
+// Bug 4: listener attach/detach helpers
+function attachListeners() {
+  if (listenersAttached || !modalRef.value) return
+  modalRef.value.addEventListener('show.bs.modal', onShow)
+  modalRef.value.addEventListener('shown.bs.modal', onShown)
+  modalRef.value.addEventListener('hide.bs.modal', onHide)
+  modalRef.value.addEventListener('hidden.bs.modal', onHidden)
+  listenersAttached = true
+}
+
+function detachListeners() {
+  if (!listenersAttached || !modalRef.value) return
+  modalRef.value.removeEventListener('show.bs.modal', onShow)
+  modalRef.value.removeEventListener('shown.bs.modal', onShown)
+  modalRef.value.removeEventListener('hide.bs.modal', onHide)
+  modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
+  listenersAttached = false
+}
+
+// Bug 1: async init with in-flight guard
+// Bug 4: detach old listeners before dispose, attach after new instance
 const initModal = async () => {
   if (!modalRef.value) return
 
-  // Cleanup existing instance
-  if (bsModal.value) {
-    bsModal.value.dispose()
-  }
+  // Bug 1: prevent concurrent init races
+  if (initInFlight) return
+  initInFlight = true
 
   try {
+    // Cleanup existing instance
+    if (bsModal.value) {
+      detachListeners()
+      bsModal.value.dispose()
+      bsModal.value = null
+    }
+
     const bootstrap = await import('bootstrap')
     const Modal = bootstrap.Modal
 
@@ -82,10 +116,7 @@ const initModal = async () => {
       focus: true
     }) as BootstrapModal
 
-    modalRef.value.addEventListener('show.bs.modal', onShow)
-    modalRef.value.addEventListener('shown.bs.modal', onShown)
-    modalRef.value.addEventListener('hide.bs.modal', onHide)
-    modalRef.value.addEventListener('hidden.bs.modal', onHidden)
+    attachListeners()
 
     if (props.modelValue) {
       bsModal.value.show()
@@ -96,26 +127,19 @@ const initModal = async () => {
       componentName: 'VibeModal',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
 onMounted(initModal)
 
+// Bug 2: just call dispose() directly — Bootstrap handles backdrop cleanup internally
+// Bug 4: detach listeners before dispose
 onBeforeUnmount(() => {
-  if (modalRef.value) {
-    modalRef.value.removeEventListener('show.bs.modal', onShow)
-    modalRef.value.removeEventListener('shown.bs.modal', onShown)
-    modalRef.value.removeEventListener('hide.bs.modal', onHide)
-    modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
-  }
-
-  if (bsModal.value) {
-    if (isVisible.value) {
-      bsModal.value.hide()
-    }
-    bsModal.value.dispose()
-    bsModal.value = null
-  }
+  detachListeners()
+  bsModal.value?.dispose()
+  bsModal.value = null
 })
 
 watch(() => props.modelValue, (newValue) => {
@@ -148,7 +172,6 @@ defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
       ref="modalRef"
       :id="id"
       class="modal fade"
-      :class="{ show: isVisible }"
       tabindex="-1"
       :aria-labelledby="`${id}-label`"
       :aria-hidden="!isVisible"

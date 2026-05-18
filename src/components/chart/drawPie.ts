@@ -62,7 +62,7 @@ export function hitTestPie(
   for (const [i, v] of values.entries()) {
     const slice = (v / total) * Math.PI * 2
     if (angle >= cumAngle && angle < cumAngle + slice) {
-      return { datasetIndex: 0, pointIndex: i, value: v, label: data.labels[i] }
+      return { datasetIndex: 0, pointIndex: i, value: v, label: data.labels?.[i] ?? '' }
     }
     cumAngle += slice
   }

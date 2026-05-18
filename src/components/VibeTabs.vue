@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, reactive, ref, watch, type PropType } from 'vue'
+import { computed, nextTick, provide, reactive, ref, watch, type PropType } from 'vue'
 
 type TabsVariant = 'tabs' | 'pills' | 'underline'
 
@@ -32,7 +32,10 @@ const activeName = computed(() => internalActive.value)
 watch(
   () => props.modelValue,
   (val) => {
-    if (val !== undefined && val !== internalActive.value) {
+    if (val === undefined) {
+      // Explicit deselection from parent — clear internalActive
+      internalActive.value = undefined
+    } else if (val !== internalActive.value) {
       internalActive.value = val
       visited.add(val)
     }
@@ -67,14 +70,15 @@ provide('vibeTabsContext', {
     if (internalActive.value === undefined && !disabled) {
       internalActive.value = name
       visited.add(name)
-      emit('update:modelValue', name)
+      // Wrap in nextTick to avoid emitting during child onMounted (mid-parent-render-cycle)
+      nextTick(() => emit('update:modelValue', name))
     }
   },
   unregister: (name: string) => {
-    const idx = registry.findIndex(t => t.name === name)
-    if (idx < 0) return
     const wasActive = internalActive.value === name
-    registry.splice(idx, 1)
+    // Filter by reference instead of splice-by-index to be safe for concurrent unmounts
+    const newRegistry = registry.filter(r => r.name !== name)
+    registry.splice(0, registry.length, ...newRegistry)
     if (wasActive) {
       const next = registry.find(t => !t.disabled)
       const nextName = next?.name

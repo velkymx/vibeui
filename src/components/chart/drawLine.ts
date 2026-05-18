@@ -27,8 +27,9 @@ export function drawLine(
   const chartH = h - pad.top - pad.bottom
 
   const allValues = data.datasets.flatMap((ds) => ds.data)
-  const minVal = allValues.reduce((acc, v) => Math.min(acc, v), 0)
-  const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), 0)
+  if (allValues.length === 0) return
+  const minVal = allValues.reduce((acc, v) => Math.min(acc, v), allValues[0])
+  const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), allValues[0])
   const range = maxVal - minVal || 1
   const n = data.labels.length
   const xStep = chartW / Math.max(n - 1, 1)
@@ -139,6 +140,7 @@ export function hitTestLine(
   const chartH = h - pad.top - pad.bottom
 
   const allValues = data.datasets.flatMap((ds) => ds.data)
+  if (allValues.length === 0) return null
   const minVal = allValues.reduce((acc, v) => Math.min(acc, v), 0)
   const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), 0)
   const range = maxVal - minVal || 1
@@ -151,7 +153,7 @@ export function hitTestLine(
   for (const [di, ds] of data.datasets.entries()) {
     for (const [pi, v] of ds.data.entries()) {
       if (Math.hypot(x - toX(pi), y - toY(v)) <= HIT_THRESHOLD) {
-        return { datasetIndex: di, pointIndex: pi, value: v, label: data.labels[pi] }
+        return { datasetIndex: di, pointIndex: pi, value: v, label: data.labels?.[pi] ?? '' }
       }
     }
   }

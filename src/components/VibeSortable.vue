@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T">
-import { ref, type PropType } from 'vue'
+import { ref, onMounted, onBeforeUnmount, type PropType } from 'vue'
 
 const props = defineProps({
   modelValue: { type: Array as PropType<T[]>, required: true },
@@ -48,6 +48,10 @@ const onDrop = (event: DragEvent, targetIndex: number) => {
 const onDragEnd = () => {
   draggingIndex.value = null
 }
+
+const clearDrag = () => { draggingIndex.value = null }
+onMounted(() => document.addEventListener('dragend', clearDrag))
+onBeforeUnmount(() => document.removeEventListener('dragend', clearDrag))
 </script>
 
 <template>

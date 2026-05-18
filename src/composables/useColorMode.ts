@@ -45,8 +45,6 @@ try {
   const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
   if (raw !== null && raw in NEXT_MODE) _initial = raw as ColorMode
 } catch { /* ignore SSR / private browsing */ }
-applyAndUpdate(_initial)
-initialized = true
 
 const onSystemThemeChange = () => {
   if (colorMode.value === 'auto') {
@@ -68,7 +66,12 @@ function detachSystemListener() {
   systemThemeMq = null
 }
 
-attachSystemListener()
+// Bug 1 fix: gate module-level side effects behind window check for SSR safety
+if (typeof window !== 'undefined') {
+  applyAndUpdate(_initial)
+  attachSystemListener()
+  initialized = true
+}
 
 export function useColorMode() {
   function setColorMode(mode: ColorMode) {
@@ -83,9 +86,10 @@ export function useColorMode() {
 
   function initColorMode() {
     if (initialized) return
+    // Bug 1 fix: initColorMode is the real init path when window was unavailable at module load (SSR)
     let stored: ColorMode = 'auto'
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
       if (raw !== null && raw in NEXT_MODE) {
         stored = raw as ColorMode
       }
@@ -93,10 +97,13 @@ export function useColorMode() {
       // ignore
     }
     applyAndUpdate(stored)
+    attachSystemListener()
     initialized = true
   }
 
   function clearColorMode() {
+    // Bug 3 fix: detach system listener before resetting state
+    detachSystemListener()
     try {
       localStorage.removeItem(STORAGE_KEY)
     } catch {
@@ -113,9 +120,15 @@ export function useColorMode() {
   /**
    * Register a callback to be called whenever the color mode changes.
    * Useful for syncing native UI elements (like status bar) in hybrid apps.
+   * Returns an off-function to remove the callback and prevent memory leaks.
    */
-  function onColorModeChange(callback: (mode: ColorMode) => void) {
+  function onColorModeChange(callback: (mode: ColorMode) => void): () => void {
+    // Bug 2 fix: return a removal function to prevent memory leaks
     callbacks.push(callback)
+    return () => {
+      const idx = callbacks.indexOf(callback)
+      if (idx !== -1) callbacks.splice(idx, 1)
+    }
   }
 
   return {

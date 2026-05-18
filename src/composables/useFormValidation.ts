@@ -99,26 +99,28 @@ export const validators = {
   }),
 
   email: (message = 'Please enter a valid email address'): ValidationRule => ({
-    validator: (value: string) => {
+    validator: (value: unknown) => {
       if (!value) return true
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      return emailRegex.test(value) || message
+      return emailRegex.test(String(value)) || message
     },
     message
   }),
 
   minLength: (min: number, message?: string): ValidationRule => ({
-    validator: (value: string) => {
+    validator: (value: unknown) => {
       if (!value) return true
-      return value.length >= min || message || `Minimum length is ${min} characters`
+      const str = String(value)
+      return str.length >= min || message || `Minimum length is ${min} characters`
     },
     message
   }),
 
   maxLength: (max: number, message?: string): ValidationRule => ({
-    validator: (value: string) => {
+    validator: (value: unknown) => {
       if (!value) return true
-      return value.length <= max || message || `Maximum length is ${max} characters`
+      const str = String(value)
+      return str.length <= max || message || `Maximum length is ${max} characters`
     },
     message
   }),
@@ -146,18 +148,18 @@ export const validators = {
   }),
 
   pattern: (regex: RegExp, message = 'Invalid format'): ValidationRule => ({
-    validator: (value: string) => {
+    validator: (value: unknown) => {
       if (!value) return true
-      return regex.test(value) || message
+      return regex.test(String(value)) || message
     },
     message
   }),
 
   url: (message = 'Please enter a valid URL'): ValidationRule => ({
-    validator: (value: string) => {
+    validator: (value: unknown) => {
       if (!value) return true
       try {
-        new URL(value)
+        new URL(String(value))
         return true
       } catch {
         return message

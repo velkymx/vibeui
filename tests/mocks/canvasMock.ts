@@ -18,6 +18,7 @@ export function createMockCtx() {
     save: vi.fn(),
     restore: vi.fn(),
     scale: vi.fn(),
+    setTransform: vi.fn(),
     setLineDash: vi.fn(),
     strokeStyle: '' as string,
     fillStyle: '' as string,

@@ -37,8 +37,8 @@ const readActiveDrag = (): { payload: unknown; group: string } | null => getActi
 const onDragEnter = (event: DragEvent) => {
   if (props.disabled) return
   const active = readActiveDrag()
-  const incomingGroup = active?.group ?? props.group
-  if (!groupAccepted(incomingGroup)) return
+  if (!active) return  // not from a VibeDraggable — ignore external/OS drags
+  if (!groupAccepted(active.group)) return
   dragCounter += 1
   isOver.value = true
   emit('dragenter', event)
@@ -67,10 +67,10 @@ const onDrop = (event: DragEvent) => {
   dragCounter = 0
 
   const active = readActiveDrag()
-  const incomingGroup = active?.group ?? props.group
-  if (!groupAccepted(incomingGroup)) return
+  if (!active) return  // not from a VibeDraggable — ignore external/OS drags
+  if (!groupAccepted(active.group)) return
 
-  emit('drop', { payload: active?.payload, group: incomingGroup, event })
+  emit('drop', { payload: active.payload, group: active.group, event })
 }
 </script>
 

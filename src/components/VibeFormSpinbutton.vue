@@ -84,22 +84,38 @@ const canIncrement = computed(() => {
   return props.modelValue < props.max
 })
 
+const clampValue = (value: number): number => {
+  let clamped = value
+  if (props.min !== undefined && clamped < props.min) clamped = props.min
+  if (props.max !== undefined && clamped > props.max) clamped = props.max
+  return clamped
+}
+
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  let newValue = target.value === '' ? 0 : Number(target.value)
-  if (props.min !== undefined && newValue < props.min) newValue = props.min
-  if (props.max !== undefined && newValue > props.max) newValue = props.max
-  emit('update:modelValue', newValue)
+  const raw = target.value === '' ? 0 : Number(target.value)
+  // Emit raw value without clamping so multi-digit typing isn't interrupted
+  emit('update:modelValue', raw)
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
+  // Clamp on change (e.g. spinner arrows in native input)
+  const target = event.target as HTMLInputElement
+  const raw = target.value === '' ? 0 : Number(target.value)
+  const clamped = clampValue(raw)
+  if (clamped !== raw) emit('update:modelValue', clamped)
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
 
 const handleBlur = (event: FocusEvent) => {
+  // Clamp and commit the value when the user leaves the field
+  const target = event.target as HTMLInputElement
+  const raw = target.value === '' ? 0 : Number(target.value)
+  const clamped = clampValue(raw)
+  if (clamped !== raw) emit('update:modelValue', clamped)
   emit('blur', event)
   if (props.validateOn === 'blur') emit('validate')
 }

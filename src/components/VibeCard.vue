@@ -46,7 +46,7 @@ const cardClass = computed(() => {
     </div>
 
     <!-- Body -->
-    <div v-if="title || body || $slots.title || $slots.body || $slots.default?.({})?.length" class="card-body">
+    <div v-if="title || body || $slots.title || $slots.body || !!$slots.default" class="card-body">
       <h5 v-if="title || $slots.title" class="card-title">
         <slot name="title">{{ title }}</slot>
       </h5>

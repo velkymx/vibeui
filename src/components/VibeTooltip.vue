@@ -16,6 +16,11 @@ const props = defineProps({
 
 const emit = defineEmits(['component-error'])
 
+// Deprecation warning for content prop
+if (props.content !== undefined && props.text === undefined) {
+  console.warn('[VibeTooltip] The `content` prop is deprecated and may be removed in a future version. Use `text` instead.')
+}
+
 const tooltipRef = ref<HTMLElement | null>(null)
 const bsTooltip = ref<BootstrapTooltip | null>(null)
 
@@ -85,7 +90,7 @@ defineExpose({ bsInstance: bsTooltip })
     data-bs-toggle="tooltip"
     :data-bs-placement="placement"
     :data-bs-title="text || content"
-    :data-bs-trigger="trigger"
+    :data-bs-trigger="computedTrigger"
   >
     <slot />
   </span>

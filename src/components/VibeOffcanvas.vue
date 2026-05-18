@@ -26,14 +26,21 @@ const offcanvasRef = ref<HTMLElement | null>(null)
 const bsOffcanvas = ref<BootstrapOffcanvas | null>(null)
 const isVisible = ref(false)
 
+// Bug 1: in-flight guard to prevent concurrent async init races
+let initInFlight = false
+
+// Bug 4: track whether listeners are attached to prevent stacking
+let listenersAttached = false
+
 const offcanvasClass = computed(() => `offcanvas offcanvas-${props.placement}`)
 
+// Bug 3: isVisible is now set in onShown (not onShow) to align with modelValue emit
 const onShow = () => {
-  isVisible.value = true
   emit('show')
 }
 
 const onShown = () => {
+  isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
 }
@@ -48,14 +55,41 @@ const onHidden = () => {
   emit('update:modelValue', false)
 }
 
+// Bug 4: listener attach/detach helpers
+function attachListeners() {
+  if (listenersAttached || !offcanvasRef.value) return
+  offcanvasRef.value.addEventListener('show.bs.offcanvas', onShow)
+  offcanvasRef.value.addEventListener('shown.bs.offcanvas', onShown)
+  offcanvasRef.value.addEventListener('hide.bs.offcanvas', onHide)
+  offcanvasRef.value.addEventListener('hidden.bs.offcanvas', onHidden)
+  listenersAttached = true
+}
+
+function detachListeners() {
+  if (!listenersAttached || !offcanvasRef.value) return
+  offcanvasRef.value.removeEventListener('show.bs.offcanvas', onShow)
+  offcanvasRef.value.removeEventListener('shown.bs.offcanvas', onShown)
+  offcanvasRef.value.removeEventListener('hide.bs.offcanvas', onHide)
+  offcanvasRef.value.removeEventListener('hidden.bs.offcanvas', onHidden)
+  listenersAttached = false
+}
+
+// Bug 1: async init with in-flight guard
+// Bug 4: detach old listeners before dispose, attach after new instance
 const initOffcanvas = async () => {
   if (!offcanvasRef.value) return
 
-  if (bsOffcanvas.value) {
-    bsOffcanvas.value.dispose()
-  }
+  // Bug 1: prevent concurrent init races
+  if (initInFlight) return
+  initInFlight = true
 
   try {
+    if (bsOffcanvas.value) {
+      detachListeners()
+      bsOffcanvas.value.dispose()
+      bsOffcanvas.value = null
+    }
+
     const bootstrap = await import('bootstrap')
     const Offcanvas = bootstrap.Offcanvas
 
@@ -65,10 +99,7 @@ const initOffcanvas = async () => {
       keyboard: props.backdrop !== 'static'
     }) as BootstrapOffcanvas
 
-    offcanvasRef.value.addEventListener('show.bs.offcanvas', onShow)
-    offcanvasRef.value.addEventListener('shown.bs.offcanvas', onShown)
-    offcanvasRef.value.addEventListener('hide.bs.offcanvas', onHide)
-    offcanvasRef.value.addEventListener('hidden.bs.offcanvas', onHidden)
+    attachListeners()
 
     if (props.modelValue) {
       bsOffcanvas.value.show()
@@ -79,26 +110,19 @@ const initOffcanvas = async () => {
       componentName: 'VibeOffcanvas',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
 onMounted(initOffcanvas)
 
+// Bug 2: just call dispose() directly — Bootstrap handles cleanup internally
+// Bug 4: detach listeners before dispose
 onBeforeUnmount(() => {
-  if (offcanvasRef.value) {
-    offcanvasRef.value.removeEventListener('show.bs.offcanvas', onShow)
-    offcanvasRef.value.removeEventListener('shown.bs.offcanvas', onShown)
-    offcanvasRef.value.removeEventListener('hide.bs.offcanvas', onHide)
-    offcanvasRef.value.removeEventListener('hidden.bs.offcanvas', onHidden)
-  }
-
-  if (bsOffcanvas.value) {
-    if (isVisible.value) {
-      bsOffcanvas.value.hide()
-    }
-    bsOffcanvas.value.dispose()
-    bsOffcanvas.value = null
-  }
+  detachListeners()
+  bsOffcanvas.value?.dispose()
+  bsOffcanvas.value = null
 })
 
 watch(() => props.modelValue, (newValue) => {

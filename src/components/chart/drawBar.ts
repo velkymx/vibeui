@@ -15,9 +15,9 @@ function getMaxVal(data: ChartData, stacked: boolean): number {
     const colSums = data.labels.map((_, i) =>
       data.datasets.reduce((s, ds) => s + (ds.data[i] ?? 0), 0)
     )
-    return Math.max(...colSums, 1)
+    return colSums.reduce((a, b) => Math.max(a, b), 1)
   }
-  return Math.max(...data.datasets.flatMap((ds) => ds.data), 1)
+  return data.datasets.flatMap((ds) => ds.data).reduce((a, b) => Math.max(a, b), 1)
 }
 
 export function drawBar(
@@ -144,7 +144,7 @@ export function hitTestBar(
       const bh = (v / maxVal) * chartH
       const barTop = yOffset - bh
       if (y >= barTop && y <= yOffset) {
-        return { datasetIndex: di, pointIndex: groupI, value: v, label: data.labels[groupI] }
+        return { datasetIndex: di, pointIndex: groupI, value: v, label: data.labels?.[groupI] ?? '' }
       }
       yOffset -= bh
     }
@@ -158,7 +158,7 @@ export function hitTestBar(
     const bh = (v / maxVal) * chartH
     const barTop = pad.top + chartH - bh
     if (y >= barTop && y <= pad.top + chartH) {
-      return { datasetIndex: di, pointIndex: groupI, value: v, label: data.labels[groupI] }
+      return { datasetIndex: di, pointIndex: groupI, value: v, label: data.labels?.[groupI] ?? '' }
     }
   }
   return null

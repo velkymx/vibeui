@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, onActivated } from 'vue'
+import { ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated } from 'vue'
 import type { Tag } from '../types'
 
 interface BootstrapScrollSpy {
@@ -27,12 +27,15 @@ const onActivate = (event: any) => {
   emit('activate', event)
 }
 
-onMounted(async () => {
+const initScrollspy = async () => {
   if (!scrollspyRef.value) return
 
   try {
     const bootstrap = await import('bootstrap')
     const ScrollSpy = bootstrap.ScrollSpy
+
+    // Guard: component may have unmounted while awaiting the import
+    if (!scrollspyRef.value) return
 
     if (props.offset !== undefined) {
       console.warn('[VibeScrollspy] The `offset` prop is deprecated (Bootstrap 5.2+). Use `rootMargin` instead.')
@@ -53,6 +56,19 @@ onMounted(async () => {
       originalError: error
     })
   }
+}
+
+onMounted(initScrollspy)
+
+// Re-init when configuration props change after mount
+watch([() => props.target, () => props.rootMargin, () => props.method], async () => {
+  if (scrollspyRef.value) {
+    scrollspyRef.value.removeEventListener('activate.bs.scrollspy', onActivate)
+  }
+  bsScrollspy.value?.dispose()
+  bsScrollspy.value = null
+  await nextTick()
+  await initScrollspy()
 })
 
 onBeforeUnmount(() => {
@@ -66,9 +82,7 @@ onBeforeUnmount(() => {
   }
 })
 
-const refresh = () => {
-  bsScrollspy.value?.refresh()
-}
+const refresh = () => bsScrollspy.value?.refresh()
 
 // Refresh when reactivated inside KeepAlive so positions are recalculated
 onActivated(refresh)

@@ -39,10 +39,17 @@ const removeListener = () => {
 }
 
 export const setActiveDrag = (payload: unknown, group: string): void => {
+  if (typeof window === 'undefined') return
   state.payload = payload
   state.group = group
   state.active = true
   installListener()
+}
+
+export const resetDndStoreForSSR = (): void => {
+  state.active = false
+  state.payload = undefined
+  state.group = ''
 }
 
 export const clearActiveDrag = (): void => {

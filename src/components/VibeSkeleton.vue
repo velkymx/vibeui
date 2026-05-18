@@ -36,7 +36,7 @@ const circleHeight = computed(() => {
 })
 
 const sharedAttrs = {
-  'aria-busy': true,
+  'aria-busy': 'true',
   role: 'status'
 } as const
 </script>

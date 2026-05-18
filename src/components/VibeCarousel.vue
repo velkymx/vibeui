@@ -51,15 +51,29 @@ const onSlid = (event: any) => {
   emit('slid', event)
 }
 
+let initInFlight = false
+let attachedEl: HTMLElement | null = null
+
 const initCarousel = async () => {
   if (!carouselRef.value) return
-
-  // Dispose existing instance before re-initializing
-  if (bsCarousel.value) {
-    bsCarousel.value.dispose()
-  }
+  // In-flight guard: prevent concurrent initCarousel calls
+  if (initInFlight) return
+  initInFlight = true
 
   try {
+    // Detach listeners from previously attached element before disposing
+    if (attachedEl) {
+      attachedEl.removeEventListener('slide.bs.carousel', onSlide)
+      attachedEl.removeEventListener('slid.bs.carousel', onSlid)
+      attachedEl = null
+    }
+
+    // Dispose existing instance before re-initializing
+    if (bsCarousel.value) {
+      bsCarousel.value.dispose()
+      bsCarousel.value = null
+    }
+
     const bootstrap = await import('bootstrap')
     const Carousel = bootstrap.Carousel
 
@@ -72,8 +86,10 @@ const initCarousel = async () => {
       touch: props.touch
     }) as BootstrapCarousel
 
-    carouselRef.value.addEventListener('slide.bs.carousel', onSlide)
-    carouselRef.value.addEventListener('slid.bs.carousel', onSlid)
+    // Attach listeners and record element ref
+    attachedEl = carouselRef.value
+    attachedEl.addEventListener('slide.bs.carousel', onSlide)
+    attachedEl.addEventListener('slid.bs.carousel', onSlid)
 
     if (props.modelValue !== 0) {
       bsCarousel.value.to(props.modelValue)
@@ -84,15 +100,18 @@ const initCarousel = async () => {
       componentName: 'VibeCarousel',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
 onMounted(initCarousel)
 
 onBeforeUnmount(() => {
-  if (carouselRef.value) {
-    carouselRef.value.removeEventListener('slide.bs.carousel', onSlide)
-    carouselRef.value.removeEventListener('slid.bs.carousel', onSlid)
+  if (attachedEl) {
+    attachedEl.removeEventListener('slide.bs.carousel', onSlide)
+    attachedEl.removeEventListener('slid.bs.carousel', onSlid)
+    attachedEl = null
   }
 
   if (bsCarousel.value) {
@@ -107,11 +126,11 @@ watch(() => props.modelValue, (newIndex) => {
   }
 })
 
-// Re-initialize if items change
+// Re-initialize only when items array reference changes (not on deep property mutations)
 watch(() => props.items, async () => {
   await nextTick()
   await initCarousel()
-}, { deep: true })
+}, { deep: false })
 
 const getImageAlt = (item: CarouselItem, index: number): string => {
   if (item.alt) return item.alt

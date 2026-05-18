@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type PropType } from 'vue'
+import { computed, ref, onBeforeUnmount, type PropType } from 'vue'
 
 export interface StepperStep {
   label: string
@@ -35,6 +35,9 @@ const stepperClass = computed(() => {
 })
 
 const transitioning = ref(false)
+
+let isUnmounted = false
+onBeforeUnmount(() => { isUnmounted = true })
 
 const isLast = computed(() => props.modelValue >= props.steps.length - 1)
 const isFirst = computed(() => props.modelValue <= 0)
@@ -73,6 +76,7 @@ const goNext = async () => {
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforeNext, 'next')
+    if (isUnmounted) return
     if (!allowed) return
     if (isLast.value) {
       emit('finish')
@@ -80,7 +84,7 @@ const goNext = async () => {
       emit('update:modelValue', props.modelValue + 1)
     }
   } finally {
-    transitioning.value = false
+    if (!isUnmounted) transitioning.value = false
   }
 }
 
@@ -90,10 +94,11 @@ const goPrev = async () => {
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforePrev, 'prev')
+    if (isUnmounted) return
     if (!allowed) return
-    emit('update:modelValue', props.modelValue - 1)
+    emit('update:modelValue', Math.max(0, props.modelValue - 1))
   } finally {
-    transitioning.value = false
+    if (!isUnmounted) transitioning.value = false
   }
 }
 
@@ -108,10 +113,11 @@ const jumpTo = async (idx: number) => {
     const direction: 'next' | 'prev' = idx > props.modelValue ? 'next' : 'prev'
     const guard = direction === 'next' ? props.beforeNext : props.beforePrev
     const allowed = await runGuard(guard, direction)
+    if (isUnmounted) return
     if (!allowed) return
     emit('update:modelValue', idx)
   } finally {
-    transitioning.value = false
+    if (!isUnmounted) transitioning.value = false
   }
 }
 
@@ -131,6 +137,8 @@ const activeStep = computed(() => {
         :tabindex="canJumpTo(idx) || idx === modelValue ? 0 : -1"
         :aria-disabled="(canJumpTo(idx) || idx === modelValue) ? undefined : 'true'"
         @click="jumpTo(idx)"
+        @keydown.enter.prevent="jumpTo(idx)"
+        @keydown.space.prevent="jumpTo(idx)"
       >
         <span class="vibe-stepper-marker">
           <slot name="marker" :index="idx" :step="step" :active="idx === modelValue">

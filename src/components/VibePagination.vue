@@ -25,7 +25,7 @@ const paginationClass = computed(() => {
 const visibleItems = computed((): (number | null)[] => {
   const total = props.totalPages
   if (total === 0) return []
-  const max = props.maxVisiblePages
+  const max = Math.max(5, props.maxVisiblePages)
 
   if (total <= max) {
     return Array.from({ length: total }, (_, i) => i + 1)

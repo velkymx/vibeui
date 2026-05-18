@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Variant, Size, Direction, DropdownItem } from '../types'
 import { useId } from '../composables/useId'
 
@@ -27,6 +27,8 @@ const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'comp
 
 const dropdownRef = ref<HTMLElement | null>(null)
 const bsDropdown = ref<BootstrapDropdown | null>(null)
+let toggleEl: HTMLElement | null = null
+let reinitGuard = false
 
 const dropdownClass = computed(() => {
   if (props.direction === 'up') return 'dropup'
@@ -59,14 +61,17 @@ const onShown = () => emit('shown')
 const onHide = () => emit('hide')
 const onHidden = () => emit('hidden')
 
-onMounted(async () => {
+const initDropdown = async () => {
   if (!dropdownRef.value) return
 
   try {
     const bootstrap = await import('bootstrap')
     const Dropdown = bootstrap.Dropdown
-    
-    const toggleEl = dropdownRef.value.querySelector('.dropdown-toggle') as HTMLElement
+
+    // Guard: component may have unmounted while awaiting the import
+    if (!dropdownRef.value) return
+
+    toggleEl = dropdownRef.value.querySelector('.dropdown-toggle') as HTMLElement | null
     if (toggleEl) {
       bsDropdown.value = new Dropdown(toggleEl, {
         autoClose: props.autoClose
@@ -84,21 +89,34 @@ onMounted(async () => {
       originalError: error
     })
   }
-})
+}
 
-onBeforeUnmount(() => {
-  const toggleEl = dropdownRef.value?.querySelector('.dropdown-toggle') as HTMLElement
+const destroyDropdown = () => {
   if (toggleEl) {
     toggleEl.removeEventListener('show.bs.dropdown', onShow)
     toggleEl.removeEventListener('shown.bs.dropdown', onShown)
     toggleEl.removeEventListener('hide.bs.dropdown', onHide)
     toggleEl.removeEventListener('hidden.bs.dropdown', onHidden)
+    toggleEl = null
   }
 
   if (bsDropdown.value) {
     bsDropdown.value.dispose()
     bsDropdown.value = null
   }
+}
+
+onMounted(initDropdown)
+
+onBeforeUnmount(destroyDropdown)
+
+// Re-init when autoClose changes so the Bootstrap instance reflects the new config
+watch(() => props.autoClose, async () => {
+  if (reinitGuard) return
+  reinitGuard = true
+  destroyDropdown()
+  await initDropdown()
+  reinitGuard = false
 })
 
 const handleItemClick = (item: DropdownItem, index: number, event: Event) => {

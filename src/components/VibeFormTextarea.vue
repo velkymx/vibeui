@@ -40,6 +40,8 @@ const formGroup = inject<{
 const _groupId = formGroup?.consumeId()
 const _generatedId = useId('textarea')
 const computedId = computed(() => props.id || _groupId || _generatedId)
+const helpId = computed(() => `${computedId.value}-help`)
+const feedbackId = computed(() => `${computedId.value}-feedback`)
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => (!!props.helpText || props.showCharCount) && !formGroup?.hasHelp.value)
@@ -99,13 +101,13 @@ const handleFocus = (event: FocusEvent) => {
       :readonly="readonly"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="validationMessage || helpText || showCharCount ? `${computedId}-feedback` : undefined"
+      :aria-describedby="(helpText || showCharCount) && validationMessage ? `${helpId} ${feedbackId}` : (helpText || showCharCount) ? helpId : validationMessage ? feedbackId : undefined"
       @input="handleInput"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
     ></textarea>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text d-flex justify-content-between">
+    <div v-if="shouldRenderHelp" :id="helpId" class="form-text d-flex justify-content-between">
       <span>{{ helpText }}</span>
       <span v-if="showCharCount" class="ms-auto">
         <template v-if="maxlength">{{ currentCount }} / {{ maxlength }}</template>
@@ -116,7 +118,7 @@ const handleFocus = (event: FocusEvent) => {
       <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide a valid value.' }}
       </div>
     </template>

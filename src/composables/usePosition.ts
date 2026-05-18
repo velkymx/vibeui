@@ -106,11 +106,12 @@ export function usePosition(
     }
   }
 
-  const restoreStyle = () => {
-    if (savedFor && savedStyle) {
-      savedFor.style.position = savedStyle.position
-      savedFor.style.left = savedStyle.left
-      savedFor.style.top = savedStyle.top
+  const restoreStyle = (el?: HTMLElement) => {
+    const target = el ?? savedFor
+    if (target && savedStyle && savedFor === target) {
+      target.style.position = savedStyle.position
+      target.style.left = savedStyle.left
+      target.style.top = savedStyle.top
     }
     savedStyle = null
     savedFor = null
@@ -153,6 +154,10 @@ export function usePosition(
       const a = anchor.value
       const opts = readOptions()
       if (!t || !a) return
+      // Restore styles on the previously tracked element before switching to a new one
+      if (savedFor !== null && savedFor !== t) {
+        restoreStyle(savedFor)
+      }
       let localCleanup: (() => void) | null = null
       if (opts.autoUpdate !== false) {
         localCleanup = autoUpdate(a, t, () => {

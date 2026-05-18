@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, type PropType } from 'vue'
+import { computed, onMounted, ref, watch, type PropType } from 'vue'
 
 type SliderValue = number | [number, number]
 
@@ -20,6 +20,23 @@ const emit = defineEmits<{
 
 const trackRef = ref<HTMLElement | null>(null)
 const activeHandle = ref<0 | 1 | null>(null)
+const isDragging = computed(() => activeHandle.value !== null)
+
+// Internal drag position — updated immediately on every pointer event so we
+// never read the (potentially stale) prop during an in-flight drag.
+const internalValue = ref<SliderValue>(
+  Array.isArray(props.modelValue) ? [...props.modelValue] as [number, number] : props.modelValue
+)
+
+// Keep internalValue in sync when the prop is changed externally (not during drag).
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (!isDragging.value) {
+      internalValue.value = Array.isArray(val) ? [...val] as [number, number] : val
+    }
+  }
+)
 
 onMounted(() => {
   const expectArray = props.range
@@ -50,13 +67,13 @@ const stepSnap = (v: number) => {
 }
 
 const lowValue = computed(() => {
-  if (Array.isArray(props.modelValue)) return clamp(props.modelValue[0])
-  return clamp(props.modelValue)
+  if (Array.isArray(internalValue.value)) return clamp(internalValue.value[0])
+  return clamp(internalValue.value as number)
 })
 
 const highValue = computed(() => {
-  if (Array.isArray(props.modelValue)) return clamp(props.modelValue[1])
-  return clamp(props.modelValue)
+  if (Array.isArray(internalValue.value)) return clamp(internalValue.value[1])
+  return clamp(internalValue.value as number)
 })
 
 const safePercent = (value: number): number => {
@@ -95,8 +112,8 @@ const highHandleStyle = computed(() => (props.vertical
   : { left: `${highPercent.value}%` }))
 
 const emitValue = (handleIdx: 0 | 1, next: number) => {
-  if (props.range && Array.isArray(props.modelValue)) {
-    const [lo, hi] = props.modelValue
+  if (props.range && Array.isArray(internalValue.value)) {
+    const [lo, hi] = internalValue.value as [number, number]
     const snapped = stepSnap(next)
     let newLo: number
     let newHi: number
@@ -126,12 +143,17 @@ const emitValue = (handleIdx: 0 | 1, next: number) => {
       activeHandle.value = newActive
     }
     const out: [number, number] = [newLo, newHi]
+    // Update internalValue immediately so subsequent pointer events during the
+    // same drag frame see the latest position rather than the stale prop.
+    internalValue.value = out
     emit('update:modelValue', out)
     emit('change', out)
     return
   }
   const snapped = stepSnap(next)
   if (snapped === lowValue.value) return
+  // Update internalValue immediately (same reason as above).
+  internalValue.value = snapped
   emit('update:modelValue', snapped)
   emit('change', snapped)
 }
@@ -191,6 +213,10 @@ const handleKeydown = (handleIdx: 0 | 1, event: KeyboardEvent) => {
 
 const handlePointerDown = (handleIdx: 0 | 1, event: PointerEvent) => {
   if (props.disabled || !trackRef.value) return
+  // Snapshot current prop value so internalValue is fresh at drag-start.
+  internalValue.value = Array.isArray(props.modelValue)
+    ? [...props.modelValue] as [number, number]
+    : props.modelValue
   activeHandle.value = handleIdx
   ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
 }
@@ -209,6 +235,11 @@ const handlePointerUp = (event: PointerEvent) => {
   if (activeHandle.value === null) return
   ;(event.target as HTMLElement).releasePointerCapture?.(event.pointerId)
   activeHandle.value = null
+  // After drag ends, re-sync from prop so any parent-applied corrections
+  // (e.g. clamping, rounding) are reflected in internalValue.
+  internalValue.value = Array.isArray(props.modelValue)
+    ? [...props.modelValue] as [number, number]
+    : props.modelValue
 }
 </script>
 

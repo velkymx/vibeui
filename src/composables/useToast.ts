@@ -33,8 +33,25 @@ const nextId = (): string => {
 }
 
 const push = (body: string, options: ToastShowOptions): ToastSpec => {
+  const id = options.id ?? nextId()
+  // Bug fix: deduplicate by id — update in place if a toast with the same id
+  // already exists, preventing a permanently undismissable duplicate.
+  const existingIdx = store.toasts.findIndex(t => t.id === id)
+  if (existingIdx !== -1) {
+    const updated: ToastSpec = {
+      id,
+      body,
+      title: options.title,
+      variant: options.variant,
+      placement: options.placement,
+      autohide: options.autohide,
+      delay: options.delay
+    }
+    Object.assign(store.toasts[existingIdx], updated)
+    return store.toasts[existingIdx]
+  }
   const spec: ToastSpec = {
-    id: options.id ?? nextId(),
+    id,
     body,
     title: options.title,
     variant: options.variant,

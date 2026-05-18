@@ -97,9 +97,9 @@ describe('VibeOffcanvas', () => {
     await new Promise(resolve => setTimeout(resolve, 0))
     const mockInstance = vi.mocked(bootstrap.Offcanvas).mock.results[0].value
 
-    // Simulating the event that sets isVisible internal state
+    // Simulating the event that sets isVisible internal state (now fired on 'shown', not 'show')
     const offcanvasEl = wrapper.find('.offcanvas').element
-    offcanvasEl.dispatchEvent(new Event('show.bs.offcanvas'))
+    offcanvasEl.dispatchEvent(new Event('shown.bs.offcanvas'))
 
     await wrapper.setProps({ modelValue: false })
     expect(mockInstance.hide).toHaveBeenCalled()

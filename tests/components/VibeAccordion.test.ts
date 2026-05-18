@@ -59,7 +59,7 @@ describe('VibeAccordion', () => {
     expect(mockInstance2.show).not.toHaveBeenCalled()
   })
 
-  it('disposes Collapse instance for removed items', async () => {
+  it('disposes all Collapse instances and reinits when items array changes', async () => {
     const items = [
       { id: 'item1', title: 'T1', content: 'C1', show: false },
       { id: 'item2', title: 'T2', content: 'C2', show: false }
@@ -72,10 +72,14 @@ describe('VibeAccordion', () => {
     const instance1 = vi.mocked(bootstrap.Collapse).mock.results[0].value
     const instance2 = vi.mocked(bootstrap.Collapse).mock.results[1].value
 
+    // Replace with a new array (one item removed) — all old instances disposed, remaining reinited fresh
     await wrapper.setProps({ items: [{ id: 'item2', title: 'T2', content: 'C2', show: false }] })
     await new Promise(resolve => setTimeout(resolve, 0))
 
+    // Both instances from the first init are disposed (dispose-all-reinit-all pattern)
     expect(instance1.dispose).toHaveBeenCalled()
-    expect(instance2.dispose).not.toHaveBeenCalled()
+    expect(instance2.dispose).toHaveBeenCalled()
+    // A new Collapse instance is created for item2 on reinit
+    expect(vi.mocked(bootstrap.Collapse)).toHaveBeenCalledTimes(3)
   })
 })

@@ -30,6 +30,7 @@ export function bindTooltip(
     if (!ctx) return
     const text = `${hit.label}: ${hit.value}`
     ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.font = '12px sans-serif'
     const tw = ctx.measureText(text).width + 12
     const th = 22

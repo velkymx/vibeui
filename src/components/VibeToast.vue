@@ -9,8 +9,10 @@ interface BootstrapToast {
   dispose: () => void
 }
 
+const _toastId = useId('toast')
+
 const props = defineProps({
-  id: { type: String, default: () => useId('toast') },
+  id: { type: String, default: undefined },
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
   variant: { type: String as () => Variant, default: undefined },
@@ -25,6 +27,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
 
+const computedId = computed(() => props.id ?? _toastId)
 const toastRef = ref<HTMLElement | null>(null)
 const bsToast = ref<BootstrapToast | null>(null)
 const isVisible = ref(false)
@@ -67,8 +70,19 @@ const onHidden = () => {
   emit('update:modelValue', false)
 }
 
+const detachToastListeners = () => {
+  const el = toastRef.value
+  if (!el) return
+  el.removeEventListener('show.bs.toast', onShow)
+  el.removeEventListener('shown.bs.toast', onShown)
+  el.removeEventListener('hide.bs.toast', onHide)
+  el.removeEventListener('hidden.bs.toast', onHidden)
+}
+
 const initToast = async () => {
   if (!toastRef.value) return
+
+  detachToastListeners()
 
   if (bsToast.value) {
     bsToast.value.dispose()
@@ -103,12 +117,7 @@ const initToast = async () => {
 onMounted(initToast)
 
 onBeforeUnmount(() => {
-  if (toastRef.value) {
-    toastRef.value.removeEventListener('show.bs.toast', onShow)
-    toastRef.value.removeEventListener('shown.bs.toast', onShown)
-    toastRef.value.removeEventListener('hide.bs.toast', onHide)
-    toastRef.value.removeEventListener('hidden.bs.toast', onHidden)
-  }
+  detachToastListeners()
 
   if (bsToast.value) {
     bsToast.value.dispose()
@@ -138,7 +147,7 @@ defineExpose({ show, hide, bsInstance: bsToast })
   <div
     v-if="noContainer"
     ref="toastRef"
-    :id="id"
+    :id="computedId"
     :class="toastClass"
     role="alert"
     aria-live="assertive"
@@ -165,7 +174,7 @@ defineExpose({ show, hide, bsInstance: bsToast })
     <div :class="containerClass" style="z-index: 1090">
       <div
         ref="toastRef"
-        :id="id"
+        :id="computedId"
         :class="toastClass"
         role="alert"
         aria-live="assertive"

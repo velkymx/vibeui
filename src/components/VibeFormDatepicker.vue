@@ -46,7 +46,11 @@ const formGroup = inject<{
   hasHelp: ComputedRef<boolean>
 } | null>('vibeFormGroup', null)
 
-const computedId = computed(() => props.id || formGroup?.consumeId() || useId('datepicker'))
+const _groupId = formGroup?.consumeId()
+const _generatedId = useId('datepicker')
+const computedId = computed(() => props.id || _groupId || _generatedId)
+const helpId = computed(() => `${computedId.value}-help`)
+const feedbackId = computed(() => `${computedId.value}-feedback`)
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
@@ -98,20 +102,20 @@ const handleFocus = (event: FocusEvent) => {
       :min="min"
       :max="max"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
+      :aria-describedby="helpText && validationMessage ? `${helpId} ${feedbackId}` : helpText ? helpId : validationMessage ? feedbackId : undefined"
       @input="handleInput"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
     />
-    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="helpId" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">
       <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide a valid date.' }}
       </div>
     </template>

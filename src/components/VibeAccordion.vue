@@ -103,34 +103,16 @@ onBeforeUnmount(() => {
   bsCollapses.forEach((_, id) => disposeItem(id))
 })
 
-// Watch for changes in items array length or individual items
-watch(() => props.items, async (newItems, oldItems) => {
-  // Dispose Collapse instances for removed items
-  const newIds = new Set(newItems.map(i => i.id))
-  oldItems?.forEach(oldItem => {
-    if (!newIds.has(oldItem.id)) {
-      disposeItem(oldItem.id)
-    }
-  })
-
-  // If items were added, initialize them
-  if (newItems.length > (oldItems?.length ?? 0)) {
-    await nextTick()
-    await initItems()
+// Watch for changes in items array reference — dispose all and reinit fresh
+watch(() => props.items, () => {
+  // Dispose all existing instances cleanly (fixes stale instances on same-ID swap)
+  for (const [id] of bsCollapses) {
+    disposeItem(id)
   }
-
-  // Handle programmatic show/hide changes
-  newItems.forEach(item => {
-    const bsCollapse = bsCollapses.get(item.id)
-    if (bsCollapse) {
-      if (item.show) {
-        bsCollapse.show()
-      } else if (!props.alwaysOpen) {
-        bsCollapse.hide()
-      }
-    }
-  })
-}, { deep: true })
+  bsCollapses.clear()
+  // Then init fresh so new items always get Bootstrap instances
+  nextTick(() => initItems())
+}, { deep: false })
 
 const handleItemClick = (item: AccordionItem, index: number) => {
   emit('item-click', { item, index })
@@ -163,7 +145,7 @@ defineExpose({ bsInstances: bsCollapses, refresh: initItems })
       </h2>
       <div
         :id="item.id"
-        :class="['accordion-collapse', 'collapse', { show: item.show }]"
+        :class="['accordion-collapse', 'collapse']"
         :data-bs-parent="alwaysOpen ? undefined : `#${id}`"
       >
         <div class="accordion-body">

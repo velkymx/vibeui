@@ -89,7 +89,7 @@ defineExpose({ bsInstance: bsPopover })
     :data-bs-placement="placement"
     :data-bs-title="title"
     :data-bs-content="text || content"
-    :data-bs-trigger="trigger"
+    :data-bs-trigger="computedTrigger"
   >
     <slot />
   </span>

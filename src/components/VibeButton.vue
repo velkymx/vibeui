@@ -18,7 +18,8 @@ const emit = defineEmits(['click', 'component-error'])
 
 const tag = computed(() => {
   if (props.href) return 'a'
-  if (props.to) return 'router-link'
+  // When disabled, render a span instead of router-link to block internal navigation
+  if (props.to) return props.disabled ? 'span' : 'router-link'
   return 'button'
 })
 
@@ -36,6 +37,8 @@ const buttonClass = computed(() => {
   if (props.size) classes.push(`btn-${props.size}`)
   if (props.active) classes.push('active')
   if (props.focusRing) classes.push('focus-ring')
+  // Bootstrap uses the 'disabled' CSS class for non-button elements
+  if (props.disabled && tag.value !== 'button') classes.push('disabled')
 
   return classes.join(' ')
 })
@@ -55,9 +58,9 @@ const handleClick = (event: Event) => {
     :class="buttonClass"
     :type="href || to ? undefined : type"
     :href="href"
-    :to="to"
-    :disabled="disabled"
-    :aria-disabled="disabled"
+    :to="to || undefined"
+    :disabled="tag === 'button' ? disabled : undefined"
+    :aria-disabled="disabled || undefined"
     @click="handleClick"
   >
     <slot />

@@ -23,6 +23,8 @@ const alertRef = ref<HTMLElement | null>(null)
 const bsAlert = ref<BootstrapAlert | null>(null)
 const isVisible = ref(props.modelValue)
 
+let alertListenersAttached = false
+
 const onClose = () => {
   emit('close')
 }
@@ -34,13 +36,27 @@ const onClosed = () => {
   emit('closed')
 }
 
+const attachAlertListeners = () => {
+  if (alertListenersAttached || !alertRef.value) return
+  alertRef.value.addEventListener('close.bs.alert', onClose)
+  alertRef.value.addEventListener('closed.bs.alert', onClosed)
+  alertListenersAttached = true
+}
+
+const detachAlertListeners = () => {
+  if (!alertListenersAttached || !alertRef.value) return
+  alertRef.value.removeEventListener('close.bs.alert', onClose)
+  alertRef.value.removeEventListener('closed.bs.alert', onClosed)
+  alertListenersAttached = false
+}
+
 const setupBootstrap = async () => {
+  detachAlertListeners()
   if (!alertRef.value || bsAlert.value) return
   try {
     const bootstrap = await import('bootstrap')
     bsAlert.value = new bootstrap.Alert(alertRef.value) as BootstrapAlert
-    alertRef.value.addEventListener('close.bs.alert', onClose)
-    alertRef.value.addEventListener('closed.bs.alert', onClosed)
+    attachAlertListeners()
   } catch (error) {
     emit('component-error', {
       message: 'Bootstrap JS not loaded. Alert will use basic Vue logic.',
@@ -55,10 +71,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  if (alertRef.value) {
-    alertRef.value.removeEventListener('close.bs.alert', onClose)
-    alertRef.value.removeEventListener('closed.bs.alert', onClosed)
-  }
+  detachAlertListeners()
 
   if (bsAlert.value) {
     bsAlert.value.dispose()

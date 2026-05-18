@@ -145,7 +145,7 @@ export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url'
 export type ValidationState = 'valid' | 'invalid' | null
 
 /** Return true for valid, false for invalid (uses rule.message), or a non-empty string as the error message (also invalid). */
-export type ValidatorFunction = (value: any) => boolean | string | Promise<boolean | string>
+export type ValidatorFunction = (value: unknown) => boolean | string | Promise<boolean | string>
 
 export interface ValidationRule {
   validator: ValidatorFunction

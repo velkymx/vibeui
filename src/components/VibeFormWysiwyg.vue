@@ -282,22 +282,39 @@ watch(() => props.readonly, (newValue) => {
 watch(isMobile, async () => {
   if (quillInstance.value) {
     const content = getQuillContent()
-    
-    // Cleanup current instance
+
+    // Disable the editor first to prevent selection updates on detached DOM
+    quillInstance.value.enable(false)
+
+    // Cleanup all event listeners before touching the DOM
     if (textChangeHandler.value) {
       quillInstance.value.off('text-change', textChangeHandler.value)
+      textChangeHandler.value = null
+    }
+    if (selectionChangeHandler.value) {
+      quillInstance.value.off('selection-change', selectionChangeHandler.value)
+      selectionChangeHandler.value = null
     }
     if (blurHandler.value) {
       quillInstance.value.root.removeEventListener('blur', blurHandler.value)
+      blurHandler.value = null
     }
     if (focusHandler.value) {
       quillInstance.value.root.removeEventListener('focus', focusHandler.value)
+      focusHandler.value = null
     }
+
+    // Null out the selection module to prevent Quill from accessing removed DOM
+    quillInstance.value.selection = null
+    // Nullify the instance BEFORE clearing the DOM so Quill holds no references
+    quillInstance.value = null
+    isQuillLoaded.value = false
+
     const toolbar = editorContainer.value?.parentElement?.querySelector('.ql-toolbar')
     if (toolbar) toolbar.remove()
-    
+
     if (editorContainer.value) editorContainer.value.innerHTML = ''
-    
+
     await nextTick()
     await initQuill()
     if (content) setQuillContent(content)

@@ -23,7 +23,8 @@ const emit = defineEmits<{
   (e: 'invalid', rejected: File[]): void
 }>()
 
-const computedId = computed(() => props.id || useId('file-input'))
+const _generatedId = useId('file-input')
+const computedId = computed(() => props.id || _generatedId)
 const isDragging = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 

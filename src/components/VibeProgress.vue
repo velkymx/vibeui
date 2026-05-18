@@ -25,6 +25,8 @@ const getBarClass = (bar: ProgressBar) => {
 }
 
 const getBarStyle = (bar: ProgressBar) => {
+  // Guard: explicit max of 0 or negative would produce NaN/Infinity
+  if (bar.max !== undefined && bar.max <= 0) return { width: '0%' }
   const max = bar.max || 100
   const percentage = Math.min(100, Math.max(0, (bar.value / max) * 100))
   return { width: `${percentage}%` }

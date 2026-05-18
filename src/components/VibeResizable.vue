@@ -64,7 +64,13 @@ const containerStyle = computed(() => ({
   height: `${currentHeight.value}px`
 }))
 
-const validHandles = computed(() => props.handles.filter(h => ALL_HANDLES.includes(h)))
+const validHandles = computed(() => {
+  if (process.env.NODE_ENV !== 'production') {
+    const invalid = props.handles.filter(h => !ALL_HANDLES.includes(h))
+    if (invalid.length) console.warn(`[VibeResizable] Invalid handle values: ${invalid.join(', ')}. Valid: ${ALL_HANDLES.join(', ')}`)
+  }
+  return props.handles.filter(h => ALL_HANDLES.includes(h))
+})
 
 const onPointerDown = (handle: Handle, event: PointerEvent) => {
   if (props.disabled) return

@@ -51,6 +51,9 @@ const structuralChanged = (a: TooltipOptions, b: TooltipOptions): boolean => {
 const create = async (el: AugmentedElement, opts: TooltipOptions): Promise<void> => {
   if (el[PENDING_KEY] || el[INSTANCE_KEY]) return
   el[PENDING_KEY] = true
+  // Save the opts we're creating with so we can detect updates that arrived during the async gap
+  const latestOpts = opts
+  el[OPTS_KEY] = opts
   try {
     const bootstrap = await import('bootstrap')
     el[INSTANCE_KEY] = new bootstrap.Tooltip(el, {
@@ -59,7 +62,10 @@ const create = async (el: AugmentedElement, opts: TooltipOptions): Promise<void>
       trigger: resolveTrigger(opts.trigger),
       html: false
     }) as unknown as BootstrapTooltipInstance
-    el[OPTS_KEY] = opts
+    // Apply any opts that arrived during the async gap (updated hook stores them in OPTS_KEY)
+    if (el[OPTS_KEY] !== latestOpts && el[INSTANCE_KEY]) {
+      el[INSTANCE_KEY].setContent({ '.tooltip-inner': el[OPTS_KEY]?.title ?? '' })
+    }
   } catch {
     // Bootstrap JS not loaded; data attributes already set on el for fallback styling.
   }
@@ -94,15 +100,19 @@ export const vTooltip: Directive<AugmentedElement, TooltipBindingValue> = {
     applyDataAttrs(el, opts)
     const prev = el[OPTS_KEY] || {}
     const instance = el[INSTANCE_KEY]
+    // Always update OPTS_KEY so a pending create() can detect newer opts after it resolves
+    el[OPTS_KEY] = opts
+    if (el[PENDING_KEY]) {
+      // create() is still in flight; it will pick up the updated OPTS_KEY after it resolves
+      return
+    }
     if (instance && structuralChanged(prev, opts)) {
       destroy(el)
-      el[OPTS_KEY] = opts
       void create(el, opts)
       return
     }
     if (instance) {
       instance.setContent({ '.tooltip-inner': opts.title || '' })
-      el[OPTS_KEY] = opts
     }
   },
   beforeUnmount(el) {
