@@ -29,6 +29,7 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const bsDropdown = ref<BootstrapDropdown | null>(null)
 let toggleEl: HTMLElement | null = null
 let reinitGuard = false
+let initInFlight = false
 
 const dropdownClass = computed(() => {
   if (props.direction === 'up') return 'dropup'
@@ -62,13 +63,13 @@ const onHide = () => emit('hide')
 const onHidden = () => emit('hidden')
 
 const initDropdown = async () => {
-  if (!dropdownRef.value) return
+  if (!dropdownRef.value || initInFlight) return
+  initInFlight = true
 
   try {
     const bootstrap = await import('bootstrap')
     const Dropdown = bootstrap.Dropdown
 
-    // Guard: component may have unmounted while awaiting the import
     if (!dropdownRef.value) return
 
     toggleEl = dropdownRef.value.querySelector('.dropdown-toggle') as HTMLElement | null
@@ -88,6 +89,8 @@ const initDropdown = async () => {
       componentName: 'VibeDropdown',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
