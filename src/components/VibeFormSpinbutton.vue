@@ -179,6 +179,7 @@ const decrement = () => {
         @input="handleInput"
         @change="handleChange"
         @blur="handleBlur"
+        @focusout="handleBlur"
         @focus="handleFocus"
       />
       <button
