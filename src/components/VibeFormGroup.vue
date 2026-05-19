@@ -91,7 +91,7 @@ const helpId = computed(() => `${computedId.value}-help`)
     <div v-if="row && labelCols" :class="contentClass">
       <slot />
 
-      <div v-if="helpText && !validationMessage" :id="helpId" class="form-text">
+      <div v-if="helpText" :id="helpId" class="form-text">
         {{ helpText }}
       </div>
       <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
@@ -114,7 +114,7 @@ const helpId = computed(() => `${computedId.value}-help`)
         <span v-if="required" class="text-danger">*</span>
       </label>
 
-      <div v-if="helpText && !validationMessage" :id="helpId" class="form-text">
+      <div v-if="helpText" :id="helpId" class="form-text">
         {{ helpText }}
       </div>
       <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
