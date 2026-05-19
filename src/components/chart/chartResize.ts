@@ -9,13 +9,15 @@ export function useChartResize(
   let rafId: number | null = null
 
   onMounted(() => {
+    let pendingEntry: ResizeObserverEntry | null = null
     observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) return
-      if (rafId !== null) return
-      const { width, height } = entry.contentRect
+      pendingEntry = entries[0] ?? null
+      if (!pendingEntry || rafId !== null) return
       rafId = requestAnimationFrame(() => {
         rafId = null
+        if (!pendingEntry) return
+        const { width, height } = pendingEntry.contentRect
+        pendingEntry = null
         onResize(width, height)
       })
     })
