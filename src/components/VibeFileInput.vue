@@ -125,6 +125,7 @@ const openFileBrowser = () => {
 const clearFiles = () => {
   if (inputRef.value) inputRef.value.value = ''
   emit('update:modelValue', [])
+  emit('change', [])
 }
 
 defineExpose({ clearFiles })
