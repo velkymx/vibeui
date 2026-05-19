@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useId } from '../composables/useId'
@@ -70,18 +70,22 @@ const inputGroupClass = computed(() => {
   return classes.join(' ')
 })
 
+const internalValue = ref(props.modelValue)
+
+watch(() => props.modelValue, (v) => { internalValue.value = v })
+
 const canDecrement = computed(() => {
   if (props.disabled || props.readonly) return false
   if (props.min === undefined) return true
   if (props.wrap) return true
-  return props.modelValue > props.min
+  return internalValue.value > props.min
 })
 
 const canIncrement = computed(() => {
   if (props.disabled || props.readonly) return false
   if (props.max === undefined) return true
   if (props.wrap) return true
-  return props.modelValue < props.max
+  return internalValue.value < props.max
 })
 
 const clampValue = (value: number): number => {
@@ -94,27 +98,27 @@ const clampValue = (value: number): number => {
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   const raw = target.value === '' ? 0 : Number(target.value)
-  // Emit raw value without clamping so multi-digit typing isn't interrupted
+  internalValue.value = raw
   emit('update:modelValue', raw)
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
-  // Clamp on change (e.g. spinner arrows in native input)
   const target = event.target as HTMLInputElement
   const raw = target.value === '' ? 0 : Number(target.value)
   const clamped = clampValue(raw)
+  internalValue.value = clamped
   if (clamped !== raw) emit('update:modelValue', clamped)
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
 
 const handleBlur = (event: FocusEvent) => {
-  // Clamp and commit the value when the user leaves the field
   const target = event.target as HTMLInputElement
   const raw = target.value === '' ? 0 : Number(target.value)
   const clamped = clampValue(raw)
+  internalValue.value = clamped
   if (clamped !== raw) emit('update:modelValue', clamped)
   emit('blur', event)
   if (props.validateOn === 'blur') emit('validate')
@@ -126,10 +130,11 @@ const handleFocus = (event: FocusEvent) => {
 
 const increment = () => {
   if (!canIncrement.value) return
-  let newValue = props.modelValue + props.step
+  let newValue = internalValue.value + props.step
   if (props.max !== undefined && newValue > props.max) {
     newValue = props.wrap ? props.min ?? 0 : props.max
   }
+  internalValue.value = newValue
   emit('update:modelValue', newValue)
   emit('increment', newValue)
   if (props.validateOn === 'change') emit('validate')
@@ -137,10 +142,11 @@ const increment = () => {
 
 const decrement = () => {
   if (!canDecrement.value) return
-  let newValue = props.modelValue - props.step
+  let newValue = internalValue.value - props.step
   if (props.min !== undefined && newValue < props.min) {
     newValue = props.wrap ? props.max ?? 0 : props.min
   }
+  internalValue.value = newValue
   emit('update:modelValue', newValue)
   emit('decrement', newValue)
   if (props.validateOn === 'change') emit('validate')
@@ -167,7 +173,7 @@ const decrement = () => {
         :id="computedId"
         type="number"
         :class="inputClass"
-        :value="modelValue"
+        :value="internalValue"
         :disabled="disabled"
         :readonly="readonly"
         :required="required"
