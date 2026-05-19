@@ -42,7 +42,17 @@ export function bindTooltip(
 
     ctx.fillStyle = 'rgba(0,0,0,0.75)'
     ctx.beginPath()
-    ctx.roundRect(tx, ty, tw, th, 4)
+    const r = 4
+    ctx.moveTo(tx + r, ty)
+    ctx.lineTo(tx + tw - r, ty)
+    ctx.arcTo(tx + tw, ty, tx + tw, ty + r, r)
+    ctx.lineTo(tx + tw, ty + th - r)
+    ctx.arcTo(tx + tw, ty + th, tx + tw - r, ty + th, r)
+    ctx.lineTo(tx + r, ty + th)
+    ctx.arcTo(tx, ty + th, tx, ty + th - r, r)
+    ctx.lineTo(tx, ty + r)
+    ctx.arcTo(tx, ty, tx + r, ty, r)
+    ctx.closePath()
     ctx.fill()
     ctx.fillStyle = '#fff'
     ctx.fillText(text, tx + 6, ty + 15)
