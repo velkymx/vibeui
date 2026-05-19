@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeChartPie from '../../src/components/VibeChartPie.vue'
-import { mockCanvas, mockResizeObserver } from '../mocks/canvasMock'
+import { mockCanvas, mockResizeObserver, mockAnimationFrame } from '../mocks/canvasMock'
 import type { ChartData } from '../../src/types'
 
 const DATA: ChartData = {
@@ -12,6 +12,7 @@ const DATA: ChartData = {
 beforeEach(() => {
   mockCanvas()
   mockResizeObserver()
+  mockAnimationFrame()
 })
 
 afterEach(() => {

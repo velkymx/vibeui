@@ -36,6 +36,14 @@ export function mockCanvas(overrides = createMockCtx()) {
   return overrides
 }
 
+export function mockAnimationFrame() {
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+    cb(0)
+    return 0
+  })
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+}
+
 export function mockResizeObserver() {
   let callback: ResizeObserverCallback | null = null
   const observe = vi.fn()
