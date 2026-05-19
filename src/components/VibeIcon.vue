@@ -90,7 +90,7 @@ const handleClick = (event: Event) => {
   <i
     :class="iconClass"
     :style="iconStyle"
-    :aria-hidden="ariaHidden ? 'true' : undefined"
+    :aria-hidden="ariaLabel ? undefined : (ariaHidden ? 'true' : undefined)"
     :aria-label="ariaLabel"
     :role="ariaLabel ? 'img' : undefined"
     @click="handleClick"
