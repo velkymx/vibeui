@@ -86,7 +86,7 @@ export function drawLine(
     const color = colors[di]
 
     const tracePath = (withMove: boolean) => {
-      if (smooth && ds.data.length > 2) {
+      if (smooth && ds.data.length >= 2) {
         ds.data.forEach((v, i) => {
           const x = toX(i)
           const y = toY(v)
