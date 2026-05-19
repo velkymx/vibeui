@@ -32,7 +32,8 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const computedId = computed(() => props.id || useId('datepicker'))
+const _generatedId = useId('datepicker')
+const computedId = computed(() => props.id || _generatedId)
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const toIso = (d: Date): IsoDate => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
