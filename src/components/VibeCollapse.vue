@@ -29,8 +29,9 @@ const collapseRef = ref<HTMLElement | null>(null)
 const bsCollapse = ref<BootstrapCollapse | null>(null)
 const isVisible = ref(false)
 const bsInitialized = ref(false)
-// Stores the last desired state requested before Bootstrap finished initializing.
-// Applied once bsInitialized becomes true.
+// Stores the last desired state requested before Bootstrap finishes initializing.
+// Only the last state is preserved (last-wins); intermediate open/close calls
+// before bsInitialized are intentionally discarded. Applied once bsInitialized = true.
 let pendingState: boolean | null = null
 
 const onShow = () => {
