@@ -56,6 +56,7 @@ const inputClass = computed(() => {
 })
 
 const isChecked = computed(() => {
+  if (props.indeterminate) return false
   if (Array.isArray(props.modelValue)) {
     return props.modelValue.includes(props.value)
   }
@@ -102,7 +103,7 @@ const handleFocus = (event: FocusEvent) => {
       :required="required"
       :indeterminate="indeterminate"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
+      :aria-describedby="helpText && validationMessage ? `${computedId}-help ${computedId}-feedback` : helpText ? `${computedId}-help` : validationMessage ? `${computedId}-feedback` : undefined"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
@@ -111,7 +112,7 @@ const handleFocus = (event: FocusEvent) => {
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
     </label>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">

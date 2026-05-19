@@ -341,7 +341,7 @@ watch(isMobile, async () => {
       <div ref="editorContainer" :id="computedId"></div>
     </div>
 
-    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">

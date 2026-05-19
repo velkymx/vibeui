@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type PropType } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch, type PropType } from 'vue'
 
 type SliderValue = number | [number, number]
 
@@ -213,12 +213,12 @@ const handleKeydown = (handleIdx: 0 | 1, event: KeyboardEvent) => {
 
 const handlePointerDown = (handleIdx: 0 | 1, event: PointerEvent) => {
   if (props.disabled || !trackRef.value) return
-  // Snapshot current prop value so internalValue is fresh at drag-start.
   internalValue.value = Array.isArray(props.modelValue)
     ? [...props.modelValue] as [number, number]
     : props.modelValue
   activeHandle.value = handleIdx
-  ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
+  window.addEventListener('pointermove', handlePointerMove)
+  window.addEventListener('pointerup', handlePointerUp)
 }
 
 const handlePointerMove = (event: PointerEvent) => {
@@ -231,16 +231,20 @@ const handlePointerMove = (event: PointerEvent) => {
   emitValue(activeHandle.value, raw)
 }
 
-const handlePointerUp = (event: PointerEvent) => {
+const handlePointerUp = (_event: PointerEvent) => {
   if (activeHandle.value === null) return
-  ;(event.target as HTMLElement).releasePointerCapture?.(event.pointerId)
   activeHandle.value = null
-  // After drag ends, re-sync from prop so any parent-applied corrections
-  // (e.g. clamping, rounding) are reflected in internalValue.
+  window.removeEventListener('pointermove', handlePointerMove)
+  window.removeEventListener('pointerup', handlePointerUp)
   internalValue.value = Array.isArray(props.modelValue)
     ? [...props.modelValue] as [number, number]
     : props.modelValue
 }
+
+onBeforeUnmount(() => {
+  window.removeEventListener('pointermove', handlePointerMove)
+  window.removeEventListener('pointerup', handlePointerUp)
+})
 </script>
 
 <template>
@@ -263,8 +267,6 @@ const handlePointerUp = (event: PointerEvent) => {
         :style="lowHandleStyle"
         @keydown="(e: KeyboardEvent) => handleKeydown(0, e)"
         @pointerdown="(e: PointerEvent) => handlePointerDown(0, e)"
-        @pointermove="handlePointerMove"
-        @pointerup="handlePointerUp"
       />
       <div
         v-if="range"
@@ -279,8 +281,6 @@ const handlePointerUp = (event: PointerEvent) => {
         :style="highHandleStyle"
         @keydown="(e: KeyboardEvent) => handleKeydown(1, e)"
         @pointerdown="(e: PointerEvent) => handlePointerDown(1, e)"
-        @pointermove="handlePointerMove"
-        @pointerup="handlePointerUp"
       />
     </div>
   </div>

@@ -1,4 +1,4 @@
-import { ref, computed, type Ref } from 'vue'
+import { ref, computed, watch, type Ref } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, FormValidationResult } from '../types'
 
 export type FormFieldValue = string | number | boolean | null | undefined
@@ -10,6 +10,13 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
   const isDirty = ref(false)
   const isTouched = ref(false)
   const isValidating = ref(false)
+
+  watch(value, () => {
+    if (validationState.value === 'invalid') {
+      validationState.value = null
+      validationMessage.value = ''
+    }
+  })
 
   const validate = async (rules: ValidationRule[] | ValidatorFunction | undefined): Promise<FormValidationResult> => {
     if (!rules) {

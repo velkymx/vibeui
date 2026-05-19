@@ -95,6 +95,7 @@ const initCarousel = async () => {
       bsCarousel.value.to(props.modelValue)
     }
   } catch (error) {
+    attachedEl = null
     emit('component-error', {
       message: 'Bootstrap JS not loaded. Carousel will use data attributes only.',
       componentName: 'VibeCarousel',

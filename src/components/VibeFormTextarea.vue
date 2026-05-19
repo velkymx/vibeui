@@ -115,7 +115,7 @@ const handleFocus = (event: FocusEvent) => {
       </span>
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">

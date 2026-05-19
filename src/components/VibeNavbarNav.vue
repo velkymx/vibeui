@@ -98,17 +98,16 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
 
         <!-- Dropdown item -->
         <template v-if="item.children?.length">
-          <a
+          <button
+            type="button"
             :class="getLinkClass(item)"
-            href="#"
-            role="button"
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
             <slot name="item" :item="item" :index="index">
               {{ item.text }}
             </slot>
-          </a>
+          </button>
           <ul class="dropdown-menu">
             <template v-for="(child, childIndex) in item.children" :key="child.href || child.text || String(childIndex)">
               <li v-if="child.divider">

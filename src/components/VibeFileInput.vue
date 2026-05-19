@@ -122,6 +122,13 @@ const openFileBrowser = () => {
   inputRef.value?.click()
 }
 
+const clearFiles = () => {
+  if (inputRef.value) inputRef.value.value = ''
+  emit('update:modelValue', [])
+}
+
+defineExpose({ clearFiles })
+
 const dropzoneClass = computed(() => {
   const c = ['vibe-file-input-dropzone']
   if (isDragging.value) c.push('vibe-file-input-dropzone-active')

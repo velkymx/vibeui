@@ -141,8 +141,8 @@ export function hitTestLine(
 
   const allValues = data.datasets.flatMap((ds) => ds.data)
   if (allValues.length === 0) return null
-  const minVal = allValues.reduce((acc, v) => Math.min(acc, v), 0)
-  const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), 0)
+  const minVal = allValues.reduce((acc, v) => Math.min(acc, v), allValues[0])
+  const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), allValues[0])
   const range = maxVal - minVal || 1
   const n = data.labels.length
   const xStep = chartW / Math.max(n - 1, 1)

@@ -68,9 +68,9 @@ describe('hitTestLine', () => {
   it('returns hit when coords are within threshold of a point', () => {
     // With showAxes=true: PAD_LEFT=50, PAD_RIGHT=10, PAD_TOP=10, PAD_BOTTOM=30
     // chartW=340, chartH=260, n=3, xStep=170
-    // point[0] x=50, values [10,20,15], min=0,max=20,range=20
-    // point[0] y = 10 + 260 - (10/20)*260 = 10 + 260 - 130 = 140
-    const hit = hitTestLine(50, 140, DATA, 400, 300, true)
+    // values [10,20,15], min=10 (seed=allValues[0]), max=20, range=10
+    // point[0] x=50, y = 10 + 260 - ((10-10)/10)*260 = 270
+    const hit = hitTestLine(50, 270, DATA, 400, 300, true)
     expect(hit).not.toBeNull()
     expect(hit!.pointIndex).toBe(0)
     expect(hit!.value).toBe(10)
@@ -78,8 +78,9 @@ describe('hitTestLine', () => {
   })
 
   it('returns correct datasetIndex for second dataset', () => {
-    // S2 value at index 0 is 5; with range 0-20, y = 10 + 260 - (5/20)*260 = 205
-    const hit = hitTestLine(50, 205, MULTI, 400, 300, true)
+    // S1=[10,20,15], S2=[5,8,12], allValues seed=10, min=5, max=20, range=15
+    // S2 point[0] value=5: y = 10 + 260 - ((5-5)/15)*260 = 270
+    const hit = hitTestLine(50, 270, MULTI, 400, 300, true)
     expect(hit?.datasetIndex).toBe(1)
   })
 })

@@ -25,6 +25,9 @@ const paginationClass = computed(() => {
 const visibleItems = computed((): (number | null)[] => {
   const total = props.totalPages
   if (total === 0) return []
+  if (import.meta.env.DEV && props.maxVisiblePages < 5) {
+    console.warn('[VibePagination] maxVisiblePages must be at least 5. Got:', props.maxVisiblePages)
+  }
   const max = Math.max(5, props.maxVisiblePages)
 
   if (total <= max) {

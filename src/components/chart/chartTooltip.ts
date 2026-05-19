@@ -38,6 +38,7 @@ export function bindTooltip(
     let ty = y - th - 6
     if (tx + tw > rect.width) tx = rect.width - tw - 4
     if (ty < 0) ty = y + 14
+    ty = Math.min(ty, rect.height - th)
 
     ctx.fillStyle = 'rgba(0,0,0,0.75)'
     ctx.beginPath()

@@ -175,7 +175,7 @@ const decrement = () => {
         :max="max"
         :step="step"
         :aria-invalid="validationState === 'invalid'"
-        :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
+        :aria-describedby="helpText && validationMessage ? `${computedId}-help ${computedId}-feedback` : helpText ? `${computedId}-help` : validationMessage ? `${computedId}-feedback` : undefined"
         @input="handleInput"
         @change="handleChange"
         @blur="handleBlur"
@@ -191,7 +191,7 @@ const decrement = () => {
         <span aria-hidden="true">+</span>
       </button>
     </div>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">

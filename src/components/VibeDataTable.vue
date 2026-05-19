@@ -374,14 +374,14 @@ const getThStyle = (column: DataTableColumn<T>) => {
         <nav>
           <ul class="pagination justify-content-md-end mb-0">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(currentPage - 1)">
+              <button type="button" class="page-link" @click="handlePageChange(currentPage - 1)">
                 Previous
-              </a>
+              </button>
             </li>
 
             <!-- First page -->
             <li v-if="currentPage > 3" class="page-item">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(1)">1</a>
+              <button type="button" class="page-link" @click="handlePageChange(1)">1</button>
             </li>
             <li v-if="currentPage > 4" class="page-item disabled">
               <span class="page-link">...</span>
@@ -394,9 +394,9 @@ const getThStyle = (column: DataTableColumn<T>) => {
               class="page-item"
               :class="{ active: page === currentPage }"
             >
-              <a class="page-link" href="#" @click.prevent="handlePageChange(page)">
+              <button type="button" class="page-link" @click="handlePageChange(page)">
                 {{ page }}
-              </a>
+              </button>
             </li>
 
             <!-- Last page -->
@@ -404,15 +404,15 @@ const getThStyle = (column: DataTableColumn<T>) => {
               <span class="page-link">...</span>
             </li>
             <li v-if="currentPage < totalPages - 2" class="page-item">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(totalPages)">
+              <button type="button" class="page-link" @click="handlePageChange(totalPages)">
                 {{ totalPages }}
-              </a>
+              </button>
             </li>
 
             <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(currentPage + 1)">
+              <button type="button" class="page-link" @click="handlePageChange(currentPage + 1)">
                 Next
-              </a>
+              </button>
             </li>
           </ul>
         </nav>

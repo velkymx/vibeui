@@ -21,7 +21,7 @@ const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
     <ol class="breadcrumb">
       <li
         v-for="(item, index) in items"
-        :key="index"
+        :key="item.href || item.text || String(index)"
         :class="['breadcrumb-item', { active: item.active }]"
         :aria-current="item.active ? 'page' : undefined"
       >

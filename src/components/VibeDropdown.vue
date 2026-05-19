@@ -114,9 +114,12 @@ onBeforeUnmount(destroyDropdown)
 watch(() => props.autoClose, async () => {
   if (reinitGuard) return
   reinitGuard = true
-  destroyDropdown()
-  await initDropdown()
-  reinitGuard = false
+  try {
+    destroyDropdown()
+    await initDropdown()
+  } finally {
+    reinitGuard = false
+  }
 })
 
 const handleItemClick = (item: DropdownItem, index: number, event: Event) => {

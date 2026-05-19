@@ -21,6 +21,7 @@ const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'comp
 
 const accordionRef = ref<HTMLElement | null>(null)
 const bsCollapses = new Map<string, BootstrapCollapse>()
+let initInFlight = false
 
 interface CollapseHandlers {
   show: EventListener
@@ -51,6 +52,8 @@ const disposeItem = (id: string) => {
 
 const initItems = async () => {
   if (!accordionRef.value) return
+  if (initInFlight) return
+  initInFlight = true
 
   try {
     const bootstrap = await import('bootstrap')
@@ -94,6 +97,8 @@ const initItems = async () => {
       componentName: 'VibeAccordion',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 

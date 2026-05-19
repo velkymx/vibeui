@@ -68,6 +68,7 @@ watch([() => props.target, () => props.rootMargin, () => props.method], async ()
   bsScrollspy.value?.dispose()
   bsScrollspy.value = null
   await nextTick()
+  if (!scrollspyRef.value) return
   await initScrollspy()
 })
 

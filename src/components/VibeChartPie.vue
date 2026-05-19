@@ -25,7 +25,7 @@ const canvasContainerStyle = computed(() => {
 })
 
 const resolvedColors = computed(() =>
-  containerEl.value ? resolveSliceColors(props.data.labels.length, containerEl.value) : []
+  containerEl.value ? resolveSliceColors(props.data.labels?.length ?? 0, containerEl.value) : []
 )
 
 function redraw() {

@@ -134,16 +134,15 @@ defineExpose({ bsInstances: bsTabs, refresh })
       :class="{ dropdown: item.children && item.children.length > 0 }"
     >
       <template v-if="item.children && item.children.length > 0">
-        <a
+        <button
+          type="button"
           class="nav-link dropdown-toggle"
           data-bs-toggle="dropdown"
-          href="javascript:void(0)"
-          role="button"
           aria-expanded="false"
           :class="{ active: item.active, disabled: item.disabled }"
         >
           {{ item.text }}
-        </a>
+        </button>
         <ul class="dropdown-menu">
           <li v-for="(child, childIndex) in item.children" :key="child.href || child.text || String(childIndex)">
             <template v-if="child.divider">
