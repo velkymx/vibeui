@@ -74,8 +74,10 @@ const getRowKey = (item: T, index: number): string | number => {
     )
   }
 
-  // Fallback to index - not ideal but avoids expensive JSON.stringify
-  return index
+  // Fallback: use a globally unique index by combining page offset + local index.
+  // Page-local index alone causes duplicate Vue keys across pages (page 1 and page 2
+  // both have indices 0..perPage-1), which makes Vue patch wrong DOM rows.
+  return `__row_${(startRow.value - 1) + index}`
 }
 
 // Debounced search with proper cleanup
