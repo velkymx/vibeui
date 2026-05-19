@@ -37,6 +37,8 @@ const formGroup = inject<{
 const _groupId = formGroup?.consumeId()
 const _generatedId = useId('checkbox')
 const computedId = computed(() => props.id || _groupId || _generatedId)
+const helpId = computed(() => `${computedId.value}-help`)
+const feedbackId = computed(() => `${computedId.value}-feedback`)
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
@@ -103,7 +105,7 @@ const handleFocus = (event: FocusEvent) => {
       :required="required"
       :indeterminate="indeterminate"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="helpText && validationMessage ? `${computedId}-help ${computedId}-feedback` : helpText ? `${computedId}-help` : validationMessage ? `${computedId}-feedback` : undefined"
+      :aria-describedby="helpText && validationMessage ? `${helpId.value} ${feedbackId.value}` : helpText ? helpId.value : validationMessage ? feedbackId.value : undefined"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"

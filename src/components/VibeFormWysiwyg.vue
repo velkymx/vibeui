@@ -226,37 +226,41 @@ const initQuill = async () => {
 onMounted(initQuill)
 
 onBeforeUnmount(() => {
-  if (quillInstance.value) {
-    // Disable the editor first to prevent selection updates on detached DOM
-    quillInstance.value.enable(false)
+   if (quillInstance.value) {
+     // Disable the editor first to prevent selection updates on detached DOM
+     quillInstance.value.enable(false)
 
-    if (textChangeHandler.value) {
-      quillInstance.value.off('text-change', textChangeHandler.value)
-      textChangeHandler.value = null
-    }
-    if (selectionChangeHandler.value) {
-      quillInstance.value.off('selection-change', selectionChangeHandler.value)
-      selectionChangeHandler.value = null
-    }
-    if (blurHandler.value) {
-      quillInstance.value.root.removeEventListener('blur', blurHandler.value)
-      blurHandler.value = null
-    }
-    if (focusHandler.value) {
-      quillInstance.value.root.removeEventListener('focus', focusHandler.value)
-      focusHandler.value = null
-    }
-    // Null out the selection module to prevent Quill from accessing removed DOM
-    quillInstance.value.selection = null
-    if (editorContainer.value) {
-      const toolbar = editorContainer.value.parentElement?.querySelector('.ql-toolbar')
-      if (toolbar) {
-        toolbar.remove()
-      }
-    }
-    quillInstance.value = null
-  }
-})
+     if (textChangeHandler.value) {
+       quillInstance.value.off('text-change', textChangeHandler.value)
+       textChangeHandler.value = null
+     }
+     if (selectionChangeHandler.value) {
+       quillInstance.value.off('selection-change', selectionChangeHandler.value)
+       selectionChangeHandler.value = null
+     }
+     if (blurHandler.value) {
+       quillInstance.value.root.removeEventListener('blur', blurHandler.value)
+       blurHandler.value = null
+     }
+     if (focusHandler.value) {
+       quillInstance.value.root.removeEventListener('focus', focusHandler.value)
+       focusHandler.value = null
+     }
+     // Null out the selection module to prevent Quill from accessing removed DOM
+     quillInstance.value.selection = null
+     // Destroy Quill instance to properly clean up all references
+     if (typeof quillInstance.value.destroy === 'function') {
+       quillInstance.value.destroy()
+     }
+     if (editorContainer.value) {
+       const toolbar = editorContainer.value.parentElement?.querySelector('.ql-toolbar')
+       if (toolbar) {
+         toolbar.remove()
+       }
+     }
+     quillInstance.value = null
+   }
+ })
 
 watch(() => props.modelValue, (newValue) => {
   if (!quillInstance.value) return
@@ -306,7 +310,11 @@ watch(isMobile, async () => {
 
     // Null out the selection module to prevent Quill from accessing removed DOM
     quillInstance.value.selection = null
-    // Nullify the instance BEFORE clearing the DOM so Quill holds no references
+    // Destroy Quill instance to properly clean up all references
+    if (quillInstance.value && typeof quillInstance.value.destroy === 'function') {
+      quillInstance.value.destroy()
+    }
+    // Nullify the instance
     quillInstance.value = null
     isQuillLoaded.value = false
 

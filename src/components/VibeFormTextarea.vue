@@ -101,7 +101,7 @@ const handleFocus = (event: FocusEvent) => {
       :readonly="readonly"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="(helpText || showCharCount) && validationMessage ? `${helpId} ${feedbackId}` : (helpText || showCharCount) ? helpId : validationMessage ? feedbackId : undefined"
+      :aria-describedby="(helpText || showCharCount) && validationMessage ? `${helpId.value} ${feedbackId.value}` : (helpText || showCharCount) ? helpId.value : validationMessage ? feedbackId.value : undefined"
       @input="handleInput"
       @change="handleChange"
       @blur="handleBlur"
