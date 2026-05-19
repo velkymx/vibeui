@@ -9,7 +9,6 @@ const props = defineProps({
   fade: { type: Boolean, default: true }
 })
 
-defineEmits(['component-error', 'shown', 'hide', 'hidden'])
 
 const getTabPaneClass = (pane: TabPane) => {
   const classes = ['tab-pane']

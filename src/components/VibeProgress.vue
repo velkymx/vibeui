@@ -47,10 +47,11 @@ const getBarLabel = (bar: ProgressBar) => {
   <div class="progress" :style="progressStyle">
     <div
       v-for="(bar, index) in bars"
-      :key="index"
+      :key="bar.label ?? `${bar.value}-${index}`"
       :class="getBarClass(bar)"
       :style="getBarStyle(bar)"
       role="progressbar"
+      :aria-label="bar.label || 'Progress'"
       :aria-valuenow="bar.value"
       :aria-valuemin="0"
       :aria-valuemax="bar.max || 100"

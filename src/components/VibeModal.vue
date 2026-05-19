@@ -174,7 +174,7 @@ defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
       class="modal fade"
       tabindex="-1"
       :aria-labelledby="`${id}-label`"
-      :aria-hidden="!isVisible"
+      :aria-hidden="isVisible ? undefined : 'true'"
       :data-bs-backdrop="staticBackdrop ? 'static' : undefined"
       :data-bs-keyboard="!staticBackdrop"
     >

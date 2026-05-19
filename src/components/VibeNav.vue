@@ -94,12 +94,15 @@ watch(() => props.items, async () => {
   bsTabs.clear()
   await nextTick()
   await initTabs()
-}, { deep: true })
+}, { deep: false })
 
 const getTabTarget = (item: NavItem): string | undefined => {
   if (item.href?.startsWith('#')) return item.href
   if (item.target) return item.target
-  if (typeof item.to === 'string' && item.to.startsWith('#')) return item.to
+  if (typeof item.to === 'string') {
+    const idx = item.to.indexOf('#')
+    if (idx !== -1) return item.to.slice(idx)
+  }
   return undefined
 }
 
@@ -174,6 +177,7 @@ defineExpose({ bsInstances: bsTabs, refresh })
           :href="item.href"
           :to="item.to"
           :type="!item.href && !item.to ? 'button' : undefined"
+          :disabled="(!item.href && !item.to && item.disabled) || undefined"
           :aria-current="item.active ? 'page' : undefined"
           :data-bs-toggle="(tabs || pills) && getTabTarget(item) ? (tabs ? 'tab' : 'pill') : undefined"
           :data-bs-target="getTabTarget(item)"

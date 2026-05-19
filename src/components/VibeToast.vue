@@ -51,11 +51,11 @@ const containerClass = computed(() => {
 })
 
 const onShow = () => {
-  isVisible.value = true
   emit('show')
 }
 
 const onShown = () => {
+  isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
 }
@@ -138,7 +138,7 @@ watch(() => props.modelValue, (newValue) => {
   if (!bsToast.value) return
   if (newValue && !isVisible.value) {
     bsToast.value.show()
-  } else if (!newValue && isVisible.value) {
+  } else if (!newValue) {
     bsToast.value.hide()
   }
 })

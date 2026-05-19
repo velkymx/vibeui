@@ -50,8 +50,10 @@ const validateIsoString = (value: string | undefined, propName: string): void =>
     )
   }
 }
-validateIsoString(props.min, 'min')
-validateIsoString(props.max, 'max')
+watch(() => [props.min, props.max] as const, ([min, max]) => {
+  validateIsoString(min, 'min')
+  validateIsoString(max, 'max')
+}, { immediate: true })
 
 const isOpen = ref(false)
 // today is computed fresh each grid eval so a long-lived datepicker that

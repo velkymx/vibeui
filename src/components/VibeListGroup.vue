@@ -51,7 +51,7 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
       :class="getItemClass(item)"
       :href="item.href"
       :to="item.to"
-      :aria-disabled="item.disabled"
+      :aria-disabled="item.disabled || undefined"
       :aria-current="item.active"
       @click="handleItemClick(item, index, $event)"
     >

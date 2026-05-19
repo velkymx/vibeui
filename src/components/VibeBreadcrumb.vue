@@ -29,7 +29,7 @@ const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
           :is="item.active ? 'span' : item.href ? 'a' : item.to ? 'router-link' : 'span'"
           :href="item.active ? undefined : item.href"
           :to="item.active ? undefined : item.to"
-          v-on="item.active ? {} : { click: (e: Event) => handleItemClick(item, index, e) }"
+          @click="handleItemClick(item, index, $event)"
         >
           <!-- Scoped slot for custom item rendering -->
           <slot name="item" :item="item" :index="index">
