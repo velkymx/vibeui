@@ -24,6 +24,9 @@ const bsAlert = ref<BootstrapAlert | null>(null)
 const isVisible = ref(props.modelValue)
 
 let alertListenersAttached = false
+let initInFlight = false
+let pendingReinit = false
+let isUnmounted = false
 
 const onClose = () => {
   emit('close')
@@ -51,11 +54,13 @@ const detachAlertListeners = () => {
 }
 
 const setupBootstrap = async () => {
+  if (initInFlight) { pendingReinit = true; return }
+  initInFlight = true
   detachAlertListeners()
-  if (!alertRef.value || bsAlert.value) return
   try {
+    if (!alertRef.value || bsAlert.value) return
     const bootstrap = await import('bootstrap')
-    if (!alertRef.value) return
+    if (!alertRef.value || isUnmounted) return
     bsAlert.value = new bootstrap.Alert(alertRef.value) as BootstrapAlert
     attachAlertListeners()
   } catch (error) {
@@ -64,6 +69,9 @@ const setupBootstrap = async () => {
       componentName: 'VibeAlert',
       originalError: error
     })
+  } finally {
+    initInFlight = false
+    if (pendingReinit) { pendingReinit = false; void setupBootstrap() }
   }
 }
 
@@ -72,6 +80,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   detachAlertListeners()
 
   if (bsAlert.value) {
@@ -86,7 +95,13 @@ watch(() => props.modelValue, async (newVal) => {
     await nextTick()
     void setupBootstrap()
   } else if (isVisible.value) {
-    bsAlert.value?.close()
+    if (bsAlert.value) {
+      bsAlert.value.close()
+    } else {
+      isVisible.value = false
+      emit('update:modelValue', false)
+      emit('closed')
+    }
   } else {
     isVisible.value = false
   }
