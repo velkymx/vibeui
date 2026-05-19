@@ -79,8 +79,11 @@ const detachToastListeners = () => {
   el.removeEventListener('hidden.bs.toast', onHidden)
 }
 
+let initInFlight = false
+
 const initToast = async () => {
-  if (!toastRef.value) return
+  if (!toastRef.value || initInFlight) return
+  initInFlight = true
 
   detachToastListeners()
 
@@ -90,6 +93,7 @@ const initToast = async () => {
 
   try {
     const bootstrap = await import('bootstrap')
+    if (!toastRef.value) return
     const Toast = bootstrap.Toast
 
     bsToast.value = new Toast(toastRef.value, {
@@ -111,6 +115,8 @@ const initToast = async () => {
       componentName: 'VibeToast',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
