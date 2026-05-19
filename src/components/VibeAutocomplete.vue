@@ -74,18 +74,21 @@ const reseatHighlight = (previousLabel: string | null) => {
   highlightedIndex.value = idx
 }
 
+let isUnmounted = false
+
 const runQuery = async (query: string) => {
   const previousLabel = previousHighlightLabel()
   if (typeof props.source === 'function') {
     queryToken += 1
     const myToken = queryToken
     const out = await (props.source as SourceFn<T>)(query)
-    if (myToken !== queryToken) return
+    if (myToken !== queryToken || isUnmounted) return
     results.value = out.slice(0, props.maxResults)
   } else {
     queryToken += 1
     results.value = filterArray(props.source as T[], query)
   }
+  if (isUnmounted) return
   reseatHighlight(previousLabel)
   isOpen.value = true
 }
@@ -120,6 +123,7 @@ const onInput = (event: Event) => {
 }
 
 const onFocus = () => {
+  if (props.disabled) return
   if (inputValue.value.length >= props.minChars) {
     void runQuery(inputValue.value)
   }
@@ -149,7 +153,9 @@ const onKeydown = (event: KeyboardEvent) => {
     highlightedIndex.value = Math.min(results.value.length - 1, highlightedIndex.value + 1)
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
-    highlightedIndex.value = Math.max(0, highlightedIndex.value - 1)
+    highlightedIndex.value = highlightedIndex.value <= 0
+      ? results.value.length - 1
+      : highlightedIndex.value - 1
   } else if (event.key === 'Enter') {
     if (highlightedIndex.value >= 0 && results.value[highlightedIndex.value]) {
       event.preventDefault()
@@ -178,6 +184,7 @@ watch(isOpen, (open) => {
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   cancelInFlight()
   if (debounceTimer.value !== null) clearTimeout(debounceTimer.value)
   if (typeof document !== 'undefined') {
@@ -220,7 +227,7 @@ const showEmpty = computed(() => isOpen.value && inputValue.value.length >= prop
         role="option"
         :aria-selected="idx === highlightedIndex"
         @mouseenter="highlightedIndex = idx"
-        @mousedown.prevent="selectItem(item)"
+        @click="selectItem(item)"
       >
         <slot name="item" :item="item" :index="idx" :label="labelOf(item)">
           {{ labelOf(item) }}

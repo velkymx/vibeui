@@ -46,7 +46,7 @@ describe('VibeAutocomplete', () => {
       await wrapper.find('input').setValue('a')
       await flush(20)
 
-      await wrapper.findAll('.vibe-autocomplete-item')[0].trigger('mousedown')
+      await wrapper.findAll('.vibe-autocomplete-item')[0].trigger('click')
 
       const selected = wrapper.emitted('select') as unknown[][]
       expect(selected[0][0]).toBe('apple')
