@@ -31,8 +31,13 @@ const computedTrigger = computed(() => {
   return props.trigger
 })
 
+let initInFlight = false
+let pendingReinit = false
+
 const initPopover = async () => {
   if (!popoverRef.value) return
+  if (initInFlight) { pendingReinit = true; return }
+  initInFlight = true
 
   if (bsPopover.value) {
     bsPopover.value.dispose()
@@ -40,6 +45,7 @@ const initPopover = async () => {
 
   try {
     const bootstrap = await import('bootstrap')
+    if (!popoverRef.value) return
     const Popover = bootstrap.Popover
 
     bsPopover.value = new Popover(popoverRef.value, {
@@ -55,6 +61,9 @@ const initPopover = async () => {
       componentName: 'VibePopover',
       originalError: error
     })
+  } finally {
+    initInFlight = false
+    if (pendingReinit) { pendingReinit = false; void initPopover() }
   }
 }
 

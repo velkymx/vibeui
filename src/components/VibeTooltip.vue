@@ -35,16 +35,21 @@ const computedTrigger = computed(() => {
   return props.trigger
 })
 
+let initInFlight = false
+let pendingReinit = false
+
 const initTooltip = async () => {
   if (!tooltipRef.value) return
+  if (initInFlight) { pendingReinit = true; return }
+  initInFlight = true
 
-  // Clean up existing instance if any
   if (bsTooltip.value) {
     bsTooltip.value.dispose()
   }
 
   try {
     const bootstrap = await import('bootstrap')
+    if (!tooltipRef.value) return
     const Tooltip = bootstrap.Tooltip
 
     bsTooltip.value = new Tooltip(tooltipRef.value, {
@@ -59,6 +64,9 @@ const initTooltip = async () => {
       componentName: 'VibeTooltip',
       originalError: error
     })
+  } finally {
+    initInFlight = false
+    if (pendingReinit) { pendingReinit = false; void initTooltip() }
   }
 }
 
