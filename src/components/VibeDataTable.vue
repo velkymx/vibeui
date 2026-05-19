@@ -190,7 +190,7 @@ const paginatedItems = computed(() => {
 // Pagination info
 const totalRows = computed(() => props.items.length)
 const totalFilteredRows = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.ceil(totalFilteredRows.value / perPage.value))
+const totalPages = computed(() => Math.ceil(totalFilteredRows.value / Math.max(1, perPage.value)))
 const startRow = computed(() => {
   if (totalFilteredRows.value === 0) return 0
   return (currentPage.value - 1) * perPage.value + 1
