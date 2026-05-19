@@ -140,7 +140,7 @@ export function hitTestBar(
     if (x < groupStartX || x > groupStartX + barW) return null
     let yOffset = pad.top + chartH
     for (const [di, ds] of data.datasets.entries()) {
-      const v = ds.data[groupI] ?? 0
+      const v = Math.max(0, ds.data[groupI] ?? 0)
       const bh = (v / maxVal) * chartH
       const barTop = yOffset - bh
       if (y >= barTop && y <= yOffset) {
