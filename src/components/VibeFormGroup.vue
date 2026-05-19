@@ -94,7 +94,7 @@ const helpId = computed(() => `${computedId.value}-help`)
       <div v-if="helpText && !validationMessage" :id="helpId" class="form-text">
         {{ helpText }}
       </div>
-      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
@@ -117,7 +117,7 @@ const helpId = computed(() => `${computedId.value}-help`)
       <div v-if="helpText && !validationMessage" :id="helpId" class="form-text">
         {{ helpText }}
       </div>
-      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
