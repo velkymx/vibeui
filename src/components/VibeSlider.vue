@@ -20,6 +20,7 @@ const emit = defineEmits<{
 
 const trackRef = ref<HTMLElement | null>(null)
 const activeHandle = ref<0 | 1 | null>(null)
+let activePointerId: number | null = null
 const isDragging = computed(() => activeHandle.value !== null)
 
 // Internal drag position — updated immediately on every pointer event so we
@@ -217,12 +218,13 @@ const handlePointerDown = (handleIdx: 0 | 1, event: PointerEvent) => {
     ? [...props.modelValue] as [number, number]
     : props.modelValue
   activeHandle.value = handleIdx
+  activePointerId = event.pointerId
   window.addEventListener('pointermove', handlePointerMove)
   window.addEventListener('pointerup', handlePointerUp)
 }
 
 const handlePointerMove = (event: PointerEvent) => {
-  if (activeHandle.value === null || !trackRef.value) return
+  if (activeHandle.value === null || !trackRef.value || event.pointerId !== activePointerId) return
   const rect = trackRef.value.getBoundingClientRect()
   const ratio = props.vertical
     ? 1 - (event.clientY - rect.top) / rect.height
@@ -231,9 +233,10 @@ const handlePointerMove = (event: PointerEvent) => {
   emitValue(activeHandle.value, raw)
 }
 
-const handlePointerUp = (_event: PointerEvent) => {
-  if (activeHandle.value === null) return
+const handlePointerUp = (event: PointerEvent) => {
+  if (activeHandle.value === null || event.pointerId !== activePointerId) return
   activeHandle.value = null
+  activePointerId = null
   window.removeEventListener('pointermove', handlePointerMove)
   window.removeEventListener('pointerup', handlePointerUp)
   internalValue.value = Array.isArray(props.modelValue)
