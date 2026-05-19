@@ -30,6 +30,8 @@ export function drawLine(
   if (allValues.length === 0) return
   const minVal = allValues.reduce((acc, v) => Math.min(acc, v), allValues[0])
   const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), allValues[0])
+  // When all values are equal (range === 0), defaults to 1 → all points render at
+  // chart bottom. Known limitation for flat/single-point datasets.
   const range = maxVal - minVal || 1
   const n = data.labels.length
   const xStep = chartW / Math.max(n - 1, 1)
