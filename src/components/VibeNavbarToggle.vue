@@ -36,7 +36,8 @@ const handleClick = async () => {
       bsCollapse.toggle()
     }
   } catch (error) {
-    // Fallback to data-attributes handled by Bootstrap's global listener
+    if (navbar) navbar.toggleCollapse(props.target)
+    emit('component-error', { message: 'Bootstrap JS toggle failed.', componentName: 'VibeNavbarToggle', originalError: error })
   }
 }
 </script>
