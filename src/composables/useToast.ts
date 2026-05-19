@@ -25,6 +25,7 @@ interface ToastStore {
 }
 
 const store = reactive<ToastStore>({ toasts: [] })
+const toastMap = new Map<string, ToastSpec>()
 let counter = 0
 
 const nextId = (): string => {
@@ -34,21 +35,10 @@ const nextId = (): string => {
 
 const push = (body: string, options: ToastShowOptions): ToastSpec => {
   const id = options.id ?? nextId()
-  // Bug fix: deduplicate by id — update in place if a toast with the same id
-  // already exists, preventing a permanently undismissable duplicate.
-  const existingIdx = store.toasts.findIndex(t => t.id === id)
-  if (existingIdx !== -1) {
-    const updated: ToastSpec = {
-      id,
-      body,
-      title: options.title,
-      variant: options.variant,
-      placement: options.placement,
-      autohide: options.autohide,
-      delay: options.delay
-    }
-    Object.assign(store.toasts[existingIdx], updated)
-    return store.toasts[existingIdx]
+  const existing = toastMap.get(id)
+  if (existing) {
+    Object.assign(existing, { body, title: options.title, variant: options.variant, placement: options.placement, autohide: options.autohide, delay: options.delay })
+    return existing
   }
   const spec: ToastSpec = {
     id,
@@ -59,18 +49,21 @@ const push = (body: string, options: ToastShowOptions): ToastSpec => {
     autohide: options.autohide,
     delay: options.delay
   }
+  toastMap.set(id, spec)
   store.toasts.push(spec)
   return spec
 }
 
 const dismissById = (id: string): boolean => {
+  if (!toastMap.has(id)) return false
+  toastMap.delete(id)
   const idx = store.toasts.findIndex(t => t.id === id)
-  if (idx === -1) return false
-  store.toasts.splice(idx, 1)
+  if (idx !== -1) store.toasts.splice(idx, 1)
   return true
 }
 
 const clear = (): void => {
+  toastMap.clear()
   store.toasts.splice(0, store.toasts.length)
 }
 
@@ -101,6 +94,7 @@ export function useToast(): UseToastReturn {
 }
 
 export const __resetToastStoreForTests = (): void => {
+  toastMap.clear()
   clear()
   counter = 0
 }
