@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
 import { getActiveDrag } from './dndStore'
 
 const props = defineProps({
@@ -59,6 +59,11 @@ const onDragLeave = (event: DragEvent) => {
     emit('dragleave', event)
   }
 }
+
+onBeforeUnmount(() => {
+  dragCounter = 0
+  isOver.value = false
+})
 
 const onDrop = (event: DragEvent) => {
   if (props.disabled) return
