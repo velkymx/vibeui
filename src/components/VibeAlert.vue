@@ -55,6 +55,7 @@ const setupBootstrap = async () => {
   if (!alertRef.value || bsAlert.value) return
   try {
     const bootstrap = await import('bootstrap')
+    if (!alertRef.value) return
     bsAlert.value = new bootstrap.Alert(alertRef.value) as BootstrapAlert
     attachAlertListeners()
   } catch (error) {
@@ -84,8 +85,8 @@ watch(() => props.modelValue, async (newVal) => {
     isVisible.value = true
     await nextTick()
     void setupBootstrap()
-  } else if (bsAlert.value && isVisible.value) {
-    bsAlert.value.close()
+  } else if (isVisible.value) {
+    bsAlert.value?.close()
   } else {
     isVisible.value = false
   }
