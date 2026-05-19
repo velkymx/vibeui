@@ -128,28 +128,37 @@ const handleFocus = (event: FocusEvent) => {
   emit('focus', event)
 }
 
+const stepPrecision = computed(() => {
+  const s = String(props.step)
+  const dot = s.indexOf('.')
+  return dot === -1 ? 0 : s.length - dot - 1
+})
+
+const snapToStep = (v: number): number =>
+  parseFloat(v.toFixed(stepPrecision.value))
+
 const increment = () => {
   if (!canIncrement.value) return
-  let newValue = internalValue.value + props.step
+  let newValue = snapToStep(internalValue.value + props.step)
   if (props.max !== undefined && newValue > props.max) {
     newValue = props.wrap ? props.min ?? 0 : props.max
   }
   internalValue.value = newValue
   emit('update:modelValue', newValue)
   emit('increment', newValue)
-  if (props.validateOn === 'change') emit('validate')
+  emit('validate')
 }
 
 const decrement = () => {
   if (!canDecrement.value) return
-  let newValue = internalValue.value - props.step
+  let newValue = snapToStep(internalValue.value - props.step)
   if (props.min !== undefined && newValue < props.min) {
     newValue = props.wrap ? props.max ?? 0 : props.min
   }
   internalValue.value = newValue
   emit('update:modelValue', newValue)
   emit('decrement', newValue)
-  if (props.validateOn === 'change') emit('validate')
+  emit('validate')
 }
 </script>
 
