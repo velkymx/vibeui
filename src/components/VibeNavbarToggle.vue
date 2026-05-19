@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, computed, onMounted, ref } from 'vue'
+import { inject, computed } from 'vue'
 
 interface BootstrapCollapse {
   toggle: () => void
@@ -22,12 +22,8 @@ const navbar = inject<{
 const isExpanded = computed(() => navbar?.collapseStates[props.target] ?? false)
 
 const handleClick = async () => {
-  // 1. Sync Vue state if inside VibeNavbar
-  if (navbar) {
-    navbar.toggleCollapse(props.target)
-  }
+  if (navbar) navbar.toggleCollapse(props.target)
 
-  // 2. Sync Bootstrap JS instance if available
   try {
     const targetEl = document.getElementById(props.target)
     if (targetEl) {
@@ -46,8 +42,6 @@ const handleClick = async () => {
   <button
     class="navbar-toggler"
     type="button"
-    :data-bs-target="`#${target}`"
-    data-bs-toggle="collapse"
     :aria-controls="target"
     :aria-expanded="isExpanded"
     :aria-label="ariaLabel"
