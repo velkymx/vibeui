@@ -10,6 +10,7 @@ const props = defineProps({
     default: false
   },
   value: { type: [String, Number, Boolean], default: true },
+  uncheckedValue: { type: [String, Number, Boolean], default: false },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
@@ -77,7 +78,7 @@ const handleChange = (event: Event) => {
       if (index > -1) newValue.splice(index, 1)
     }
   } else {
-    newValue = target.checked ? props.value : false
+    newValue = target.checked ? props.value : props.uncheckedValue
   }
   emit('update:modelValue', newValue)
   emit('change', event)
