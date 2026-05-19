@@ -127,8 +127,8 @@ watch(() => props.modelValue, (newIndex) => {
   }
 })
 
-// Re-initialize only when items array reference changes (not on deep property mutations)
 watch(() => props.items, async () => {
+  activeIndex.value = 0
   await nextTick()
   await initCarousel()
 }, { deep: false })
