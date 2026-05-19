@@ -21,10 +21,15 @@ const props = defineProps({
 
 const computedId = computed(() => props.id || _generatedId)
 
+if (import.meta.env.DEV && props.id && /[ .:#[\](){}+~>,|^$*?=]/.test(props.id)) {
+  console.warn(`[VibeAccordion] id "${props.id}" contains CSS-special characters. Bootstrap's querySelector will fail. Use only alphanumeric characters, hyphens, and underscores.`)
+}
+
 const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'component-error'])
 
 const accordionRef = ref<HTMLElement | null>(null)
 const bsCollapses = new Map<string, BootstrapCollapse>()
+const collapseElements = new Map<string, HTMLElement>()
 let initInFlight = false
 let pendingReinit = false
 
@@ -42,7 +47,7 @@ const onHide = (id: string) => emit('hide', id)
 const onHidden = (id: string) => emit('hidden', id)
 
 const disposeItem = (id: string) => {
-  const el = document.getElementById(id)
+  const el = collapseElements.get(id)
   const h = collapseHandlers.get(id)
   if (el && h) {
     el.removeEventListener('show.bs.collapse', h.show)
@@ -50,6 +55,7 @@ const disposeItem = (id: string) => {
     el.removeEventListener('hide.bs.collapse', h.hide)
     el.removeEventListener('hidden.bs.collapse', h.hidden)
   }
+  collapseElements.delete(id)
   collapseHandlers.delete(id)
   bsCollapses.get(id)?.dispose()
   bsCollapses.delete(id)
@@ -73,7 +79,9 @@ const initItems = async () => {
       const id = el.id
       // Only initialize if not already tracked
       if (!bsCollapses.has(id)) {
-        const bsCollapse = new Collapse(el as HTMLElement, {
+        const htmlEl = el as HTMLElement
+        collapseElements.set(id, htmlEl)
+        const bsCollapse = new Collapse(htmlEl, {
           toggle: false,
           parent: props.alwaysOpen ? undefined : `#${computedId.value}`
         }) as BootstrapCollapse
@@ -127,6 +135,7 @@ watch([() => props.items, () => props.alwaysOpen], () => {
     disposeItem(id)
   }
   bsCollapses.clear()
+  collapseElements.clear()
   // Then init fresh so new items always get Bootstrap instances
   nextTick(() => initItems())
 }, { deep: false })

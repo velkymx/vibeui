@@ -46,7 +46,10 @@ const sortDesc = defineModel<boolean>('sortDesc', { default: false })
 const emit = defineEmits(['row-clicked', 'component-error'])
 
 const _instance = getCurrentInstance()
-const isRowClickable = computed(() => typeof _instance?.vnode.props?.onRowClicked === 'function')
+const isRowClickable = computed(() => {
+  const p = _instance?.vnode.props
+  return typeof p?.onRowClicked === 'function' || typeof p?.['onRow-clicked'] === 'function'
+})
 
 // Local state for search
 const searchQuery = ref('')
