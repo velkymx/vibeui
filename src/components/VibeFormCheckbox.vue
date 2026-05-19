@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, ref, watch, onMounted } from 'vue'
 import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 import { useId } from '../composables/useId'
@@ -92,18 +92,28 @@ const handleBlur = (event: FocusEvent) => {
 const handleFocus = (event: FocusEvent) => {
   emit('focus', event)
 }
+
+const inputRef = ref<HTMLInputElement | null>(null)
+
+onMounted(() => {
+  if (inputRef.value) inputRef.value.indeterminate = props.indeterminate
+})
+
+watch(() => props.indeterminate, (val) => {
+  if (inputRef.value) inputRef.value.indeterminate = val
+})
 </script>
 
 <template>
   <div :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
     <input
+      ref="inputRef"
       :id="computedId"
       type="checkbox"
       :class="inputClass"
       :checked="isChecked"
       :disabled="disabled"
       :required="required"
-      :indeterminate="indeterminate"
       :aria-invalid="validationState === 'invalid'"
       :aria-describedby="helpText && validationMessage ? `${helpId.value} ${feedbackId.value}` : helpText ? helpId.value : validationMessage ? feedbackId.value : undefined"
       @change="handleChange"
