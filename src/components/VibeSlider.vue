@@ -239,9 +239,6 @@ const handlePointerUp = (event: PointerEvent) => {
   activePointerId = null
   window.removeEventListener('pointermove', handlePointerMove)
   window.removeEventListener('pointerup', handlePointerUp)
-  internalValue.value = Array.isArray(props.modelValue)
-    ? [...props.modelValue] as [number, number]
-    : props.modelValue
 }
 
 onBeforeUnmount(() => {
