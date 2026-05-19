@@ -37,9 +37,13 @@ function redraw() {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   const dpr = window.devicePixelRatio || 1
-  canvas.width = currentW * dpr
-  canvas.height = currentH * dpr
-  ctx.scale(dpr, dpr)
+  const pw = Math.round(currentW * dpr)
+  const ph = Math.round(currentH * dpr)
+  if (canvas.width !== pw || canvas.height !== ph) {
+    canvas.width = pw
+    canvas.height = ph
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   drawBar(ctx, props.data, currentW, currentH, resolvedColors.value, props.showAxes, props.showGrid, props.stacked)
 }
 
