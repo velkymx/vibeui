@@ -19,10 +19,10 @@ describe('VibePopover', () => {
       }
     })
 
-    expect(wrapper.find('[data-bs-toggle="popover"]').exists()).toBe(true)
+    expect(wrapper.find('span[data-bs-placement]').exists()).toBe(true)
     expect(wrapper.find('button').text()).toBe('Click me')
-    expect(wrapper.find('[data-bs-toggle="popover"]').attributes('data-bs-title')).toBe('Popover Title')
-    expect(wrapper.find('[data-bs-toggle="popover"]').attributes('data-bs-content')).toBe('Popover Content')
+    expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-title')).toBe('Popover Title')
+    expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-content')).toBe('Popover Content')
   })
 
   it('supports text prop as an alias for content', () => {
@@ -35,7 +35,7 @@ describe('VibePopover', () => {
       }
     })
 
-    expect(wrapper.find('[data-bs-toggle="popover"]').attributes('data-bs-content')).toBe('Popover Text')
+    expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-content')).toBe('Popover Text')
   })
 
   it('initializes bootstrap popover on mount', async () => {
@@ -93,7 +93,7 @@ describe('VibePopover', () => {
       props: { content: 'Safe content' },
       slots: { default: '<button>x</button>' }
     })
-    expect(wrapper.find('[data-bs-toggle="popover"]').attributes('data-bs-html')).toBeUndefined()
+    expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-html')).toBeUndefined()
   })
 
   it('cleans up bootstrap popover on unmount', async () => {

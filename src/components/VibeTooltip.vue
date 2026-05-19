@@ -95,7 +95,7 @@ defineExpose({ bsInstance: bsTooltip })
 <template>
   <span
     ref="tooltipRef"
-    data-bs-toggle="tooltip"
+
     :data-bs-placement="placement"
     :data-bs-title="text || content"
     :data-bs-trigger="computedTrigger"

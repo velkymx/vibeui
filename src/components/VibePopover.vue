@@ -94,7 +94,7 @@ defineExpose({ bsInstance: bsPopover })
 <template>
   <span
     ref="popoverRef"
-    data-bs-toggle="popover"
+
     :data-bs-placement="placement"
     :data-bs-title="title"
     :data-bs-content="text || content"

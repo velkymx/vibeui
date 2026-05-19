@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onBeforeUnmount, type PropType } from 'vue'
+import { computed, ref, onBeforeUnmount, onDeactivated, type PropType } from 'vue'
 
 export interface StepperStep {
   label: string
@@ -38,6 +38,7 @@ const transitioning = ref(false)
 
 let isUnmounted = false
 onBeforeUnmount(() => { isUnmounted = true })
+onDeactivated(() => { isUnmounted = true })
 
 const isLast = computed(() => props.modelValue >= props.steps.length - 1)
 const isFirst = computed(() => props.modelValue <= 0)

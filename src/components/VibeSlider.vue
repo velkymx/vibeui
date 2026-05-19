@@ -244,6 +244,8 @@ const handlePointerUp = (event: PointerEvent) => {
 onBeforeUnmount(() => {
   window.removeEventListener('pointermove', handlePointerMove)
   window.removeEventListener('pointerup', handlePointerUp)
+  activeHandle.value = null
+  activePointerId = null
 })
 </script>
 

@@ -18,9 +18,9 @@ describe('VibeTooltip', () => {
       }
     })
 
-    expect(wrapper.find('[data-bs-toggle="tooltip"]').exists()).toBe(true)
+    expect(wrapper.find('span[data-bs-placement]').exists()).toBe(true)
     expect(wrapper.find('button').text()).toBe('Hover me')
-    expect(wrapper.find('[data-bs-toggle="tooltip"]').attributes('data-bs-title')).toBe('Tooltip Content')
+    expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-title')).toBe('Tooltip Content')
   })
 
   it('supports text prop as an alias for content', () => {
@@ -33,7 +33,7 @@ describe('VibeTooltip', () => {
       }
     })
 
-    expect(wrapper.find('[data-bs-toggle="tooltip"]').attributes('data-bs-title')).toBe('Tooltip Text')
+    expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-title')).toBe('Tooltip Text')
   })
 
   it('initializes bootstrap tooltip on mount', async () => {
@@ -105,7 +105,7 @@ describe('VibeTooltip', () => {
       props: { content: 'Safe content' },
       slots: { default: '<button>x</button>' }
     })
-    expect(wrapper.find('[data-bs-toggle="tooltip"]').attributes('data-bs-html')).toBeUndefined()
+    expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-html')).toBeUndefined()
   })
 
   it('switches trigger to click on touch devices', async () => {

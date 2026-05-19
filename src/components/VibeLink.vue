@@ -60,7 +60,8 @@ const linkClass = computed(() => {
   <component
     :is="componentTag"
     :class="linkClass"
-    v-bind="isRouterLink ? { to } : { href }"
+    :to="isRouterLink ? to : undefined"
+    :href="isRouterLink ? undefined : href"
   >
     <slot />
   </component>

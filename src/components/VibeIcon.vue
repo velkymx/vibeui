@@ -82,7 +82,7 @@ const iconStyle = computed(() => {
 })
 
 const handleClick = (event: Event) => {
-  emit('click', event)
+  if (props.ariaLabel || !props.ariaHidden) emit('click', event)
 }
 </script>
 

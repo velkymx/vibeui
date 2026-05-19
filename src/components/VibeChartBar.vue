@@ -80,7 +80,7 @@ onUnmounted(() => {
       </span>
     </div>
     <div ref="containerEl" class="vibe-chart-canvas-container" :style="canvasContainerStyle">
-      <canvas ref="canvasEl" style="display: block; width: 100%; height: 100%;" />
+      <canvas ref="canvasEl" role="img" aria-label="Chart" style="display: block; width: 100%; height: 100%;" />
     </div>
     <div v-if="legend === 'bottom'" class="vibe-chart-legend vibe-chart-legend--bottom">
       <span v-for="(ds, i) in data.datasets" :key="i" class="vibe-chart-legend-item">
