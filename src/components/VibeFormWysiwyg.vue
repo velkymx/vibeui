@@ -21,12 +21,14 @@ interface QuillInstance {
   selection: unknown
 }
 
+const _generatedId = useId('wysiwyg')
+
 const props = defineProps({
   modelValue: {
     type: String,
     default: ''
   },
-  id: { type: String, default: () => useId('wysiwyg') },
+  id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   placeholder: { type: String, default: 'Write something...' },
   disabled: { type: Boolean, default: false },
@@ -52,7 +54,7 @@ const formGroup = inject<{
   hasHelp: ComputedRef<boolean>
 } | null>('vibeFormGroup', null)
 
-const computedId = computed(() => props.id || formGroup?.id.value)
+const computedId = computed(() => props.id || formGroup?.id.value || _generatedId)
 const { isMobile } = useBreakpoints()
 
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
@@ -64,6 +66,7 @@ const quillInstance = ref<QuillInstance | null>(null)
 const isQuillLoaded = ref(false)
 const loadError = ref<string | null>(null)
 const isUpdatingFromProp = ref(false)
+let initInFlight = false
 
 const blurHandler = ref<(() => void) | null>(null)
 const focusHandler = ref<(() => void) | null>(null)
@@ -159,7 +162,23 @@ const getQuillContent = (): string => {
   return quillInstance.value.getSemanticHTML()
 }
 
+const updateAriaAttributes = () => {
+  const root = quillInstance.value?.root
+  if (!root) return
+  root.setAttribute('aria-invalid', String(props.validationState === 'invalid'))
+  const helpAttr = props.helpText ? `${computedId.value}-help` : null
+  const feedbackAttr = props.validationMessage ? `${computedId.value}-feedback` : null
+  const describedBy = [helpAttr, feedbackAttr].filter(Boolean).join(' ')
+  if (describedBy) {
+    root.setAttribute('aria-describedby', describedBy)
+  } else {
+    root.removeAttribute('aria-describedby')
+  }
+}
+
 const initQuill = async () => {
+  if (initInFlight) return
+  initInFlight = true
   try {
     const QuillModule = await import('quill')
     const Quill = QuillModule.default || QuillModule
@@ -176,6 +195,13 @@ const initQuill = async () => {
       }
 
       quillInstance.value = new Quill(editorContainer.value, options) as QuillInstance
+
+      const root = quillInstance.value.root
+      root.id = computedId.value || ''
+      editorContainer.value.removeAttribute('id')
+      root.setAttribute('role', 'textbox')
+      root.setAttribute('aria-multiline', 'true')
+      updateAriaAttributes()
 
       if (props.modelValue) {
         setQuillContent(props.modelValue)
@@ -220,6 +246,8 @@ const initQuill = async () => {
       componentName: 'VibeFormWysiwyg',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
@@ -281,6 +309,8 @@ watch(() => props.readonly, (newValue) => {
     quillInstance.value.enable(!newValue)
   }
 })
+
+watch([() => props.validationState, () => props.helpText, () => props.validationMessage], updateAriaAttributes)
 
 // Watch for breakpoint changes and re-initialize Quill if toolbar needs to change
 watch(isMobile, async () => {
@@ -346,7 +376,7 @@ watch(isMobile, async () => {
       :class="containerClass"
       :style="{ minHeight: height }"
     >
-      <div ref="editorContainer" :id="computedId"></div>
+      <div ref="editorContainer"></div>
     </div>
 
     <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
