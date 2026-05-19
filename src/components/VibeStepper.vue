@@ -72,7 +72,7 @@ const runGuard = async (
 }
 
 const goNext = async () => {
-  if (transitioning.value) return
+  if (!props.steps.length || transitioning.value) return
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforeNext, 'next')
@@ -122,6 +122,7 @@ const jumpTo = async (idx: number) => {
 }
 
 const activeStep = computed(() => {
+  if (!props.steps.length) return undefined
   const idx = Math.max(0, Math.min(props.modelValue, props.steps.length - 1))
   return props.steps[idx]
 })
