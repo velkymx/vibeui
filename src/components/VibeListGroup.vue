@@ -26,11 +26,6 @@ const listGroupClass = computed(() => {
   return classes.join(' ')
 })
 
-const getItemTag = (item: ListGroupItem) => {
-  if (item.href) return 'a'
-  if (item.to) return 'router-link'
-  return 'li'
-}
 
 const getItemClass = (item: ListGroupItem) => {
   const classes = ['list-group-item']
@@ -49,13 +44,13 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
 
 <template>
   <component :is="tag" :class="listGroupClass">
+    <template v-for="(item, index) in items" :key="index">
     <component
-      :is="getItemTag(item)"
-      v-for="(item, index) in items"
-      :key="index"
+      v-memo="[item.href, item.to, item.active, item.disabled, item.variant, item.text]"
+      :is="item.href ? 'a' : item.to ? 'router-link' : 'li'"
       :class="getItemClass(item)"
-      :href="getItemTag(item) === 'a' ? item.href : undefined"
-      :to="getItemTag(item) === 'router-link' ? item.to : undefined"
+      :href="item.href"
+      :to="item.to"
       :aria-disabled="item.disabled"
       :aria-current="item.active"
       @click="handleItemClick(item, index, $event)"
@@ -65,5 +60,6 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
         {{ item.text }}
       </slot>
     </component>
+    </template>
   </component>
 </template>
