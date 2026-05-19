@@ -22,6 +22,7 @@ const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'comp
 const accordionRef = ref<HTMLElement | null>(null)
 const bsCollapses = new Map<string, BootstrapCollapse>()
 let initInFlight = false
+let pendingReinit = false
 
 interface CollapseHandlers {
   show: EventListener
@@ -52,8 +53,12 @@ const disposeItem = (id: string) => {
 
 const initItems = async () => {
   if (!accordionRef.value) return
-  if (initInFlight) return
+  if (initInFlight) {
+    pendingReinit = true
+    return
+  }
   initInFlight = true
+  pendingReinit = false
 
   try {
     const bootstrap = await import('bootstrap')
@@ -99,6 +104,10 @@ const initItems = async () => {
     })
   } finally {
     initInFlight = false
+    if (pendingReinit) {
+      pendingReinit = false
+      void initItems()
+    }
   }
 }
 
