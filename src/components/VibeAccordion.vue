@@ -10,12 +10,16 @@ interface BootstrapCollapse {
   dispose: () => void
 }
 
+const _generatedId = useId('accordion')
+
 const props = defineProps({
-  id: { type: String, default: () => useId('accordion') },
+  id: { type: String, default: undefined },
   flush: { type: Boolean, default: false },
   items: { type: Array as () => AccordionItem[], required: true },
   alwaysOpen: { type: Boolean, default: false }
 })
+
+const computedId = computed(() => props.id || _generatedId)
 
 const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'component-error'])
 
@@ -71,7 +75,7 @@ const initItems = async () => {
       if (!bsCollapses.has(id)) {
         const bsCollapse = new Collapse(el as HTMLElement, {
           toggle: false,
-          parent: props.alwaysOpen ? undefined : `#${props.id}`
+          parent: props.alwaysOpen ? undefined : `#${computedId.value}`
         }) as BootstrapCollapse
 
         bsCollapses.set(id, bsCollapse)
@@ -117,8 +121,7 @@ onBeforeUnmount(() => {
   bsCollapses.forEach((_, id) => disposeItem(id))
 })
 
-// Watch for changes in items array reference — dispose all and reinit fresh
-watch(() => props.items, () => {
+watch([() => props.items, () => props.alwaysOpen], () => {
   // Dispose all existing instances cleanly (fixes stale instances on same-ID swap)
   for (const [id] of bsCollapses) {
     disposeItem(id)
@@ -136,7 +139,7 @@ defineExpose({ bsInstances: bsCollapses, refresh: initItems })
 </script>
 
 <template>
-  <div ref="accordionRef" :id="id" :class="['accordion', { 'accordion-flush': flush }]">
+  <div ref="accordionRef" :id="computedId" :class="['accordion', { 'accordion-flush': flush }]">
     <div
       v-for="(item, index) in items"
       :key="item.id"
@@ -160,7 +163,7 @@ defineExpose({ bsInstances: bsCollapses, refresh: initItems })
       <div
         :id="item.id"
         :class="['accordion-collapse', 'collapse']"
-        :data-bs-parent="alwaysOpen ? undefined : `#${id}`"
+        :data-bs-parent="alwaysOpen ? undefined : `#${computedId}`"
       >
         <div class="accordion-body">
           <slot name="content" :item="item" :index="index">
