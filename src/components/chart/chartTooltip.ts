@@ -7,31 +7,32 @@ function sameHit(a: TooltipHit | null, b: TooltipHit | null): boolean {
 }
 
 export function bindTooltip(
+  container: HTMLElement,
   canvas: HTMLCanvasElement,
   hitTest: (x: number, y: number) => TooltipHit | null,
-  redraw: () => void
 ): () => void {
   let lastHit: TooltipHit | null = null
 
-  const onMove = (e: MouseEvent) => {
-    const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+  const overlay = document.createElement('canvas')
+  overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none'
+  container.appendChild(overlay)
 
-    const hit = hitTest(x, y)
-    if (sameHit(hit, lastHit)) return
-    lastHit = hit
+  const syncSize = () => {
+    if (overlay.width !== canvas.width) overlay.width = canvas.width
+    if (overlay.height !== canvas.height) overlay.height = canvas.height
+  }
 
-    redraw()
-
-    if (!hit) return
-
-    const ctx = canvas.getContext('2d')
+  const drawTooltip = (hit: TooltipHit, x: number, y: number) => {
+    syncSize()
+    const ctx = overlay.getContext('2d')
     if (!ctx) return
-    const text = `${hit.label}: ${hit.value}`
+    const rect = canvas.getBoundingClientRect()
+    const dpr = window.devicePixelRatio || 1
+    ctx.clearRect(0, 0, overlay.width, overlay.height)
     ctx.save()
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.font = '12px sans-serif'
+    const text = `${hit.label}: ${hit.value}`
     const tw = ctx.measureText(text).width + 12
     const th = 22
     let tx = x + 12
@@ -39,7 +40,6 @@ export function bindTooltip(
     if (tx + tw > rect.width) tx = rect.width - tw - 4
     if (ty < 0) ty = y + 14
     ty = Math.min(ty, rect.height - th)
-
     ctx.fillStyle = 'rgba(0,0,0,0.75)'
     ctx.beginPath()
     const r = 4
@@ -59,10 +59,31 @@ export function bindTooltip(
     ctx.restore()
   }
 
+  const clearOverlay = () => {
+    syncSize()
+    const ctx = overlay.getContext('2d')
+    if (!ctx) return
+    ctx.clearRect(0, 0, overlay.width, overlay.height)
+  }
+
+  const onMove = (e: MouseEvent) => {
+    const rect = canvas.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const hit = hitTest(x, y)
+    if (sameHit(hit, lastHit)) return
+    lastHit = hit
+    if (hit) {
+      drawTooltip(hit, x, y)
+    } else {
+      clearOverlay()
+    }
+  }
+
   const onLeave = () => {
     if (lastHit === null) return
     lastHit = null
-    redraw()
+    clearOverlay()
   }
 
   canvas.addEventListener('mousemove', onMove)
@@ -71,5 +92,6 @@ export function bindTooltip(
   return () => {
     canvas.removeEventListener('mousemove', onMove)
     canvas.removeEventListener('mouseleave', onLeave)
+    overlay.remove()
   }
 }

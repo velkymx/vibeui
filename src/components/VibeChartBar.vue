@@ -54,11 +54,11 @@ useChartResize(containerEl, canvasEl, (w, h) => {
 })
 
 onMounted(() => {
-  if (canvasEl.value) {
+  if (containerEl.value && canvasEl.value) {
     cleanupTooltip = bindTooltip(
+      containerEl.value,
       canvasEl.value,
-      (x, y) => hitTestBar(x, y, props.data, currentW, currentH, props.showAxes, props.stacked),
-      redraw
+      (x, y) => hitTestBar(x, y, props.data, currentW, currentH, props.showAxes, props.stacked)
     )
   }
 })

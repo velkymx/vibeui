@@ -3,10 +3,12 @@ import { bindTooltip } from '../../../src/components/chart/chartTooltip'
 import { createMockCtx } from '../../mocks/canvasMock'
 import type { TooltipHit } from '../../../src/components/chart/chartTypes'
 
+let container: HTMLDivElement
 let canvas: HTMLCanvasElement
 let ctx: ReturnType<typeof createMockCtx>
 
 beforeEach(() => {
+  container = document.createElement('div')
   canvas = document.createElement('canvas')
   canvas.width = 400
   canvas.height = 300
@@ -25,7 +27,7 @@ beforeEach(() => {
       }) as DOMRect
   )
   ctx = createMockCtx()
-  vi.spyOn(canvas, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D)
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D)
 })
 
 afterEach(() => {
@@ -34,52 +36,54 @@ afterEach(() => {
 
 describe('bindTooltip', () => {
   it('returns cleanup function', () => {
-    const cleanup = bindTooltip(canvas, () => null, vi.fn())
+    const cleanup = bindTooltip(container, canvas, () => null)
     expect(typeof cleanup).toBe('function')
     cleanup()
   })
 
-  it('calls redraw on mousemove when hit state changes', () => {
-    const hit: TooltipHit = { datasetIndex: 0, pointIndex: 0, value: 10, label: 'A' }
-    const redraw = vi.fn()
-    bindTooltip(canvas, () => hit, redraw)
-    canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50 }))
-    expect(redraw).toHaveBeenCalled()
+  it('appends overlay canvas to container', () => {
+    bindTooltip(container, canvas, () => null)
+    expect(container.lastElementChild?.tagName).toBe('CANVAS')
   })
 
   it('calls hitTest on mousemove', () => {
     const hitTest = vi.fn(() => null)
-    bindTooltip(canvas, hitTest, vi.fn())
+    bindTooltip(container, canvas, hitTest)
     canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50 }))
     expect(hitTest).toHaveBeenCalledWith(50, 50)
   })
 
-  it('calls redraw on mouseleave when a hit was active', () => {
+  it('draws tooltip on mousemove when hit state changes', () => {
     const hit: TooltipHit = { datasetIndex: 0, pointIndex: 0, value: 10, label: 'A' }
-    const redraw = vi.fn()
-    bindTooltip(canvas, () => hit, redraw)
+    bindTooltip(container, canvas, () => hit)
     canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50 }))
-    redraw.mockClear()
-    canvas.dispatchEvent(new MouseEvent('mouseleave'))
-    expect(redraw).toHaveBeenCalled()
+    expect(ctx.fillText).toHaveBeenCalled()
   })
 
-  it('cleanup removes all listeners', () => {
+  it('clears overlay on mouseleave when a hit was active', () => {
+    const hit: TooltipHit = { datasetIndex: 0, pointIndex: 0, value: 10, label: 'A' }
+    bindTooltip(container, canvas, () => hit)
+    canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50 }))
+    ctx.clearRect.mockClear()
+    canvas.dispatchEvent(new MouseEvent('mouseleave'))
+    expect(ctx.clearRect).toHaveBeenCalled()
+  })
+
+  it('cleanup removes listeners and removes overlay', () => {
     const hitTest = vi.fn(() => null)
-    const redraw = vi.fn()
-    const cleanup = bindTooltip(canvas, hitTest, redraw)
+    const cleanup = bindTooltip(container, canvas, hitTest)
+    const overlay = container.lastElementChild
     cleanup()
-    redraw.mockClear()
     hitTest.mockClear()
     canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50 }))
     canvas.dispatchEvent(new MouseEvent('mouseleave'))
     expect(hitTest).not.toHaveBeenCalled()
-    expect(redraw).not.toHaveBeenCalled()
+    expect(overlay?.isConnected).toBe(false)
   })
 
   it('draws tooltip text when hitTest returns a hit', () => {
     const hit: TooltipHit = { datasetIndex: 0, pointIndex: 1, value: 42, label: 'Jan' }
-    bindTooltip(canvas, () => hit, vi.fn())
+    bindTooltip(container, canvas, () => hit)
     canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: 100, clientY: 100 }))
     expect(ctx.fillText).toHaveBeenCalledWith(
       expect.stringContaining('Jan'),
