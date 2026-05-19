@@ -52,7 +52,7 @@ const onSlid = (event: any) => {
 }
 
 let initInFlight = false
-let attachedEl: HTMLElement | null = null
+const attachedEl = ref<HTMLElement | null>(null)
 
 const initCarousel = async () => {
   if (!carouselRef.value) return
@@ -62,10 +62,10 @@ const initCarousel = async () => {
 
   try {
     // Detach listeners from previously attached element before disposing
-    if (attachedEl) {
-      attachedEl.removeEventListener('slide.bs.carousel', onSlide)
-      attachedEl.removeEventListener('slid.bs.carousel', onSlid)
-      attachedEl = null
+    if (attachedEl.value) {
+      attachedEl.value.removeEventListener('slide.bs.carousel', onSlide)
+      attachedEl.value.removeEventListener('slid.bs.carousel', onSlid)
+      attachedEl.value = null
     }
 
     // Dispose existing instance before re-initializing
@@ -87,15 +87,15 @@ const initCarousel = async () => {
     }) as BootstrapCarousel
 
     // Attach listeners and record element ref
-    attachedEl = carouselRef.value
-    attachedEl.addEventListener('slide.bs.carousel', onSlide)
-    attachedEl.addEventListener('slid.bs.carousel', onSlid)
+    attachedEl.value = carouselRef.value
+    attachedEl.value.addEventListener('slide.bs.carousel', onSlide)
+    attachedEl.value.addEventListener('slid.bs.carousel', onSlid)
 
     if (props.modelValue !== 0) {
       bsCarousel.value.to(props.modelValue)
     }
   } catch (error) {
-    attachedEl = null
+    attachedEl.value = null
     emit('component-error', {
       message: 'Bootstrap JS not loaded. Carousel will use data attributes only.',
       componentName: 'VibeCarousel',
@@ -109,10 +109,10 @@ const initCarousel = async () => {
 onMounted(initCarousel)
 
 onBeforeUnmount(() => {
-  if (attachedEl) {
-    attachedEl.removeEventListener('slide.bs.carousel', onSlide)
-    attachedEl.removeEventListener('slid.bs.carousel', onSlid)
-    attachedEl = null
+  if (attachedEl.value) {
+    attachedEl.value.removeEventListener('slide.bs.carousel', onSlide)
+    attachedEl.value.removeEventListener('slid.bs.carousel', onSlid)
+    attachedEl.value = null
   }
 
   if (bsCarousel.value) {
