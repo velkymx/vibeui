@@ -102,7 +102,7 @@ defineExpose({ refresh })
     :data-bs-target="target"
     :data-bs-root-margin="rootMargin"
     :data-bs-method="method"
-    :data-bs-smooth-scroll="smoothScroll"
+    :data-bs-smooth-scroll="smoothScroll ? 'true' : undefined"
     tabindex="0"
     :style="{ position: 'relative', height: height, overflow: 'auto' }"
   >
