@@ -22,19 +22,20 @@ const emit = defineEmits(['activate', 'component-error'])
 
 const scrollspyRef = ref<HTMLElement | null>(null)
 const bsScrollspy = ref<BootstrapScrollSpy | null>(null)
+let initInFlight = false
 
 const onActivate = (event: any) => {
   emit('activate', event)
 }
 
 const initScrollspy = async () => {
-  if (!scrollspyRef.value) return
+  if (!scrollspyRef.value || initInFlight) return
+  initInFlight = true
 
   try {
     const bootstrap = await import('bootstrap')
     const ScrollSpy = bootstrap.ScrollSpy
 
-    // Guard: component may have unmounted while awaiting the import
     if (!scrollspyRef.value) return
 
     if (props.offset !== undefined) {
@@ -55,13 +56,15 @@ const initScrollspy = async () => {
       componentName: 'VibeScrollspy',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
 onMounted(initScrollspy)
 
 // Re-init when configuration props change after mount
-watch([() => props.target, () => props.rootMargin, () => props.method], async () => {
+watch([() => props.target, () => props.rootMargin, () => props.method, () => props.smoothScroll], async () => {
   if (scrollspyRef.value) {
     scrollspyRef.value.removeEventListener('activate.bs.scrollspy', onActivate)
   }
