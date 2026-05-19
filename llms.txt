@@ -506,6 +506,8 @@ const result = await validate({
 // result.errors: Partial<Record<K, string>>
 ```
 
+`isValid` is `false` until the first `validate()` or `validateField()` call; then `true` if no field has an error. Use this to guard submit buttons without showing errors on a fresh form.
+
 `reset` deep-clones the initial values back in (works for object / array fields). Dirty tracking uses structural compare (`JSON.stringify`) so non-primitive fields don't read as permanently dirty.
 
 For **single-field** validation, prefer `useFormValidation` (older API) and destructure at the call site to keep templates clean.

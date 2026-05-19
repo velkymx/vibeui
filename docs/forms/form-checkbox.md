@@ -24,6 +24,7 @@ const agreed = ref(false)
 |------|------|---------|-------------|
 | `modelValue` | `any` | `false` | The checked state (v-model) |
 | `value` | `any` | `true` | Value when checked |
+| `uncheckedValue` | `any` | `false` | Value emitted when unchecked |
 | `id` | `String` | `Auto-generated` | Unique identifier |
 | `label` | `String` | `undefined` | Label text |
 | `disabled` | `Boolean` | `false` | Disable the checkbox |

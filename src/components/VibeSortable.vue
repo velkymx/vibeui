@@ -1,3 +1,6 @@
+<!-- NOTE: VibeSortable manages its own drag state (draggingIndex). It is NOT compatible
+     with dndStore / VibeDraggable / VibeDroppable — mixing them causes undefined behavior.
+     Use VibeDraggable + VibeDroppable for cross-list or free-form drag-drop scenarios. -->
 <script setup lang="ts" generic="T">
 import { ref, onMounted, onBeforeUnmount, type PropType } from 'vue'
 

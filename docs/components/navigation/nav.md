@@ -103,6 +103,8 @@ Items with `to` starting with `#` are also treated as tab targets without needin
 
 ## Important Notes
 
+**Disabled button items:** Items without `href` or `to` (plain button items) receive the HTML `disabled` attribute when `disabled: true` is set. Link and router-link items only get the disabled visual style — the browser attribute is omitted because `<a disabled>` has no native effect.
+
 **Automatic Initialization:** When using `tabs` or `pills`, this component automatically initializes Bootstrap's Tab functionality for items that target a local panel ID via `href="#..."`, `target="#..."`, or `to="#..."`.
 
 **State Management:** For complex tab state, combine `VibeNav` with `VibeTabContent` and manage the `active` state through your data.
