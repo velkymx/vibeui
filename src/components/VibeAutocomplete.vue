@@ -178,6 +178,7 @@ watch(isOpen, (open) => {
 })
 
 onBeforeUnmount(() => {
+  cancelInFlight()
   if (debounceTimer.value !== null) clearTimeout(debounceTimer.value)
   if (typeof document !== 'undefined') {
     document.removeEventListener('mousedown', onDocumentMousedown)
