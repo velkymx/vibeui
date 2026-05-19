@@ -53,6 +53,7 @@ export const resetDndStoreForSSR = (): void => {
 }
 
 export const clearActiveDrag = (): void => {
+  if (typeof window === 'undefined') return
   state.payload = undefined
   state.group = ''
   state.active = false
