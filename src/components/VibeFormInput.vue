@@ -130,7 +130,7 @@ const handleFocus = (event: FocusEvent) => {
     :readonly="readonly || plaintext"
     :required="required"
     :aria-invalid="validationState === 'invalid'"
-    :aria-describedby="helpText && validationMessage ? `${helpId} ${feedbackId}` : helpText ? helpId : validationMessage ? feedbackId : undefined"
+    :aria-describedby="formGroup ? (helpText && validationMessage ? `${helpId} ${feedbackId}` : helpText ? helpId : validationMessage ? feedbackId : undefined) : undefined"
     @input="handleInput"
     @change="handleChange"
     @blur="handleBlur"
