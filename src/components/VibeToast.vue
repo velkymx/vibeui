@@ -80,6 +80,7 @@ const detachToastListeners = () => {
 }
 
 let initInFlight = false
+let isUnmounted = false
 
 const initToast = async () => {
   if (!toastRef.value || initInFlight) return
@@ -89,11 +90,12 @@ const initToast = async () => {
 
   if (bsToast.value) {
     bsToast.value.dispose()
+    bsToast.value = null
   }
 
   try {
     const bootstrap = await import('bootstrap')
-    if (!toastRef.value) return
+    if (!toastRef.value || isUnmounted) return
     const Toast = bootstrap.Toast
 
     bsToast.value = new Toast(toastRef.value, {
@@ -123,6 +125,7 @@ const initToast = async () => {
 onMounted(initToast)
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   detachToastListeners()
 
   if (bsToast.value) {
