@@ -33,6 +33,7 @@ const startX = ref(0)
 const startY = ref(0)
 const startW = ref(0)
 const startH = ref(0)
+let activePointerId: number | null = null
 
 watch(
   () => props.width,
@@ -53,11 +54,6 @@ const snap = (v: number): number => Math.round(v / props.grid) * props.grid
 const clampW = (w: number) => Math.min(props.maxWidth, Math.max(props.minWidth, w))
 const clampH = (h: number) => Math.min(props.maxHeight, Math.max(props.minHeight, h))
 
-const applyAspect = (w: number, h: number, fromWidth: boolean): { w: number; h: number } => {
-  if (!props.aspectRatio) return { w, h }
-  if (fromWidth) return { w, h: w / props.aspectRatio }
-  return { w: h * props.aspectRatio, h }
-}
 
 const containerStyle = computed(() => ({
   width: `${currentWidth.value}px`,
@@ -65,7 +61,7 @@ const containerStyle = computed(() => ({
 }))
 
 const validHandles = computed(() => {
-  if (process.env.NODE_ENV !== 'production') {
+  if (import.meta.env.DEV) {
     const invalid = props.handles.filter(h => !ALL_HANDLES.includes(h))
     if (invalid.length) console.warn(`[VibeResizable] Invalid handle values: ${invalid.join(', ')}. Valid: ${ALL_HANDLES.join(', ')}`)
   }
@@ -76,6 +72,7 @@ const onPointerDown = (handle: Handle, event: PointerEvent) => {
   if (props.disabled) return
   event.stopPropagation()
   activeHandle.value = handle
+  activePointerId = event.pointerId
   startX.value = event.clientX
   startY.value = event.clientY
   startW.value = currentWidth.value
@@ -85,7 +82,7 @@ const onPointerDown = (handle: Handle, event: PointerEvent) => {
 }
 
 const onPointerMove = (event: PointerEvent) => {
-  if (!activeHandle.value) return
+  if (!activeHandle.value || event.pointerId !== activePointerId) return
   const dx = event.clientX - startX.value
   const dy = event.clientY - startY.value
 
@@ -105,18 +102,26 @@ const onPointerMove = (event: PointerEvent) => {
 
   if (props.aspectRatio) {
     if (widthDriven) {
-      nextW = snap(nextW)
+      nextW = clampW(snap(nextW))
       nextH = nextW / props.aspectRatio
+      const clampedH = clampH(nextH)
+      if (clampedH !== nextH) {
+        nextH = clampedH
+        nextW = clampW(nextH * props.aspectRatio)
+      }
     } else {
-      nextH = snap(nextH)
+      nextH = clampH(snap(nextH))
       nextW = nextH * props.aspectRatio
+      const clampedW = clampW(nextW)
+      if (clampedW !== nextW) {
+        nextW = clampedW
+        nextH = clampH(nextW / props.aspectRatio)
+      }
     }
   } else {
-    nextW = snap(nextW)
-    nextH = snap(nextH)
+    nextW = clampW(snap(nextW))
+    nextH = clampH(snap(nextH))
   }
-  nextW = clampW(nextW)
-  nextH = clampH(nextH)
 
   if (nextW !== currentWidth.value) {
     currentWidth.value = nextW
@@ -130,9 +135,10 @@ const onPointerMove = (event: PointerEvent) => {
 }
 
 const onPointerUp = (event: PointerEvent) => {
-  if (!activeHandle.value) return
+  if (!activeHandle.value || event.pointerId !== activePointerId) return
   ;(event.target as HTMLElement).releasePointerCapture?.(event.pointerId)
   activeHandle.value = null
+  activePointerId = null
   emit('resizeend', { width: currentWidth.value, height: currentHeight.value })
 }
 </script>
