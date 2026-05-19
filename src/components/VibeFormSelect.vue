@@ -145,7 +145,7 @@ const handleFocus = (event: FocusEvent) => {
       <slot>
         <option
           v-for="(option, idx) in options"
-          :key="idx"
+          :key="option.value !== undefined ? String(option.value) : option.text"
           :value="encodeIndex(idx)"
           :disabled="option.disabled"
         >
