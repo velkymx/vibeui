@@ -262,7 +262,7 @@ const handlePerPageChange = () => {
 }
 
 const handleRowClick = (item: T, index: number) => {
-  emit('row-clicked', item, index)
+  emit('row-clicked', item, (startRow.value - 1) + index)
 }
 
 const getCellValue = (item: T, column: DataTableColumn<T>) => {
