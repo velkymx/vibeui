@@ -64,6 +64,7 @@ onMounted(() => {
 })
 
 watch(() => props.data, redraw, { deep: true })
+watch([() => props.showAxes, () => props.showGrid, () => props.stacked], redraw)
 
 onUnmounted(() => {
   cleanupTooltip?.()
