@@ -29,7 +29,7 @@ describe('useForm', () => {
 
       expect(isRef(form.isValid)).toBe(true)
       expect(isRef(form.isDirty)).toBe(true)
-      expect(form.isValid.value).toBe(true)
+      expect(form.isValid.value).toBe(false) // false until first validate() call
       expect(form.isDirty.value).toBe(false)
     })
 

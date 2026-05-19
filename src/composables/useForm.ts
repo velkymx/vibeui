@@ -56,6 +56,7 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
   const touched = reactive(touchedInit) as Record<keyof T, boolean>
 
   const dirtyFlag = ref(false)
+  const hasValidated = ref(false)
   const isDirty = computed(() => dirtyFlag.value)
 
   const initialJson = JSON.stringify(initialSnapshot)
@@ -68,6 +69,7 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
   )
 
   const isValid = computed(() => {
+    if (!hasValidated.value) return false
     for (const k of Object.keys(errors) as Array<keyof T>) {
       if (errors[k]) return false
     }
@@ -82,6 +84,7 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
   ): Promise<string> => {
     const message = await runRules(fields[key], rule)
     errors[key] = message
+    hasValidated.value = true
     return message
   }
 
@@ -98,6 +101,7 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
         valid = false
       }
     }
+    hasValidated.value = true
     return { valid, errors: out }
   }
 
@@ -109,6 +113,7 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
       touched[k] = false
     }
     dirtyFlag.value = false
+    hasValidated.value = false
   }
 
   const markTouched = <K extends keyof T>(key: K) => {

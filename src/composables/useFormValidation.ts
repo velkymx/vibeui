@@ -10,6 +10,7 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
   const isDirty = ref(false)
   const isTouched = ref(false)
   const isValidating = ref(false)
+  let validateSeq = 0
 
   watch(value, () => {
     if (validationState.value === 'invalid') {
@@ -19,7 +20,10 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
   })
 
   const validate = async (rules: ValidationRule[] | ValidatorFunction | undefined): Promise<FormValidationResult> => {
+    const seq = ++validateSeq
+
     if (!rules) {
+      if (seq !== validateSeq) return { valid: true }
       validationState.value = null
       validationMessage.value = ''
       return { valid: true }
@@ -28,14 +32,13 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
     isValidating.value = true
 
     try {
-      // Convert single validator to array format
       const rulesArray: ValidationRule[] = Array.isArray(rules)
         ? rules
         : [{ validator: rules }]
 
-      // Run all validators
       for (const rule of rulesArray) {
         const result = await rule.validator(value.value)
+        if (seq !== validateSeq) return { valid: true }
 
         if (result === false || typeof result === 'string') {
           validationState.value = 'invalid'
@@ -45,11 +48,13 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
         }
       }
 
+      if (seq !== validateSeq) return { valid: true }
       validationState.value = 'valid'
       validationMessage.value = ''
       isValidating.value = false
       return { valid: true }
     } catch (error) {
+      if (seq !== validateSeq) return { valid: true }
       validationState.value = 'invalid'
       validationMessage.value = 'Validation error occurred'
       isValidating.value = false
