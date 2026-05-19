@@ -107,7 +107,7 @@ export const validators = {
 
   email: (message = 'Please enter a valid email address'): ValidationRule => ({
     validator: (value: unknown) => {
-      if (!value) return true
+      if (value === null || value === undefined || value === '') return true
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       return emailRegex.test(String(value)) || message
     },
@@ -116,7 +116,7 @@ export const validators = {
 
   minLength: (min: number, message?: string): ValidationRule => ({
     validator: (value: unknown) => {
-      if (!value) return true
+      if (value === null || value === undefined || value === '') return true
       const str = String(value)
       return str.length >= min || message || `Minimum length is ${min} characters`
     },
@@ -125,7 +125,7 @@ export const validators = {
 
   maxLength: (max: number, message?: string): ValidationRule => ({
     validator: (value: unknown) => {
-      if (!value) return true
+      if (value === null || value === undefined || value === '') return true
       const str = String(value)
       return str.length <= max || message || `Maximum length is ${max} characters`
     },
@@ -156,7 +156,7 @@ export const validators = {
 
   pattern: (regex: RegExp, message = 'Invalid format'): ValidationRule => ({
     validator: (value: unknown) => {
-      if (!value) return true
+      if (value === null || value === undefined || value === '') return true
       return regex.test(String(value)) || message
     },
     message
@@ -164,7 +164,7 @@ export const validators = {
 
   url: (message = 'Please enter a valid URL'): ValidationRule => ({
     validator: (value: unknown) => {
-      if (!value) return true
+      if (value === null || value === undefined || value === '') return true
       try {
         new URL(String(value))
         return true
