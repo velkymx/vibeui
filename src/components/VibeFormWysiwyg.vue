@@ -68,6 +68,10 @@ const loadError = ref<string | null>(null)
 const isUpdatingFromProp = ref(false)
 let initInFlight = false
 
+// Set first in onBeforeUnmount — guards the post-await section of initQuill against
+// constructing a Quill instance on a detached container during a mount/unmount race.
+let isUnmounted = false
+
 const blurHandler = ref<(() => void) | null>(null)
 const focusHandler = ref<(() => void) | null>(null)
 const textChangeHandler = ref<((...args: unknown[]) => void) | null>(null)
@@ -184,6 +188,9 @@ const initQuill = async () => {
     const Quill = QuillModule.default || QuillModule
     await import('quill/dist/quill.snow.css')
 
+    // Guard: component may have unmounted while the imports were in-flight.
+    if (!editorContainer.value || isUnmounted) return
+
     if (editorContainer.value) {
       const options = {
         theme: props.theme,
@@ -254,6 +261,8 @@ const initQuill = async () => {
 onMounted(initQuill)
 
 onBeforeUnmount(() => {
+   isUnmounted = true
+
    if (quillInstance.value) {
      // Disable the editor first to prevent selection updates on detached DOM
      quillInstance.value.enable(false)
@@ -344,13 +353,15 @@ watch(isMobile, async () => {
     if (quillInstance.value && typeof quillInstance.value.destroy === 'function') {
       quillInstance.value.destroy()
     }
-    // Nullify the instance
+    // Null instance BEFORE clearing innerHTML — prevents Quill's internal observers
+    // from firing against removed DOM nodes between innerHTML='' and quillInstance=null.
     quillInstance.value = null
     isQuillLoaded.value = false
 
     const toolbar = editorContainer.value?.parentElement?.querySelector('.ql-toolbar')
     if (toolbar) toolbar.remove()
 
+    // innerHTML cleared after nulling instance — safe, no live Quill observers remain
     if (editorContainer.value) editorContainer.value.innerHTML = ''
 
     await nextTick()

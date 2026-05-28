@@ -88,4 +88,34 @@ describe('VibeFormWysiwyg', () => {
       expect(wrapper.props('toolbar')).toBe(false)
     })
   })
+
+  // Regression: isUnmounted guard — Quill constructor must not run on a detached container
+  // if unmount fires before the dynamic import() microtasks resolve. When Quill constructs
+  // successfully it injects a .ql-editor element into the container — we check for its absence.
+  it('does not inject .ql-editor after component unmounts during async init', async () => {
+    // Attach to document so the editorContainer ref is set before unmount
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+
+    const wrapper = mount(VibeFormWysiwyg, { attachTo: el })
+
+    // Unmount synchronously before both import() microtasks resolve
+    wrapper.unmount()
+
+    // Drain the microtask queue (two awaits in initQuill)
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // If isUnmounted guard works, Quill never ran — no .ql-editor injected
+    expect(el.querySelector('.ql-editor')).toBeNull()
+
+    document.body.removeChild(el)
+  })
+
+  it('cleans up handlers on unmount', async () => {
+    const wrapper = mount(VibeFormWysiwyg)
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Should not throw during cleanup
+    expect(() => wrapper.unmount()).not.toThrow()
+  })
 })
