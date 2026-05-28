@@ -32,6 +32,10 @@ let initInFlight = false
 // Bug 4: track whether listeners are attached to prevent stacking
 let listenersAttached = false
 
+// Set first in onBeforeUnmount — guards the post-await section against constructing
+// a Bootstrap Offcanvas instance on a detached element during a mount/unmount race.
+let isUnmounted = false
+
 const offcanvasClass = computed(() => `offcanvas offcanvas-${props.placement}`)
 
 // Bug 3: isVisible is now set in onShown (not onShow) to align with modelValue emit
@@ -91,6 +95,10 @@ const initOffcanvas = async () => {
     }
 
     const bootstrap = await import('bootstrap')
+
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!offcanvasRef.value || isUnmounted) return
+
     const Offcanvas = bootstrap.Offcanvas
 
     bsOffcanvas.value = new Offcanvas(offcanvasRef.value, {
@@ -120,6 +128,7 @@ onMounted(initOffcanvas)
 // Bug 2: just call dispose() directly — Bootstrap handles cleanup internally
 // Bug 4: detach listeners before dispose
 onBeforeUnmount(() => {
+  isUnmounted = true
   detachListeners()
   bsOffcanvas.value?.dispose()
   bsOffcanvas.value = null

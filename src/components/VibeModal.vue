@@ -37,6 +37,10 @@ let initInFlight = false
 // Bug 4: track whether listeners are attached to prevent stacking
 let listenersAttached = false
 
+// Set first in onBeforeUnmount — guards the post-await section against constructing
+// a Bootstrap Modal instance on a detached element during a mount/unmount race.
+let isUnmounted = false
+
 const dialogClass = computed(() => {
   const classes = ['modal-dialog']
   if (props.size) classes.push(`modal-${props.size}`)
@@ -108,6 +112,10 @@ const initModal = async () => {
     }
 
     const bootstrap = await import('bootstrap')
+
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!modalRef.value || isUnmounted) return
+
     const Modal = bootstrap.Modal
 
     bsModal.value = new Modal(modalRef.value, {
@@ -137,6 +145,7 @@ onMounted(initModal)
 // Bug 2: just call dispose() directly — Bootstrap handles backdrop cleanup internally
 // Bug 4: detach listeners before dispose
 onBeforeUnmount(() => {
+  isUnmounted = true
   detachListeners()
   bsModal.value?.dispose()
   bsModal.value = null

@@ -104,4 +104,31 @@ describe('VibeOffcanvas', () => {
     await wrapper.setProps({ modelValue: false })
     expect(mockInstance.hide).toHaveBeenCalled()
   })
+
+  it('cleans up on unmount', async () => {
+    const wrapper = mount(VibeOffcanvas, {
+      props: { teleport: false }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const mockInstance = vi.mocked(bootstrap.Offcanvas).mock.results[0].value
+
+    wrapper.unmount()
+    expect(mockInstance.dispose).toHaveBeenCalled()
+  })
+
+  // Regression: isUnmounted guard — Bootstrap constructor must not run on a detached
+  // element if unmount fires before the dynamic import() microtask resolves.
+  it('does not construct Offcanvas after component unmounts during async init', async () => {
+    const wrapper = mount(VibeOffcanvas, {
+      props: { teleport: false }
+    })
+
+    // Unmount synchronously before the import() microtask resolves
+    wrapper.unmount()
+
+    // Drain microtask queue; isUnmounted guard must block the constructor
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(bootstrap.Offcanvas).not.toHaveBeenCalled()
+  })
 })

@@ -60,4 +60,31 @@ describe('VibeModal', () => {
     expect(emitted).toHaveLength(1)
     expect(emitted![0]).toEqual([true])
   })
+
+  it('cleans up on unmount', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const mockInstance = vi.mocked(bootstrap.Modal).mock.results[0].value
+
+    wrapper.unmount()
+    expect(mockInstance.dispose).toHaveBeenCalled()
+  })
+
+  // Regression: isUnmounted guard — Bootstrap constructor must not run on a detached
+  // element if unmount fires before the dynamic import() microtask resolves.
+  it('does not construct Modal after component unmounts during async init', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false }
+    })
+
+    // Unmount synchronously before the import() microtask resolves
+    wrapper.unmount()
+
+    // Drain microtask queue; isUnmounted guard must block the constructor
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(bootstrap.Modal).not.toHaveBeenCalled()
+  })
 })
