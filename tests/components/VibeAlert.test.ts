@@ -75,7 +75,9 @@ describe('VibeAlert', () => {
     expect(wrapper.text()).toContain('Locked')
   })
 
-  it('slot wins over message prop when both provided', () => {
+  // Behavior change (CR6): message prop and slot content now coexist.
+  // Slot appends after message — both render. Old behavior (slot-overrides) is gone.
+  it('renders message prop and slot content together when both provided', () => {
     const wrapper = mount(VibeAlert, {
       props: { message: 'fallback text', variant: 'info' },
       slots: { default: '<span class="from-slot">slot text</span>' }
@@ -83,7 +85,8 @@ describe('VibeAlert', () => {
 
     expect(wrapper.find('.from-slot').exists()).toBe(true)
     expect(wrapper.text()).toContain('slot text')
-    expect(wrapper.text()).not.toContain('fallback text')
+    // message prop also renders — slot no longer overrides it
+    expect(wrapper.text()).toContain('fallback text')
   })
 
   it('falls back to message prop when no slot provided', () => {

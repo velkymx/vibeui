@@ -116,7 +116,7 @@ watch(() => props.indeterminate, (val) => {
       :disabled="disabled"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="helpText && validationMessage ? `${helpId.value} ${feedbackId.value}` : helpText ? helpId.value : validationMessage ? feedbackId.value : undefined"
+      :aria-describedby="helpText && validationMessage ? `${helpId} ${feedbackId}` : helpText ? helpId : validationMessage ? feedbackId : undefined"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"

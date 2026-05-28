@@ -223,4 +223,48 @@ describe('VibeFormCheckbox', () => {
     const emitted = wrapper.emitted('update:modelValue') as any[][]
     expect(emitted[0][0]).toBe(false)
   })
+
+  // Regression: computed refs auto-unwrap in templates — helpId.value / feedbackId.value
+  // double-dereferences to undefined, producing aria-describedby="undefined undefined"
+  it('aria-describedby contains real IDs, not "undefined", when helpText present', () => {
+    const wrapper = mount(VibeFormCheckbox, {
+      props: {
+        id: 'chk',
+        helpText: 'Help text here'
+      }
+    })
+    const input = wrapper.find('input')
+    const describedBy = input.attributes('aria-describedby')
+    expect(describedBy).toBe('chk-help')
+    expect(describedBy).not.toContain('undefined')
+  })
+
+  it('aria-describedby contains real IDs, not "undefined", when validationMessage present', () => {
+    const wrapper = mount(VibeFormCheckbox, {
+      props: {
+        id: 'chk',
+        validationState: 'invalid' as const,
+        validationMessage: 'Required'
+      }
+    })
+    const input = wrapper.find('input')
+    const describedBy = input.attributes('aria-describedby')
+    expect(describedBy).toBe('chk-feedback')
+    expect(describedBy).not.toContain('undefined')
+  })
+
+  it('aria-describedby lists both IDs when helpText and validationMessage both present', () => {
+    const wrapper = mount(VibeFormCheckbox, {
+      props: {
+        id: 'chk',
+        helpText: 'Help',
+        validationState: 'invalid' as const,
+        validationMessage: 'Required'
+      }
+    })
+    const input = wrapper.find('input')
+    const describedBy = input.attributes('aria-describedby')
+    expect(describedBy).toBe('chk-help chk-feedback')
+    expect(describedBy).not.toContain('undefined')
+  })
 })
