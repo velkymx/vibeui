@@ -61,4 +61,23 @@ describe('VibeDropdown', () => {
     wrapper.vm.toggle()
     expect(mockInstance.toggle).toHaveBeenCalled()
   })
+
+  it('cleans up Dropdown instance on unmount', async () => {
+    const wrapper = mount(VibeDropdown, { props: { items: mockItems } })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const mockInstance = vi.mocked(bootstrap.Dropdown).mock.results[0].value
+
+    wrapper.unmount()
+    expect(mockInstance.dispose).toHaveBeenCalled()
+  })
+
+  // Regression: isUnmounted guard — Dropdown constructor must not run after unmount.
+  it('does not construct Dropdown after component unmounts during async init', async () => {
+    const wrapper = mount(VibeDropdown, { props: { items: mockItems } })
+
+    wrapper.unmount()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(bootstrap.Dropdown).not.toHaveBeenCalled()
+  })
 })

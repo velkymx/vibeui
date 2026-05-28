@@ -31,6 +31,10 @@ let toggleEl: HTMLElement | null = null
 let reinitGuard = false
 let initInFlight = false
 
+// Set first in onBeforeUnmount — guards post-await section against constructing
+// a Bootstrap Dropdown instance on a detached element.
+let isUnmounted = false
+
 const dropdownClass = computed(() => {
   if (props.direction === 'up') return 'dropup'
   if (props.direction === 'end') return 'dropend'
@@ -70,7 +74,8 @@ const initDropdown = async () => {
     const bootstrap = await import('bootstrap')
     const Dropdown = bootstrap.Dropdown
 
-    if (!dropdownRef.value) return
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!dropdownRef.value || isUnmounted) return
 
     toggleEl = dropdownRef.value.querySelector('.dropdown-toggle') as HTMLElement | null
     if (toggleEl) {
@@ -111,7 +116,10 @@ const destroyDropdown = () => {
 
 onMounted(initDropdown)
 
-onBeforeUnmount(destroyDropdown)
+onBeforeUnmount(() => {
+  isUnmounted = true
+  destroyDropdown()
+})
 
 // Re-init when autoClose changes so the Bootstrap instance reflects the new config
 watch(() => props.autoClose, async () => {

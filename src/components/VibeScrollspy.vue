@@ -24,6 +24,10 @@ const scrollspyRef = ref<HTMLElement | null>(null)
 const bsScrollspy = ref<BootstrapScrollSpy | null>(null)
 let initInFlight = false
 
+// Set first in onBeforeUnmount — guards post-await section against constructing
+// a Bootstrap ScrollSpy instance on a detached element.
+let isUnmounted = false
+
 const onActivate = (event: any) => {
   emit('activate', event)
 }
@@ -36,7 +40,8 @@ const initScrollspy = async () => {
     const bootstrap = await import('bootstrap')
     const ScrollSpy = bootstrap.ScrollSpy
 
-    if (!scrollspyRef.value) return
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!scrollspyRef.value || isUnmounted) return
 
     if (props.offset !== undefined) {
       console.warn('[VibeScrollspy] The `offset` prop is deprecated (Bootstrap 5.2+). Use `rootMargin` instead.')
@@ -76,6 +81,8 @@ watch([() => props.target, () => props.rootMargin, () => props.method, () => pro
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
+
   if (scrollspyRef.value) {
     scrollspyRef.value.removeEventListener('activate.bs.scrollspy', onActivate)
   }

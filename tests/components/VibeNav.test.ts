@@ -119,4 +119,29 @@ describe('VibeNav', () => {
       expect(instance.dispose).toHaveBeenCalled()
     })
   })
+
+  it('cleans up Tab instances on unmount', async () => {
+    const wrapper = mount(VibeNav, {
+      props: { items: [{ text: 'Tab 1', href: '#t1', tabs: true }], tabs: true }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    wrapper.unmount()
+    vi.mocked(bootstrap.Tab).mock.results.forEach(r => {
+      expect(r.value.dispose).toHaveBeenCalled()
+    })
+  })
+
+  // Regression: VibeNav had no initInFlight guard and no isUnmounted flag.
+  // Bootstrap Tab constructor must not run after unmount.
+  it('does not construct Tab instances after component unmounts during async init', async () => {
+    const wrapper = mount(VibeNav, {
+      props: { items: [{ text: 'Tab 1', href: '#t1' }], tabs: true }
+    })
+
+    wrapper.unmount()
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(bootstrap.Tab).not.toHaveBeenCalled()
+  })
 })

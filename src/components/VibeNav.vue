@@ -23,6 +23,10 @@ const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'comp
 const navRef = ref<HTMLElement | null>(null)
 const bsTabs = new Map<HTMLElement, BootstrapTab>()
 
+// Guards concurrent initTabs calls and post-unmount Bootstrap construction.
+let initInFlight = false
+let isUnmounted = false
+
 const navClass = computed(() => {
   const classes = ['nav']
   if (props.pills) classes.push('nav-pills')
@@ -40,11 +44,15 @@ const onHide = (event: any) => emit('hide', event)
 const onHidden = (event: any) => emit('hidden', event)
 
 const initTabs = async () => {
-  if (!navRef.value) return
+  if (!navRef.value || initInFlight) return
+  initInFlight = true
 
   try {
     const bootstrap = await import('bootstrap')
     const Tab = bootstrap.Tab
+
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!navRef.value || isUnmounted) return
 
     const tabTriggerEls = navRef.value.querySelectorAll('[data-bs-toggle="tab"], [data-bs-toggle="pill"]')
     tabTriggerEls.forEach((el) => {
@@ -66,12 +74,16 @@ const initTabs = async () => {
       componentName: 'VibeNav',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
 onMounted(initTabs)
 
 onBeforeUnmount(() => {
+  isUnmounted = true
+
   bsTabs.forEach((bsTab, el) => {
     el.removeEventListener('show.bs.tab', onShow)
     el.removeEventListener('shown.bs.tab', onShown)
