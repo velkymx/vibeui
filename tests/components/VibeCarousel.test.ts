@@ -70,4 +70,31 @@ describe('VibeCarousel', () => {
     await wrapper.setProps({ modelValue: 1 })
     expect(mockInstance.to).toHaveBeenCalledWith(1)
   })
+
+  it('cleans up on unmount', async () => {
+    const wrapper = mount(VibeCarousel, {
+      props: { id: 'test-carousel', items: mockItems }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const mockInstance = vi.mocked(bootstrap.Carousel).mock.results[0].value
+
+    wrapper.unmount()
+    expect(mockInstance.dispose).toHaveBeenCalled()
+  })
+
+  // Regression: isUnmounted guard — Bootstrap constructor must not run on a detached element
+  // if unmount fires before the dynamic import() microtask resolves.
+  it('does not construct Carousel after component unmounts during async init', async () => {
+    const wrapper = mount(VibeCarousel, {
+      props: { id: 'test-carousel', items: mockItems }
+    })
+
+    // Unmount synchronously — before the import() microtask resolves
+    wrapper.unmount()
+
+    // Drain microtask queue; isUnmounted guard must block the constructor
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(bootstrap.Carousel).not.toHaveBeenCalled()
+  })
 })

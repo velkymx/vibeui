@@ -34,6 +34,10 @@ const carouselRef = ref<HTMLElement | null>(null)
 const bsCarousel = ref<BootstrapCarousel | null>(null)
 const activeIndex = ref(props.modelValue)
 
+// Set in onBeforeUnmount before dispose — guards the post-await section of initCarousel
+// against constructing a Bootstrap instance on a detached element.
+let isUnmounted = false
+
 const carouselClass = computed(() => {
   const classes = ['carousel', 'slide']
   if (props.dark) classes.push('carousel-dark')
@@ -75,6 +79,10 @@ const initCarousel = async () => {
     }
 
     const bootstrap = await import('bootstrap')
+
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!carouselRef.value || isUnmounted) return
+
     const Carousel = bootstrap.Carousel
 
     bsCarousel.value = new Carousel(carouselRef.value, {
@@ -109,6 +117,8 @@ const initCarousel = async () => {
 onMounted(initCarousel)
 
 onBeforeUnmount(() => {
+  isUnmounted = true
+
   if (attachedEl.value) {
     attachedEl.value.removeEventListener('slide.bs.carousel', onSlide)
     attachedEl.value.removeEventListener('slid.bs.carousel', onSlid)
