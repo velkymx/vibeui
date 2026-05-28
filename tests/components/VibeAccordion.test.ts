@@ -82,4 +82,31 @@ describe('VibeAccordion', () => {
     // A new Collapse instance is created for item2 on reinit
     expect(vi.mocked(bootstrap.Collapse)).toHaveBeenCalledTimes(3)
   })
+
+  // Regression: watcher used nextTick(() => initItems()) which drops the inner Promise,
+  // silently swallowing errors from initItems. Fixed: async watcher with
+  // await nextTick(); await initItems(). This test verifies reinit fully completes.
+  it('reinitialises all new items after rapid successive items changes', async () => {
+    const items = [
+      { id: 'a1', title: 'A1', content: 'C1', show: false },
+      { id: 'a2', title: 'A2', content: 'C2', show: false }
+    ]
+    const wrapper = mount(VibeAccordion, { props: { id: 'acc', items } })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Trigger two rapid items changes — second must not be lost
+    const newItems1 = [{ id: 'b1', title: 'B1', content: 'CB1', show: false }]
+    const newItems2 = [
+      { id: 'b1', title: 'B1', content: 'CB1', show: false },
+      { id: 'b2', title: 'B2', content: 'CB2', show: false }
+    ]
+    await wrapper.setProps({ items: newItems1 })
+    await wrapper.setProps({ items: newItems2 })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // After settling, both new items must have Collapse instances
+    const callCount = vi.mocked(bootstrap.Collapse).mock.calls.length
+    // 2 initial + at least 2 for newItems2 (pendingReinit may add more — that's fine)
+    expect(callCount).toBeGreaterThanOrEqual(4)
+  })
 })

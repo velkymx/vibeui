@@ -129,15 +129,23 @@ onBeforeUnmount(() => {
   bsCollapses.forEach((_, id) => disposeItem(id))
 })
 
-watch([() => props.items, () => props.alwaysOpen], () => {
-  // Dispose all existing instances cleanly (fixes stale instances on same-ID swap)
-  for (const [id] of bsCollapses) {
+watch([() => props.items, () => props.alwaysOpen], async () => {
+  // Snapshot keys first — disposeItem mutates bsCollapses/collapseElements/collapseHandlers
+  // internally via .delete(). Iterating the live Map during mutation is safe per spec but
+  // produces confusing dead .clear() calls after; snapshot makes the intent explicit.
+  const ids = [...bsCollapses.keys()]
+  for (const id of ids) {
     disposeItem(id)
   }
+  // All Maps are empty after the loop (disposeItem calls .delete() on each).
+  // These clears are retained as defensive guards against any future partial dispose paths.
   bsCollapses.clear()
   collapseElements.clear()
-  // Then init fresh so new items always get Bootstrap instances
-  nextTick(() => initItems())
+
+  // Await both nextTick and initItems so errors surface instead of being silently dropped.
+  // The previous nextTick(() => initItems()) discarded the inner Promise.
+  await nextTick()
+  await initItems()
 }, { deep: false })
 
 const handleItemClick = (item: AccordionItem, index: number) => {
