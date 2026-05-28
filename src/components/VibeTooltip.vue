@@ -24,8 +24,13 @@ if (props.content !== undefined && props.text === undefined) {
 const tooltipRef = ref<HTMLElement | null>(null)
 const bsTooltip = ref<BootstrapTooltip | null>(null)
 
+// Tracks whether onBeforeUnmount has fired. The template ref (tooltipRef) may still be
+// non-null during the window between onBeforeUnmount and Vue removing the DOM element,
+// so a plain !tooltipRef.value check post-await is insufficient in all environments.
+let isUnmounted = false
+
 const isTouchDevice = () => {
-  return typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+  return typeof window !== 'undefined' && ('ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0))
 }
 
 const computedTrigger = computed(() => {
@@ -49,7 +54,10 @@ const initTooltip = async () => {
 
   try {
     const bootstrap = await import('bootstrap')
-    if (!tooltipRef.value) return
+    // Guard against race: component may have unmounted while the import was in-flight.
+    // isUnmounted is set in onBeforeUnmount (before Vue removes the DOM), so this check
+    // fires even when tooltipRef.value is still non-null during teardown.
+    if (!tooltipRef.value || isUnmounted) return
     const Tooltip = bootstrap.Tooltip
 
     bsTooltip.value = new Tooltip(tooltipRef.value, {
@@ -73,6 +81,7 @@ const initTooltip = async () => {
 onMounted(initTooltip)
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   if (bsTooltip.value) {
     bsTooltip.value.dispose()
     bsTooltip.value = null

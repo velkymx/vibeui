@@ -113,4 +113,35 @@ describe('VibePopover', () => {
     wrapper.unmount()
     expect(mockInstance.dispose).toHaveBeenCalled()
   })
+
+  // Regression: isUnmounted guard — if component unmounts while async init is in-flight
+  // (between call and await resolution), Bootstrap constructor must NOT run on detached element.
+  it('does not construct Popover after component unmounts during async init', async () => {
+    const wrapper = mount(VibePopover, {
+      props: { content: 'Test' },
+      slots: { default: '<button>x</button>' }
+    })
+
+    // Unmount synchronously — fires onBeforeUnmount before the import() microtask resolves
+    wrapper.unmount()
+
+    // Drain microtask queue so the import() resolves and the post-await guard runs
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // isUnmounted guard must have blocked the constructor
+    expect(bootstrap.Popover).not.toHaveBeenCalled()
+  })
+
+  it('sets bsInstance to null after unmount', async () => {
+    const wrapper = mount(VibePopover, {
+      props: { content: 'Test' },
+      slots: { default: '<button>x</button>' }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(wrapper.vm.bsInstance).not.toBeNull()
+
+    wrapper.unmount()
+    expect(vi.mocked(bootstrap.Popover).mock.results[0].value.dispose).toHaveBeenCalled()
+  })
 })

@@ -20,8 +20,13 @@ const emit = defineEmits(['component-error'])
 const popoverRef = ref<HTMLElement | null>(null)
 const bsPopover = ref<BootstrapPopover | null>(null)
 
+// Tracks whether onBeforeUnmount has fired. The template ref (popoverRef) may still be
+// non-null during the window between onBeforeUnmount and Vue removing the DOM element,
+// so a plain !popoverRef.value check post-await is insufficient in all environments.
+let isUnmounted = false
+
 const isTouchDevice = () => {
-  return typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+  return typeof window !== 'undefined' && ('ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0))
 }
 
 const computedTrigger = computed(() => {
@@ -45,7 +50,10 @@ const initPopover = async () => {
 
   try {
     const bootstrap = await import('bootstrap')
-    if (!popoverRef.value) return
+    // Guard against race: component may have unmounted while the import was in-flight.
+    // isUnmounted is set in onBeforeUnmount (before Vue removes the DOM), so this check
+    // fires even when popoverRef.value is still non-null during teardown.
+    if (!popoverRef.value || isUnmounted) return
     const Popover = bootstrap.Popover
 
     bsPopover.value = new Popover(popoverRef.value, {
@@ -70,6 +78,7 @@ const initPopover = async () => {
 onMounted(initPopover)
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   if (bsPopover.value) {
     bsPopover.value.dispose()
     bsPopover.value = null

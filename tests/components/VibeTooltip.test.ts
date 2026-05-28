@@ -111,7 +111,7 @@ describe('VibeTooltip', () => {
   it('switches trigger to click on touch devices', async () => {
     // Simulate touch support
     vi.stubGlobal('ontouchstart', {})
-    
+
     const wrapper = mount(VibeTooltip, {
       props: {
         content: 'Tooltip Content'
@@ -129,5 +129,41 @@ describe('VibeTooltip', () => {
     }))
 
     vi.unstubAllGlobals()
+  })
+
+  // Regression: isUnmounted guard — if component unmounts while async init is in-flight
+  // (between call and await resolution), Bootstrap constructor must NOT run on detached element.
+  // await import('bootstrap') always creates a microtask boundary even for cached modules,
+  // so unmounting synchronously after mount() leaves isUnmounted=true before the constructor call.
+  it('does not construct Tooltip after component unmounts during async init', async () => {
+    const wrapper = mount(VibeTooltip, {
+      props: { content: 'Test' },
+      slots: { default: '<button>x</button>' }
+    })
+
+    // Unmount synchronously — fires onBeforeUnmount before the import() microtask resolves
+    wrapper.unmount()
+
+    // Drain microtask queue so the import() resolves and the post-await guard runs
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // isUnmounted guard must have blocked the constructor
+    expect(bootstrap.Tooltip).not.toHaveBeenCalled()
+  })
+
+  it('sets bsInstance to null after unmount', async () => {
+    const wrapper = mount(VibeTooltip, {
+      props: { content: 'Test' },
+      slots: { default: '<button>x</button>' }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // bsInstance was set during init
+    expect(wrapper.vm.bsInstance).not.toBeNull()
+
+    wrapper.unmount()
+
+    // onBeforeUnmount must dispose and null the instance
+    expect(vi.mocked(bootstrap.Tooltip).mock.results[0].value.dispose).toHaveBeenCalled()
   })
 })
