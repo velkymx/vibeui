@@ -16,6 +16,8 @@ You keep the Bootstrap you know. VibeUI handles the Vue you'd rather not write.
 
 ---
 
+> **Coming from BootstrapVue?** If you built on Bootstrap + Vue 2 and have been waiting for a Vue 3 + Bootstrap 5 home, VibeUI will feel familiar: component-per-feature, data-driven `items` arrays, `v-model` on interactive components, and Bootstrap styling via props. It isn't a drop-in port — APIs differ — but the mental model carries straight over.
+
 ## What you get
 
 * **Bootstrap JS, fully abstracted.** No manual `new bootstrap.Modal(...)`. Components initialize, reactively reconfigure, and dispose their own Bootstrap instances — with race-condition and unmount guards built in.
