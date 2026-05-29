@@ -13,6 +13,11 @@
 ### Runtime
 
 - **VibeNavbarNav** — Changed the `items` watcher from `{ deep: true }` to `{ deep: false }`. Dropdown presence depends on array identity, not leaf values; replacing the array still rebuilds, while leaf mutations no longer trigger a full deep traversal + dropdown teardown/reinit. (e82b570)
+- **VibeFormWysiwyg** — `loadDOMPurify()` now starts synchronously at `initQuill` entry (parallel with Quill, independent of its resolution) so the sanitizer is ready sooner and init is deterministic. (8243675)
+
+### Tooling
+
+- **CI** — Run on Node 24; bumped `actions/checkout` and `actions/setup-node` to v5 (Node 20 actions deprecated). (8fde2b4)
 
 ---
 
