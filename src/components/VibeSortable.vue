@@ -54,7 +54,6 @@ const onDragEnd = () => {
 
 const clearDrag = () => { draggingIndex.value = null }
 onMounted(() => {
-  document.removeEventListener('dragend', clearDrag)
   document.addEventListener('dragend', clearDrag)
 })
 onBeforeUnmount(() => document.removeEventListener('dragend', clearDrag))
