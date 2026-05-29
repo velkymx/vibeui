@@ -33,6 +33,8 @@
 - **VibeSortable** — Row index via `data-sortable-index` + unified `onDragStartEvt`/`onDropEvt` reading `currentTarget.dataset`, replacing 2N inline arrows per render. (c61f19c)
 - **VibeDataTable** — Memoized column `thStyle`/`tdStyle` into `computed` Maps keyed by column (rebuilt only on columns/sortable change), so reference-compared `:style` no longer re-patches unchanged cells every render. (0b479cb)
 - **VibeDataTable** — Memoized sort icons into a `sortIconMap` computed keyed by column (rebuilt only on sort-state/columns change) instead of a per-header-cell function call each render. (8cad34c)
+- **chartTooltip** — Reuse the per-move `getBoundingClientRect` in `drawTooltip` instead of measuring twice per mousemove (not cached across moves — `left/top` shift on scroll). (69a8833)
+- **VibeChartBar / VibeChartLine** — Precompute hit-test scalars (`getMaxVal` / `getLineExtent`) once per data change in `redraw()` and pass them into the hit-test closures, instead of an O(datasets×points) scan on every mousemove. (de2539b)
 
 ### Architecture
 
