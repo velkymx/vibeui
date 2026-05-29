@@ -48,7 +48,7 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
 
 <template>
   <component :is="tag" :class="listGroupClass">
-    <template v-for="(item, index) in items" :key="index">
+    <template v-for="(item, index) in items" :key="item.href ?? item.text ?? index">
     <component
       v-memo="[item.href, item.to, item.active, item.disabled, item.variant, item.text]"
       :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'li'"
