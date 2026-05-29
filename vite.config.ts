@@ -8,7 +8,10 @@ export default defineConfig({
   plugins: [
     vue(),
     dts({
-      insertTypesEntry: true,
+      // Under TS 6 + moduleResolution:Bundler, vite-plugin-dts@4 emits declarations
+      // mirroring the source tree at dist/src/**. We point package.json "types"/"exports"
+      // at dist/src/index.d.ts directly rather than relying on insertTypesEntry, whose
+      // generated stub is empty in this combination.
       include: ['src/**/*.ts', 'src/**/*.vue'],
       exclude: ['src/**/*.spec.ts', 'src/**/*.test.ts']
     })

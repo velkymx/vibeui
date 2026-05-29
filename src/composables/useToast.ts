@@ -34,7 +34,9 @@ let counter = 0
 if (
   import.meta.env.DEV &&
   typeof window === 'undefined' &&
-  typeof process !== 'undefined'
+  // Detect Node without pulling in @types/node (this is a browser-first library):
+  // read process off globalThis rather than the bare global name.
+  typeof (globalThis as { process?: unknown }).process !== 'undefined'
 ) {
   console.warn(
     '[VibeUI useToast] SSR detected: the toast store is a module-level singleton shared ' +
