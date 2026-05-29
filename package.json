@@ -73,6 +73,9 @@
     "vitest": "^4.0.16",
     "vue-tsc": "^3.2.5"
   },
+  "overrides": {
+    "typescript": "$typescript"
+  },
   "peerDependencies": {
     "vue": "^3.5.0"
   },
