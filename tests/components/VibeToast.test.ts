@@ -79,10 +79,33 @@ describe('VibeToast', () => {
     await wrapper.setProps({ modelValue: true })
     expect(mockInstance.show).toHaveBeenCalled()
 
-    // Simulate show event
-    wrapper.find('.toast').element.dispatchEvent(new Event('show.bs.toast'))
+    // Simulate shown event (sets isVisible=true so the hide guard works correctly)
+    wrapper.find('.toast').element.dispatchEvent(new Event('shown.bs.toast'))
 
     await wrapper.setProps({ modelValue: false })
     expect(mockInstance.hide).toHaveBeenCalled()
+  })
+
+  // Regression: watcher called bsToast.hide() even when isVisible was already false.
+  // When autohide fires: hidden.bs.toast → isVisible=false → emit update:modelValue=false
+  // → watcher fires → hide() called again → another hidden event → event storm.
+  it('does not call hide() when modelValue becomes false but toast is already hidden', async () => {
+    const wrapper = mount(VibeToast, {
+      props: { modelValue: true, teleport: false }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const mockInstance = vi.mocked(bootstrap.Toast).mock.results[0].value
+
+    // Simulate autohide: Bootstrap fires 'shown' then 'hidden' (isVisible flips false)
+    const toastEl = wrapper.find('.toast').element
+    toastEl.dispatchEvent(new Event('shown.bs.toast'))
+    toastEl.dispatchEvent(new Event('hidden.bs.toast'))
+
+    // Now isVisible is false; simulate the delayed v-model update arriving
+    mockInstance.hide.mockClear()
+    await wrapper.setProps({ modelValue: false })
+
+    // hide() must NOT be called — toast is already hidden, would cause event storm
+    expect(mockInstance.hide).not.toHaveBeenCalled()
   })
 })

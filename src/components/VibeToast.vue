@@ -145,7 +145,7 @@ watch(() => props.modelValue, (newValue) => {
   if (!bsToast.value) return
   if (newValue && !isVisible.value) {
     bsToast.value.show()
-  } else if (!newValue) {
+  } else if (!newValue && isVisible.value) {
     bsToast.value.hide()
   }
 })
