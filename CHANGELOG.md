@@ -39,6 +39,7 @@
 - **VibeSlider** — Gated all `window.addEventListener`/`removeEventListener` calls with `typeof window !== 'undefined'`. (7104598)
 - **chartResize.ts** — Added `typeof ResizeObserver !== 'undefined'` guard before `new ResizeObserver()`. (7104598)
 - **VibeCarousel** — Skip Bootstrap init when `items` is empty (avoids handing Bootstrap an empty `.carousel-inner`); added `v-if="item.src"` so a src-less slide does not render an `<img>` resolving to the page URL. (d2ffc26)
+- **VibeFormSpinbutton** — Added `safeStep` coercion (non-finite or non-positive `step` → 1, with DEV warn) so `step=NaN` no longer propagates NaN into the model and `step=0` no longer makes the buttons inert. (4368d94)
 
 ### MEDIUM
 
