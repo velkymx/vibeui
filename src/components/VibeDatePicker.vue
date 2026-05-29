@@ -115,13 +115,18 @@ interface DayCell {
   isRangeEnd: boolean
 }
 
+// Resolved once at setup. Today's date only changes at midnight, so recomputing it on
+// every monthGrid re-eval (each keyboard navigation) just allocated a Date + ISO string
+// for no benefit. A picker left open across midnight keeps the mount-time "today" — an
+// acceptable, rare edge.
+const todayIso = toIso(todayDate())
+
 const monthGrid = computed<DayCell[]>(() => {
   const cells: DayCell[] = []
   const firstOfMonth = new Date(viewYear.value, viewMonth.value, 1)
   const dayOfWeek = firstOfMonth.getDay()
   const offset = (dayOfWeek - props.weekStart + 7) % 7
   const start = new Date(viewYear.value, viewMonth.value, 1 - offset)
-  const todayIso = toIso(todayDate())
 
   for (let i = 0; i < 42; i++) {
     const d = new Date(start)
