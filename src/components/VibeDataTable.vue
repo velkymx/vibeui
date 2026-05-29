@@ -280,11 +280,21 @@ const getCellValue = (item: T, column: DataTableColumn<T>) => {
   return value
 }
 
-const getSortIcon = (column: DataTableColumn<T>) => {
-  if (!props.sortable || column.sortable === false) return ''
-  if (sortBy.value !== column.key) return '⇅'
-  return sortDesc.value ? '↓' : '↑'
-}
+// Precompute sort icons once per sort-state/columns change instead of calling a function
+// per header cell on every render. Keyed by column (consistent with the style maps).
+const sortIconMap = computed(() => {
+  const m = new Map<DataTableColumn<T>, string>()
+  for (const column of props.columns) {
+    if (!props.sortable || column.sortable === false) {
+      m.set(column, '')
+    } else if (sortBy.value !== column.key) {
+      m.set(column, '⇅')
+    } else {
+      m.set(column, sortDesc.value ? '↓' : '↑')
+    }
+  }
+  return m
+})
 
 // Precompute sanitized per-column styles once per columns/sortable change. Returning a
 // stable object reference per column lets Vue's :style (compared by reference) skip DOM
@@ -351,7 +361,7 @@ const tdStyleMap = computed(() => {
             >
               {{ column.label }}
               <span v-if="sortable && column.sortable !== false" class="ms-1">
-                {{ getSortIcon(column) }}
+                {{ sortIconMap.get(column) }}
               </span>
             </th>
           </tr>
