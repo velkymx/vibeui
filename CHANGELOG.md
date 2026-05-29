@@ -4,6 +4,17 @@
 
 ---
 
+## Packaging (2026-05-29)
+
+### Fixes
+
+- **Dependency declarations corrected for consumers.**
+  - `vue` removed from `dependencies` (it was listed in both `dependencies` and `peerDependencies`). A Vue component library must declare vue peer-only; a hard `dependencies` entry risks a duplicate Vue runtime in consumer apps. It remains a `peerDependency` (`^3.5.0`) and is pinned in `devDependencies` for local dev/test.
+  - `bootstrap` added as a **required** `peerDependency` (`^5.3.0`). The library dynamically imports `bootstrap` at runtime but previously declared it nowhere, so consumers got no install signal. npm now resolves it automatically.
+  - Optional peers `quill` / `dompurify` / `bootstrap-icons` added to `peerDependencies` with version ranges. They were marked optional in `peerDependenciesMeta` but absent from `peerDependencies`, so npm did not treat them as peers at all; the optional flag now applies. Verified via `npm pack` + a clean-consumer install: required peers (vue, bootstrap) auto-resolve, optional peers are skipped.
+
+---
+
 ## E2E Browser Testing (2026-05-29)
 
 ### Testing
