@@ -85,7 +85,6 @@ const isNextDisabled = computed(() => props.totalPages === 0 || props.currentPag
           class="page-link"
           type="button"
           :disabled="isPrevDisabled"
-          :aria-disabled="isPrevDisabled"
           @click="handlePageClick(currentPage - 1)"
         >
           <!-- Scoped slot for custom prev button -->
@@ -120,7 +119,6 @@ const isNextDisabled = computed(() => props.totalPages === 0 || props.currentPag
           class="page-link"
           type="button"
           :disabled="isNextDisabled"
-          :aria-disabled="isNextDisabled"
           @click="handlePageClick(currentPage + 1)"
         >
           <!-- Scoped slot for custom next button -->
