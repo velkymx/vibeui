@@ -46,7 +46,7 @@ const buttonClass = computed(() => {
   return classes.join(' ')
 })
 
-const handleClick = (event: Event) => {
+const handleClick = (event: MouseEvent) => {
   if (props.disabled) {
     event.preventDefault()
     return

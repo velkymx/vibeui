@@ -12,7 +12,7 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const handleClick = (event: Event) => {
+const handleClick = (event: MouseEvent) => {
   if (!props.disabled) {
     emit('click', event)
   }

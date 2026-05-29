@@ -21,6 +21,8 @@ interface QuillInstance {
   on: (event: string, handler: (...args: unknown[]) => void) => void
   off: (event: string, handler: (...args: unknown[]) => void) => void
   enable: (enabled: boolean) => void
+  // Optional: present in some Quill builds; call sites guard with typeof === 'function'.
+  destroy?: () => void
   selection: unknown
 }
 

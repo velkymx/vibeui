@@ -88,7 +88,7 @@ const iconStyle = computed(() => {
   return Object.keys(style).length > 0 ? style : undefined
 })
 
-const handleClick = (event: Event) => {
+const handleClick = (event: MouseEvent) => {
   if (props.ariaLabel || !props.ariaHidden) emit('click', event)
 }
 </script>

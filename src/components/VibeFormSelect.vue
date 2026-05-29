@@ -84,7 +84,7 @@ const decodeOption = (encoded: string): FormSelectOptionValue => {
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLSelectElement
-  let newValue: unknown
+  let newValue: FormSelectOptionValue | FormSelectOptionValue[]
   if (props.multiple) {
     newValue = Array.from(target.selectedOptions).map(option => decodeOption(option.value))
   } else {

@@ -46,8 +46,8 @@ const emit = defineEmits<{
   (e: 'focus', event: FocusEvent): void
   (e: 'input', event: Event): void
   (e: 'change', event: Event): void
-  (e: 'increment'): void
-  (e: 'decrement'): void
+  (e: 'increment', value: number): void
+  (e: 'decrement', value: number): void
 }>()
 
 const formGroup = inject(FORM_GROUP_KEY, null)
