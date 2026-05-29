@@ -52,6 +52,14 @@ const onDragEnd = () => {
   draggingIndex.value = null
 }
 
+// Unified handlers read the row index from the element's data-sortable-index attribute,
+// so the template binds one stable function reference instead of allocating a new inline
+// arrow per item per render.
+const indexOf = (event: Event): number =>
+  Number((event.currentTarget as HTMLElement).dataset.sortableIndex)
+const onDragStartEvt = (event: DragEvent) => onDragStart(event, indexOf(event))
+const onDropEvt = (event: DragEvent) => onDrop(event, indexOf(event))
+
 const clearDrag = () => { draggingIndex.value = null }
 onMounted(() => {
   document.addEventListener('dragend', clearDrag)
@@ -72,9 +80,10 @@ onActivated(() => { draggingIndex.value = null })
       :class="{ 'vibe-sortable-dragging': draggingIndex === index }"
       :draggable="!disabled"
       data-vibe-sortable-item
-      @dragstart="(e: DragEvent) => onDragStart(e, index)"
+      :data-sortable-index="index"
+      @dragstart="onDragStartEvt"
       @dragover="onDragOver"
-      @drop="(e: DragEvent) => onDrop(e, index)"
+      @drop="onDropEvt"
       @dragend="onDragEnd"
     >
       <slot :item="item" :index="index" />
