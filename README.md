@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@velkymx/vibeui)](https://www.npmjs.com/package/@velkymx/vibeui)
-[![Tests](https://img.shields.io/badge/tests-914%2F914%20passing-success?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![CI](https://github.com/velkymx/vibeui/actions/workflows/ci.yml/badge.svg)](https://github.com/velkymx/vibeui/actions/workflows/ci.yml)
 
 </div>
 
