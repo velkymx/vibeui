@@ -31,6 +31,7 @@
 - **VibeResizable** — Pre-bound a per-handle pointerdown handler map (over the fixed handle set) instead of an inline arrow per handle per render. (3646d06)
 - **VibeSlider** — Pre-bound the two handles' keydown/pointerdown handlers in setup instead of four inline arrows per render. (d1c3621)
 - **VibeSortable** — Row index via `data-sortable-index` + unified `onDragStartEvt`/`onDropEvt` reading `currentTarget.dataset`, replacing 2N inline arrows per render. (c61f19c)
+- **VibeDataTable** — Memoized column `thStyle`/`tdStyle` into `computed` Maps keyed by column (rebuilt only on columns/sortable change), so reference-compared `:style` no longer re-patches unchanged cells every render. (0b479cb)
 
 ### Architecture
 
