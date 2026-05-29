@@ -96,7 +96,7 @@ const isNextDisabled = computed(() => props.totalPages === 0 || props.currentPag
       </li>
 
       <!-- Page numbers (with optional ellipsis) -->
-      <template v-for="(item, idx) in visibleItems" :key="idx">
+      <template v-for="(item, idx) in visibleItems" :key="item !== null ? `p${item}` : `e${idx}`">
         <li v-if="item === null" class="page-item disabled" aria-hidden="true">
           <span class="page-link">…</span>
         </li>

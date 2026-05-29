@@ -134,7 +134,7 @@ const activeStep = computed(() => {
     <ol class="vibe-stepper-header">
       <li
         v-for="(step, idx) in steps"
-        :key="idx"
+        :key="step.label ?? idx"
         :class="stepClass(idx)"
         :tabindex="canJumpTo(idx) || idx === modelValue ? 0 : -1"
         :aria-disabled="(canJumpTo(idx) || idx === modelValue) ? undefined : 'true'"
