@@ -5,6 +5,9 @@
   "main": "./dist/vibeui.umd.js",
   "module": "./dist/vibeui.es.js",
   "types": "./dist/types/index.d.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
