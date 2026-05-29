@@ -132,8 +132,21 @@ const handleFocus = (event: FocusEvent) => {
   emit('focus', event)
 }
 
+// step must be a positive finite number. A NaN step would propagate NaN into the
+// model (e.g. value + NaN), and a non-positive step makes the buttons inert. Coerce
+// invalid values to the default of 1 so arithmetic and precision stay well-defined.
+const safeStep = computed(() => {
+  if (Number.isFinite(props.step) && props.step > 0) return props.step
+  if (import.meta.env.DEV) {
+    console.warn(
+      `[VibeFormSpinbutton] step must be a positive number; received ${props.step}. Falling back to 1.`
+    )
+  }
+  return 1
+})
+
 const stepPrecision = computed(() => {
-  const s = String(props.step)
+  const s = String(safeStep.value)
   const dot = s.indexOf('.')
   return dot === -1 ? 0 : s.length - dot - 1
 })
@@ -143,7 +156,7 @@ const snapToStep = (v: number): number =>
 
 const increment = () => {
   if (!canIncrement.value) return
-  let newValue = snapToStep(internalValue.value + props.step)
+  let newValue = snapToStep(internalValue.value + safeStep.value)
   if (props.max !== undefined && newValue > props.max) {
     newValue = props.wrap ? props.min ?? 0 : props.max
   }
@@ -155,7 +168,7 @@ const increment = () => {
 
 const decrement = () => {
   if (!canDecrement.value) return
-  let newValue = snapToStep(internalValue.value - props.step)
+  let newValue = snapToStep(internalValue.value - safeStep.value)
   if (props.min !== undefined && newValue < props.min) {
     newValue = props.wrap ? props.max ?? 0 : props.min
   }
@@ -192,7 +205,7 @@ const decrement = () => {
         :required="required"
         :min="min"
         :max="max"
-        :step="step"
+        :step="safeStep"
         :aria-invalid="validationState === 'invalid'"
         :aria-describedby="helpText && validationMessage ? `${computedId}-help ${computedId}-feedback` : helpText ? `${computedId}-help` : validationMessage ? `${computedId}-feedback` : undefined"
         @input="handleInput"
