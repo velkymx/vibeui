@@ -4,7 +4,7 @@ import type { ChartData, ChartLegendPosition } from '../types'
 import { resolveColors } from './chart/chartColors'
 import { useChartResize } from './chart/chartResize'
 import { bindTooltip } from './chart/chartTooltip'
-import { drawLine, hitTestLine } from './chart/drawLine'
+import { drawLine, hitTestLine, getLineExtent } from './chart/drawLine'
 
 const props = defineProps({
   data: { type: Object as PropType<ChartData>, required: true },
@@ -41,10 +41,15 @@ function updateColors() {
     : []
 }
 
+// Precomputed value extent for hit-testing, refreshed on each redraw (data / layout /
+// resize) so the tooltip path never re-scans all values per mousemove.
+let hitExtent: { min: number; max: number; range: number } | null = null
+
 function redraw() {
   // Refresh colors before the dimension guard so the legend populates even if the
   // canvas has not been sized yet.
   updateColors()
+  hitExtent = getLineExtent(props.data)
   if (!canvasEl.value || !currentW || !currentH) return
   const canvas = canvasEl.value
   const ctx = canvas.getContext('2d')
@@ -80,11 +85,12 @@ onMounted(() => {
   // One-time color resolution at mount so the legend has colors before the first
   // ResizeObserver callback. Subsequent refreshes happen inside redraw().
   updateColors()
+  hitExtent = getLineExtent(props.data)
   if (containerEl.value && canvasEl.value) {
     cleanupTooltip = bindTooltip(
       containerEl.value,
       canvasEl.value,
-      (x, y) => hitTestLine(x, y, props.data, currentW, currentH, props.showAxes)
+      (x, y) => hitTestLine(x, y, props.data, currentW, currentH, props.showAxes, hitExtent)
     )
   }
 })

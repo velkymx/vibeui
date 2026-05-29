@@ -4,7 +4,7 @@ import type { ChartData, ChartLegendPosition } from '../types'
 import { resolveColors } from './chart/chartColors'
 import { useChartResize } from './chart/chartResize'
 import { bindTooltip } from './chart/chartTooltip'
-import { drawBar, hitTestBar } from './chart/drawBar'
+import { drawBar, hitTestBar, getMaxVal } from './chart/drawBar'
 
 const props = defineProps({
   data: { type: Object as PropType<ChartData>, required: true },
@@ -40,10 +40,15 @@ function updateColors() {
     : []
 }
 
+// Precomputed max value for hit-testing, refreshed on each redraw (which runs on data /
+// stacked / resize changes) so the tooltip path never recomputes getMaxVal per mousemove.
+let hitMaxVal = 1
+
 function redraw() {
   // Refresh colors before the dimension guard so the legend populates even if the
   // canvas has not been sized yet.
   updateColors()
+  hitMaxVal = getMaxVal(props.data, props.stacked)
   if (!canvasEl.value || !currentW || !currentH) return
   const canvas = canvasEl.value
   const ctx = canvas.getContext('2d')
@@ -69,11 +74,12 @@ onMounted(() => {
   // One-time color resolution at mount so the legend has colors before the first
   // ResizeObserver callback. Subsequent refreshes happen inside redraw().
   updateColors()
+  hitMaxVal = getMaxVal(props.data, props.stacked)
   if (containerEl.value && canvasEl.value) {
     cleanupTooltip = bindTooltip(
       containerEl.value,
       canvasEl.value,
-      (x, y) => hitTestBar(x, y, props.data, currentW, currentH, props.showAxes, props.stacked)
+      (x, y) => hitTestBar(x, y, props.data, currentW, currentH, props.showAxes, props.stacked, hitMaxVal)
     )
   }
 })

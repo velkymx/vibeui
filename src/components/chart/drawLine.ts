@@ -129,23 +129,36 @@ export function drawLine(
   }
 }
 
+/**
+ * Compute the {min, max, range} across all dataset values, or null for empty data.
+ * Exposed so the chart component can precompute it once per data change and pass it to
+ * hitTestLine, instead of re-scanning every value on every mousemove.
+ */
+export function getLineExtent(data: ChartData): { min: number; max: number; range: number } | null {
+  const allValues = data.datasets.flatMap((ds) => ds.data)
+  if (allValues.length === 0) return null
+  const min = allValues.reduce((acc, v) => Math.min(acc, v), allValues[0])
+  const max = allValues.reduce((acc, v) => Math.max(acc, v), allValues[0])
+  return { min, max, range: max - min || 1 }
+}
+
 export function hitTestLine(
   x: number,
   y: number,
   data: ChartData,
   w: number,
   h: number,
-  showAxes: boolean
+  showAxes: boolean,
+  // Precomputed by the component (once per data change). null = empty data.
+  extent: { min: number; max: number; range: number } | null
 ): TooltipHit | null {
   const pad = getPad(showAxes)
   const chartW = w - pad.left - pad.right
   const chartH = h - pad.top - pad.bottom
 
-  const allValues = data.datasets.flatMap((ds) => ds.data)
-  if (allValues.length === 0) return null
-  const minVal = allValues.reduce((acc, v) => Math.min(acc, v), allValues[0])
-  const maxVal = allValues.reduce((acc, v) => Math.max(acc, v), allValues[0])
-  const range = maxVal - minVal || 1
+  if (!extent) return null
+  const minVal = extent.min
+  const range = extent.range
   const n = data.labels.length
   const xStep = chartW / Math.max(n - 1, 1)
 

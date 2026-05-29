@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { drawBar, hitTestBar } from '../../../src/components/chart/drawBar'
+import { drawBar, hitTestBar, getMaxVal } from '../../../src/components/chart/drawBar'
 import { createMockCtx } from '../../mocks/canvasMock'
 import type { ChartData } from '../../../src/types'
 
@@ -45,11 +45,11 @@ describe('drawBar', () => {
 
 describe('hitTestBar', () => {
   it('returns null outside chart area', () => {
-    expect(hitTestBar(0, 0, DATA, 400, 300, true, false)).toBeNull()
+    expect(hitTestBar(0, 0, DATA, 400, 300, true, false, getMaxVal(DATA, false))).toBeNull()
   })
 
   it('returns null below all bars', () => {
-    expect(hitTestBar(200, 299, DATA, 400, 300, false, false)).toBeNull()
+    expect(hitTestBar(200, 299, DATA, 400, 300, false, false, getMaxVal(DATA, false))).toBeNull()
   })
 
   it('returns a hit inside a bar', () => {
@@ -60,7 +60,7 @@ describe('hitTestBar', () => {
     // Dataset 0 bar x=22.7, width=50.7
     // Dataset 0 value=10, max=20, barH=(10/20)*280=140
     // Bar rect: x=22.7, y=10+280-140=150, h=140
-    const hit = hitTestBar(30, 200, DATA, 400, 300, false, false)
+    const hit = hitTestBar(30, 200, DATA, 400, 300, false, false, getMaxVal(DATA, false))
     expect(hit).not.toBeNull()
     expect(hit!.pointIndex).toBe(0)
   })

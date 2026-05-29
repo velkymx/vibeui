@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { drawLine, hitTestLine } from '../../../src/components/chart/drawLine'
+import { drawLine, hitTestLine, getLineExtent } from '../../../src/components/chart/drawLine'
 import { createMockCtx } from '../../mocks/canvasMock'
 import type { ChartData } from '../../../src/types'
 
@@ -62,7 +62,7 @@ describe('drawLine', () => {
 
 describe('hitTestLine', () => {
   it('returns null when coords are far from all points', () => {
-    expect(hitTestLine(999, 999, DATA, 400, 300, true)).toBeNull()
+    expect(hitTestLine(999, 999, DATA, 400, 300, true, getLineExtent(DATA))).toBeNull()
   })
 
   it('returns hit when coords are within threshold of a point', () => {
@@ -70,7 +70,7 @@ describe('hitTestLine', () => {
     // chartW=340, chartH=260, n=3, xStep=170
     // values [10,20,15], min=10 (seed=allValues[0]), max=20, range=10
     // point[0] x=50, y = 10 + 260 - ((10-10)/10)*260 = 270
-    const hit = hitTestLine(50, 270, DATA, 400, 300, true)
+    const hit = hitTestLine(50, 270, DATA, 400, 300, true, getLineExtent(DATA))
     expect(hit).not.toBeNull()
     expect(hit!.pointIndex).toBe(0)
     expect(hit!.value).toBe(10)
@@ -80,7 +80,7 @@ describe('hitTestLine', () => {
   it('returns correct datasetIndex for second dataset', () => {
     // S1=[10,20,15], S2=[5,8,12], allValues seed=10, min=5, max=20, range=15
     // S2 point[0] value=5: y = 10 + 260 - ((5-5)/15)*260 = 270
-    const hit = hitTestLine(50, 270, MULTI, 400, 300, true)
+    const hit = hitTestLine(50, 270, MULTI, 400, 300, true, getLineExtent(MULTI))
     expect(hit?.datasetIndex).toBe(1)
   })
 })

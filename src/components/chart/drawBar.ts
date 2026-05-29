@@ -10,7 +10,7 @@ function getPad(showAxes: boolean) {
     : { left: 10, right: 10, top: 10, bottom: 10 }
 }
 
-function getMaxVal(data: ChartData, stacked: boolean): number {
+export function getMaxVal(data: ChartData, stacked: boolean): number {
   if (stacked) {
     const colSums = data.labels.map((_, i) =>
       data.datasets.reduce((s, ds) => s + (ds.data[i] ?? 0), 0)
@@ -118,14 +118,16 @@ export function hitTestBar(
   w: number,
   h: number,
   showAxes: boolean,
-  stacked: boolean
+  stacked: boolean,
+  // Precomputed by the component (once per data/stacked change) so we don't recompute
+  // getMaxVal — an O(datasets×points) scan — on every mousemove.
+  maxVal: number
 ): TooltipHit | null {
   const pad = getPad(showAxes)
   const chartW = w - pad.left - pad.right
   const chartH = h - pad.top - pad.bottom
   const n = data.labels.length
   const numDatasets = data.datasets.length
-  const maxVal = getMaxVal(data, stacked)
   const groupW = chartW / n
   const barW = stacked
     ? groupW * (1 - GROUP_PADDING)
