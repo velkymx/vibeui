@@ -154,17 +154,6 @@ watch(() => props.modelValue, (val) => {
   }
 })
 
-watch(bsInitialized, (initialized) => {
-  if (!initialized || pendingState === null || !bsCollapse.value) return
-  const desired = pendingState
-  pendingState = null
-  if (desired && !isVisible.value) {
-    bsCollapse.value.show()
-  } else if (!desired && isVisible.value) {
-    bsCollapse.value.hide()
-  }
-})
-
 const collapseClass = computed(() => {
   const classes = ['collapse']
   if (props.isNav) classes.push('navbar-collapse')
