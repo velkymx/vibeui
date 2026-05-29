@@ -1,6 +1,4 @@
-# VibeUI
-
-**The Vue 3 component library for people who already love Bootstrap.**
+<div align="center"><img src="vibeui.png">
 
 [![Vue 3](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![Bootstrap 5.3](https://img.shields.io/badge/Bootstrap-5.3-7952B3?logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
@@ -8,6 +6,16 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@velkymx/vibeui)](https://www.npmjs.com/package/@velkymx/vibeui)
 [![Tests](https://img.shields.io/badge/tests-914%2F914%20passing-success?logo=vitest&logoColor=white)](https://vitest.dev/)
+
+</div>
+
+# About VibeUI
+
+**The Vue 3 component library for people who already love Bootstrap.**
+
+
+
+
 
 Bootstrap components in Vue are painful. Every modal, tooltip, dropdown, and collapse needs manual JS instantiation, event wiring, unique ID generation, ARIA linking, and teardown on unmount. Miss one step and you ship memory leaks, broken focus, duplicate IDs, or detached-DOM crashes.
 
