@@ -1,6 +1,14 @@
 # Changelog
 
-> Aggregated from Code Review findings (CR5 + CR6). Completed fixes with commit references.
+> Aggregated from Code Review findings (CR5 + CR6) and the 2026-05-29 performance audit. Completed fixes with commit references.
+
+---
+
+## Performance Audit (2026-05-29)
+
+### Bundle Size
+
+- **package.json** — Added `"sideEffects": ["**/*.css"]` so consumer bundlers can tree-shake unused components (Vue SFC scoped CSS is the only side effect). Verified with esbuild against `dist`: `import { VibeButton }` → ~106 KB vs ~939 KB full import (~89% reduction). (d05b129)
 
 ---
 
