@@ -35,7 +35,9 @@ export function bindTooltip(
     ctx.save()
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.font = '12px sans-serif'
-    const text = `${hit.label}: ${hit.value}`
+    // Cap the label so a very long user-supplied label can't overflow the tooltip box.
+    const label = String(hit.label)
+    const text = `${label.length > 60 ? label.slice(0, 60) + '…' : label}: ${hit.value}`
     const tw = ctx.measureText(text).width + 12
     const th = 22
     let tx = x + 12
