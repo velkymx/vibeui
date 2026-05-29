@@ -22,11 +22,14 @@ export function bindTooltip(
     if (overlay.height !== canvas.height) overlay.height = canvas.height
   }
 
-  const drawTooltip = (hit: TooltipHit, x: number, y: number) => {
+  // rect is passed in from onMove (which already measured it) so we don't call
+  // getBoundingClientRect twice per mousemove. We only read rect.width/height here, which
+  // are resize-invariant within a move — note rect.left/top must stay fresh per move (they
+  // shift on scroll), so the measurement itself is not cached across moves.
+  const drawTooltip = (hit: TooltipHit, x: number, y: number, rect: DOMRect) => {
     syncSize()
     const ctx = overlay.getContext('2d')
     if (!ctx) return
-    const rect = canvas.getBoundingClientRect()
     const dpr = window.devicePixelRatio || 1
     ctx.clearRect(0, 0, overlay.width, overlay.height)
     ctx.save()
@@ -74,7 +77,7 @@ export function bindTooltip(
     if (sameHit(hit, lastHit)) return
     lastHit = hit
     if (hit) {
-      drawTooltip(hit, x, y)
+      drawTooltip(hit, x, y, rect)
     } else {
       clearOverlay()
     }
