@@ -6,6 +6,10 @@
 
 ## Code Review 7 (2026-05-29)
 
+### Tooling
+
+- **tsconfig** — Enabled `verbatimModuleSyntax` (TS6 library best practice; codebase already used `import type` consistently — zero changes needed). (f6cebcd)
+
 ### Architecture
 
 - **Form controls → `defineModel()`** — VibeFormInput/Textarea/Switch/Select/Checkbox/Radio/Spinbutton/Datepicker migrated from the manual `modelValue` prop + `update:modelValue` emit to the Vue 3.4+ `defineModel()` idiom (validators forwarded via options). Bootstrap-visibility components keep manual modelValue (internal isVisible decoupling). No consumer-facing change. (c822886)
