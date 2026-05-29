@@ -87,4 +87,34 @@ describe('VibeModal', () => {
 
     expect(bootstrap.Modal).not.toHaveBeenCalled()
   })
+
+  // WCAG 2.4.3: focus returns to the trigger element after close.
+  it('returns focus to the element focused before opening', async () => {
+    // A real trigger button in the document that holds focus before the modal opens
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    expect(document.activeElement).toBe(trigger)
+
+    // attachTo document.body so .focus() actually moves activeElement
+    const wrapper = mount(VibeModal, { props: { teleport: false }, attachTo: document.body })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    // show.bs.modal fires while trigger still has focus → captured as preFocusEl
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    // Simulate the modal grabbing focus (close button inside dialog)
+    const closeBtn = wrapper.find('.btn-close').element as HTMLElement
+    closeBtn.focus()
+    expect(document.activeElement).not.toBe(trigger)
+
+    // Close → hidden.bs.modal must restore focus to the trigger
+    modalEl.dispatchEvent(new Event('hidden.bs.modal'))
+    expect(document.activeElement).toBe(trigger)
+
+    wrapper.unmount()
+    document.body.removeChild(trigger)
+  })
 })

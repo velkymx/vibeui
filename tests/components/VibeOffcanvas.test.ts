@@ -131,4 +131,30 @@ describe('VibeOffcanvas', () => {
 
     expect(bootstrap.Offcanvas).not.toHaveBeenCalled()
   })
+
+  // WCAG 2.4.3: focus returns to the trigger element after close.
+  it('returns focus to the element focused before opening', async () => {
+    const trigger = document.createElement('button')
+    document.body.appendChild(trigger)
+    trigger.focus()
+    expect(document.activeElement).toBe(trigger)
+
+    const wrapper = mount(VibeOffcanvas, { props: { teleport: false }, attachTo: document.body })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const el = wrapper.find('.offcanvas').element
+    el.dispatchEvent(new Event('show.bs.offcanvas'))
+    el.dispatchEvent(new Event('shown.bs.offcanvas'))
+
+    // Simulate the panel grabbing focus (close button inside)
+    const closeBtn = wrapper.find('.btn-close').element as HTMLElement
+    closeBtn.focus()
+    expect(document.activeElement).not.toBe(trigger)
+
+    el.dispatchEvent(new Event('hidden.bs.offcanvas'))
+    expect(document.activeElement).toBe(trigger)
+
+    wrapper.unmount()
+    document.body.removeChild(trigger)
+  })
 })

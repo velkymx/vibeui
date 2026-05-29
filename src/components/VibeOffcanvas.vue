@@ -43,10 +43,18 @@ let listenersAttached = false
 // a Bootstrap Offcanvas instance on a detached element during a mount/unmount race.
 let isUnmounted = false
 
+// WCAG 2.4.3: focus must return to the trigger after close. Bootstrap's restore is
+// unreliable when shown programmatically, so capture/restore the pre-open focus ourselves.
+let preFocusEl: HTMLElement | null = null
+
 const offcanvasClass = computed(() => `offcanvas offcanvas-${props.placement}`)
 
 // Bug 3: isVisible is now set in onShown (not onShow) to align with modelValue emit
 const onShow = () => {
+  // Capture pre-open focus (fires on show.bs.offcanvas, before focus moves into the panel).
+  if (typeof document !== 'undefined') {
+    preFocusEl = document.activeElement as HTMLElement | null
+  }
   emit('show')
 }
 
@@ -64,6 +72,11 @@ const onHidden = () => {
   isVisible.value = false
   emit('hidden')
   emit('update:modelValue', false)
+  // WCAG 2.4.3: return focus to the element that opened the offcanvas.
+  if (preFocusEl && typeof preFocusEl.focus === 'function') {
+    preFocusEl.focus()
+  }
+  preFocusEl = null
 }
 
 // Bug 4: listener attach/detach helpers

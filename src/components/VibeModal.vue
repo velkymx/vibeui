@@ -38,6 +38,11 @@ const modalRef = ref<HTMLElement | null>(null)
 const bsModal = ref<BootstrapModal | null>(null)
 const isVisible = ref(false)
 
+// WCAG 2.4.3: focus must return to the trigger after the modal closes. Bootstrap's
+// own restore is unreliable when the modal is shown programmatically (no trigger
+// element), so capture the pre-open focus ourselves and restore it on close.
+let preFocusEl: HTMLElement | null = null
+
 // Bug 1: in-flight guard to prevent concurrent async init races
 let initInFlight = false
 
@@ -63,6 +68,11 @@ const dialogClass = computed(() => {
 
 // Bug 3: isVisible is now set in onShown (not onShow) to align with modelValue emit
 const onShow = () => {
+  // Capture the element that had focus before the modal opened (fires on show.bs.modal,
+  // before Bootstrap moves focus into the dialog).
+  if (typeof document !== 'undefined') {
+    preFocusEl = document.activeElement as HTMLElement | null
+  }
   emit('show')
 }
 
@@ -80,6 +90,11 @@ const onHidden = () => {
   isVisible.value = false
   emit('hidden')
   emit('update:modelValue', false)
+  // WCAG 2.4.3: return focus to the element that opened the modal.
+  if (preFocusEl && typeof preFocusEl.focus === 'function') {
+    preFocusEl.focus()
+  }
+  preFocusEl = null
 }
 
 // Bug 4: listener attach/detach helpers
