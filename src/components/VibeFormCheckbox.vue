@@ -5,11 +5,10 @@ import type { ValidationState, ValidationRule, ValidatorFunction } from '../type
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
+// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
+const modelValue = defineModel<boolean | string | number | (string | number | boolean)[]>({ default: false })
+
 const props = defineProps({
-  modelValue: {
-    type: [Boolean, String, Number, Array] as PropType<boolean | string | number | (string | number | boolean)[]>,
-    default: false
-  },
   value: { type: [String, Number, Boolean], default: true },
   uncheckedValue: { type: [String, Number, Boolean], default: false },
   id: { type: String, default: undefined },
@@ -27,7 +26,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean | string | number | (string | number | boolean)[]): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
@@ -61,17 +59,17 @@ const inputClass = computed(() => {
 
 const isChecked = computed(() => {
   if (props.indeterminate) return false
-  if (Array.isArray(props.modelValue)) {
-    return props.modelValue.includes(props.value)
+  if (Array.isArray(modelValue.value)) {
+    return modelValue.value.includes(props.value)
   }
-  return props.modelValue === props.value
+  return modelValue.value === props.value
 })
 
 const handleChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   let newValue: any
-  if (Array.isArray(props.modelValue)) {
-    newValue = [...props.modelValue]
+  if (Array.isArray(modelValue.value)) {
+    newValue = [...modelValue.value]
     if (target.checked) {
       newValue.push(props.value)
     } else {
@@ -81,7 +79,7 @@ const handleChange = (event: Event) => {
   } else {
     newValue = target.checked ? props.value : props.uncheckedValue
   }
-  emit('update:modelValue', newValue)
+  modelValue.value = newValue
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }

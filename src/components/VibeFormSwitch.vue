@@ -5,11 +5,11 @@ import type { ValidationState, ValidationRule, ValidatorFunction } from '../type
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
+// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue
+// emit boilerplate. The returned ref is read in the template and assigned on change.
+const modelValue = defineModel<boolean>({ default: false })
+
 const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false
-  },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
@@ -23,7 +23,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
@@ -54,7 +53,7 @@ const inputClass = computed(() => {
 
 const handleChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  emit('update:modelValue', target.checked)
+  modelValue.value = target.checked
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }

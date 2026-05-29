@@ -5,22 +5,24 @@ import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '.
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
-const props = defineProps({
-  modelValue: {
-    type: String,
-    default: '',
-    validator: (value: any) => {
-      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
-        console.error(
-          `[VibeFormDatepicker] Invalid prop: modelValue must be a string, received object. ` +
-          `If you're using useFormValidation(), bind to the .value property: ` +
-          `v-model="field.value" instead of v-model="field"`
-        )
-        return false
-      }
-      return true
+// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
+// The validator option still forwards to the underlying prop.
+const modelValue = defineModel<string>({
+  default: '',
+  validator: (value: unknown) => {
+    if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+      console.error(
+        `[VibeFormDatepicker] Invalid prop: modelValue must be a string, received object. ` +
+        `If you're using useFormValidation(), bind to the .value property: ` +
+        `v-model="field.value" instead of v-model="field"`
+      )
+      return false
     }
-  },
+    return true
+  }
+})
+
+const props = defineProps({
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
@@ -38,7 +40,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
@@ -67,7 +68,7 @@ const inputClass = computed(() => {
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  emit('update:modelValue', target.value)
+  modelValue.value = target.value
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }

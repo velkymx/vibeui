@@ -26,11 +26,10 @@ const findIndexForValue = (options: FormSelectOption[], value: FormSelectOptionV
   return -1
 }
 
+// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
+const modelValue = defineModel<FormSelectOptionValue | FormSelectOptionValue[]>({ default: '' })
+
 const props = defineProps({
-  modelValue: {
-    type: [String, Number, Boolean, Array] as PropType<FormSelectOptionValue | FormSelectOptionValue[]>,
-    default: ''
-  },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   options: { type: Array as PropType<FormSelectOption[]>, default: () => [] },
@@ -49,7 +48,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: FormSelectOptionValue | FormSelectOptionValue[]): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
@@ -90,19 +88,19 @@ const handleInput = (event: Event) => {
   } else {
     newValue = decodeOption(target.value)
   }
-  emit('update:modelValue', newValue)
+  modelValue.value = newValue
 }
 
 const encodedModelValue = computed(() => {
-  if (Array.isArray(props.modelValue)) {
-    return props.modelValue
+  if (Array.isArray(modelValue.value)) {
+    return modelValue.value
       .map((v: FormSelectOptionValue) => {
         const idx = findIndexForValue(props.options, v)
         return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
       })
       .filter(v => v !== PLACEHOLDER_VALUE)
   }
-  const idx = findIndexForValue(props.options, props.modelValue as FormSelectOptionValue)
+  const idx = findIndexForValue(props.options, modelValue.value as FormSelectOptionValue)
   return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
 })
 

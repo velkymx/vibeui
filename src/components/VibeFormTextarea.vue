@@ -5,11 +5,10 @@ import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '.
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
+// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
+const modelValue = defineModel<string>({ default: '' })
+
 const props = defineProps({
-  modelValue: {
-    type: String,
-    default: ''
-  },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   placeholder: { type: String, default: undefined },
@@ -29,7 +28,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
@@ -61,11 +59,11 @@ const textareaStyle = computed(() => {
   return undefined
 })
 
-const currentCount = computed(() => props.modelValue?.length || 0)
+const currentCount = computed(() => modelValue.value?.length || 0)
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLTextAreaElement
-  emit('update:modelValue', target.value)
+  modelValue.value = target.value
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }

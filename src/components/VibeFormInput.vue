@@ -5,11 +5,10 @@ import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Siz
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
+// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
+const modelValue = defineModel<string | number>({ default: '' })
+
 const props = defineProps({
-  modelValue: {
-    type: [String, Number] as PropType<string | number>,
-    default: ''
-  },
   type: { type: String as PropType<InputType>, default: 'text' },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
@@ -29,7 +28,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
@@ -66,7 +64,7 @@ const inputClass = computed(() => {
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   const newValue = props.type === 'number' ? (target.value === '' ? '' : Number(target.value)) : target.value
-  emit('update:modelValue', newValue)
+  modelValue.value = newValue
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }

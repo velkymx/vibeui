@@ -5,22 +5,24 @@ import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '.
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
-const props = defineProps({
-  modelValue: {
-    type: Number,
-    default: 0,
-    validator: (value: any) => {
-      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
-        console.error(
-          `[VibeFormSpinbutton] Invalid prop: modelValue must be a number, received object. ` +
-          `If you're using useFormValidation(), bind to the .value property: ` +
-          `v-model="field.value" instead of v-model="field"`
-        )
-        return false
-      }
-      return true
+// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
+// The validator option still forwards to the underlying prop.
+const modelValue = defineModel<number>({
+  default: 0,
+  validator: (value: unknown) => {
+    if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+      console.error(
+        `[VibeFormSpinbutton] Invalid prop: modelValue must be a number, received object. ` +
+        `If you're using useFormValidation(), bind to the .value property: ` +
+        `v-model="field.value" instead of v-model="field"`
+      )
+      return false
     }
-  },
+    return true
+  }
+})
+
+const props = defineProps({
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
@@ -40,7 +42,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: number): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
@@ -74,9 +75,9 @@ const inputGroupClass = computed(() => {
   return classes.join(' ')
 })
 
-const internalValue = ref(props.modelValue)
+const internalValue = ref(modelValue.value)
 
-watch(() => props.modelValue, (v) => { internalValue.value = v })
+watch(modelValue, (v) => { internalValue.value = v ?? 0 })
 
 const canDecrement = computed(() => {
   if (props.disabled || props.readonly) return false
@@ -103,7 +104,7 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   const raw = target.value === '' ? 0 : Number(target.value)
   internalValue.value = raw
-  emit('update:modelValue', raw)
+  modelValue.value = raw
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
@@ -113,7 +114,7 @@ const handleChange = (event: Event) => {
   const raw = target.value === '' ? 0 : Number(target.value)
   const clamped = clampValue(raw)
   internalValue.value = clamped
-  if (clamped !== raw) emit('update:modelValue', clamped)
+  if (clamped !== raw) modelValue.value = clamped
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
@@ -123,7 +124,7 @@ const handleBlur = (event: FocusEvent) => {
   const raw = target.value === '' ? 0 : Number(target.value)
   const clamped = clampValue(raw)
   internalValue.value = clamped
-  if (clamped !== raw) emit('update:modelValue', clamped)
+  if (clamped !== raw) modelValue.value = clamped
   emit('blur', event)
   if (props.validateOn === 'blur') emit('validate')
 }
@@ -161,7 +162,7 @@ const increment = () => {
     newValue = props.wrap ? props.min ?? 0 : props.max
   }
   internalValue.value = newValue
-  emit('update:modelValue', newValue)
+  modelValue.value = newValue
   emit('increment', newValue)
   emit('validate')
 }
@@ -173,7 +174,7 @@ const decrement = () => {
     newValue = props.wrap ? props.max ?? 0 : props.min
   }
   internalValue.value = newValue
-  emit('update:modelValue', newValue)
+  modelValue.value = newValue
   emit('decrement', newValue)
   emit('validate')
 }
