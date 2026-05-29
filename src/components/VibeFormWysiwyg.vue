@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
+import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
 import { FORM_GROUP_KEY } from '../injectionKeys'
@@ -72,7 +72,7 @@ const shouldRenderFeedback = computed(() => !!props.validationState && !formGrou
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
 
 const editorContainer = ref<HTMLElement | null>(null)
-const quillInstance = ref<QuillInstance | null>(null)
+const quillInstance = shallowRef<QuillInstance | null>(null)
 const isQuillLoaded = ref(false)
 const loadError = ref<string | null>(null)
 const isUpdatingFromProp = ref(false)

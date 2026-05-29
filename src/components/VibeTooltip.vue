@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { TooltipPlacement, ComponentError } from '../types'
 
 interface BootstrapTooltip {
@@ -24,7 +24,7 @@ if (props.content !== undefined && props.text === undefined) {
 }
 
 const tooltipRef = ref<HTMLElement | null>(null)
-const bsTooltip = ref<BootstrapTooltip | null>(null)
+const bsTooltip = shallowRef<BootstrapTooltip | null>(null)
 
 // Tracks whether onBeforeUnmount has fired. The template ref (tooltipRef) may still be
 // non-null during the window between onBeforeUnmount and Vue removing the DOM element,

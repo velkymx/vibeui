@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated, computed } from 'vue'
+import { shallowRef, ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated, computed } from 'vue'
 import type { Tag, ComponentError } from '../types'
 import { safeLength } from '../utils/safeCss'
 
@@ -25,7 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const scrollspyRef = ref<HTMLElement | null>(null)
-const bsScrollspy = ref<BootstrapScrollSpy | null>(null)
+const bsScrollspy = shallowRef<BootstrapScrollSpy | null>(null)
 let initInFlight = false
 
 // Set first in onBeforeUnmount — guards post-await section against constructing

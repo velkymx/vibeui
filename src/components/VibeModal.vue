@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Size, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
@@ -41,7 +41,7 @@ const emit = defineEmits<{
 const computedId = computed(() => props.id || _generatedId)
 
 const modalRef = ref<HTMLElement | null>(null)
-const bsModal = ref<BootstrapModal | null>(null)
+const bsModal = shallowRef<BootstrapModal | null>(null)
 const isVisible = ref(false)
 
 // WCAG 2.4.3: focus must return to the trigger after the modal closes. Bootstrap's

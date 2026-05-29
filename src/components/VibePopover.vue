@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { TooltipPlacement, ComponentError } from '../types'
 
 interface BootstrapPopover {
@@ -20,7 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const popoverRef = ref<HTMLElement | null>(null)
-const bsPopover = ref<BootstrapPopover | null>(null)
+const bsPopover = shallowRef<BootstrapPopover | null>(null)
 
 // Tracks whether onBeforeUnmount has fired. The template ref (popoverRef) may still be
 // non-null during the window between onBeforeUnmount and Vue removing the DOM element,

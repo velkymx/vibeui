@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { CarouselItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
@@ -41,7 +41,7 @@ const emit = defineEmits<{
 }>()
 
 const carouselRef = ref<HTMLElement | null>(null)
-const bsCarousel = ref<BootstrapCarousel | null>(null)
+const bsCarousel = shallowRef<BootstrapCarousel | null>(null)
 const activeIndex = ref(props.modelValue)
 
 // Consumer-supplied id wins; otherwise the stable generated id.

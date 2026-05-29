@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Variant, ToastPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
@@ -36,7 +36,7 @@ const emit = defineEmits<{
 
 const computedId = computed(() => props.id ?? _toastId)
 const toastRef = ref<HTMLElement | null>(null)
-const bsToast = ref<BootstrapToast | null>(null)
+const bsToast = shallowRef<BootstrapToast | null>(null)
 const isVisible = ref(false)
 
 const toastClass = computed(() => {

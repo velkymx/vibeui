@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { safeHref } from '../utils/safeHref'
@@ -40,7 +40,7 @@ const emit = defineEmits<{
 const computedId = computed(() => props.id || _generatedId)
 
 const dropdownRef = ref<HTMLElement | null>(null)
-const bsDropdown = ref<BootstrapDropdown | null>(null)
+const bsDropdown = shallowRef<BootstrapDropdown | null>(null)
 let toggleEl: HTMLElement | null = null
 let reinitGuard = false
 let initInFlight = false

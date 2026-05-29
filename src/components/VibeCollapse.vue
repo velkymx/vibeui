@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, ref, inject, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { shallowRef, computed, watch, ref, inject, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import type { Tag, ComponentError } from '../types'
 import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
@@ -37,7 +37,7 @@ const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
 const computedId = computed(() => props.id || _generatedId)
 
 const collapseRef = ref<HTMLElement | null>(null)
-const bsCollapse = ref<BootstrapCollapse | null>(null)
+const bsCollapse = shallowRef<BootstrapCollapse | null>(null)
 const isVisible = ref(false)
 const bsInitialized = ref(false)
 // Stores the last desired state requested before Bootstrap finishes initializing.

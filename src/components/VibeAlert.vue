@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 
 interface BootstrapAlert {
   close: () => void
@@ -25,7 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const alertRef = ref<HTMLElement | null>(null)
-const bsAlert = ref<BootstrapAlert | null>(null)
+const bsAlert = shallowRef<BootstrapAlert | null>(null)
 const isVisible = ref(props.modelValue)
 
 let alertListenersAttached = false
