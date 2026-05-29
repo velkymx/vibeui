@@ -223,6 +223,13 @@ const handlePointerDown = (handleIdx: 0 | 1, event: PointerEvent) => {
   window.addEventListener('pointerup', handlePointerUp)
 }
 
+// Pre-bound per-handle event handlers so the template binds stable references instead
+// of allocating four new inline arrows on every render.
+const onLowKeydown = (e: KeyboardEvent) => handleKeydown(0, e)
+const onHighKeydown = (e: KeyboardEvent) => handleKeydown(1, e)
+const onLowPointerDown = (e: PointerEvent) => handlePointerDown(0, e)
+const onHighPointerDown = (e: PointerEvent) => handlePointerDown(1, e)
+
 const handlePointerMove = (event: PointerEvent) => {
   if (activeHandle.value === null || !trackRef.value || event.pointerId !== activePointerId) return
   const rect = trackRef.value.getBoundingClientRect()
@@ -270,8 +277,8 @@ onBeforeUnmount(() => {
         :aria-valuenow="lowValue"
         :aria-disabled="disabled || undefined"
         :style="lowHandleStyle"
-        @keydown="(e: KeyboardEvent) => handleKeydown(0, e)"
-        @pointerdown="(e: PointerEvent) => handlePointerDown(0, e)"
+        @keydown="onLowKeydown"
+        @pointerdown="onLowPointerDown"
       />
       <div
         v-if="range"
@@ -284,8 +291,8 @@ onBeforeUnmount(() => {
         :aria-valuenow="highValue"
         :aria-disabled="disabled || undefined"
         :style="highHandleStyle"
-        @keydown="(e: KeyboardEvent) => handleKeydown(1, e)"
-        @pointerdown="(e: PointerEvent) => handlePointerDown(1, e)"
+        @keydown="onHighKeydown"
+        @pointerdown="onHighPointerDown"
       />
     </div>
   </div>
