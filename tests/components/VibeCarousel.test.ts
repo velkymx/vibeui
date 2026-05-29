@@ -37,6 +37,29 @@ describe('VibeCarousel', () => {
     expect(bootstrap.Carousel).toHaveBeenCalled()
   })
 
+  it('does not construct Bootstrap Carousel when items is empty', async () => {
+    mount(VibeCarousel, {
+      props: { id: 'empty-carousel', items: [] }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(bootstrap.Carousel).not.toHaveBeenCalled()
+  })
+
+  it('does not render an <img> for a slide without a src', () => {
+    const wrapper = mount(VibeCarousel, {
+      props: {
+        id: 'no-src-carousel',
+        // Caption-only slide, no image
+        items: [{ caption: 'Text only' }]
+      }
+    })
+
+    // The slide renders, but no <img> with an undefined src (which would request the page URL)
+    expect(wrapper.findAll('.carousel-item')).toHaveLength(1)
+    expect(wrapper.find('.carousel-item img').exists()).toBe(false)
+  })
+
   it('does not stack event listeners on items re-init', async () => {
     const wrapper = mount(VibeCarousel, {
       props: { id: 'test-carousel', items: mockItems }

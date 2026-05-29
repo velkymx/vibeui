@@ -91,6 +91,11 @@ const initCarousel = async () => {
       bsCarousel.value = null
     }
 
+    // No slides → nothing to initialize. Any prior instance was disposed above,
+    // so an items-emptied carousel is left cleanly torn down rather than handing
+    // Bootstrap an empty `.carousel-inner` (which errors internally).
+    if (!props.items.length) return
+
     const bootstrap = await import('bootstrap')
 
     // Guard: component may have unmounted while the import was in-flight.
@@ -202,7 +207,7 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
         :class="['carousel-item', { active: index === activeIndex }]"
         :data-bs-interval="item.interval"
       >
-        <img :src="item.src" :alt="getImageAlt(item, index)" class="d-block w-100">
+        <img v-if="item.src" :src="item.src" :alt="getImageAlt(item, index)" class="d-block w-100">
         <div v-if="item.caption || item.captionText || $slots.caption" class="carousel-caption d-none d-md-block">
           <slot name="caption" :item="item" :index="index">
             <h5 v-if="item.caption">{{ item.caption }}</h5>
