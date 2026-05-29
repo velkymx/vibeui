@@ -36,17 +36,6 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    // TEMPORARY: tolerate ONLY the known VibeFormWysiwyg teardown race — Quill's scroll
-    // MutationObserver reads `selection.lastRange` after onBeforeUnmount sets `selection`
-    // to null, throwing during unmount. It is timing-dependent and flakes both the unit
-    // and browser suites; all assertions still pass. Every other unhandled error still
-    // fails the run. REMOVE once the component teardown is fixed — see todo.md
-    // "VibeFormWysiwyg teardown race".
-    onUnhandledError(error) {
-      if (typeof error?.message === 'string' && error.message.includes("reading 'lastRange'")) {
-        return false
-      }
-    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

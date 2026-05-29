@@ -29,4 +29,23 @@ describe('VibeFormWysiwyg (our integration glue only)', () => {
     expect((window as unknown as Record<string, unknown>).__xssScript).toBeUndefined()
     expect((window as unknown as Record<string, unknown>).__xssImg).toBeUndefined()
   })
+
+  test('unmounting tears down Quill cleanly — no error thrown', async () => {
+    // Capture errors ourselves so the vite.config `onUnhandledError` filter (which
+    // currently tolerates the lastRange teardown race) cannot hide a regression here.
+    const errors: string[] = []
+    const onErr = (e: ErrorEvent) => { errors.push(e.message) }
+    window.addEventListener('error', onErr)
+    try {
+      const screen = render(VibeFormWysiwyg, { props: { modelValue: '<p>Teardown</p>' } })
+      const editor = await waitForSelector('.ql-editor')
+      ;(editor as HTMLElement).focus()
+      screen.unmount()
+      // Let Quill's scroll MutationObserver flush against the now-removed DOM.
+      await new Promise((r) => setTimeout(r, 50))
+    } finally {
+      window.removeEventListener('error', onErr)
+    }
+    expect(errors.filter((m) => m.includes('lastRange'))).toEqual([])
+  })
 })

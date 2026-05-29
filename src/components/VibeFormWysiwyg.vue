@@ -24,6 +24,9 @@ interface QuillInstance {
   // Optional: present in some Quill builds; call sites guard with typeof === 'function'.
   destroy?: () => void
   selection: unknown
+  // Quill's scroll blot owns the parchment MutationObserver. We disconnect it during
+  // teardown so it cannot fire against DOM Vue is about to remove.
+  scroll?: { observer?: { disconnect: () => void } }
 }
 
 const _generatedId = useId('wysiwyg')
@@ -299,6 +302,11 @@ onBeforeUnmount(() => {
    }
 
    if (quillInstance.value) {
+     // Disconnect Quill's scroll MutationObserver BEFORE any teardown. Vue removes the
+     // editor DOM right after this hook; a still-connected observer would fire and read
+     // selection.lastRange after we null `selection` below, throwing during unmount.
+     quillInstance.value.scroll?.observer?.disconnect()
+
      // Disable the editor first to prevent selection updates on detached DOM
      quillInstance.value.enable(false)
 
@@ -368,6 +376,11 @@ watch(isMobile, () => {
     // during the debounce window.
     if (isUnmounted || !quillInstance.value) return
     const content = getQuillContent()
+
+    // Disconnect Quill's scroll MutationObserver before tearing down — clearing the
+    // editor DOM below would otherwise fire it against removed nodes and read
+    // selection.lastRange after we null `selection`, throwing.
+    quillInstance.value.scroll?.observer?.disconnect()
 
     // Disable the editor first to prevent selection updates on detached DOM
     quillInstance.value.enable(false)
