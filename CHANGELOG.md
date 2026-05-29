@@ -23,6 +23,19 @@
 
 ## Code Review 6 — follow-ups (2026-05-29)
 
+### Low (sweep)
+
+- **VibeAlert** — Removed redundant `isDismissible` computed; reference `props.dismissible`/`dismissible` directly. (6a985f6)
+- **VibeFormWysiwyg** — Event-handler refs (`blur`/`focus`/`text-change`/`selection-change`) switched from `ref()` to plain `let` (imperative use only; no reactivity needed). (9832ae9)
+- **VibeDatePicker** — `validateIsoString` DEV-guarded and no longer logs the raw `min`/`max` value (PII-leak avoidance). (648f76f)
+- **chartTooltip** — Cap label length (60 chars + ellipsis) so a long user label can't overflow the tooltip. (be39e12)
+- **useToast** — DEV-SSR warning that the module-singleton store needs `resetToastStoreForSSR()` per request. (5526a45)
+- **VibeStepper / VibePagination** — Stable `v-for` keys (step label / page number) instead of array index. (dff0f99)
+- **VibeToastHost** — Memoized `containerClassFor` over the finite placement set. (49ca4ae)
+- **VibeDropdown** — Memoized item classes into a computed Map (tracks active/disabled). (ec9bf49)
+- **VibeDatePicker** — Hoisted `todayIso` out of the `monthGrid` computed (no per-navigation `new Date()`). (eb53c41)
+- **VibePagination** — Dropped redundant `aria-disabled` on native disabled buttons. (dee38f2)
+
 ### Performance
 
 - **VibeAutocomplete, VibeChartBar/Line/Pie** — Replaced positional `v-for` index keys with stable keys (autocomplete: `labelOf(item)` + idx; chart legends: `ds.label ?? i` / `label ?? i`) so filtered/reordered lists patch the correct DOM nodes. (2c95d23)
