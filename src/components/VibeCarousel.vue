@@ -188,8 +188,8 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
     <!-- Indicators -->
     <div v-if="indicators" class="carousel-indicators">
       <button
-        v-for="(_, index) in items"
-        :key="`indicator-${index}`"
+        v-for="(item, index) in items"
+        :key="item.src ?? index"
         type="button"
         :data-bs-target="`#${computedId}`"
         :data-bs-slide-to="index"
@@ -203,7 +203,7 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
     <div class="carousel-inner">
       <div
         v-for="(item, index) in items"
-        :key="`slide-${index}`"
+        :key="item.src ?? index"
         :class="['carousel-item', { active: index === activeIndex }]"
         :data-bs-interval="item.interval"
       >
