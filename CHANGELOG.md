@@ -23,6 +23,10 @@
 
 ## Code Review 6 — follow-ups (2026-05-29)
 
+### Performance
+
+- **VibeAutocomplete, VibeChartBar/Line/Pie** — Replaced positional `v-for` index keys with stable keys (autocomplete: `labelOf(item)` + idx; chart legends: `ds.label ?? i` / `label ?? i`) so filtered/reordered lists patch the correct DOM nodes. (2c95d23)
+
 ### Architecture
 
 - **VibeSkeleton** — Added `inheritAttrs: false` + explicit `v-bind="$attrs"` on each variant root. The multi-root `text` fragment previously dropped consumer attrs (class, data-*, listeners) with a dev warning; all variants now forward them consistently. (82fef87)
