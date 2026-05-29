@@ -4,6 +4,18 @@
 
 ---
 
+## E2E Browser Testing (2026-05-29)
+
+### Testing
+
+- **Vitest browser mode (Playwright / Chromium)** — Added a second Vitest project (`browser`) that runs real headless Chromium via `@vitest/browser-playwright`, sharing the same Vite 8 pipeline. It exercises the real Bootstrap JS + Quill integration paths the happy-dom unit suite mocks or cannot run: Modal/Offcanvas/Toast lifecycle + focus return, Tooltip/Popover/Dropdown Popper positioning, Collapse/Accordion/Carousel/Scrollspy, and VibeFormWysiwyg Quill init + DOMPurify sanitize. The `bootstrap` mock alias is scoped to the `unit` project only. New `test:browser` / `test:all` scripts and a required CI `e2e` job; `test` / `test:run` / `test:coverage` are pinned to `--project unit` so the inner loop carries no browser cost. (2f91961, 7649f05, a2147bd, b2b91f6, ea343d6, 6ebeb88, 7c54a8e)
+
+### Fixes
+
+- **VibeFormWysiwyg teardown race** — On unmount (and the mobile-toolbar rebuild), Quill's scroll `MutationObserver` fired against DOM Vue was removing and read `selection.lastRange` after `selection` was nulled, throwing `Cannot read properties of null`. Timing-dependent; it intermittently failed both the unit and browser runs. Fixed by disconnecting `quill.scroll.observer` before teardown in both paths. Surfaced and regression-guarded by the new browser suite. (1805cbb)
+
+---
+
 ## Code Review 7 (2026-05-29)
 
 ### Tooling
