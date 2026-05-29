@@ -10,6 +10,10 @@
 
 - **package.json** — Added `"sideEffects": ["**/*.css"]` so consumer bundlers can tree-shake unused components (Vue SFC scoped CSS is the only side effect). Verified with esbuild against `dist`: `import { VibeButton }` → ~106 KB vs ~939 KB full import (~89% reduction). (d05b129)
 
+### Runtime
+
+- **VibeNavbarNav** — Changed the `items` watcher from `{ deep: true }` to `{ deep: false }`. Dropdown presence depends on array identity, not leaf values; replacing the array still rebuilds, while leaf mutations no longer trigger a full deep traversal + dropdown teardown/reinit. (e82b570)
+
 ---
 
 ## Code Review 6 (2026-05-28)
