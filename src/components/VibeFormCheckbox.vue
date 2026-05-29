@@ -7,7 +7,7 @@ import { useId } from '../composables/useId'
 
 const props = defineProps({
   modelValue: {
-    type: [Boolean, Array] as PropType<any>,
+    type: [Boolean, String, Number, Array] as PropType<boolean | string | number | (string | number | boolean)[]>,
     default: false
   },
   value: { type: [String, Number, Boolean], default: true },
@@ -27,7 +27,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean | unknown[]): void
+  (e: 'update:modelValue', value: boolean | string | number | (string | number | boolean)[]): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void

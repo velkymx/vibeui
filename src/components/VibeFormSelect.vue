@@ -28,7 +28,7 @@ const findIndexForValue = (options: FormSelectOption[], value: FormSelectOptionV
 
 const props = defineProps({
   modelValue: {
-    type: [String, Number, Array] as PropType<any>,
+    type: [String, Number, Boolean, Array] as PropType<FormSelectOptionValue | FormSelectOptionValue[]>,
     default: ''
   },
   id: { type: String, default: undefined },
@@ -49,7 +49,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: unknown): void
+  (e: 'update:modelValue', value: FormSelectOptionValue | FormSelectOptionValue[]): void
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
