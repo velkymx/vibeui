@@ -28,11 +28,23 @@ const canvasContainerStyle = computed(() => {
   return { width: '100%', height: h }
 })
 
-const resolvedColors = computed(() =>
-  containerEl.value ? resolveColors(props.data.datasets, containerEl.value) : []
-)
+// Plain ref, not a computed: resolveColors() calls getComputedStyle() — a synchronous
+// forced layout read. Inside a computed it would re-run (and thrash layout) on every
+// reactive dependency change. Instead we refresh it explicitly inside redraw(), which
+// runs in the ResizeObserver RAF callback, so the DOM read happens at a safe time.
+// It stays a ref (not a local) so the reactive legend swatches update when it changes.
+const resolvedColors = ref<string[]>([])
+
+function updateColors() {
+  resolvedColors.value = containerEl.value
+    ? resolveColors(props.data.datasets, containerEl.value)
+    : []
+}
 
 function redraw() {
+  // Refresh colors before the dimension guard so the legend populates even if the
+  // canvas has not been sized yet.
+  updateColors()
   if (!canvasEl.value || !currentW || !currentH) return
   const canvas = canvasEl.value
   const ctx = canvas.getContext('2d')
@@ -65,6 +77,9 @@ useChartResize(containerEl, canvasEl, (w, h) => {
 })
 
 onMounted(() => {
+  // One-time color resolution at mount so the legend has colors before the first
+  // ResizeObserver callback. Subsequent refreshes happen inside redraw().
+  updateColors()
   if (containerEl.value && canvasEl.value) {
     cleanupTooltip = bindTooltip(
       containerEl.value,

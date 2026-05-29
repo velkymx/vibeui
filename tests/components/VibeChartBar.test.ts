@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import VibeChartBar from '../../src/components/VibeChartBar.vue'
 import { mockCanvas, mockResizeObserver, mockAnimationFrame } from '../mocks/canvasMock'
 import type { ChartData } from '../../src/types'
@@ -62,5 +63,20 @@ describe('VibeChartBar', () => {
   it('applies explicit height when given', () => {
     const wrapper = mount(VibeChartBar, { props: { data: DATA, height: 400 } })
     expect(wrapper.find('.vibe-chart-canvas-container').attributes('style')).toContain('400px')
+  })
+
+  // Guards the ref-based color resolution: resolvedColors is now a ref refreshed in
+  // onMounted/redraw (not a computed). The legend swatch must still reflect the
+  // explicit dataset color after mount.
+  it('legend swatch reflects explicit dataset color after mount', async () => {
+    const data: ChartData = {
+      labels: ['A', 'B'],
+      datasets: [{ label: 'Series', data: [1, 2], color: '#abcdef' }],
+    }
+    const wrapper = mount(VibeChartBar, { props: { data } })
+    // updateColors() runs in onMounted; await the queued reactive DOM update
+    await nextTick()
+    const swatch = wrapper.find('.vibe-chart-legend-swatch')
+    expect(swatch.attributes('style')).toContain('#abcdef')
   })
 })
