@@ -85,7 +85,7 @@ onUnmounted(() => {
 <template>
   <div class="vibe-chart">
     <div v-if="legend === 'top'" class="vibe-chart-legend vibe-chart-legend--top">
-      <span v-for="(label, i) in data.labels" :key="i" class="vibe-chart-legend-item">
+      <span v-for="(label, i) in data.labels" :key="label ?? i" class="vibe-chart-legend-item">
         <span class="vibe-chart-legend-swatch" :style="{ background: resolvedColors[i] }" />
         {{ label }}
       </span>
@@ -94,7 +94,7 @@ onUnmounted(() => {
       <canvas ref="canvasEl" role="img" aria-label="Chart" style="display: block; width: 100%; height: 100%;" />
     </div>
     <div v-if="legend === 'bottom'" class="vibe-chart-legend vibe-chart-legend--bottom">
-      <span v-for="(label, i) in data.labels" :key="i" class="vibe-chart-legend-item">
+      <span v-for="(label, i) in data.labels" :key="label ?? i" class="vibe-chart-legend-item">
         <span class="vibe-chart-legend-swatch" :style="{ background: resolvedColors[i] }" />
         {{ label }}
       </span>
