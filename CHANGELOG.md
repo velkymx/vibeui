@@ -18,6 +18,7 @@
 ### Tooling
 
 - **CI** — Run on Node 24; bumped `actions/checkout` and `actions/setup-node` to v5 (Node 20 actions deprecated). (8fde2b4)
+- **TypeScript** — Migrated to TS 6.0.3: `moduleResolution` Node→Bundler (node10 is a hard error in TS6 / removed in TS7), `process` SSR guard read off `globalThis`, and types entry repointed to `dist/src/index.d.ts` (dts@4 emit layout under TS6+Bundler). vue-tsc 3.2.5 + vite-plugin-dts 4 verified compatible. (bf2ce7d)
 
 ---
 
