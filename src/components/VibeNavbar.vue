@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, provide } from 'vue'
-import type { Variant, Tag, NavbarPosition, ComponentError } from '../types'
+import type { Variant, Tag, NavbarPosition } from '../types'
 import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 
 const props = defineProps({
@@ -11,10 +11,6 @@ const props = defineProps({
   position: { type: String as () => NavbarPosition, default: undefined },
   tag: { type: String as () => Tag | 'nav', default: 'nav' }
 })
-
-const emit = defineEmits<{
-  (e: 'component-error', error: ComponentError): void
-}>()
 
 // Provide reactive collapse state so VibeNavbarToggle and VibeCollapse
 // communicate through Vue reactivity instead of Bootstrap JS

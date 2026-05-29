@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Variant, Tag, ComponentError } from '../types'
+import type { Variant, Tag } from '../types'
 
 const props = defineProps({
   variant: { type: String as () => Variant, default: 'primary' },
@@ -8,10 +8,6 @@ const props = defineProps({
   pill: { type: Boolean, default: false },
   tag: { type: String as () => Tag | 'a', default: 'span' }
 })
-
-const emit = defineEmits<{
-  (e: 'component-error', error: ComponentError): void
-}>()
 
 const badgeClass = computed(() => {
   const classes = ['badge']

@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ProgressBar, ComponentError } from '../types'
+import type { ProgressBar } from '../types'
 
 const props = defineProps({
   height: { type: String, default: undefined },
   bars: { type: Array as () => ProgressBar[], required: true }
 })
-
-const emit = defineEmits<{
-  (e: 'component-error', error: ComponentError): void
-}>()
 
 const progressStyle = computed(() => {
   if (props.height) {

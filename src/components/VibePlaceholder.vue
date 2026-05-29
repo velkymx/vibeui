@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Variant, Size, PlaceholderAnimation, Tag, ComponentError } from '../types'
+import type { Variant, Size, PlaceholderAnimation, Tag } from '../types'
 
 const props = defineProps({
   variant: { type: String as () => Variant, default: undefined },
@@ -9,10 +9,6 @@ const props = defineProps({
   width: { type: [String, Number], default: undefined },
   tag: { type: String as () => Tag, default: 'span' }
 })
-
-const emit = defineEmits<{
-  (e: 'component-error', error: ComponentError): void
-}>()
 
 const placeholderClass = computed(() => {
   const classes = ['placeholder']
