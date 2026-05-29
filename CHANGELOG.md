@@ -26,6 +26,8 @@
 ### Performance
 
 - **VibeAutocomplete, VibeChartBar/Line/Pie** — Replaced positional `v-for` index keys with stable keys (autocomplete: `labelOf(item)` + idx; chart legends: `ds.label ?? i` / `label ?? i`) so filtered/reordered lists patch the correct DOM nodes. (2c95d23)
+- **VibeCarousel** — Stable `v-for` keys (`item.src ?? index`) for indicators and slides so Bootstrap carousel state stays in sync with the DOM on reorder. (e490502)
+- **VibeListGroup** — Stable `v-for` key (`item.href ?? item.text ?? index`) so `v-memo` is not negated by index-key mis-diffing on reorder. (990d869)
 
 ### Architecture
 
