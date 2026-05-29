@@ -9,8 +9,8 @@ Alert messages with Bootstrap styling, supporting variants, dismissible function
 | `variant` | `Variant` | `'primary'` | Color variant |
 | `subtle` | `Boolean` | `false` | Renders alert with subtle background and emphasis text |
 | `modelValue` | `Boolean` | `true` | Controls visibility (v-model support) |
-| `dismissable` | `Boolean` | `false` | Shows close button when true |
-| `message` | `String` | `''` | Alert message text. Optional when default slot is used. |
+| `dismissible` | `Boolean` | `false` | Shows close button when true |
+| `message` | `String` | `''` | Alert message text. Renders alongside default slot content; optional when the slot is used. |
 | `fade` | `Boolean` | `true` | Use fade animation on dismissal |
 
 ## Events
@@ -48,7 +48,7 @@ const showAlert = ref(true)
 <template>
   <VibeAlert
     variant="warning"
-    dismissable
+    dismissible
     v-model="showAlert"
     message="This alert can be dismissed"
   />
@@ -69,7 +69,7 @@ Use the default slot for inline buttons, links, icons, or rich VNode content. Sl
   </VibeAlert>
 
   <!-- slot as sole content -->
-  <VibeAlert variant="warning" dismissable>
+  <VibeAlert variant="warning" dismissible>
     <strong>Sprint locked.</strong>
     Changes are frozen until release.
     <VibeButton size="sm" variant="primary" @click="unlock">Unlock</VibeButton>
@@ -81,7 +81,7 @@ Use the default slot for inline buttons, links, icons, or rich VNode content. Sl
 
 **Automatic Initialization:** This component automatically initializes Bootstrap's Alert functionality when it is mounted, ensuring smooth dismissal animations.
 
-**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
+**Dismissing:** Use `v-model` to show/dismiss the alert programmatically — there is no exposed Bootstrap instance to manage manually.
 
 ## Bootstrap CSS Classes
 

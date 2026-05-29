@@ -16,7 +16,7 @@ Flexible content container component for displaying headers, bodies, footers, an
 | `footer` | `String` | `undefined` | Card footer text |
 | `imgSrc` | `String` | `undefined` | Image URL |
 | `imgAlt` | `String` | `''` | Image alt text |
-| `imgTop` | `Boolean` | `true` | Display image at top |
+| `imgTop` | `Boolean` | `false` | Display image at top |
 | `imgBottom` | `Boolean` | `false` | Display image at bottom |
 
 ## Slots
@@ -62,6 +62,7 @@ Flexible content container component for displaying headers, bodies, footers, an
   <VibeCard
     img-src="/path/to/image.jpg"
     img-alt="Card image"
+    img-top
     title="Card with Image"
     body="This card has an image at the top."
   />
@@ -175,6 +176,7 @@ Use the default slot with Bootstrap grid:
       <VibeCard
         img-src="/path/to/image1.jpg"
         img-alt="Card 1"
+        img-top
         title="Card 1"
         body="Card content here."
       />
@@ -183,6 +185,7 @@ Use the default slot with Bootstrap grid:
       <VibeCard
         img-src="/path/to/image2.jpg"
         img-alt="Card 2"
+        img-top
         title="Card 2"
         body="Card content here."
       />
@@ -191,6 +194,7 @@ Use the default slot with Bootstrap grid:
       <VibeCard
         img-src="/path/to/image3.jpg"
         img-alt="Card 3"
+        img-top
         title="Card 3"
         body="Card content here."
       />

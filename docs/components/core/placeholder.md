@@ -12,12 +12,6 @@ Placeholder loading component with optional animations.
 | `width` | `String\|Number` | `undefined` | Width as percentage or CSS value |
 | `tag` | `String` | `'span'` | HTML tag to render |
 
-## Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `component-error` | `Object` | Emitted when an error occurs |
-
 ## Slots
 
 | Slot | Description |

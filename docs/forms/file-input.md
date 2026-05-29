@@ -1,71 +1,97 @@
 # VibeFileInput
 
-File attachment input with optional drag-drop zone. v-model exposes selected files as `File[]`.
+File attachment input with optional drag-and-drop zone. `v-model` exposes the selected files as `File[]`.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `modelValue` | `File[]` | `[]` | Selected files (v-model) |
-| `id` | `String` | auto | |
-| `label` | `String` | `undefined` | |
-| `multiple` | `Boolean` | `false` | Allow multi-select |
-| `accept` | `String` | `undefined` | MIME / extension filter (e.g. `'image/*'`) |
-| `maxSize` | `Number` | `undefined` | Max bytes per file. Files over this go to `invalid`. |
-| `dragDrop` | `Boolean` | `false` | Render a drop zone variant |
-| `disabled` | `Boolean` | `false` | |
-| `size` | `'sm' \| 'lg'` | `undefined` | Bootstrap form-control sizing |
-| `helpText` | `String` | `undefined` | Subtle hint below the input |
-| `dropzoneText` | `String` | `'Drag files here or click to browse'` | Drop zone copy |
+| `modelValue` | `File[]` | `[]` | The accepted files (v-model). |
+| `id` | `string` | auto-generated | Element id. |
+| `label` | `string` | `undefined` | Label text. |
+| `multiple` | `boolean` | `false` | Allow selecting multiple files. |
+| `accept` | `string` | `undefined` | Comma-separated MIME types and/or extensions (e.g. `image/*,.pdf`). Used both as the native filter and for rejection. |
+| `maxSize` | `number` | `undefined` | Maximum file size in bytes; larger files are rejected. |
+| `dragDrop` | `boolean` | `false` | Render a drag-and-drop zone instead of the native control. |
+| `disabled` | `boolean` | `false` | Disable the input. |
+| `size` | `'sm' \| 'lg'` | `undefined` | Control size (native control only). |
+| `helpText` | `string` | `undefined` | Help text below the input. |
+| `dropzoneText` | `string` | `'Drag files here or click to browse'` | Text shown inside the drop zone. |
 
-### Events
+## Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `update:modelValue` | `File[]` | Accepted files |
-| `change` | `File[]` | Same payload |
-| `invalid` | `File[]` | Files rejected by `maxSize` |
+| `update:modelValue` | `File[]` | Emitted with the accepted files. |
+| `change` | `File[]` | Emitted with the accepted files (mirrors `update:modelValue`). |
+| `invalid` | `File[]` | Emitted with files rejected by `accept` or `maxSize`. |
 
-### Slots
+## Slots
 
 | Slot | Description |
 |------|-------------|
-| `dropzone` | Replace default drop-zone copy when `dragDrop=true` |
+| `dropzone` | Custom content for the drop zone (only when `dragDrop` is set). |
 
-## Examples
+## Exposed methods
 
-### Plain input
+| Method | Description |
+|--------|-------------|
+| `clearFiles()` | Clears the native input and emits an empty selection. |
+
+## Usage
+
+### Native input
 
 ```vue
-<VibeFileInput v-model="files" multiple accept=".pdf,.docx" />
+<script setup lang="ts">
+import { ref } from 'vue'
+const files = ref<File[]>([])
+</script>
+
+<template>
+  <VibeFileInput
+    v-model="files"
+    label="Attachment"
+    accept="image/*,.pdf"
+    :max-size="5 * 1024 * 1024"
+    help-text="Images or PDF, up to 5 MB."
+  />
+</template>
 ```
 
-### Drop zone with size limit
+### Drag-and-drop with rejection handling
 
 ```vue
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
-const files = ref([])
-const rejected = ref([])
+const files = ref<File[]>([])
 
-function onInvalid(rejectedFiles) {
-  rejected.value = rejectedFiles
+const onInvalid = (rejected: File[]) => {
+  console.warn('Rejected:', rejected.map((f) => f.name))
 }
 </script>
 
 <template>
   <VibeFileInput
     v-model="files"
-    drag-drop
     multiple
-    :max-size="5 * 1024 * 1024"
+    drag-drop
     accept="image/*"
-    help-text="Up to 5 MB each. Images only."
+    :max-size="2 * 1024 * 1024"
     @invalid="onInvalid"
   />
-
-  <VibeAlert v-if="rejected.length" variant="warning">
-    Skipped {{ rejected.length }} oversize file(s).
-  </VibeAlert>
 </template>
 ```
+
+## Important Notes
+
+- **Same-file reselection:** the native input is reset after each change so picking the same file again still fires `change`.
+- **Rejection:** files failing `accept` or exceeding `maxSize` are excluded from the model and reported via the `invalid` event.
+- **Drag safety:** a document-level fallback resets the dragging state if a drag ends or drops outside the zone.
+
+## Bootstrap CSS Classes
+
+- `.form-control`, `.form-control-{sm|lg}`
+- `.form-label`, `.form-text`
+
+The drop zone uses VibeUI's own `.vibe-file-input-dropzone*` classes.

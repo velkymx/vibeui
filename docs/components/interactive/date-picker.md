@@ -68,3 +68,11 @@ The first click sets `[start, null]`. The second click adds the end date and clo
   :disabled-dates="['2026-04-29', '2026-04-30']"
 />
 ```
+
+## Important Notes
+
+**Zero-padded ISO bounds:** `min`, `max`, and every entry in `disabledDates` must be zero-padded `YYYY-MM-DD` (e.g. `2026-04-05`, not `2026-4-5`). Comparisons are lexical string comparisons, so an unpadded value compares incorrectly. In dev mode, a non-conforming `min`/`max` logs a console warning.
+
+**Read-only input:** The text input is read-only; dates are chosen through the calendar popover, which closes on outside click or `Escape`.
+
+**Keyboard navigation:** The grid supports arrow keys (day), `PageUp`/`PageDown` (month), `Home`/`End` (week), and `Enter`/`Space` to select.

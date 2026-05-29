@@ -12,7 +12,7 @@ Automatically update navigation based on scroll position.
 | `method` | `String` | `'auto'` | Scroll detection method: `'auto'`, `'offset'`, or `'position'` |
 | `smoothScroll` | `Boolean` | `false` | Enable smooth scrolling |
 | `tag` | `String` | `'div'` | HTML tag to render |
-| `height` | `String` | `'100%'` | CSS height of the scrollable container |
+| `height` | `String` | `'100%'` | CSS height of the scrollable container. Validated as a CSS length; invalid values fall back to `'100%'` |
 
 ## Events
 
@@ -102,3 +102,5 @@ async function loadMore() {
 **`rootMargin` replaces `offset`:** Bootstrap 5.2 replaced the `offset` integer with `rootMargin` (an IntersectionObserver-compatible margin string). The `offset` prop is deprecated and logs a console warning. Use `rootMargin` for all new usage.
 
 **KeepAlive support:** Positions are recalculated when the component is reactivated inside `<KeepAlive>`.
+
+**Validated height:** The `height` prop is validated as a CSS length string before being applied. Invalid values silently fall back to `'100%'` (CSS injection defense).

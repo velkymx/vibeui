@@ -101,7 +101,17 @@ const onShown = (event) => {
 
 Items with `to` starting with `#` are also treated as tab targets without needing an explicit `target` field.
 
+## Exposed Methods
+
+| Method | Description |
+|--------|-------------|
+| `refresh()` | Tears down and re-initializes Bootstrap Tab instances. Call after dynamically changing items if needed. |
+
+> **Escape hatch:** `_unsafe_bsInstances` (a `Map` of the underlying Bootstrap `Tab` instances) is also exposed. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on these directly WILL break the component.
+
 ## Important Notes
+
+**`href` sanitization:** Item and child `href` values are sanitized. Only `https?://`, root-relative (`/path`), relative (`./`, `../`), and anchor (`#anchor`) URLs are allowed; `javascript:`, `data:`, and protocol-relative (`//`) URLs are stripped. Use `to` for Vue Router navigation.
 
 **Disabled button items:** Items without `href` or `to` (plain button items) receive the HTML `disabled` attribute when `disabled: true` is set. Link and router-link items only get the disabled visual style — the browser attribute is omitted because `<a disabled>` has no native effect.
 

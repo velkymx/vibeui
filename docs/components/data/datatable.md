@@ -21,6 +21,7 @@ Powerful data table component with search, sorting, and pagination - similar to 
 |------|------|---------|-------------|
 | `items` | `T[]` | `[]` | Array of data objects to display |
 | `columns` | `DataTableColumn<T>[]` | Required | Column definitions |
+| `rowKey` | `String` | `'id'` | Property name used as the unique key for each row. **Recommended** — set it to a unique field in your data (e.g. `'id'`, `'uuid'`) so Vue tracks rows correctly across sorting, filtering, and pagination. Falls back to a positional key (with a DEV warning) when missing. |
 
 > **Typing tip**: `DataTableColumn` is generic over your row type. For full slot-prop / formatter typing, annotate the column array:
 >
@@ -102,10 +103,12 @@ interface DataTableColumn {
   formatter?: (value: any, row: any) => string | number  // Custom formatter
   class?: string                // CSS class for td
   headerClass?: string          // CSS class for th
-  thStyle?: Record<string, string>  // Inline styles for th
-  tdStyle?: Record<string, string>  // Inline styles for td
+  thStyle?: Record<string, string>  // Inline styles for th (sanitized — see note)
+  tdStyle?: Record<string, string>  // Inline styles for td (sanitized — see note)
 }
 ```
+
+> **`thStyle` / `tdStyle` are sanitized.** Both objects are filtered against a safe CSS-property allowlist before being applied, as a defense against CSS injection (data exfiltration / UI spoofing) when column config comes from an API or untrusted source. Properties outside the allowlist are dropped.
 
 ## Events
 
@@ -115,7 +118,7 @@ interface DataTableColumn {
 | `update:perPage` | `Number` | Emitted when per-page changes |
 | `update:sortBy` | `String` | Emitted when sort column changes |
 | `update:sortDesc` | `Boolean` | Emitted when sort direction changes |
-| `row-clicked` | `(item, index)` | Emitted when row is clicked |
+| `row-clicked` | `(item, globalIndex)` | Emitted when a row is clicked. `globalIndex` is the index within the full filtered/sorted dataset, not the current page. Only emitted when a `@row-clicked` listener is attached (rows show a pointer cursor in that case). |
 
 ## Slots
 
@@ -146,9 +149,11 @@ const items = [
 </script>
 
 <template>
-  <VibeDataTable :columns="columns" :items="items" />
+  <VibeDataTable :columns="columns" :items="items" row-key="id" />
 </template>
 ```
+
+> Always pass `row-key` pointing at a unique field (here `id`) so Vue keys rows stably across sorting, filtering, and pagination.
 
 ### With Bootstrap Styling
 
@@ -245,8 +250,8 @@ const perPage = ref(25)
 const sortBy = ref('name')
 const sortDesc = ref(false)
 
-const handleRowClick = (item, index) => {
-  console.log('Clicked row:', item, index)
+const handleRowClick = (item, globalIndex) => {
+  console.log('Clicked row:', item, globalIndex)
 }
 </script>
 
@@ -254,6 +259,7 @@ const handleRowClick = (item, index) => {
   <VibeDataTable
     :columns="columns"
     :items="items"
+    row-key="id"
     v-model:current-page="currentPage"
     v-model:per-page="perPage"
     v-model:sort-by="sortBy"
@@ -423,7 +429,7 @@ const columns = [
 ## Tips
 
 1. **Large Datasets**: For datasets with 1000+ rows, consider server-side pagination
-2. **Performance**: Use `:key` on items for better Vue reactivity
+2. **Stable keys**: Set the `row-key` prop to a unique field in your data for correct behavior during sorting/filtering and best reactivity
 3. **Search Debounce**: Adjust `searchDebounce` prop for performance with large datasets
-4. **Custom Styling**: Use column `class`, `headerClass`, `thStyle`, `tdStyle` for styling
+4. **Custom Styling**: Use column `class`, `headerClass`, `thStyle`, `tdStyle` for styling (style objects are sanitized to a safe property allowlist)
 5. **Slots**: Use slots for complex cell rendering (badges, buttons, images, etc.)

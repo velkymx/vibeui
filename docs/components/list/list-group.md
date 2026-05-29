@@ -208,6 +208,10 @@ const handleClick = ({ item, index }) => {
 </script>
 ```
 
+## Important Notes
+
+**`href` sanitization:** Each item's `href` is sanitized. Only `https://`/`http://` URLs, absolute paths (`/path`), relative paths (`./`, `../`), and anchors (`#section`) are allowed. Dangerous values such as `javascript:`, `data:`, `vbscript:`, and protocol-relative `//host` URLs are stripped — the item renders without an `href` (falling back to a non-link element). Use `to` for in-app navigation via Vue Router.
+
 ## Bootstrap CSS Classes
 
 - `.list-group`
