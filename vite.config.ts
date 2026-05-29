@@ -65,6 +65,11 @@ export default defineConfig({
       },
       {
         extends: true,
+        // Pre-bundle the real third-party deps so Vite doesn't re-optimize mid-run
+        // (which reloads the page and can flake tests, especially on a cold CI cache).
+        optimizeDeps: {
+          include: ['bootstrap', '@popperjs/core', 'quill']
+        },
         test: {
           name: 'browser',
           include: ['tests/browser/**/*.browser.test.ts'],
