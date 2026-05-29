@@ -28,6 +28,21 @@ const store = reactive<ToastStore>({ toasts: [] })
 const toastMap = new Map<string, ToastSpec>()
 let counter = 0
 
+// The store is a module-level singleton. In SSR (one module instance shared across all
+// requests) that leaks toasts between users unless reset per request. Warn in DEV-SSR so
+// the requirement to call resetToastStoreForSSR() per request is not silently missed.
+if (
+  import.meta.env.DEV &&
+  typeof window === 'undefined' &&
+  typeof process !== 'undefined'
+) {
+  console.warn(
+    '[VibeUI useToast] SSR detected: the toast store is a module-level singleton shared ' +
+    'across requests. Call resetToastStoreForSSR() in your per-request server entry to ' +
+    'prevent cross-request toast leakage.'
+  )
+}
+
 const nextId = (): string => {
   counter += 1
   return `vibe-toast-${counter}`
