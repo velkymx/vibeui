@@ -1,123 +1,107 @@
 # VibeUI
 
-A modern Vue 3 UI component library built with Bootstrap 5, designed to simplify your development and enhance your application's aesthetic.
+**The Vue 3 component library for people who already love Bootstrap.**
 
-## Features
+Bootstrap powers more of the web than any other design system — your team already knows its classes, its grid, its look. But the moment you bring it into Vue, the friction starts. Every modal, tooltip, dropdown, and collapse means hand-newing a Bootstrap JavaScript instance, wiring its events, generating unique IDs, linking ARIA attributes, and remembering to tear it all down on unmount. Miss a step and you ship memory leaks, broken keyboard focus, duplicate IDs, or detached-DOM crashes on route changes. So most teams either reach for a heavier framework that throws away their Bootstrap knowledge, or they reinvent these wrappers from scratch in every project.
 
-* **Vue 3 Composition API**: Built from the ground up using modern, reactive Vue.js practices.
-* **Full Bootstrap 5 Integration**: Automatically manages Bootstrap's JavaScript lifecycle, including dynamic initialization, reactive configuration, and memory cleanup.
-* **Data-Driven & Reactive**: Components are fully reactive with `v-model` support and automatic updates when props or data change.
-* **Smart Form Intelligence**: Automated ID generation and accessibility linking via `VibeFormGroup` context.
-* **Zero-Boilerplate**: Components handle their own IDs, Teleportation, and Bootstrap instances internally.
-* **TypeScript Support**: Fully typed components for a great developer experience.
-* **Accessibility First**: Automatic ARIA attribute management and focus trapping.
+VibeUI is the third option. It's 60+ reactive, strictly-typed Vue 3 components that wrap Bootstrap 5.3 — and quietly own every piece of plumbing Bootstrap leaves to you. The JavaScript lifecycle initializes, reconfigures, and disposes itself, with race-condition and unmount guards baked in. `v-model` works everywhere two-way binding belongs. Forms wire their own accessibility — IDs, labels, `aria-describedby`, help text, and validation feedback link automatically through a `VibeFormGroup` context, and dialogs return focus to their trigger on close. It's touch- and hybrid-aware out of the box, lazy-loads its heaviest parts (charts, the rich-text editor, Bootstrap's own JS) so you only ship what you use, and ships an interaction suite — drag/drop, sortable, resizable, slider, stepper, autocomplete, calendar, and dependency-free canvas charts — that fills the gap jQuery UI left behind.
+
+You keep the Bootstrap you know. VibeUI handles the Vue you'd rather not write.
+
+[![Vue 3](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+[![Bootstrap 5.3](https://img.shields.io/badge/Bootstrap-5.3-7952B3?logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/@velkymx/vibeui)](https://www.npmjs.com/package/@velkymx/vibeui)
+
+---
+
+## What you get
+
+* **Bootstrap JS, fully abstracted.** No manual `new bootstrap.Modal(...)`. Components initialize, reactively reconfigure, and dispose their own Bootstrap instances — with race-condition and unmount guards built in.
+* **`v-model` everywhere it should be.** Modals, offcanvas, toasts, collapses, tabs, accordions, sliders, and every form control bind two-way out of the box.
+* **Accessibility that wires itself.** `VibeFormGroup` auto-generates IDs and links `<label>`, `aria-describedby`, help text, and validation feedback. Modals and offcanvas return focus to the trigger on close (WCAG 2.4.3).
+* **Strict TypeScript.** Typed props, typed emit payloads, and typed `provide`/`inject` keys — full editor autocomplete, no `any`.
+* **Touch- and hybrid-aware.** Tooltips switch to tap on touch devices; modals and offcanvas honor the Android back button.
+* **Lightweight by default.** A small core; charts, the WYSIWYG editor, and Bootstrap's JS are loaded on demand via dynamic import, so you only ship what you use.
+* **Beyond Bootstrap.** A built-in interaction suite — drag/drop, sortable, resizable, slider, stepper, autocomplete, calendar, and canvas charts — fills the gap jQuery UI used to.
 
 ## Installation
-
-Install via npm:
 
 ```bash
 npm install @velkymx/vibeui bootstrap
 ```
 
-Optionally, install Bootstrap Icons or Quill for enhanced features:
+Optional peers, only if you use the features that need them:
 
 ```bash
-npm install bootstrap-icons quill
+npm install bootstrap-icons   # <VibeIcon>
+npm install quill dompurify   # <VibeFormWysiwyg> (dompurify sanitizes editor HTML)
 ```
 
 ## Quick Setup
 
-In your Vue app's entry file (`main.ts` or `main.js`):
+In your app entry (`main.ts` / `main.js`):
 
 ```typescript
-import { createApp } from 'vue';
-import App from './App.vue';
-import VibeUI from '@velkymx/vibeui';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { createApp } from 'vue'
+import App from './App.vue'
+import VibeUI from '@velkymx/vibeui'
+import 'bootstrap/dist/css/bootstrap.min.css'
 
-createApp(App).use(VibeUI).mount('#app');
+createApp(App).use(VibeUI).mount('#app')
 ```
 
-## What's New in v0.9
+All components register globally after `app.use(VibeUI)`. Prefer explicit imports? They're tree-shakeable:
 
-A big release driven by real-app migration feedback and a jQuery UI parity push.
+```typescript
+import { VibeButton, VibeModal, VibeCard } from '@velkymx/vibeui'
+```
 
-**New components**
-- `VibeFileInput` — file picker with drag-drop, accept enforcement, size limit
-- `VibeSkeleton` — text / rect / circle / card loading placeholders with shimmer
-- `VibeDatePicker` — calendar popover with single + range mode, keyboard nav
-- `VibeAutocomplete` — search-as-you-type, sync or async source, debounced
-- `VibeTabs` / `VibeTab` — tab container with content switching, lazy mode
-- `VibeStepper` — multi-step wizard with sync/async guards
-- `VibeSortable` — drag-to-reorder list
-- `VibeDraggable` / `VibeDroppable` — kanban / builder primitives
-- `VibeResizable` — corner / edge handle resizing with aspect / grid
-- `VibeSlider` — single + range slider with handle swap, track click, keyboard
-- `VibeToastHost` — host component for the new toast service
+> Bootstrap **CSS** is imported by you (one line above). Bootstrap **JS** is managed internally — do not import it yourself.
 
-**New composables / directive**
-- `useForm` — multi-field forms with reactive `fields`, `errors`, `touched`
-- `useToast` — `toast.success() / error() / warn() / info() / dismiss()`
-- `usePosition` — floating-ui-backed anchor positioning
-- `v-vibe-tooltip` — inline tooltip directive
+## A Taste
 
-**API improvements**
-- `VibeAlert`: rich slot content; `dismissible` (correctly spelled) alias
-- `VibeButton`: `variant="link"`
-- `VibeDataTable`: generic columns (`DataTableColumn<MyRow>`)
-- `VibeFormSelect`: typed primitive option values (`null`, `undefined`, `boolean`)
-- `VibeFormWysiwyg`: toolbar string presets (`'minimal' | 'standard' | 'full'`)
-
-**Dependency**: `@floating-ui/dom` added (used by `usePosition`).
-
-## Advanced Interactivity
-
-VibeUI fully abstracts Bootstrap's JavaScript — you don't manually initialize tooltips, modals, or collapses. Touch devices get sensible defaults out of the box.
+**Interactivity with zero setup:**
 
 ```vue
 <template>
-  <div>
-    <!-- Automatic tooltip initialization with touch optimization -->
-    <VibeTooltip text="I just work!">
-      <VibeButton>Hover or Tap Me</VibeButton>
-    </VibeTooltip>
+  <!-- Tooltip initializes itself; taps on touch, hovers on desktop -->
+  <VibeTooltip text="I just work!">
+    <VibeButton>Hover or Tap Me</VibeButton>
+  </VibeTooltip>
 
-    <!-- Or as a directive (v0.9) -->
-    <VibeButton v-vibe-tooltip="'Inline tooltip'">Save</VibeButton>
+  <!-- ...or as a directive -->
+  <VibeButton v-vibe-tooltip="'Inline tooltip'">Save</VibeButton>
 
-    <!-- Full v-model support for Modals with Android back button support -->
-    <VibeModal v-model="showModal" title="Hello!">
-      Fully reactive, automated, and hybrid-ready.
-    </VibeModal>
-  </div>
+  <!-- v-model modal, hybrid-ready, focus-safe -->
+  <VibeModal v-model="showModal" title="Hello!">
+    Fully reactive, automated, and accessible.
+  </VibeModal>
 </template>
 ```
 
-## Smart Forms
-
-VibeUI handles accessibility and IDs for you.
+**Forms that wire their own accessibility:**
 
 ```vue
+<script setup>
+import { useForm, validators } from '@velkymx/vibeui'
+const { fields, errors, validate, isDirty } = useForm({ name: '', email: '' })
+</script>
+
 <template>
-  <!-- No IDs required! Labels are automatically linked -->
+  <!-- No id needed — label, control, and feedback are linked automatically -->
   <VibeFormGroup label="Email Address">
-    <VibeFormInput v-model="email" type="email" />
+    <VibeFormInput v-model="fields.email" type="email" />
   </VibeFormGroup>
 
   <VibeInputGroup prepend="@">
-    <VibeFormInput v-model="username" noWrapper />
+    <VibeFormInput v-model="fields.name" noWrapper />
   </VibeInputGroup>
-
-  <!-- New in v0.9: useForm composable for multi-field state -->
-  <script setup>
-  import { useForm, validators } from '@velkymx/vibeui'
-  const { fields, errors, validate, isDirty } = useForm({ name: '', email: '' })
-  </script>
 </template>
 ```
 
-## Toasts (v0.9 service form)
+**Toasts from anywhere:**
 
 ```ts
 import { useToast } from '@velkymx/vibeui'
@@ -127,17 +111,17 @@ toast.success('Saved')
 toast.error('Network error', { delay: 8000 })
 ```
 
-Mount `<VibeToastHost />` once at the root and dispatch from anywhere.
+Mount `<VibeToastHost />` once at your app root and dispatch from any component or composable.
 
 ## Components
 
-VibeUI ships every major Bootstrap 5.3 component plus an interaction suite (drag/drop, sortable, resizable, slider, calendar) that fills the gap left by jQuery UI.
+60+ components covering all of Bootstrap 5.3, plus an interaction and data-viz suite.
 
 ### Layout
 
 | Component | Description |
 |-----------|-------------|
-| `VibeContainer` | Bootstrap container w/ breakpoints |
+| `VibeContainer` | Responsive container with breakpoints |
 | `VibeRow` | Grid row |
 | `VibeCol` | Grid column |
 
@@ -153,7 +137,7 @@ VibeUI ships every major Bootstrap 5.3 component plus an interaction suite (drag
 | `VibeIcon` | Bootstrap-icons wrapper |
 | `VibeLink` | [docs](./docs/components/core/link.md) |
 | `VibePlaceholder` | [docs](./docs/components/core/placeholder.md) |
-| `VibeSkeleton` *(v0.9)* | [docs](./docs/components/core/skeleton.md) |
+| `VibeSkeleton` | [docs](./docs/components/core/skeleton.md) |
 | `VibeSpinner` | [docs](./docs/components/core/spinner.md) |
 
 ### Navigation
@@ -180,18 +164,18 @@ VibeUI ships every major Bootstrap 5.3 component plus an interaction suite (drag
 | `VibeAccordion` | [docs](./docs/components/interactive/accordion.md) |
 | `VibeCarousel` | [docs](./docs/components/interactive/carousel.md) |
 | `VibeCollapse` | [docs](./docs/components/interactive/collapse.md) |
-| `VibeDatePicker` *(v0.9)* | [docs](./docs/components/interactive/date-picker.md) |
-| `VibeDraggable` *(v0.9)* | [docs](./docs/components/interactive/draggable.md) |
-| `VibeDroppable` *(v0.9)* | [docs](./docs/components/interactive/draggable.md) |
+| `VibeDatePicker` | [docs](./docs/components/interactive/date-picker.md) |
+| `VibeDraggable` | [docs](./docs/components/interactive/draggable.md) |
+| `VibeDroppable` | [docs](./docs/components/interactive/draggable.md) |
 | `VibeDropdown` | [docs](./docs/components/interactive/dropdown.md) |
 | `VibeModal` | [docs](./docs/components/interactive/modal.md) |
 | `VibeOffcanvas` | [docs](./docs/components/interactive/offcanvas.md) |
-| `VibeResizable` *(v0.9)* | [docs](./docs/components/interactive/resizable.md) |
-| `VibeSlider` *(v0.9)* | [docs](./docs/components/interactive/slider.md) |
-| `VibeSortable` *(v0.9)* | [docs](./docs/components/interactive/sortable.md) |
-| `VibeStepper` *(v0.9)* | [docs](./docs/components/interactive/stepper.md) |
-| `VibeTabs` / `VibeTab` *(v0.9)* | [docs](./docs/components/interactive/tabs.md) |
-| `VibeToast` / `VibeToastHost` *(v0.9)* | [component](./docs/components/interactive/toast.md), [service](./docs/composables/use-toast.md) |
+| `VibeResizable` | [docs](./docs/components/interactive/resizable.md) |
+| `VibeSlider` | [docs](./docs/components/interactive/slider.md) |
+| `VibeSortable` | [docs](./docs/components/interactive/sortable.md) |
+| `VibeStepper` | [docs](./docs/components/interactive/stepper.md) |
+| `VibeTabs` / `VibeTab` | [docs](./docs/components/interactive/tabs.md) |
+| `VibeToast` / `VibeToastHost` | [component](./docs/components/interactive/toast.md), [service](./docs/composables/use-toast.md) |
 
 ### Tooltips & Popovers
 
@@ -200,19 +184,24 @@ VibeUI ships every major Bootstrap 5.3 component plus an interaction suite (drag
 | `VibePopover` | [docs](./docs/components/advanced/popover.md) |
 | `VibeTooltip` | [docs](./docs/components/advanced/tooltip.md) |
 
-### Data
+### Data & Charts
 
 | Component | Doc |
 |-----------|-----|
 | `VibeDataTable` | [docs](./docs/components/data/datatable.md) |
 | `VibeProgress` | [docs](./docs/components/progress/progress.md) |
+| `VibeChartBar` | [docs](./docs/components/charts/chart-bar.md) |
+| `VibeChartLine` | [docs](./docs/components/charts/chart-line.md) |
+| `VibeChartPie` | [docs](./docs/components/charts/chart-pie.md) |
+
+> Charts are dependency-free, canvas-rendered, and loaded on demand — no Chart.js, no D3.
 
 ### Forms
 
 | Component | Doc |
 |-----------|-----|
-| `VibeAutocomplete` *(v0.9)* | [docs](./docs/forms/autocomplete.md) |
-| `VibeFileInput` *(v0.9)* | [docs](./docs/forms/file-input.md) |
+| `VibeAutocomplete` | [docs](./docs/forms/autocomplete.md) |
+| `VibeFileInput` | [docs](./docs/forms/file-input.md) |
 | `VibeFormCheckbox` | [docs](./docs/forms/form-checkbox.md) |
 | `VibeFormDatepicker` (native) | [docs](./docs/forms/form-datepicker.md) |
 | `VibeFormGroup` | [docs](./docs/forms/form-group.md) |
@@ -233,16 +222,16 @@ VibeUI ships every major Bootstrap 5.3 component plus an interaction suite (drag
 | `useBackButton` | [docs](./docs/composables/back-button.md) |
 | `useBreakpoints` | [docs](./docs/composables/breakpoints.md) |
 | `useColorMode` | [docs](./docs/composables/color-mode.md) |
-| `useForm` *(v0.9)* | [docs](./docs/composables/use-form.md) |
+| `useForm` | [docs](./docs/composables/use-form.md) |
 | `useFormValidation` | [docs](./docs/forms/validation.md) |
-| `usePosition` *(v0.9)* | [docs](./docs/composables/use-position.md) |
-| `useToast` *(v0.9)* | [docs](./docs/composables/use-toast.md) |
+| `usePosition` | [docs](./docs/composables/use-position.md) |
+| `useToast` | [docs](./docs/composables/use-toast.md) |
 
 ### Directives
 
 | Directive | Doc |
 |-----------|-----|
-| `v-vibe-tooltip` *(v0.9)* | [docs](./docs/directives/v-tooltip.md) |
+| `v-vibe-tooltip` | [docs](./docs/directives/v-tooltip.md) |
 
 ### Utilities
 
@@ -250,13 +239,13 @@ VibeUI ships every major Bootstrap 5.3 component plus an interaction suite (drag
 |-------|-----|
 | Position utility classes | [docs](./docs/utilities/position.md) |
 
-## Full Documentation
+## Documentation
 
-For detailed documentation and examples, visit our [Docs](./docs/README.md).
+Full API reference and examples live in the [`docs/`](./docs/README.md) directory. An LLM-optimized reference is available in [`llms.txt`](./llms.txt).
 
 ## License
 
-[MIT License](LICENSE) 
+[MIT](LICENSE)
 
 ## TechnoSorcery.com
 
