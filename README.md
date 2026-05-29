@@ -148,10 +148,10 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeAlert` | Contextual alert with dismiss and auto-hide | [docs](./docs/components/core/alert.md) |
+| `VibeAlert` | Contextual alert with dismiss and fade animation | [docs](./docs/components/core/alert.md) |
 | `VibeBadge` | Inline badge with variant and pill styles | [docs](./docs/components/core/badge.md) |
-| `VibeButton` | Button with variant, size, loading state | [docs](./docs/components/core/button.md) |
-| `VibeButtonGroup` | Horizontal/vertical button group with toolbar | [docs](./docs/components/core/button-group.md) |
+| `VibeButton` | Button with variant, size, and outline styles | [docs](./docs/components/core/button.md) |
+| `VibeButtonGroup` | Horizontal or vertical button group | [docs](./docs/components/core/button-group.md) |
 | `VibeCloseButton` | Accessible dismiss button | [docs](./docs/components/core/close-button.md) |
 | `VibeIcon` | Bootstrap Icons wrapper with sizing and color | - |
 | `VibeLink` | Styled anchor with href validation | [docs](./docs/components/core/link.md) |
@@ -192,7 +192,7 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | `VibeModal` | Modal dialog with v-model, sizes, scrollable | [docs](./docs/components/interactive/modal.md) |
 | `VibeOffcanvas` | Offcanvas panel with placement options | [docs](./docs/components/interactive/offcanvas.md) |
 | `VibeResizable` | Resizable container with aspect-ratio lock | [docs](./docs/components/interactive/resizable.md) |
-| `VibeSlider` | Range slider with dual handles and tooltips | [docs](./docs/components/interactive/slider.md) |
+| `VibeSlider` | Range slider with single or dual handles | [docs](./docs/components/interactive/slider.md) |
 | `VibeSortable` | Sortable list with drag reorder | [docs](./docs/components/interactive/sortable.md) |
 | `VibeStepper` | Multi-step wizard with validation | [docs](./docs/components/interactive/stepper.md) |
 | `VibeTabs` | Tabbed interface from items array | [docs](./docs/components/interactive/tabs.md) |
@@ -204,7 +204,7 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibePopover` | Rich popover with title and HTML content | [docs](./docs/components/advanced/popover.md) |
+| `VibePopover` | Popover with title and text content | [docs](./docs/components/advanced/popover.md) |
 | `VibeTooltip` | Tooltip with hover/tap detection | [docs](./docs/components/advanced/tooltip.md) |
 
 ### Data & Charts
@@ -215,7 +215,7 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | `VibeProgress` | Progress bar with multi-bar and animated | [docs](./docs/components/progress/progress.md) |
 | `VibeChartBar` | Bar chart (stacked, grouped) | [docs](./docs/components/charts/chart-bar.md) |
 | `VibeChartLine` | Line chart with smooth curves and fill | [docs](./docs/components/charts/chart-line.md) |
-| `VibeChartPie` | Pie/donut chart | [docs](./docs/components/charts/chart-pie.md) |
+| `VibeChartPie` | Pie chart | [docs](./docs/components/charts/chart-pie.md) |
 
 > Charts are dependency-free, canvas-rendered, and lazy-loaded - no Chart.js or D3.
 
@@ -224,16 +224,16 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | Component | Description | Docs |
 |-----------|-------------|------|
 | `VibeAutocomplete` | Typeahead with keyboard nav and async search | [docs](./docs/forms/autocomplete.md) |
-| `VibeFileInput` | File picker with drag/drop and preview | [docs](./docs/forms/file-input.md) |
+| `VibeFileInput` | File picker with drag/drop and size validation | [docs](./docs/forms/file-input.md) |
 | `VibeFormCheckbox` | Checkbox with indeterminate and group support | [docs](./docs/forms/form-checkbox.md) |
 | `VibeFormDatepicker` | Native date input wrapper | [docs](./docs/forms/form-datepicker.md) |
 | `VibeFormGroup` | Auto-wires label, IDs, help text, and validation | [docs](./docs/forms/form-group.md) |
 | `VibeFormInput` | Text input with types, sizes, and states | [docs](./docs/forms/form-input.md) |
 | `VibeFormRadio` | Radio button with group and inline layout | [docs](./docs/forms/form-radio.md) |
-| `VibeFormSelect` | Select dropdown with optgroups | [docs](./docs/forms/form-select.md) |
+| `VibeFormSelect` | Select dropdown with single and multiple selection | [docs](./docs/forms/form-select.md) |
 | `VibeFormSpinbutton` | Numeric stepper with min/max/step | [docs](./docs/forms/form-spinbutton.md) |
 | `VibeFormSwitch` | Toggle switch with label | [docs](./docs/forms/form-switch.md) |
-| `VibeFormTextarea` | Multi-line text input with auto-resize | [docs](./docs/forms/form-textarea.md) |
+| `VibeFormTextarea` | Multi-line text input with character count | [docs](./docs/forms/form-textarea.md) |
 | `VibeFormWysiwyg` | Rich-text editor (Quill) with DOMPurify sanitization | [docs](./docs/forms/form-wysiwyg.md) |
 | `VibeInputGroup` | Input with prepend/append slots | [docs](./docs/forms/input-group.md) |
 
