@@ -21,6 +21,12 @@
 
 ---
 
+## Code Review 6 — follow-ups (2026-05-29)
+
+### Architecture
+
+- **VibeSkeleton** — Added `inheritAttrs: false` + explicit `v-bind="$attrs"` on each variant root. The multi-root `text` fragment previously dropped consumer attrs (class, data-*, listeners) with a dev warning; all variants now forward them consistently. (82fef87)
+
 ## Code Review 6 (2026-05-28)
 
 ### CRITICAL
