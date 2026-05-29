@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
-import type { PropType, ComputedRef } from 'vue'
+import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
+import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 import { useBreakpoints } from '../composables/useBreakpoints'
 import Quill from 'quill'
@@ -48,14 +49,10 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change', 'ready', 'component-error'])
 
-const formGroup = inject<{
-  id: ComputedRef<string>
-  hasLabel: ComputedRef<boolean>
-  hasValidation: ComputedRef<boolean>
-  hasHelp: ComputedRef<boolean>
-} | null>('vibeFormGroup', null)
+const formGroup = inject(FORM_GROUP_KEY, null)
+const _groupId = formGroup?.consumeId()
 
-const computedId = computed(() => props.id || formGroup?.id.value || _generatedId)
+const computedId = computed(() => props.id || _groupId || _generatedId)
 const { isMobile } = useBreakpoints()
 
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)

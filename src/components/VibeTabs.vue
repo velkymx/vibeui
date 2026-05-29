@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, provide, reactive, ref, watch, type PropType } from 'vue'
+import { TABS_CONTEXT_KEY } from '../injectionKeys'
 
 type TabsVariant = 'tabs' | 'pills' | 'underline'
 
@@ -63,7 +64,7 @@ const navClass = computed(() => {
 
 const containerClass = computed(() => (props.vertical ? 'd-flex' : ''))
 
-provide('vibeTabsContext', {
+provide(TABS_CONTEXT_KEY, {
   register: (name: string, label: string, disabled: boolean) => {
     if (registry.find(t => t.name === name)) return
     registry.push({ name, label, disabled })

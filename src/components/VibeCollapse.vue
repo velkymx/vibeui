@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watch, ref, inject, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import type { Tag } from '../types'
+import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
 interface BootstrapCollapse {
@@ -20,10 +21,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
 
-const navbar = inject<{
-  collapseStates: Record<string, boolean>
-  toggleCollapse: (id: string) => void
-} | null>('vibeNavbarCollapse', null)
+const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
 
 const collapseRef = ref<HTMLElement | null>(null)
 const bsCollapse = ref<BootstrapCollapse | null>(null)

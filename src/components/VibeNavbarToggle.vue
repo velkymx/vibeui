@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { inject, computed } from 'vue'
+import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 
 interface BootstrapCollapse {
   toggle: () => void
@@ -14,10 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['component-error'])
 
-const navbar = inject<{
-  collapseStates: Record<string, boolean>
-  toggleCollapse: (id: string) => void
-} | null>('vibeNavbarCollapse', null)
+const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
 
 const isExpanded = computed(() => navbar?.collapseStates[props.target] ?? false)
 

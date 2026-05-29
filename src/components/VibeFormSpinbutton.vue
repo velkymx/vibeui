@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
-import type { PropType, ComputedRef } from 'vue'
+import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
+import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
 const props = defineProps({
@@ -40,13 +41,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change', 'increment', 'decrement'])
 
-const formGroup = inject<{
-  id: ComputedRef<string>
-  consumeId: () => string | null
-  hasLabel: ComputedRef<boolean>
-  hasValidation: ComputedRef<boolean>
-  hasHelp: ComputedRef<boolean>
-} | null>('vibeFormGroup', null)
+const formGroup = inject(FORM_GROUP_KEY, null)
 
 const _groupId = formGroup?.consumeId()
 const _generatedId = useId('spinbutton')

@@ -2,6 +2,7 @@
 import { computed, provide, ref } from 'vue'
 import type { ValidationState } from '../types'
 import { useId } from '../composables/useId'
+import { FORM_GROUP_KEY } from '../injectionKeys'
 
 const props = defineProps({
   label: { type: String, default: undefined },
@@ -31,7 +32,7 @@ const consumeId = () => {
   return computedId.value
 }
 
-provide('vibeFormGroup', {
+provide(FORM_GROUP_KEY, {
   id: computedId,
   consumeId,
   hasLabel: computed(() => !!props.label),
