@@ -21,9 +21,23 @@ const props = defineProps({
 
 const computedId = computed(() => props.id || _generatedId)
 
-if (import.meta.env.DEV && props.id && /[ .:#[\](){}+~>,|^$*?=]/.test(props.id)) {
-  console.warn(`[VibeAccordion] id "${props.id}" contains CSS-special characters. Bootstrap's querySelector will fail. Use only alphanumeric characters, hyphens, and underscores.`)
+// CSS-special characters break Bootstrap's internal querySelector (e.g. #my.id).
+const CSS_SPECIAL_CHARS = /[ .:#[\](){}+~>,|^$*?=]/
+
+// DEV-only: warn for ids that will break Bootstrap's querySelector. Covers both the
+// accordion container id and every item.id (used in data-bs-target / data-bs-parent).
+const warnUnsafeIds = () => {
+  if (!import.meta.env.DEV) return
+  if (props.id && CSS_SPECIAL_CHARS.test(props.id)) {
+    console.warn(`[VibeAccordion] id "${props.id}" contains CSS-special characters. Bootstrap's querySelector will fail. Use only alphanumeric characters, hyphens, and underscores.`)
+  }
+  for (const item of props.items) {
+    if (item.id && CSS_SPECIAL_CHARS.test(item.id)) {
+      console.warn(`[VibeAccordion] item.id "${item.id}" contains CSS-special characters. Bootstrap's querySelector will fail for this panel. Use only alphanumeric characters, hyphens, and underscores.`)
+    }
+  }
 }
+warnUnsafeIds()
 
 const emit = defineEmits<{
   (e: 'item-click', payload: { item: AccordionItem; index: number }): void
@@ -137,6 +151,7 @@ onBeforeUnmount(() => {
 })
 
 watch([() => props.items, () => props.alwaysOpen], async () => {
+  warnUnsafeIds()
   // Snapshot keys first — disposeItem mutates bsCollapses/collapseElements/collapseHandlers
   // internally via .delete(). Iterating the live Map during mutation is safe per spec but
   // produces confusing dead .clear() calls after; snapshot makes the intent explicit.

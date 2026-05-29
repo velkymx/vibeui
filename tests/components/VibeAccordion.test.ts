@@ -109,4 +109,27 @@ describe('VibeAccordion', () => {
     // 2 initial + at least 2 for newItems2 (pendingReinit may add more — that's fine)
     expect(callCount).toBeGreaterThanOrEqual(4)
   })
+
+  // DEV warning for item.id values that break Bootstrap's querySelector.
+  describe('item.id CSS-special-character warning', () => {
+    it('warns when an item.id contains CSS-special characters', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mount(VibeAccordion, {
+        props: { items: [{ id: 'bad.id', title: 'T', content: 'C' }] }
+      })
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('item.id "bad.id" contains CSS-special characters')
+      )
+      warnSpy.mockRestore()
+    })
+
+    it('does not warn for safe item.id values', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mount(VibeAccordion, {
+        props: { items: [{ id: 'safe-id_1', title: 'T', content: 'C' }] }
+      })
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+  })
 })
