@@ -153,6 +153,7 @@ const onKeydown = (event: KeyboardEvent) => {
     highlightedIndex.value = Math.min(results.value.length - 1, highlightedIndex.value + 1)
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
+    if (!isOpen.value) return
     highlightedIndex.value = highlightedIndex.value <= 0
       ? results.value.length - 1
       : highlightedIndex.value - 1
