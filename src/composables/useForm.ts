@@ -59,11 +59,20 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
   const hasValidated = ref(false)
   const isDirty = computed(() => dirtyFlag.value)
 
-  const initialJson = JSON.stringify(initialSnapshot)
+  // Precompute the initial serialization of each field once. Dirty detection then
+  // compares field-by-field and short-circuits on the first changed field, instead of
+  // serializing (and comparing) the entire fields object on every keystroke.
+  const fieldKeys = Object.keys(initialSnapshot) as Array<keyof T>
+  const initialFieldJson = {} as Record<keyof T, string>
+  for (const k of fieldKeys) {
+    initialFieldJson[k] = JSON.stringify((initialSnapshot as Record<keyof T, unknown>)[k])
+  }
   watch(
-    () => JSON.stringify(fields),
-    (fieldsJson) => {
-      dirtyFlag.value = fieldsJson !== initialJson
+    fields,
+    (current) => {
+      dirtyFlag.value = fieldKeys.some(
+        (k) => JSON.stringify((current as Record<keyof T, unknown>)[k]) !== initialFieldJson[k]
+      )
     },
     { deep: true, immediate: true }
   )

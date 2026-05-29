@@ -60,6 +60,39 @@ describe('useForm', () => {
       await nextTick()
       expect(form.isDirty.value).toBe(true)
     })
+
+    it('isDirty returns to false when a changed field is reverted to its initial value', async () => {
+      const form = useForm({ name: 'init', age: 1 })
+
+      form.fields.name = 'changed'
+      await nextTick()
+      expect(form.isDirty.value).toBe(true)
+
+      // Revert to the exact original value — per-field comparison must clear dirty
+      form.fields.name = 'init'
+      await nextTick()
+      expect(form.isDirty.value).toBe(false)
+    })
+
+    it('detects dirty changes in nested object and array fields', async () => {
+      const form = useForm({ tags: ['a', 'b'], meta: { seen: false } })
+
+      expect(form.isDirty.value).toBe(false)
+
+      form.fields.tags.push('c')
+      await nextTick()
+      expect(form.isDirty.value).toBe(true)
+
+      // Revert the array to its initial contents
+      form.fields.tags.splice(2, 1)
+      await nextTick()
+      expect(form.isDirty.value).toBe(false)
+
+      // Nested object mutation is also detected
+      form.fields.meta.seen = true
+      await nextTick()
+      expect(form.isDirty.value).toBe(true)
+    })
   })
 
   describe('validate', () => {
