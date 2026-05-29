@@ -40,4 +40,19 @@ describe('VibeScrollspy', () => {
 
     expect(bootstrap.ScrollSpy).not.toHaveBeenCalled()
   })
+
+  // Security: freeform height prop must be validated before binding to :style.
+  it('applies a valid height value', () => {
+    const wrapper = mount(VibeScrollspy, { props: { target: '#nav', height: '400px' } })
+    expect(wrapper.attributes('style')).toContain('height: 400px')
+  })
+
+  it('rejects a malformed height value and falls back to 100%', () => {
+    const wrapper = mount(VibeScrollspy, {
+      props: { target: '#nav', height: 'expression(alert(1))' }
+    })
+    const style = wrapper.attributes('style') ?? ''
+    expect(style).not.toContain('expression')
+    expect(style).toContain('height: 100%')
+  })
 })

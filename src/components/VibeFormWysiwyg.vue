@@ -7,6 +7,7 @@ import { useId } from '../composables/useId'
 import { useBreakpoints } from '../composables/useBreakpoints'
 import Quill from 'quill'
 import { loadDOMPurify, sanitizeHtml } from '../utils/sanitizeHtml'
+import { safeLength } from '../utils/safeCss'
 
 interface QuillInstance {
   root: HTMLElement
@@ -61,6 +62,7 @@ const formGroup = inject(FORM_GROUP_KEY, null)
 const _groupId = formGroup?.consumeId()
 
 const computedId = computed(() => props.id || _groupId || _generatedId)
+const safeMinHeight = computed(() => safeLength(props.height) ?? '200px')
 const { isMobile } = useBreakpoints()
 
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
@@ -398,7 +400,7 @@ watch(isMobile, async () => {
     <div
       v-else
       :class="containerClass"
-      :style="{ minHeight: height }"
+      :style="{ minHeight: safeMinHeight }"
     >
       <div ref="editorContainer"></div>
     </div>

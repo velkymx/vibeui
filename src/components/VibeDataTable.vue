@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
 import { ref, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
 import type { DataTableColumn, ComponentError } from '../types'
+import { safeCssObject } from '../utils/safeCss'
 
 const props = defineProps({
   // Data
@@ -286,12 +287,16 @@ const getSortIcon = (column: DataTableColumn<T>) => {
 }
 
 const getThStyle = (column: DataTableColumn<T>) => {
-  const style = { ...column.thStyle }
+  // Sanitize consumer-supplied thStyle against an allowlist — prevents CSS injection
+  // (exfiltration / UI spoofing) when column config comes from an API or untrusted source.
+  const style = safeCssObject(column.thStyle)
   if (props.sortable && column.sortable !== false) {
     style.cursor = 'pointer'
   }
   return style
 }
+
+const getTdStyle = (column: DataTableColumn<T>) => safeCssObject(column.tdStyle)
 </script>
 
 <template>
@@ -354,7 +359,7 @@ const getThStyle = (column: DataTableColumn<T>) => {
               v-for="column in columns"
               :key="column.key"
               :class="column.class"
-              :style="column.tdStyle"
+              :style="getTdStyle(column)"
               :data-label="column.label"
             >
               <slot :name="`cell(${column.key})`" :item="item" :value="item[column.key]" :index="index">

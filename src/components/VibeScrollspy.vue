@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated } from 'vue'
+import { ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated, computed } from 'vue'
 import type { Tag, ComponentError } from '../types'
+import { safeLength } from '../utils/safeCss'
 
 interface BootstrapScrollSpy {
   refresh: () => void
@@ -96,6 +97,8 @@ onBeforeUnmount(() => {
   }
 })
 
+const safeHeight = computed(() => safeLength(props.height) ?? '100%')
+
 const refresh = () => bsScrollspy.value?.refresh()
 
 // Refresh when reactivated inside KeepAlive so positions are recalculated
@@ -114,7 +117,7 @@ defineExpose({ refresh })
     :data-bs-method="method"
     :data-bs-smooth-scroll="smoothScroll ? 'true' : undefined"
     tabindex="0"
-    :style="{ position: 'relative', height: height, overflow: 'auto' }"
+    :style="{ position: 'relative', height: safeHeight, overflow: 'auto' }"
   >
     <slot />
   </component>

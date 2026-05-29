@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
 import type { ComponentError } from '../types'
+import { safeLength, safeColor } from '../utils/safeCss'
 
 const props = defineProps({
   // Icon name (e.g., 'house', 'heart-fill', 'star')
@@ -47,9 +48,10 @@ const iconClass = computed(() => {
 const iconStyle = computed(() => {
   const style: Record<string, string> = {}
 
-  // Font size handling
+  // Font size handling — validate against safe length pattern before applying
   if (props.fontSize) {
-    style.fontSize = props.fontSize
+    const safe = safeLength(props.fontSize)
+    if (safe) style.fontSize = safe
   } else if (props.size) {
     // Map size prop to font-size
     const sizeMap: Record<string, string> = {
@@ -66,9 +68,10 @@ const iconStyle = computed(() => {
     }
   }
 
-  // Color
+  // Color — validate against safe color pattern before applying
   if (props.color) {
-    style.color = props.color
+    const safe = safeColor(props.color)
+    if (safe) style.color = safe
   }
 
   // Transforms
