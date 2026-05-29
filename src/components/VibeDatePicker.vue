@@ -50,9 +50,12 @@ const fromIso = (iso: IsoDate): Date => {
   return new Date(y, m - 1, d)
 }
 const validateIsoString = (value: string | undefined, propName: string): void => {
-  if (value !== undefined && !ISO_FORMAT.test(value)) {
+  // DEV-only, and the raw value is not logged — min/max can be derived from user data
+  // (birth/medical/financial dates); echoing it to the console is a PII-leak vector in
+  // shared-screen or remote-debug sessions.
+  if (import.meta.env.DEV && value !== undefined && !ISO_FORMAT.test(value)) {
     console.warn(
-      `[VibeDatePicker] Invalid ${propName} prop "${value}". Expected zero-padded YYYY-MM-DD; comparisons are lexical and will be wrong otherwise.`
+      `[VibeDatePicker] Invalid ${propName} prop. Expected zero-padded YYYY-MM-DD; comparisons are lexical and will be wrong otherwise.`
     )
   }
 }
