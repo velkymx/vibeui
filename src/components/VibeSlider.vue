@@ -213,7 +213,7 @@ const handleKeydown = (handleIdx: 0 | 1, event: KeyboardEvent) => {
 }
 
 const handlePointerDown = (handleIdx: 0 | 1, event: PointerEvent) => {
-  if (props.disabled || !trackRef.value) return
+  if (props.disabled || !trackRef.value || typeof window === 'undefined') return
   internalValue.value = Array.isArray(props.modelValue)
     ? [...props.modelValue] as [number, number]
     : props.modelValue
@@ -242,8 +242,11 @@ const handlePointerUp = (event: PointerEvent) => {
 }
 
 onBeforeUnmount(() => {
-  window.removeEventListener('pointermove', handlePointerMove)
-  window.removeEventListener('pointerup', handlePointerUp)
+  // Guard window for SSR — onBeforeUnmount can run during hydration teardown
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('pointermove', handlePointerMove)
+    window.removeEventListener('pointerup', handlePointerUp)
+  }
   activeHandle.value = null
   activePointerId = null
 })

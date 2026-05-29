@@ -9,6 +9,9 @@ export function useChartResize(
   let rafId: number | null = null
 
   onMounted(() => {
+    // Guard: ResizeObserver is unavailable in SSR and pre-2020 browsers.
+    // Without this, chart setup throws uncaught and tears down the whole component.
+    if (typeof ResizeObserver === 'undefined') return
     let pendingEntry: ResizeObserverEntry | null = null
     observer = new ResizeObserver((entries) => {
       pendingEntry = entries[0] ?? null
