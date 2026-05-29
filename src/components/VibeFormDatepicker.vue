@@ -37,7 +37,14 @@ const props = defineProps({
   type: { type: String as () => 'date' | 'time' | 'datetime-local' | 'month' | 'week', default: 'date' }
 })
 
-const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+  (e: 'validate'): void
+  (e: 'blur', event: FocusEvent): void
+  (e: 'focus', event: FocusEvent): void
+  (e: 'input', event: Event): void
+  (e: 'change', event: Event): void
+}>()
 
 const formGroup = inject(FORM_GROUP_KEY, null)
 

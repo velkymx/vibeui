@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import type { Variant, ToastPlacement } from '../types'
+import type { Variant, ToastPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
 interface BootstrapToast {
@@ -25,7 +25,14 @@ const props = defineProps({
   noContainer: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'show'): void
+  (e: 'shown'): void
+  (e: 'hide'): void
+  (e: 'hidden'): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const computedId = computed(() => props.id ?? _toastId)
 const toastRef = ref<HTMLElement | null>(null)

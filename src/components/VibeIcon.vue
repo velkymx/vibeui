@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
+import type { ComponentError } from '../types'
 
 const props = defineProps({
   // Icon name (e.g., 'house', 'heart-fill', 'star')
@@ -25,7 +26,10 @@ const props = defineProps({
   ariaLabel: { type: String, default: undefined }
 })
 
-const emit = defineEmits(['click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'click', event: MouseEvent): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const iconClass = computed(() => {
   const classes = ['bi', `bi-${props.icon}`]

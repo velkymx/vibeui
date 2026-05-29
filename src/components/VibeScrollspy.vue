@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated } from 'vue'
-import type { Tag } from '../types'
+import type { Tag, ComponentError } from '../types'
 
 interface BootstrapScrollSpy {
   refresh: () => void
@@ -18,7 +18,10 @@ const props = defineProps({
   height: { type: String, default: '100%' }
 })
 
-const emit = defineEmits(['activate', 'component-error'])
+const emit = defineEmits<{
+  (e: 'activate', event: Event): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const scrollspyRef = ref<HTMLElement | null>(null)
 const bsScrollspy = ref<BootstrapScrollSpy | null>(null)

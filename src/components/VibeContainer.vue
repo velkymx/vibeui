@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
-import type { Tag, ContainerType } from '../types'
+import type { Tag, ContainerType, ComponentError } from '../types'
 
 const props = defineProps({
   fluid: { type: [Boolean, String] as PropType<boolean | ContainerType>, default: false },
   tag: { type: String as PropType<Tag>, default: 'div' }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const containerClass = computed(() => {
   if (props.fluid === false) {

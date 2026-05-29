@@ -17,7 +17,14 @@ const props = defineProps({
 
 const isDismissible = computed(() => props.dismissible)
 
-const emit = defineEmits(['update:modelValue', 'close', 'closed', 'component-error'])
+import type { ComponentError } from '../types'
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'close'): void
+  (e: 'closed'): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const alertRef = ref<HTMLElement | null>(null)
 const bsAlert = ref<BootstrapAlert | null>(null)
@@ -137,7 +144,7 @@ const alertClass = computed(() => {
     :class="alertClass"
     role="alert"
   >
-    <slot>{{ message }}</slot>
+    <template v-if="message">{{ message }}</template><slot />
     <button
       v-if="isDismissible"
       type="button"

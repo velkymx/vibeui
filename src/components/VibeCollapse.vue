@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch, ref, inject, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import type { Tag } from '../types'
+import type { Tag, ComponentError } from '../types'
 import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
@@ -19,7 +19,14 @@ const props = defineProps({
   isNav: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'show'): void
+  (e: 'shown'): void
+  (e: 'hide'): void
+  (e: 'hidden'): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
 

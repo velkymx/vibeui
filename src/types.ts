@@ -1,5 +1,12 @@
 // Shared TypeScript types for VibeUI components
 
+/** Payload emitted by the `component-error` event on all Bootstrap-backed components. */
+export interface ComponentError {
+  message: string
+  componentName: string
+  originalError: unknown
+}
+
 export type ColorMode = 'light' | 'dark' | 'auto'
 
 export type Variant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Size } from '../types'
+import type { Size, ComponentError } from '../types'
 
 const props = defineProps({
   size: { type: String as () => Size, default: undefined },
@@ -13,7 +13,11 @@ const props = defineProps({
   maxVisiblePages: { type: Number, default: 7 }
 })
 
-const emit = defineEmits(['update:currentPage', 'page-click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:currentPage', page: number): void
+  (e: 'page-click', page: number): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const paginationClass = computed(() => {
   const classes = ['pagination']

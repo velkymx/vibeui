@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType } from 'vue'
-import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
+import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 import { useBreakpoints } from '../composables/useBreakpoints'
@@ -47,7 +47,15 @@ const props = defineProps({
   height: { type: String, default: '200px' }
 })
 
-const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change', 'ready', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+  (e: 'validate'): void
+  (e: 'blur'): void
+  (e: 'focus'): void
+  (e: 'change'): void
+  (e: 'ready', instance: unknown): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const formGroup = inject(FORM_GROUP_KEY, null)
 const _groupId = formGroup?.consumeId()

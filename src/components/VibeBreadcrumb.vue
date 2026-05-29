@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { BreadcrumbItem } from '../types'
+import type { BreadcrumbItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 
 const props = defineProps({
@@ -8,7 +8,10 @@ const props = defineProps({
   items: { type: Array as () => BreadcrumbItem[], required: true }
 })
 
-const emit = defineEmits(['item-click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'item-click', payload: { item: BreadcrumbItem; index: number; event: Event }): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
   if (!item.active) {

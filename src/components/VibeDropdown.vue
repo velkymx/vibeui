@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import type { Variant, Size, Direction, DropdownItem } from '../types'
+import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { safeHref } from '../utils/safeHref'
 
@@ -24,7 +24,14 @@ const props = defineProps({
   autoClose: { type: [Boolean, String], default: true }
 })
 
-const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'component-error'])
+const emit = defineEmits<{
+  (e: 'item-click', payload: { item: DropdownItem; index: number; event: Event }): void
+  (e: 'show'): void
+  (e: 'shown'): void
+  (e: 'hide'): void
+  (e: 'hidden'): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const dropdownRef = ref<HTMLElement | null>(null)
 const bsDropdown = ref<BootstrapDropdown | null>(null)

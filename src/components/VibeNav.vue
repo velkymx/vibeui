@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import type { NavItem } from '../types'
+import type { NavItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 
 interface BootstrapTab {
@@ -19,7 +19,14 @@ const props = defineProps({
   tag: { type: String, default: 'ul' }
 })
 
-const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'component-error'])
+const emit = defineEmits<{
+  (e: 'item-click', payload: { item: NavItem; index: number; event: Event }): void
+  (e: 'show', event: Event): void
+  (e: 'shown', event: Event): void
+  (e: 'hide', event: Event): void
+  (e: 'hidden', event: Event): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const navRef = ref<HTMLElement | null>(null)
 const bsTabs = new Map<HTMLElement, BootstrapTab>()

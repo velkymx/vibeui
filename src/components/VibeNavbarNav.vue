@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import type { NavItem, DropdownItem } from '../types'
+import type { NavItem, DropdownItem, ComponentError } from '../types'
 
 interface BootstrapDropdown {
   dispose: () => void
@@ -11,7 +11,11 @@ const props = defineProps({
   items: { type: Array as () => NavItem[], default: undefined }
 })
 
-const emit = defineEmits(['item-click', 'dropdown-item-click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'item-click', payload: { item: NavItem; index: number; event: Event }): void
+  (e: 'dropdown-item-click', payload: { item: NavItem; itemIndex: number; child: DropdownItem; childIndex: number; event: Event }): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const navbarNavRef = ref<HTMLElement | null>(null)
 const bsDropdowns = new Map<HTMLElement, BootstrapDropdown>()

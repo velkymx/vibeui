@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ButtonVariant, Size, ButtonType } from '../types'
+import type { ButtonVariant, Size, ButtonType, ComponentError } from '../types'
 
 const props = defineProps({
   variant: { type: String as () => ButtonVariant, default: 'primary' },
@@ -14,7 +14,10 @@ const props = defineProps({
   focusRing: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'click', event: MouseEvent): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const tag = computed(() => {
   if (props.href) return 'a'

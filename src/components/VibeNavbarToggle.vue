@@ -13,7 +13,11 @@ const props = defineProps({
   ariaLabel: { type: String, default: 'Toggle navigation' }
 })
 
-const emit = defineEmits(['component-error'])
+import type { ComponentError } from '../types'
+
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
 

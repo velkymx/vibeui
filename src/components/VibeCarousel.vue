@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import type { CarouselItem } from '../types'
+import type { CarouselItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
 interface BootstrapCarousel {
@@ -28,7 +28,12 @@ const props = defineProps({
   items: { type: Array as () => CarouselItem[], required: true }
 })
 
-const emit = defineEmits(['update:modelValue', 'slide', 'slid', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', index: number): void
+  (e: 'slide', event: Event): void
+  (e: 'slid', event: Event): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const carouselRef = ref<HTMLElement | null>(null)
 const bsCarousel = ref<BootstrapCarousel | null>(null)

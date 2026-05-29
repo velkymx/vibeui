@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import type { AccordionItem } from '../types'
+import type { AccordionItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
 interface BootstrapCollapse {
@@ -25,7 +25,14 @@ if (import.meta.env.DEV && props.id && /[ .:#[\](){}+~>,|^$*?=]/.test(props.id))
   console.warn(`[VibeAccordion] id "${props.id}" contains CSS-special characters. Bootstrap's querySelector will fail. Use only alphanumeric characters, hyphens, and underscores.`)
 }
 
-const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'component-error'])
+const emit = defineEmits<{
+  (e: 'item-click', payload: { item: AccordionItem; index: number }): void
+  (e: 'show', id: string): void
+  (e: 'shown', id: string): void
+  (e: 'hide', id: string): void
+  (e: 'hidden', id: string): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const accordionRef = ref<HTMLElement | null>(null)
 const bsCollapses = new Map<string, BootstrapCollapse>()

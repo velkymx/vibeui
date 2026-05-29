@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-import type { TooltipPlacement } from '../types'
+import type { TooltipPlacement, ComponentError } from '../types'
 
 interface BootstrapTooltip {
   dispose: () => void
@@ -14,7 +14,9 @@ const props = defineProps({
   trigger: { type: String, default: 'hover focus' }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 // Deprecation warning for content prop
 if (props.content !== undefined && props.text === undefined) {

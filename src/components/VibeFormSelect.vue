@@ -48,7 +48,13 @@ const props = defineProps({
   helpText: { type: String, default: undefined }
 })
 
-const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: unknown): void
+  (e: 'validate'): void
+  (e: 'blur', event: FocusEvent): void
+  (e: 'focus', event: FocusEvent): void
+  (e: 'change', event: Event): void
+}>()
 
 const formGroup = inject(FORM_GROUP_KEY, null)
 

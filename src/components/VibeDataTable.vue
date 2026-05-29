@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
 import { ref, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
-import type { DataTableColumn } from '../types'
+import type { DataTableColumn, ComponentError } from '../types'
 
 const props = defineProps({
   // Data
@@ -43,7 +43,10 @@ const perPage = defineModel<number>('perPage', { default: 10 })
 const sortBy = defineModel<string | undefined>('sortBy', { default: undefined })
 const sortDesc = defineModel<boolean>('sortDesc', { default: false })
 
-const emit = defineEmits(['row-clicked', 'component-error'])
+const emit = defineEmits<{
+  (e: 'row-clicked', item: T, globalIndex: number): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const _instance = getCurrentInstance()
 const isRowClickable = computed(() => {

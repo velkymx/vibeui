@@ -6,7 +6,11 @@ const props = defineProps({
   to: { type: [String, Object], default: undefined }
 })
 
-const emit = defineEmits(['component-error'])
+import type { ComponentError } from '../types'
+
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const tag = safeHref(props.href) ? 'a' : props.to ? 'router-link' : 'span'
 </script>

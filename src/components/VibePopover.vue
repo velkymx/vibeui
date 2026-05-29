@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-import type { TooltipPlacement } from '../types'
+import type { TooltipPlacement, ComponentError } from '../types'
 
 interface BootstrapPopover {
   dispose: () => void
@@ -15,7 +15,9 @@ const props = defineProps({
   trigger: { type: String, default: 'click' }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const popoverRef = ref<HTMLElement | null>(null)
 const bsPopover = ref<BootstrapPopover | null>(null)

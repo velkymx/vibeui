@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import type { OffcanvasPlacement } from '../types'
+import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
 
@@ -20,7 +20,14 @@ const props = defineProps({
   teleport: { type: [String, Boolean], default: 'body' }
 })
 
-const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'show'): void
+  (e: 'shown'): void
+  (e: 'hide'): void
+  (e: 'hidden'): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const offcanvasRef = ref<HTMLElement | null>(null)
 const bsOffcanvas = ref<BootstrapOffcanvas | null>(null)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
-import type { Tag, GutterSize, RowColsSize, AlignItems, JustifyContent } from '../types'
+import type { Tag, GutterSize, RowColsSize, AlignItems, JustifyContent, ComponentError } from '../types'
 
 const props = defineProps({
   tag: { type: String as PropType<Tag>, default: 'div' },
@@ -42,7 +42,9 @@ const props = defineProps({
   justifyContent: { type: String as PropType<JustifyContent>, default: undefined }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const rowClass = computed(() => {
   const classes: string[] = ['row']

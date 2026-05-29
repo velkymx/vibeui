@@ -28,7 +28,14 @@ const props = defineProps({
   focusRing: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string | number): void
+  (e: 'validate'): void
+  (e: 'blur', event: FocusEvent): void
+  (e: 'focus', event: FocusEvent): void
+  (e: 'input', event: Event): void
+  (e: 'change', event: Event): void
+}>()
 
 const formGroup = inject(FORM_GROUP_KEY, null)
 

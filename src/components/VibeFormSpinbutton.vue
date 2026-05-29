@@ -39,7 +39,16 @@ const props = defineProps({
   vertical: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change', 'increment', 'decrement'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: number): void
+  (e: 'validate'): void
+  (e: 'blur', event: FocusEvent): void
+  (e: 'focus', event: FocusEvent): void
+  (e: 'input', event: Event): void
+  (e: 'change', event: Event): void
+  (e: 'increment'): void
+  (e: 'decrement'): void
+}>()
 
 const formGroup = inject(FORM_GROUP_KEY, null)
 

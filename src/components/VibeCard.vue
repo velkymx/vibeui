@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Variant, Tag } from '../types'
+import type { Variant, Tag, ComponentError } from '../types'
 
 const props = defineProps({
   variant: { type: String as () => Variant, default: undefined },
@@ -19,7 +19,9 @@ const props = defineProps({
   imgBottom: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const cardClass = computed(() => {
   const classes = ['card']

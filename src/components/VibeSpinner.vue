@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Variant, Size, SpinnerType } from '../types'
+import type { Variant, Size, SpinnerType, ComponentError } from '../types'
 
 const props = defineProps({
   variant: { type: String as () => Variant, default: undefined },
@@ -10,7 +10,9 @@ const props = defineProps({
   tag: { type: String, default: 'div' }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const spinnerClass = computed(() => {
   const classes = [`spinner-${props.type}`]

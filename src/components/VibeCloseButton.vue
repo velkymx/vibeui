@@ -5,7 +5,12 @@ const props = defineProps({
   ariaLabel: { type: String, default: 'Close' }
 })
 
-const emit = defineEmits(['click', 'component-error'])
+import type { ComponentError } from '../types'
+
+const emit = defineEmits<{
+  (e: 'click', event: MouseEvent): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const handleClick = (event: Event) => {
   if (!props.disabled) {

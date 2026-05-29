@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
-import type { Tag, ColSize, OrderValue, AlignItems } from '../types'
+import type { Tag, ColSize, OrderValue, AlignItems, ComponentError } from '../types'
 
 const props = defineProps({
   tag: { type: String as PropType<Tag>, default: 'div' },
@@ -33,7 +33,9 @@ const props = defineProps({
   alignSelf: { type: String as PropType<AlignItems>, default: undefined }
 })
 
-const emit = defineEmits(['component-error'])
+const emit = defineEmits<{
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const colClass = computed(() => {
   const classes: string[] = []

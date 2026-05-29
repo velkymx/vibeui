@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Tag, ListGroupItem } from '../types'
+import type { Tag, ListGroupItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 
 const props = defineProps({
@@ -11,7 +11,10 @@ const props = defineProps({
   items: { type: Array as () => ListGroupItem[], required: true }
 })
 
-const emit = defineEmits(['item-click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'item-click', payload: { item: ListGroupItem; index: number; event: Event }): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const listGroupClass = computed(() => {
   const classes = ['list-group']
