@@ -81,6 +81,13 @@ const onPointerDown = (handle: Handle, event: PointerEvent) => {
   emit('resizestart', { width: currentWidth.value, height: currentHeight.value })
 }
 
+// Pre-bound per-handle pointerdown handlers. Built once over the fixed handle set so
+// the template binds a stable function reference per handle instead of allocating a
+// new inline arrow for every handle on every render.
+const pointerDownHandlers = Object.fromEntries(
+  ALL_HANDLES.map(h => [h, (e: PointerEvent) => onPointerDown(h, e)])
+) as Record<Handle, (e: PointerEvent) => void>
+
 const onPointerMove = (event: PointerEvent) => {
   if (!activeHandle.value || event.pointerId !== activePointerId) return
   const dx = event.clientX - startX.value
@@ -155,7 +162,7 @@ const onPointerUp = (event: PointerEvent) => {
       :key="h"
       :class="['vibe-resizable-handle', `vibe-resizable-handle-${h}`]"
       :data-handle="h"
-      @pointerdown="(e: PointerEvent) => onPointerDown(h, e)"
+      @pointerdown="pointerDownHandlers[h]"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
     />
