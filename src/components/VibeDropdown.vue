@@ -68,12 +68,19 @@ const menuClass = computed(() => {
   return classes.join(' ')
 })
 
-const getItemClass = (item: DropdownItem) => {
-  const classes = ['dropdown-item']
-  if (item.active) classes.push('active')
-  if (item.disabled) classes.push('disabled')
-  return classes.join(' ')
-}
+// Memoize item classes into a computed Map. The computed tracks each item's
+// active/disabled reads, so it recomputes when those change but otherwise reuses the
+// strings instead of rebuilding an array + join per item on every render.
+const itemClassMap = computed(() => {
+  const m = new Map<DropdownItem, string>()
+  for (const item of props.items) {
+    const classes = ['dropdown-item']
+    if (item.active) classes.push('active')
+    if (item.disabled) classes.push('disabled')
+    m.set(item, classes.join(' '))
+  }
+  return m
+})
 
 const onShow = () => emit('show')
 const onShown = () => emit('shown')
@@ -206,7 +213,7 @@ defineExpose({ show, hide, toggle })
         <li v-else>
           <component
             :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
-            :class="getItemClass(item)"
+            :class="itemClassMap.get(item)"
             :href="safeHref(item.href)"
             :to="item.to"
             :type="!item.href && !item.to ? 'button' : undefined"
