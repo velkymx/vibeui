@@ -43,4 +43,20 @@ describe('VibeNavbarNav', () => {
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(bootstrap.Dropdown).toHaveBeenCalled()
   })
+
+  it('re-initializes dropdowns when the items array is replaced (idiomatic update)', async () => {
+    const wrapper = mount(VibeNavbarNav, {
+      props: { items: [{ text: 'Home', href: '/' }] }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    vi.clearAllMocks()
+
+    // Replace the array with one that now contains a dropdown — identity change must
+    // trigger the watcher even with deep: false.
+    await wrapper.setProps({ items: itemsWithDropdown })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(bootstrap.Dropdown).toHaveBeenCalled()
+    expect(wrapper.find('[data-bs-toggle="dropdown"]').exists()).toBe(true)
+  })
 })

@@ -47,12 +47,16 @@ onBeforeUnmount(() => {
   bsDropdowns.clear()
 })
 
+// deep: false — dropdown presence depends on items array identity, not leaf values.
+// Replacing the items array (the data-driven update pattern) changes identity and
+// triggers a rebuild; deep traversal only added cost for leaf mutations that do not
+// affect dropdown structure.
 watch(() => props.items, async () => {
   bsDropdowns.forEach(d => d.dispose())
   bsDropdowns.clear()
   await nextTick()
   await initDropdowns()
-}, { deep: true })
+}, { deep: false })
 
 const getItemClass = (item: NavItem) => {
   const classes = ['nav-item']
