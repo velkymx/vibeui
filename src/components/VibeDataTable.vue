@@ -286,17 +286,25 @@ const getSortIcon = (column: DataTableColumn<T>) => {
   return sortDesc.value ? '↓' : '↑'
 }
 
-const getThStyle = (column: DataTableColumn<T>) => {
-  // Sanitize consumer-supplied thStyle against an allowlist — prevents CSS injection
-  // (exfiltration / UI spoofing) when column config comes from an API or untrusted source.
-  const style = safeCssObject(column.thStyle)
-  if (props.sortable && column.sortable !== false) {
-    style.cursor = 'pointer'
+// Precompute sanitized per-column styles once per columns/sortable change. Returning a
+// stable object reference per column lets Vue's :style (compared by reference) skip DOM
+// patching when nothing changed, instead of allocating a fresh object every render/cell.
+// safeCssObject also filters consumer-supplied styles to an allowlist (CSS-injection defense).
+const thStyleMap = computed(() => {
+  const m = new Map<DataTableColumn<T>, Record<string, string>>()
+  for (const column of props.columns) {
+    const style = safeCssObject(column.thStyle)
+    if (props.sortable && column.sortable !== false) style.cursor = 'pointer'
+    m.set(column, style)
   }
-  return style
-}
+  return m
+})
 
-const getTdStyle = (column: DataTableColumn<T>) => safeCssObject(column.tdStyle)
+const tdStyleMap = computed(() => {
+  const m = new Map<DataTableColumn<T>, Record<string, string>>()
+  for (const column of props.columns) m.set(column, safeCssObject(column.tdStyle))
+  return m
+})
 </script>
 
 <template>
@@ -338,7 +346,7 @@ const getTdStyle = (column: DataTableColumn<T>) => safeCssObject(column.tdStyle)
               v-for="column in columns"
               :key="column.key"
               :class="column.headerClass"
-              :style="getThStyle(column)"
+              :style="thStyleMap.get(column)"
               @click="handleSort(column)"
             >
               {{ column.label }}
@@ -359,7 +367,7 @@ const getTdStyle = (column: DataTableColumn<T>) => safeCssObject(column.tdStyle)
               v-for="column in columns"
               :key="column.key"
               :class="column.class"
-              :style="getTdStyle(column)"
+              :style="tdStyleMap.get(column)"
               :data-label="column.label"
             >
               <slot :name="`cell(${column.key})`" :item="item" :value="item[column.key]" :index="index">
