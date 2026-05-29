@@ -37,12 +37,18 @@ const computedId = computed(() => props.id || _generatedId)
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const toIso = (d: Date): IsoDate => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+const ISO_FORMAT = /^\d{4}-\d{2}-\d{2}$/
 const fromIso = (iso: IsoDate): Date => {
+  // Guard: empty or malformed ISO strings produce NaN dates (e.g. fromIso("") → new Date(0,-1,0))
+  if (!ISO_FORMAT.test(iso)) {
+    if (import.meta.env.DEV) {
+      console.warn(`[VibeDatePicker] fromIso received non-ISO string: "${iso}". Falling back to today.`)
+    }
+    return new Date()
+  }
   const [y, m, d] = iso.split('-').map(Number)
   return new Date(y, m - 1, d)
 }
-
-const ISO_FORMAT = /^\d{4}-\d{2}-\d{2}$/
 const validateIsoString = (value: string | undefined, propName: string): void => {
   if (value !== undefined && !ISO_FORMAT.test(value)) {
     console.warn(

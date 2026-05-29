@@ -6,7 +6,16 @@ const props = defineProps({
   size: { type: String as () => Size, default: undefined },
   ariaLabel: { type: String, default: 'Pagination' },
   totalPages: { type: Number, required: true },
-  currentPage: { type: Number, default: 1 },
+  currentPage: {
+    type: Number,
+    default: 1,
+    validator: (v: number) => {
+      if (import.meta.env.DEV && (!Number.isInteger(v) || v < 1)) {
+        console.warn(`[VibePagination] currentPage must be a positive integer, got ${v}`)
+      }
+      return true
+    }
+  },
   showPrevNext: { type: Boolean, default: true },
   prevText: { type: String, default: 'Previous' },
   nextText: { type: String, default: 'Next' },

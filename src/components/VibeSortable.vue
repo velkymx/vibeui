@@ -2,7 +2,7 @@
      with dndStore / VibeDraggable / VibeDroppable — mixing them causes undefined behavior.
      Use VibeDraggable + VibeDroppable for cross-list or free-form drag-drop scenarios. -->
 <script setup lang="ts" generic="T">
-import { ref, onMounted, onBeforeUnmount, type PropType } from 'vue'
+import { ref, onMounted, onBeforeUnmount, onActivated, type PropType } from 'vue'
 
 const props = defineProps({
   modelValue: { type: Array as PropType<T[]>, required: true },
@@ -57,6 +57,9 @@ onMounted(() => {
   document.addEventListener('dragend', clearDrag)
 })
 onBeforeUnmount(() => document.removeEventListener('dragend', clearDrag))
+// Reset stale drag state on KeepAlive reactivation — user may have been mid-drag
+// when the component was deactivated; draggingIndex would remain non-null otherwise.
+onActivated(() => { draggingIndex.value = null })
 </script>
 
 <template>
