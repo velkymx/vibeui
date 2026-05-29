@@ -12,8 +12,12 @@ interface BootstrapDropdown {
   dispose: () => void
 }
 
+// Hoisted to setup so the id is owned by this instance and stable (see note in
+// other Vibe components — useId() in a defineProps default factory is fragile).
+const _generatedId = useId('dropdown')
+
 const props = defineProps({
-  id: { type: String, default: () => useId('dropdown') },
+  id: { type: String, default: undefined },
   text: { type: String, default: 'Dropdown' },
   variant: { type: String as () => Variant, default: 'primary' },
   size: { type: String as () => Size, default: undefined },
@@ -32,6 +36,8 @@ const emit = defineEmits<{
   (e: 'hidden'): void
   (e: 'component-error', error: ComponentError): void
 }>()
+
+const computedId = computed(() => props.id || _generatedId)
 
 const dropdownRef = ref<HTMLElement | null>(null)
 const bsDropdown = ref<BootstrapDropdown | null>(null)
@@ -159,7 +165,7 @@ defineExpose({ show, hide, toggle })
   <div ref="dropdownRef" :class="dropdownClass">
     <button
       v-if="!split"
-      :id="id"
+      :id="computedId"
       :class="[buttonClass, 'dropdown-toggle']"
       type="button"
       data-bs-toggle="dropdown"
@@ -178,7 +184,7 @@ defineExpose({ show, hide, toggle })
         <slot name="button">{{ text }}</slot>
       </button>
       <button
-        :id="id"
+        :id="computedId"
         type="button"
         :class="[buttonClass, 'dropdown-toggle', 'dropdown-toggle-split']"
         data-bs-toggle="dropdown"
@@ -189,7 +195,7 @@ defineExpose({ show, hide, toggle })
       </button>
     </template>
 
-    <ul :class="menuClass" :aria-labelledby="id">
+    <ul :class="menuClass" :aria-labelledby="computedId">
       <template v-for="(item, index) in items" :key="item.text || item.href || String(item.to) || index">
         <li v-if="item.divider"><hr class="dropdown-divider"></li>
         <li v-else-if="item.header">

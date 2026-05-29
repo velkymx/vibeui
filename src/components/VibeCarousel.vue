@@ -12,8 +12,13 @@ interface BootstrapCarousel {
   dispose: () => void
 }
 
+// Hoisted to setup so the id is owned by this instance and stable — calling useId()
+// inside a defineProps default factory runs during prop normalization, which is
+// fragile across Vue versions and inconsistent with the rest of the library.
+const _generatedId = useId('carousel')
+
 const props = defineProps({
-  id: { type: String, default: () => useId('carousel') },
+  id: { type: String, default: undefined },
   modelValue: { type: Number, default: 0 },
   controls: { type: Boolean, default: true },
   indicators: { type: Boolean, default: true },
@@ -38,6 +43,9 @@ const emit = defineEmits<{
 const carouselRef = ref<HTMLElement | null>(null)
 const bsCarousel = ref<BootstrapCarousel | null>(null)
 const activeIndex = ref(props.modelValue)
+
+// Consumer-supplied id wins; otherwise the stable generated id.
+const computedId = computed(() => props.id || _generatedId)
 
 // Set in onBeforeUnmount before dispose — guards the post-await section of initCarousel
 // against constructing a Bootstrap instance on a detached element.
@@ -163,7 +171,7 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
 <template>
   <div
     ref="carouselRef"
-    :id="id"
+    :id="computedId"
     :class="carouselClass"
     :data-bs-ride="ride === true ? 'carousel' : ride"
     :data-bs-interval="interval"
@@ -178,7 +186,7 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
         v-for="(_, index) in items"
         :key="`indicator-${index}`"
         type="button"
-        :data-bs-target="`#${id}`"
+        :data-bs-target="`#${computedId}`"
         :data-bs-slide-to="index"
         :class="{ active: index === activeIndex }"
         :aria-current="index === activeIndex"
@@ -206,11 +214,11 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
 
     <!-- Controls -->
     <template v-if="controls">
-      <button class="carousel-control-prev" type="button" :data-bs-target="`#${id}`" data-bs-slide="prev">
+      <button class="carousel-control-prev" type="button" :data-bs-target="`#${computedId}`" data-bs-slide="prev">
         <span class="carousel-control-prev-icon" aria-hidden="true" />
         <span class="visually-hidden">Previous</span>
       </button>
-      <button class="carousel-control-next" type="button" :data-bs-target="`#${id}`" data-bs-slide="next">
+      <button class="carousel-control-next" type="button" :data-bs-target="`#${computedId}`" data-bs-slide="next">
         <span class="carousel-control-next-icon" aria-hidden="true" />
         <span class="visually-hidden">Next</span>
       </button>

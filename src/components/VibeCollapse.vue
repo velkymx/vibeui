@@ -11,8 +11,12 @@ interface BootstrapCollapse {
   dispose: () => void
 }
 
+// Hoisted to setup so the id is owned by this instance and stable (useId() in a
+// defineProps default factory runs during prop normalization — fragile across Vue versions).
+const _generatedId = useId('collapse')
+
 const props = defineProps({
-  id: { type: String, default: () => useId('collapse') },
+  id: { type: String, default: undefined },
   modelValue: { type: Boolean, default: false },
   tag: { type: String as () => Tag, default: 'div' },
   horizontal: { type: Boolean, default: false },
@@ -29,6 +33,8 @@ const emit = defineEmits<{
 }>()
 
 const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
+
+const computedId = computed(() => props.id || _generatedId)
 
 const collapseRef = ref<HTMLElement | null>(null)
 const bsCollapse = ref<BootstrapCollapse | null>(null)
@@ -82,8 +88,8 @@ onMounted(async () => {
     // Also honour any state change queued by the watcher during the async gap.
     const initialState = pendingState !== null
       ? pendingState
-      : (navbar && props.id in navbar.collapseStates
-          ? navbar.collapseStates[props.id]
+      : (navbar && computedId.value in navbar.collapseStates
+          ? navbar.collapseStates[computedId.value]
           : props.modelValue)
     pendingState = null
 
@@ -124,8 +130,8 @@ onBeforeUnmount(() => {
 
 // Combined state from navbar or local modelValue
 const targetState = computed(() => {
-  if (navbar && props.id in navbar.collapseStates) {
-    return navbar.collapseStates[props.id]
+  if (navbar && computedId.value in navbar.collapseStates) {
+    return navbar.collapseStates[computedId.value]
   }
   return props.modelValue
 })
@@ -149,8 +155,8 @@ watch(targetState, (newValue) => {
 // When modelValue changes from outside (programmatic control), sync collapseStates
 // so targetState doesn't remain stale after the first toggle.
 watch(() => props.modelValue, (val) => {
-  if (navbar && props.id in navbar.collapseStates && navbar.collapseStates[props.id] !== val) {
-    navbar.collapseStates[props.id] = val
+  if (navbar && computedId.value in navbar.collapseStates && navbar.collapseStates[computedId.value] !== val) {
+    navbar.collapseStates[computedId.value] = val
   }
 })
 
@@ -166,7 +172,7 @@ const collapseClass = computed(() => {
 </script>
 
 <template>
-  <component :is="tag" ref="collapseRef" :id="id" :class="collapseClass">
+  <component :is="tag" ref="collapseRef" :id="computedId" :class="collapseClass">
     <slot />
   </component>
 </template>

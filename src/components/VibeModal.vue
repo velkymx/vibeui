@@ -11,8 +11,12 @@ interface BootstrapModal {
   handleUpdate: () => void
 }
 
+// Hoisted to setup so the id is owned by this instance and stable (useId() in a
+// defineProps default factory runs during prop normalization — fragile across Vue versions).
+const _generatedId = useId('modal')
+
 const props = defineProps({
-  id: { type: String, default: () => useId('modal') },
+  id: { type: String, default: undefined },
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
   size: { type: String as () => Size | 'xl', default: undefined },
@@ -33,6 +37,8 @@ const emit = defineEmits<{
   (e: 'hidden'): void
   (e: 'component-error', error: ComponentError): void
 }>()
+
+const computedId = computed(() => props.id || _generatedId)
 
 const modalRef = ref<HTMLElement | null>(null)
 const bsModal = ref<BootstrapModal | null>(null)
@@ -203,10 +209,10 @@ defineExpose({ show, hide, handleUpdate, _unsafe_bsInstance: bsModal })
   <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
     <div
       ref="modalRef"
-      :id="id"
+      :id="computedId"
       class="modal fade"
       tabindex="-1"
-      :aria-labelledby="`${id}-label`"
+      :aria-labelledby="`${computedId}-label`"
       :aria-hidden="isVisible ? undefined : 'true'"
       :data-bs-backdrop="staticBackdrop ? 'static' : undefined"
       :data-bs-keyboard="!staticBackdrop"
@@ -214,7 +220,7 @@ defineExpose({ show, hide, handleUpdate, _unsafe_bsInstance: bsModal })
       <div :class="dialogClass">
         <div class="modal-content">
           <div v-if="!hideHeader" class="modal-header">
-            <h5 :id="`${id}-label`" class="modal-title">
+            <h5 :id="`${computedId}-label`" class="modal-title">
               <slot name="header">{{ title }}</slot>
             </h5>
             <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>

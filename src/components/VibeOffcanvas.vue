@@ -10,8 +10,12 @@ interface BootstrapOffcanvas {
   dispose: () => void
 }
 
+// Hoisted to setup so the id is owned by this instance and stable (useId() in a
+// defineProps default factory runs during prop normalization — fragile across Vue versions).
+const _generatedId = useId('offcanvas')
+
 const props = defineProps({
-  id: { type: String, default: () => useId('offcanvas') },
+  id: { type: String, default: undefined },
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
   placement: { type: String as () => OffcanvasPlacement, default: 'start' },
@@ -28,6 +32,8 @@ const emit = defineEmits<{
   (e: 'hidden'): void
   (e: 'component-error', error: ComponentError): void
 }>()
+
+const computedId = computed(() => props.id || _generatedId)
 
 const offcanvasRef = ref<HTMLElement | null>(null)
 const bsOffcanvas = ref<BootstrapOffcanvas | null>(null)
@@ -183,15 +189,15 @@ defineExpose({ show, hide, _unsafe_bsInstance: bsOffcanvas })
   <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
     <div
       ref="offcanvasRef"
-      :id="id"
+      :id="computedId"
       :class="offcanvasClass"
       tabindex="-1"
-      :aria-labelledby="`${id}-label`"
+      :aria-labelledby="`${computedId}-label`"
       :data-bs-backdrop="backdrop === false ? 'false' : backdrop === 'static' ? 'static' : 'true'"
       :data-bs-scroll="scroll"
     >
       <div class="offcanvas-header">
-        <h5 :id="`${id}-label`" class="offcanvas-title">
+        <h5 :id="`${computedId}-label`" class="offcanvas-title">
           <slot name="header">{{ title }}</slot>
         </h5>
         <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
