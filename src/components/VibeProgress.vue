@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ProgressBar } from '../types'
+import { safeLength } from '../utils/safeCss'
 
 const props = defineProps({
   height: { type: String, default: undefined },
@@ -8,10 +9,9 @@ const props = defineProps({
 })
 
 const progressStyle = computed(() => {
-  if (props.height) {
-    return { height: props.height }
-  }
-  return undefined
+  // Validate freeform height prop before binding to :style — blocks CSS injection.
+  const h = safeLength(props.height)
+  return h ? { height: h } : undefined
 })
 
 const getBarClass = (bar: ProgressBar) => {
