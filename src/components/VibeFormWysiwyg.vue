@@ -5,6 +5,7 @@ import type { ValidationState, ValidationRule, ValidatorFunction } from '../type
 import { useId } from '../composables/useId'
 import { useBreakpoints } from '../composables/useBreakpoints'
 import Quill from 'quill'
+import { loadDOMPurify, sanitizeHtml } from '../utils/sanitizeHtml'
 
 interface QuillInstance {
   root: HTMLElement
@@ -149,12 +150,14 @@ const getToolbarConfig = () => {
 const setQuillContent = (html: string) => {
   if (!quillInstance.value) return
   isUpdatingFromProp.value = true
+  // Sanitize before passing to Quill's clipboard converter (XSS defense-in-depth).
   // Quill 2.x: setContents([]) followed by dangerouslyPasteHTML triggers a
   // selection update against the (now-empty) document, which crashes inside
   // selection.normalizedToRange when the input format includes a wrapping
   // <p>. Convert the HTML to a Delta and atomically replace via setContents
   // — this is the supported path and emits a single text-change.
-  const delta = quillInstance.value.clipboard.convert({ html: html || '' })
+  const clean = sanitizeHtml(html || '')
+  const delta = quillInstance.value.clipboard.convert({ html: clean })
   quillInstance.value.setContents(delta, 'silent')
   isUpdatingFromProp.value = false
 }
@@ -163,7 +166,9 @@ const getQuillContent = (): string => {
   if (!quillInstance.value) return ''
   const text = quillInstance.value.getText().trim()
   if (text.length === 0) return ''
-  return quillInstance.value.getSemanticHTML()
+  // Sanitize the output from Quill before emitting — defense-in-depth against any
+  // XSS that survives Quill's own Delta allowlist conversion.
+  return sanitizeHtml(quillInstance.value.getSemanticHTML())
 }
 
 const updateAriaAttributes = () => {
@@ -186,7 +191,10 @@ const initQuill = async () => {
   try {
     const QuillModule = await import('quill')
     const Quill = QuillModule.default || QuillModule
-    await import('quill/dist/quill.snow.css')
+    await Promise.all([
+      import('quill/dist/quill.snow.css'),
+      loadDOMPurify()
+    ])
 
     // Guard: component may have unmounted while the imports were in-flight.
     if (!editorContainer.value || isUnmounted) return

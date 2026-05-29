@@ -225,3 +225,21 @@ declare module 'quill/dist/quill.snow.css' {
   const content: string
   export default content
 }
+
+declare module 'dompurify' {
+  interface DOMPurifyConfig {
+    ALLOWED_TAGS?: string[]
+    ALLOWED_ATTR?: string[]
+    FORBID_TAGS?: string[]
+    FORBID_ATTR?: string[]
+    FORCE_BODY?: boolean
+  }
+
+  interface DOMPurifyI {
+    sanitize(source: string, config?: DOMPurifyConfig): string
+    isSupported: boolean
+  }
+
+  const DOMPurify: DOMPurifyI
+  export default DOMPurify
+}
