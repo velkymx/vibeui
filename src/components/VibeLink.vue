@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
 import type { Tag, Variant } from '../types'
+import { safeHref } from '../utils/safeHref'
 
 const props = defineProps({
   tag: { type: String as PropType<Tag | 'a'>, default: 'a' },
@@ -61,7 +62,7 @@ const linkClass = computed(() => {
     :is="componentTag"
     :class="linkClass"
     :to="isRouterLink ? to : undefined"
-    :href="isRouterLink ? undefined : href"
+    :href="isRouterLink ? undefined : safeHref(href)"
   >
     <slot />
   </component>

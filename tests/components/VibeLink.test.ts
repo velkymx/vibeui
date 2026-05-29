@@ -39,4 +39,26 @@ describe('VibeLink', () => {
     })
     expect(wrapper.classes()).toContain('focus-ring')
   })
+
+  // Security: safeHref must strip javascript: / data: URLs from the rendered href attribute.
+  it('strips javascript: URL from href — renders no href attribute', () => {
+    const wrapper = mount(VibeLink, {
+      props: { href: 'javascript:alert(document.cookie)' }
+    })
+    expect(wrapper.attributes('href')).toBeUndefined()
+  })
+
+  it('strips data: URL from href', () => {
+    const wrapper = mount(VibeLink, {
+      props: { href: 'data:text/html,<script>alert(1)</script>' }
+    })
+    expect(wrapper.attributes('href')).toBeUndefined()
+  })
+
+  it('preserves safe https:// href', () => {
+    const wrapper = mount(VibeLink, {
+      props: { href: 'https://example.com' }
+    })
+    expect(wrapper.attributes('href')).toBe('https://example.com')
+  })
 })

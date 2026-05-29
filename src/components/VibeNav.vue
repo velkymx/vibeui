@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { NavItem } from '../types'
+import { safeHref } from '../utils/safeHref'
 
 interface BootstrapTab {
   show: () => void
@@ -168,10 +169,10 @@ defineExpose({ bsInstances: bsTabs, refresh })
             </template>
             <template v-else>
               <component
-                :is="child.href ? 'a' : child.to ? 'router-link' : 'button'"
+                :is="safeHref(child.href) ? 'a' : child.to ? 'router-link' : 'button'"
                 class="dropdown-item"
                 :class="{ active: child.active, disabled: child.disabled }"
-                :href="child.href"
+                :href="safeHref(child.href)"
                 :to="child.to"
                 :type="!child.href && !child.to ? 'button' : undefined"
               >
@@ -183,10 +184,10 @@ defineExpose({ bsInstances: bsTabs, refresh })
       </template>
       <template v-else>
         <component
-          :is="item.href ? 'a' : item.to ? 'router-link' : 'button'"
+          :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
           class="nav-link"
           :class="{ active: item.active, disabled: item.disabled }"
-          :href="item.href"
+          :href="safeHref(item.href)"
           :to="item.to"
           :type="!item.href && !item.to ? 'button' : undefined"
           :disabled="(!item.href && !item.to && item.disabled) || undefined"

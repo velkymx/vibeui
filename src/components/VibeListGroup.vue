@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Tag, ListGroupItem } from '../types'
+import { safeHref } from '../utils/safeHref'
 
 const props = defineProps({
   flush: { type: Boolean, default: false },
@@ -47,9 +48,9 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
     <template v-for="(item, index) in items" :key="index">
     <component
       v-memo="[item.href, item.to, item.active, item.disabled, item.variant, item.text]"
-      :is="item.href ? 'a' : item.to ? 'router-link' : 'li'"
+      :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'li'"
       :class="getItemClass(item)"
-      :href="item.href"
+      :href="safeHref(item.href)"
       :to="item.to"
       :aria-disabled="item.disabled || undefined"
       :aria-current="item.active"

@@ -2,6 +2,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Variant, Size, Direction, DropdownItem } from '../types'
 import { useId } from '../composables/useId'
+import { safeHref } from '../utils/safeHref'
 
 interface BootstrapDropdown {
   show: () => void
@@ -191,9 +192,9 @@ defineExpose({ show, hide, toggle })
         </li>
         <li v-else>
           <component
-            :is="item.href ? 'a' : item.to ? 'router-link' : 'button'"
+            :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
             :class="getItemClass(item)"
-            :href="item.href"
+            :href="safeHref(item.href)"
             :to="item.to"
             :type="!item.href && !item.to ? 'button' : undefined"
             :disabled="item.disabled"

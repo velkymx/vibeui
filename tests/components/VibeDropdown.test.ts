@@ -80,4 +80,24 @@ describe('VibeDropdown', () => {
 
     expect(bootstrap.Dropdown).not.toHaveBeenCalled()
   })
+
+  // Security: safeHref must strip javascript: URLs from dropdown item links.
+  it('strips javascript: URL from dropdown item href', () => {
+    const wrapper = mount(VibeDropdown, {
+      props: {
+        items: [{ text: 'XSS', href: 'javascript:alert(1)' }]
+      }
+    })
+    const link = wrapper.find('a')
+    expect(link.exists() && link.attributes('href')).toBeFalsy()
+  })
+
+  it('preserves safe https:// href on dropdown item', () => {
+    const wrapper = mount(VibeDropdown, {
+      props: {
+        items: [{ text: 'Safe', href: 'https://example.com' }]
+      }
+    })
+    expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
+  })
 })

@@ -144,4 +144,24 @@ describe('VibeNav', () => {
 
     expect(bootstrap.Tab).not.toHaveBeenCalled()
   })
+
+  // Security: safeHref must strip javascript: URLs from nav item links.
+  it('strips javascript: URL from nav item href', () => {
+    const wrapper = mount(VibeNav, {
+      props: {
+        items: [{ text: 'XSS', href: 'javascript:alert(1)' }]
+      }
+    })
+    const link = wrapper.find('a')
+    expect(link.exists()).toBe(false)
+  })
+
+  it('preserves safe https:// href on nav item', () => {
+    const wrapper = mount(VibeNav, {
+      props: {
+        items: [{ text: 'Safe', href: 'https://example.com' }]
+      }
+    })
+    expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
+  })
 })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { BreadcrumbItem } from '../types'
+import { safeHref } from '../utils/safeHref'
 
 const props = defineProps({
   ariaLabel: { type: String, default: 'breadcrumb' },
@@ -26,8 +27,8 @@ const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
         :aria-current="item.active ? 'page' : undefined"
       >
         <component
-          :is="item.active ? 'span' : item.href ? 'a' : item.to ? 'router-link' : 'span'"
-          :href="item.active ? undefined : item.href"
+          :is="item.active ? 'span' : safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'span'"
+          :href="item.active ? undefined : safeHref(item.href)"
           :to="item.active ? undefined : item.to"
           @click="handleItemClick(item, index, $event)"
         >
