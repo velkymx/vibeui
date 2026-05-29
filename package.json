@@ -61,17 +61,22 @@
   "devDependencies": {
     "@types/dompurify": "^3.0.5",
     "@vitejs/plugin-vue": "^6.0.4",
+    "@vitest/browser": "^4.1.7",
+    "@vitest/browser-playwright": "^4.1.7",
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
     "@vue/language-core": "^3.3.2",
     "@vue/test-utils": "^2.4.6",
+    "bootstrap": "^5.3.8",
     "dompurify": "^3.4.7",
     "happy-dom": "^20.1.0",
+    "playwright": "^1.60.0",
     "quill": "^2.0.3",
     "typescript": "^6.0.3",
     "vite": "^8.0.14",
     "vite-plugin-dts": "^5.0.1",
     "vitest": "^4.0.16",
+    "vitest-browser-vue": "^2.1.0",
     "vue-tsc": "^3.2.5"
   },
   "overrides": {
