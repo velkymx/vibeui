@@ -82,6 +82,11 @@ let initInFlight = false
 // constructing a Quill instance on a detached container during a mount/unmount race.
 let isUnmounted = false
 
+// Debounce handle for the breakpoint-driven Quill rebuild. Rebuilding Quill is
+// expensive; resizing across the mobile breakpoint can fire isMobile repeatedly,
+// so we coalesce bursts into a single rebuild.
+let mobileReinitTimer: ReturnType<typeof setTimeout> | null = null
+
 const blurHandler = ref<(() => void) | null>(null)
 const focusHandler = ref<(() => void) | null>(null)
 const textChangeHandler = ref<((...args: unknown[]) => void) | null>(null)
@@ -280,6 +285,12 @@ onMounted(initQuill)
 onBeforeUnmount(() => {
    isUnmounted = true
 
+   // Cancel any pending debounced breakpoint rebuild so it can't fire post-unmount.
+   if (mobileReinitTimer !== null) {
+     clearTimeout(mobileReinitTimer)
+     mobileReinitTimer = null
+   }
+
    if (quillInstance.value) {
      // Disable the editor first to prevent selection updates on detached DOM
      quillInstance.value.enable(false)
@@ -338,9 +349,17 @@ watch(() => props.readonly, (newValue) => {
 
 watch([() => props.validationState, () => props.helpText, () => props.validationMessage], updateAriaAttributes)
 
-// Watch for breakpoint changes and re-initialize Quill if toolbar needs to change
-watch(isMobile, async () => {
-  if (quillInstance.value) {
+// Watch for breakpoint changes and re-initialize Quill if the toolbar needs to change.
+// Debounced: a viewport resize can cross the breakpoint repeatedly, and each rebuild is
+// expensive — coalesce a burst of changes into a single rebuild on the trailing edge.
+watch(isMobile, () => {
+  if (!quillInstance.value) return
+  if (mobileReinitTimer !== null) clearTimeout(mobileReinitTimer)
+  mobileReinitTimer = setTimeout(async () => {
+    mobileReinitTimer = null
+    // Re-check: the component may have unmounted, or Quill may have been torn down,
+    // during the debounce window.
+    if (isUnmounted || !quillInstance.value) return
     const content = getQuillContent()
 
     // Disable the editor first to prevent selection updates on detached DOM
@@ -384,7 +403,7 @@ watch(isMobile, async () => {
     await nextTick()
     await initQuill()
     if (content) setQuillContent(content)
-  }
+  }, 250)
 })
 </script>
 
