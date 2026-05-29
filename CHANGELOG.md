@@ -4,6 +4,14 @@
 
 ---
 
+## Code Review 7 (2026-05-29)
+
+### Reactivity
+
+- **Bootstrap/Quill instances → `shallowRef`** — VibeModal/Offcanvas/Toast/Carousel/Tooltip/Popover/Dropdown/Scrollspy/Collapse/Alert (`bs*`) and VibeFormWysiwyg (`quillInstance`) held their third-party instance in `ref()`, deep-proxying DOM/Popper internals (overhead + broken element identity for Popper-based components). Switched to `shallowRef`. (077e65b)
+
+---
+
 ## Performance Audit (2026-05-29)
 
 ### Bundle Size
