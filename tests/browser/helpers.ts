@@ -18,3 +18,13 @@ export async function waitForGone(selector: string, timeout = 4000): Promise<voi
     expect(document.querySelector(selector), `expected "${selector}" to be gone`).toBeNull()
   }, { timeout })
 }
+
+// Resolve once `el` fires `type` exactly once. Used to await a Bootstrap transition
+// event (e.g. shown.bs.modal) so interactions don't land mid-transition, where
+// Bootstrap's hide() no-ops while `_isTransitioning`. Attach BEFORE triggering show.
+export function onceEvent(el: Element, type: string, timeout = 4000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`timeout waiting for "${type}"`)), timeout)
+    el.addEventListener(type, () => { clearTimeout(timer); resolve() }, { once: true })
+  })
+}
