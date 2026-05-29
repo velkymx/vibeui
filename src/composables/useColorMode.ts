@@ -86,7 +86,9 @@ export function useColorMode() {
 
   function initColorMode() {
     if (initialized) return
-    // Bug 1 fix: initColorMode is the real init path when window was unavailable at module load (SSR)
+    // Bug 1 fix: initColorMode is the real init path when window was unavailable at module load (SSR).
+    // Detach any listener left by clearColorMode before re-attaching to avoid duplicates.
+    detachSystemListener()
     let stored: ColorMode = 'auto'
     try {
       const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
@@ -102,15 +104,18 @@ export function useColorMode() {
   }
 
   function clearColorMode() {
-    // Bug 3 fix: detach system listener before resetting state
     detachSystemListener()
     try {
       localStorage.removeItem(STORAGE_KEY)
     } catch {
       // ignore — ref and DOM still reset even if storage removal fails
     }
-    initialized = false
     applyAndUpdate('auto')
+    // Re-attach so OS theme changes still update the DOM while in auto mode.
+    // initialized stays false so initColorMode() can run again and re-read storage.
+    // initColorMode() calls detachSystemListener() before re-attaching to prevent duplicates.
+    attachSystemListener()
+    initialized = false
   }
 
   function toggleColorMode() {
