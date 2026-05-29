@@ -25,3 +25,7 @@ dist-ssr
 /coverage
 coding-agent-rules.md
 TODO.md
+
+# Vitest browser-mode artifacts (failure screenshots / attachments)
+.vitest-attachments/
+tests/browser/__screenshots__/
