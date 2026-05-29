@@ -161,7 +161,9 @@ useBackButton(() => {
   if (isVisible.value) hide()
 })
 
-defineExpose({ show, hide, bsInstance: bsOffcanvas })
+// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on it directly WILL break this component.
+defineExpose({ show, hide, _unsafe_bsInstance: bsOffcanvas })
 </script>
 
 <template>

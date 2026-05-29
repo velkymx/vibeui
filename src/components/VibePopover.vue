@@ -99,7 +99,9 @@ watch([() => props.content, () => props.text, () => props.title], () => {
 
 watch([() => props.placement, () => props.trigger], initPopover)
 
-defineExpose({ bsInstance: bsPopover })
+// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on it directly WILL break this component.
+defineExpose({ _unsafe_bsInstance: bsPopover })
 </script>
 
 <template>

@@ -139,7 +139,7 @@ describe('VibePopover', () => {
     })
     await new Promise(resolve => setTimeout(resolve, 0))
 
-    expect(wrapper.vm.bsInstance).not.toBeNull()
+    expect(wrapper.vm._unsafe_bsInstance).not.toBeNull()
 
     wrapper.unmount()
     expect(vi.mocked(bootstrap.Popover).mock.results[0].value.dispose).toHaveBeenCalled()

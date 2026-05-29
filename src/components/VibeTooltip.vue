@@ -100,7 +100,9 @@ watch([() => props.content, () => props.text], () => {
 // Watch for functional changes that require re-initialization
 watch([() => props.placement, () => props.trigger], initTooltip)
 
-defineExpose({ bsInstance: bsTooltip })
+// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on it directly WILL break this component.
+defineExpose({ _unsafe_bsInstance: bsTooltip })
 </script>
 
 <template>

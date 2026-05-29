@@ -156,7 +156,9 @@ watch([() => props.autohide, () => props.delay], initToast)
 const show = () => bsToast.value?.show()
 const hide = () => bsToast.value?.hide()
 
-defineExpose({ show, hide, bsInstance: bsToast })
+// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on it directly WILL break this component.
+defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
 </script>
 
 <template>

@@ -158,8 +158,8 @@ describe('VibeTooltip', () => {
     })
     await new Promise(resolve => setTimeout(resolve, 0))
 
-    // bsInstance was set during init
-    expect(wrapper.vm.bsInstance).not.toBeNull()
+    // _unsafe_bsInstance (escape hatch) was set during init
+    expect(wrapper.vm._unsafe_bsInstance).not.toBeNull()
 
     wrapper.unmount()
 

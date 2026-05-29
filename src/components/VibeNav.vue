@@ -145,7 +145,9 @@ const refresh = async () => {
   await initTabs()
 }
 
-defineExpose({ bsInstances: bsTabs, refresh })
+// _unsafe_bsInstances is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on these directly WILL break this component.
+defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
 </script>
 
 <template>

@@ -155,7 +155,9 @@ const getImageAlt = (item: CarouselItem, index: number): string => {
   return `Carousel slide ${index + 1}`
 }
 
-defineExpose({ bsInstance: bsCarousel, refresh: initCarousel })
+// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on it directly WILL break this component.
+defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
 </script>
 
 <template>

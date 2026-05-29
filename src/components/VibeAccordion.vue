@@ -159,7 +159,9 @@ const handleItemClick = (item: AccordionItem, index: number) => {
   emit('item-click', { item, index })
 }
 
-defineExpose({ bsInstances: bsCollapses, refresh: initItems })
+// _unsafe_bsInstances is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on these directly WILL break this component.
+defineExpose({ refresh: initItems, _unsafe_bsInstances: bsCollapses })
 </script>
 
 <template>
