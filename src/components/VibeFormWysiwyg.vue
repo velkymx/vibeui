@@ -202,12 +202,16 @@ const updateAriaAttributes = () => {
 const initQuill = async () => {
   if (initInFlight) return
   initInFlight = true
+  // Start loading the sanitizer immediately, in parallel with Quill and independent of
+  // its resolution — the sanitizer must be ready before any modelValue HTML is set, and
+  // kicking it off here (not after the Quill import) keeps that guarantee deterministic.
+  const purifyReady = loadDOMPurify()
   try {
     const QuillModule = await import('quill')
     const Quill = QuillModule.default || QuillModule
     await Promise.all([
       import('quill/dist/quill.snow.css'),
-      loadDOMPurify()
+      purifyReady
     ])
 
     // Guard: component may have unmounted while the imports were in-flight.
