@@ -73,6 +73,7 @@
 #### Performance
 
 - **VibeChartBar, VibeChartLine, VibeChartPie** — Moved `getComputedStyle()` color resolution out of a reactive `computed` into a `ref` refreshed in `onMounted`/`redraw()` (RAF context), eliminating per-dependency-change forced layout reads. (8473d7d)
+- **useForm** — Replaced whole-object `JSON.stringify(fields)` dirty detection with precomputed per-field initial JSON + `.some()` short-circuit, so a single changed field no longer serializes the entire form on every keystroke. (9e568e5)
 
 ### Tooling & Docs
 
