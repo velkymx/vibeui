@@ -15,8 +15,6 @@ const props = defineProps({
   fade: { type: Boolean, default: true }
 })
 
-const isDismissible = computed(() => props.dismissible)
-
 import type { ComponentError } from '../types'
 
 const emit = defineEmits<{
@@ -131,7 +129,7 @@ const alertClass = computed(() => {
   } else {
     classes.push(`alert-${props.variant}`)
   }
-  if (isDismissible.value) classes.push('alert-dismissible')
+  if (props.dismissible) classes.push('alert-dismissible')
   if (props.fade) classes.push('fade', 'show')
   return classes.join(' ')
 })
@@ -146,7 +144,7 @@ const alertClass = computed(() => {
   >
     <template v-if="message">{{ message }}</template><slot />
     <button
-      v-if="isDismissible"
+      v-if="dismissible"
       type="button"
       class="btn-close"
       aria-label="Close"
