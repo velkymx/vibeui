@@ -87,10 +87,13 @@ let isUnmounted = false
 // so we coalesce bursts into a single rebuild.
 let mobileReinitTimer: ReturnType<typeof setTimeout> | null = null
 
-const blurHandler = ref<(() => void) | null>(null)
-const focusHandler = ref<(() => void) | null>(null)
-const textChangeHandler = ref<((...args: unknown[]) => void) | null>(null)
-const selectionChangeHandler = ref<((...args: unknown[]) => void) | null>(null)
+// Plain let, not ref: these handlers are imperative references used only in lifecycle
+// hooks (attach/detach), never read in the template or a reactive context — reactivity
+// would add tracking overhead for no benefit.
+let blurHandler: (() => void) | null = null
+let focusHandler: (() => void) | null = null
+let textChangeHandler: ((...args: unknown[]) => void) | null = null
+let selectionChangeHandler: ((...args: unknown[]) => void) | null = null
 
 const containerClass = computed(() => {
   const classes = ['vibe-wysiwyg-container']
@@ -240,7 +243,7 @@ const initQuill = async () => {
         setQuillContent(props.modelValue)
       }
 
-      textChangeHandler.value = () => {
+      textChangeHandler = () => {
         if (isUpdatingFromProp.value) return
         const html = getQuillContent()
         emit('update:modelValue', html)
@@ -249,23 +252,23 @@ const initQuill = async () => {
           emit('validate')
         }
       }
-      quillInstance.value.on('text-change', textChangeHandler.value)
+      quillInstance.value.on('text-change', textChangeHandler)
 
-      blurHandler.value = () => {
+      blurHandler = () => {
         emit('blur')
         if (props.validateOn === 'blur') {
           emit('validate')
         }
       }
-      quillInstance.value.root.addEventListener('blur', blurHandler.value)
+      quillInstance.value.root.addEventListener('blur', blurHandler)
 
-      focusHandler.value = () => {
+      focusHandler = () => {
         emit('focus')
       }
-      quillInstance.value.root.addEventListener('focus', focusHandler.value)
+      quillInstance.value.root.addEventListener('focus', focusHandler)
 
-      selectionChangeHandler.value = () => {}
-      quillInstance.value.on('selection-change', selectionChangeHandler.value)
+      selectionChangeHandler = () => {}
+      quillInstance.value.on('selection-change', selectionChangeHandler)
 
       isQuillLoaded.value = true
       emit('ready', quillInstance.value)
@@ -299,21 +302,21 @@ onBeforeUnmount(() => {
      // Disable the editor first to prevent selection updates on detached DOM
      quillInstance.value.enable(false)
 
-     if (textChangeHandler.value) {
-       quillInstance.value.off('text-change', textChangeHandler.value)
-       textChangeHandler.value = null
+     if (textChangeHandler) {
+       quillInstance.value.off('text-change', textChangeHandler)
+       textChangeHandler = null
      }
-     if (selectionChangeHandler.value) {
-       quillInstance.value.off('selection-change', selectionChangeHandler.value)
-       selectionChangeHandler.value = null
+     if (selectionChangeHandler) {
+       quillInstance.value.off('selection-change', selectionChangeHandler)
+       selectionChangeHandler = null
      }
-     if (blurHandler.value) {
-       quillInstance.value.root.removeEventListener('blur', blurHandler.value)
-       blurHandler.value = null
+     if (blurHandler) {
+       quillInstance.value.root.removeEventListener('blur', blurHandler)
+       blurHandler = null
      }
-     if (focusHandler.value) {
-       quillInstance.value.root.removeEventListener('focus', focusHandler.value)
-       focusHandler.value = null
+     if (focusHandler) {
+       quillInstance.value.root.removeEventListener('focus', focusHandler)
+       focusHandler = null
      }
      // Null out the selection module to prevent Quill from accessing removed DOM
      quillInstance.value.selection = null
@@ -370,21 +373,21 @@ watch(isMobile, () => {
     quillInstance.value.enable(false)
 
     // Cleanup all event listeners before touching the DOM
-    if (textChangeHandler.value) {
-      quillInstance.value.off('text-change', textChangeHandler.value)
-      textChangeHandler.value = null
+    if (textChangeHandler) {
+      quillInstance.value.off('text-change', textChangeHandler)
+      textChangeHandler = null
     }
-    if (selectionChangeHandler.value) {
-      quillInstance.value.off('selection-change', selectionChangeHandler.value)
-      selectionChangeHandler.value = null
+    if (selectionChangeHandler) {
+      quillInstance.value.off('selection-change', selectionChangeHandler)
+      selectionChangeHandler = null
     }
-    if (blurHandler.value) {
-      quillInstance.value.root.removeEventListener('blur', blurHandler.value)
-      blurHandler.value = null
+    if (blurHandler) {
+      quillInstance.value.root.removeEventListener('blur', blurHandler)
+      blurHandler = null
     }
-    if (focusHandler.value) {
-      quillInstance.value.root.removeEventListener('focus', focusHandler.value)
-      focusHandler.value = null
+    if (focusHandler) {
+      quillInstance.value.root.removeEventListener('focus', focusHandler)
+      focusHandler = null
     }
 
     // Null out the selection module to prevent Quill from accessing removed DOM
