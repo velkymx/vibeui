@@ -148,6 +148,10 @@ Standalone utilities that can be used independently of any component.
 
 - [Position utility classes](./utilities/position.md) - Bootstrap position-* / top-* / translate-middle reference
 
+## Versioning & Stability
+
+- [Versioning & Stability Policy](./versioning.md) - SemVer commitment, what's covered by the public API, deprecation and peer-dependency policy
+
 ## Design Philosophy
 
 1. **Full Abstraction** - No "reach-around" required; the library manages the framework engine.
