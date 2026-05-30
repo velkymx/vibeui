@@ -43,6 +43,10 @@ const cardClass = computed(() => {
       class="card-img-top"
     >
 
+    <!-- Image slot: a direct card child (outside .card-body) for a card image with
+         custom composition — e.g. a card-img-top with an absolutely-positioned overlay. -->
+    <slot name="image" />
+
     <!-- Header -->
     <div v-if="header || $slots.header" :class="['card-header', headerClass]">
       <slot name="header">{{ header }}</slot>

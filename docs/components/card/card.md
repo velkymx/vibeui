@@ -27,6 +27,7 @@ Flexible content container component for displaying headers, bodies, footers, an
 | Slot | Description |
 |------|-------------|
 | `default` | Additional body content |
+| `image` | A direct card child rendered **outside** `.card-body` (before the header) — for a card image with custom composition, e.g. a `card-img-top` with an absolutely-positioned overlay/badge |
 | `header` | Custom header content |
 | `title` | Custom title content |
 | `body` | Custom body content |

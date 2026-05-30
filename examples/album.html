@@ -104,48 +104,47 @@
 
                 <vibe-row row-cols="1" row-cols-sm="2" row-cols-md="3" row-cols-lg="4" :gutters="4">
                     <vibe-col v-for="item in filteredItems" :key="item.id">
-                        <!-- Raw .card: the image + absolutely-positioned badge overlay is a
-                             custom composition VibeCard's prop API doesn't express. -->
-                        <div class="card h-100 border-0 shadow-sm">
-                            <div class="position-relative">
-                                <img :src="item.image" class="card-img-top" :alt="item.title">
-                                <vibe-badge
-                                    :variant="item.badge.variant"
-                                    class="position-absolute top-0 end-0 m-2"
-                                >
-                                    {{ item.badge.text }}
-                                </vibe-badge>
-                            </div>
-                            <div class="card-body">
-                                <h5 class="card-title mb-2">{{ item.title }}</h5>
-                                <p class="card-text text-muted small mb-3">{{ item.description }}</p>
-
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary rounded-circle me-2" style="width: 32px; height: 32px;"></div>
-                                        <small class="text-muted">{{ item.author }}</small>
-                                    </div>
+                        <vibe-card class="h-100 border-0 shadow-sm">
+                            <template #image>
+                                <div class="position-relative">
+                                    <img :src="item.image" class="card-img-top" :alt="item.title">
+                                    <vibe-badge
+                                        :variant="item.badge.variant"
+                                        class="position-absolute top-0 end-0 m-2"
+                                    >
+                                        {{ item.badge.text }}
+                                    </vibe-badge>
                                 </div>
+                            </template>
 
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <vibe-button-group size="sm">
-                                        <vibe-button variant="primary" outline>
-                                            <vibe-icon icon="eye"></vibe-icon>
-                                        </vibe-button>
-                                        <vibe-button variant="primary" outline>
-                                            <vibe-icon icon="heart"></vibe-icon>
-                                        </vibe-button>
-                                        <vibe-button variant="primary" outline>
-                                            <vibe-icon icon="share"></vibe-icon>
-                                        </vibe-button>
-                                    </vibe-button-group>
-                                    <small class="text-muted">
-                                        <vibe-icon icon="clock" class="me-1"></vibe-icon>
-                                        {{ item.time }}
-                                    </small>
+                            <h5 class="card-title mb-2">{{ item.title }}</h5>
+                            <p class="card-text text-muted small mb-3">{{ item.description }}</p>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary rounded-circle me-2" style="width: 32px; height: 32px;"></div>
+                                    <small class="text-muted">{{ item.author }}</small>
                                 </div>
                             </div>
-                        </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <vibe-button-group size="sm">
+                                    <vibe-button variant="primary" outline>
+                                        <vibe-icon icon="eye"></vibe-icon>
+                                    </vibe-button>
+                                    <vibe-button variant="primary" outline>
+                                        <vibe-icon icon="heart"></vibe-icon>
+                                    </vibe-button>
+                                    <vibe-button variant="primary" outline>
+                                        <vibe-icon icon="share"></vibe-icon>
+                                    </vibe-button>
+                                </vibe-button-group>
+                                <small class="text-muted">
+                                    <vibe-icon icon="clock" class="me-1"></vibe-icon>
+                                    {{ item.time }}
+                                </small>
+                            </div>
+                        </vibe-card>
                     </vibe-col>
                 </vibe-row>
 
