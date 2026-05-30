@@ -82,7 +82,12 @@
                 class="justify-content-center"
                 :items="categoryNavItems"
                 @item-click="onCategoryClick"
-            ></vibe-nav>
+            >
+                <template #item="{ item }">
+                    <vibe-icon :icon="item.icon" class="me-2"></vibe-icon>
+                    {{ item.text }}
+                </template>
+            </vibe-nav>
         </vibe-container>
 
         <!-- Album Grid -->
@@ -204,10 +209,10 @@
                         { text: 'Contact', href: '#' }
                     ],
                     categories: [
-                        { id: 'all', name: 'All Photos' },
-                        { id: 'nature', name: 'Nature' },
-                        { id: 'urban', name: 'Urban' },
-                        { id: 'people', name: 'People' }
+                        { id: 'all', name: 'All Photos', icon: 'grid-3x3-gap' },
+                        { id: 'nature', name: 'Nature', icon: 'tree' },
+                        { id: 'urban', name: 'Urban', icon: 'building' },
+                        { id: 'people', name: 'People', icon: 'people' }
                     ],
                     sortItems: [
                         { text: 'Most Recent', value: 'recent' },
@@ -232,6 +237,7 @@
                     // fires) without engaging Bootstrap's Tab JS against a bogus target.
                     return this.categories.map(c => ({
                         text: c.name,
+                        icon: c.icon,
                         active: c.id === this.activeCategory
                     }));
                 },

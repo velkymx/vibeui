@@ -4,6 +4,14 @@
 
 ---
 
+## VibeNav item slot (2026-05-30)
+
+### Added
+
+- **`VibeNav` — `#item` scoped slot** (`{ item, index }`) for custom nav-link content, e.g. an icon beside the label. `nav.md` already documented this slot but the component didn't implement it; it now matches the doc and is consistent with the `#item` slots on `VibeListGroup` and `VibeDropdown`. The album example's category nav uses it to restore per-item icons. Found via a full docs-vs-components audit.
+
+---
+
 ## VibeHero component (2026-05-30)
 
 ### Added

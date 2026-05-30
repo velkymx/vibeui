@@ -24,6 +24,19 @@ describe('VibeNav', () => {
     expect(wrapper.findAll('.nav-link')).toHaveLength(2)
   })
 
+  it('renders custom item content via the #item slot (scope: item, index)', () => {
+    const wrapper = mount(VibeNav, {
+      props: { items: mockItems },
+      slots: {
+        item: '<template #item="{ item, index }"><span class="custom-item">{{ index }}:{{ item.text }}</span></template>'
+      }
+    })
+    const custom = wrapper.findAll('.custom-item')
+    expect(custom).toHaveLength(2)
+    expect(custom[0].text()).toBe('0:Link 1')
+    expect(custom[1].text()).toBe('1:Link 2')
+  })
+
   it('initializes bootstrap tab for nav links with href starting with #', async () => {
     mount(VibeNav, {
       props: {

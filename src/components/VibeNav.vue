@@ -205,7 +205,7 @@ defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
           :data-bs-target="getTabTarget(item)"
           @click="handleItemClick(item, index, $event)"
         >
-          {{ item.text }}
+          <slot name="item" :item="item" :index="index">{{ item.text }}</slot>
         </component>
       </template>
     </li>

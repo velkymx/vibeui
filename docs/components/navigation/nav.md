@@ -48,6 +48,28 @@ interface NavItem {
 
 ## Usage
 
+### Custom item content (`#item` slot)
+
+Use the `item` slot to render richer nav links — e.g. an icon next to the label. The slot is scoped with `{ item, index }`.
+
+```vue
+<template>
+  <VibeNav :items="navItems">
+    <template #item="{ item }">
+      <VibeIcon :icon="item.icon" class="me-2" />
+      {{ item.text }}
+    </template>
+  </VibeNav>
+</template>
+
+<script setup>
+const navItems = [
+  { text: 'Home', href: '#', icon: 'house', active: true },
+  { text: 'Profile', href: '#', icon: 'person' }
+]
+</script>
+```
+
 ### Interactive Tabs
 
 When using the `tabs` or `pills` props, nav links with an `href` starting with `#` will automatically act as Bootstrap tab triggers.
