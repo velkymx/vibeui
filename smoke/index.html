@@ -152,8 +152,8 @@
               <vibe-card class="smoke-card">
                 <template #header>VibeLink / VibeIcon</template>
                 <vibe-link href="#" variant="primary">Primary link</vibe-link>
-                <vibe-icon name="house" class="ms-2" />
-                <vibe-icon name="star-fill" class="ms-2 text-warning" />
+                <vibe-icon icon="house" class="ms-2" />
+                <vibe-icon icon="star-fill" class="ms-2 text-warning" />
               </vibe-card>
             </section>
 
@@ -458,7 +458,7 @@
                 <vibe-form-group label="Composer (input + button)">
                   <vibe-input-group>
                     <template #prepend>
-                      <span class="input-group-text"><vibe-icon name="chat" /></span>
+                      <span class="input-group-text"><vibe-icon icon="chat" /></span>
                     </template>
                     <vibe-form-input v-model="form.comment" no-wrapper placeholder="Add a comment…" />
                     <template #append>

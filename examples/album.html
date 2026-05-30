@@ -35,7 +35,7 @@
                     PhotoAlbum
                 </vibe-navbar-brand>
                 <vibe-navbar-toggle target="navbarNav"></vibe-navbar-toggle>
-                <vibe-collapse id="navbarNav" navbar>
+                <vibe-collapse id="navbarNav" is-nav>
                     <vibe-navbar-nav :items="navItems" class="ms-auto"></vibe-navbar-nav>
                 </vibe-collapse>
             </vibe-container>
@@ -56,7 +56,7 @@
                                 <vibe-icon icon="cloud-upload-fill" class="me-2"></vibe-icon>
                                 Upload Photos
                             </vibe-button>
-                            <vibe-button variant="outline-light" size="lg">
+                            <vibe-button variant="light" outline size="lg">
                                 <vibe-icon icon="collection-fill" class="me-2"></vibe-icon>
                                 Explore Gallery
                             </vibe-button>
@@ -66,20 +66,14 @@
             </vibe-container>
         </section>
 
-        <!-- Filter Tabs -->
+        <!-- Filter Tabs (data-driven via :items) -->
         <vibe-container class="mt-5">
-            <vibe-nav tabs class="justify-content-center">
-                <vibe-nav-item
-                    v-for="category in categories"
-                    :key="category.id"
-                    :active="category.id === activeCategory"
-                    @click="activeCategory = category.id"
-                    href="#"
-                >
-                    <vibe-icon :icon="category.icon" class="me-2"></vibe-icon>
-                    {{ category.name }}
-                </vibe-nav-item>
-            </vibe-nav>
+            <vibe-nav
+                tabs
+                class="justify-content-center"
+                :items="categoryNavItems"
+                @item-click="onCategoryClick"
+            ></vibe-nav>
         </vibe-container>
 
         <!-- Album Grid -->
@@ -90,16 +84,20 @@
                         <h2 class="mb-0">{{ activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1) }} Collection</h2>
                         <p class="text-muted mb-0">{{ filteredItems.length }} photos</p>
                     </div>
-                    <vibe-dropdown id="sort-dropdown" text="Sort By" variant="outline-secondary">
-                        <vibe-dropdown-item @click="sortBy = 'recent'">Most Recent</vibe-dropdown-item>
-                        <vibe-dropdown-item @click="sortBy = 'popular'">Most Popular</vibe-dropdown-item>
-                        <vibe-dropdown-item @click="sortBy = 'title'">Title</vibe-dropdown-item>
-                    </vibe-dropdown>
+                    <vibe-dropdown
+                        id="sort-dropdown"
+                        text="Sort By"
+                        variant="secondary"
+                        :items="sortItems"
+                        @item-click="onSortClick"
+                    ></vibe-dropdown>
                 </div>
 
-                <vibe-row row-cols="1" row-cols-sm="2" row-cols-md="3" row-cols-lg="4" :g="4">
+                <vibe-row row-cols="1" row-cols-sm="2" row-cols-md="3" row-cols-lg="4" :gutters="4">
                     <vibe-col v-for="item in filteredItems" :key="item.id">
-                        <vibe-card class="h-100 border-0 shadow-sm">
+                        <!-- Raw .card: the image + absolutely-positioned badge overlay is a
+                             custom composition VibeCard's prop API doesn't express. -->
+                        <div class="card h-100 border-0 shadow-sm">
                             <div class="position-relative">
                                 <img :src="item.image" class="card-img-top" :alt="item.title">
                                 <vibe-badge
@@ -109,7 +107,7 @@
                                     {{ item.badge.text }}
                                 </vibe-badge>
                             </div>
-                            <vibe-card-body>
+                            <div class="card-body">
                                 <h5 class="card-title mb-2">{{ item.title }}</h5>
                                 <p class="card-text text-muted small mb-3">{{ item.description }}</p>
 
@@ -121,24 +119,24 @@
                                 </div>
 
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <vibe-button variant="outline-primary">
+                                    <vibe-button-group size="sm">
+                                        <vibe-button variant="primary" outline>
                                             <vibe-icon icon="eye"></vibe-icon>
                                         </vibe-button>
-                                        <vibe-button variant="outline-primary">
+                                        <vibe-button variant="primary" outline>
                                             <vibe-icon icon="heart"></vibe-icon>
                                         </vibe-button>
-                                        <vibe-button variant="outline-primary">
+                                        <vibe-button variant="primary" outline>
                                             <vibe-icon icon="share"></vibe-icon>
                                         </vibe-button>
-                                    </div>
+                                    </vibe-button-group>
                                     <small class="text-muted">
                                         <vibe-icon icon="clock" class="me-1"></vibe-icon>
                                         {{ item.time }}
                                     </small>
                                 </div>
-                            </vibe-card-body>
-                        </vibe-card>
+                            </div>
+                        </div>
                     </vibe-col>
                 </vibe-row>
 
@@ -198,10 +196,15 @@
                         { text: 'Contact', href: '#' }
                     ],
                     categories: [
-                        { id: 'all', name: 'All Photos', icon: 'grid-3x3' },
-                        { id: 'nature', name: 'Nature', icon: 'tree' },
-                        { id: 'urban', name: 'Urban', icon: 'building' },
-                        { id: 'people', name: 'People', icon: 'people' }
+                        { id: 'all', name: 'All Photos' },
+                        { id: 'nature', name: 'Nature' },
+                        { id: 'urban', name: 'Urban' },
+                        { id: 'people', name: 'People' }
+                    ],
+                    sortItems: [
+                        { text: 'Most Recent', value: 'recent' },
+                        { text: 'Most Popular', value: 'popular' },
+                        { text: 'Title', value: 'title' }
                     ],
                     albumItems: [
                         { id: 1, category: 'nature', title: 'Mountain Sunrise', author: 'Sarah Chen', description: 'Breathtaking view from the summit', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', time: '2 hours ago', badge: { text: 'Featured', variant: 'primary' } },
@@ -216,11 +219,27 @@
                 }
             },
             computed: {
+                categoryNavItems() {
+                    return this.categories.map(c => ({
+                        text: c.name,
+                        href: '#',
+                        active: c.id === this.activeCategory
+                    }));
+                },
                 filteredItems() {
                     if (this.activeCategory === 'all') {
                         return this.albumItems;
                     }
                     return this.albumItems.filter(item => item.category === this.activeCategory);
+                }
+            },
+            methods: {
+                onCategoryClick({ index, event }) {
+                    event.preventDefault();
+                    this.activeCategory = this.categories[index].id;
+                },
+                onSortClick({ item }) {
+                    this.sortBy = item.value;
                 }
             }
         }).use(VibeUI.default).mount('#app');

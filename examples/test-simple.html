@@ -10,48 +10,49 @@
 </head>
 <body>
     <div id="app">
-        <div class="container my-5">
-            <div class="row">
-                <div class="col-12">
+        <vibe-container class="my-5">
+            <vibe-row>
+                <vibe-col :cols="12">
                     <h1>Testing VibeUI Components</h1>
                     <p>If this works, you should see styled components below:</p>
-                </div>
-            </div>
+                </vibe-col>
+            </vibe-row>
 
-            <div class="row my-4">
-                <div class="col-12">
+            <vibe-row class="my-4">
+                <vibe-col :cols="12">
                     <h3>Raw Bootstrap Icon (should show):</h3>
+                    <!-- Intentionally raw, for visual comparison with VibeIcon below. -->
                     <i class="bi bi-heart-fill text-danger" style="font-size: 2rem;"></i>
-                </div>
-            </div>
+                </vibe-col>
+            </vibe-row>
 
-            <div class="row my-4">
-                <div class="col-12">
+            <vibe-row class="my-4">
+                <vibe-col :cols="12">
                     <h3>VibeUI Button:</h3>
                     <vibe-button variant="primary" @click="count++">
                         Clicked {{ count }} times
                     </vibe-button>
-                </div>
-            </div>
+                </vibe-col>
+            </vibe-row>
 
-            <div class="row my-4">
-                <div class="col-12">
+            <vibe-row class="my-4">
+                <vibe-col :cols="12">
                     <h3>VibeUI Icon:</h3>
                     <vibe-icon icon="heart-fill" class="text-danger" style="font-size: 2rem;"></vibe-icon>
-                </div>
-            </div>
+                </vibe-col>
+            </vibe-row>
 
-            <div class="row my-4">
-                <div class="col-12">
+            <vibe-row class="my-4">
+                <vibe-col :cols="12">
                     <h3>VibeUI Alert:</h3>
-                    <vibe-alert variant="success" v-model="showAlert" dismissable>
+                    <vibe-alert variant="success" v-model="showAlert" dismissible>
                         This is a test alert!
                     </vibe-alert>
-                </div>
-            </div>
+                </vibe-col>
+            </vibe-row>
 
-            <div class="row my-4">
-                <div class="col-12">
+            <vibe-row class="my-4">
+                <vibe-col :cols="12">
                     <h3>VibeUI Container/Row/Col Test:</h3>
                     <vibe-container class="border border-primary p-3">
                         <vibe-row>
@@ -63,9 +64,9 @@
                             </vibe-col>
                         </vibe-row>
                     </vibe-container>
-                </div>
-            </div>
-        </div>
+                </vibe-col>
+            </vibe-row>
+        </vibe-container>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
@@ -82,10 +83,6 @@
                 }
             }
         });
-
-        console.log('VibeUI available:', typeof VibeUI !== 'undefined');
-        console.log('VibeUI object:', VibeUI);
-        console.log('VibeUI.default:', VibeUI.default);
 
         app.use(VibeUI.default);
         app.mount('#app');
