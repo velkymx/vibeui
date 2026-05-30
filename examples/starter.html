@@ -8,11 +8,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../dist/vibeui.css">
     <style>
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 100px 0;
-        }
         .feature-icon {
             width: 4rem;
             height: 4rem;
@@ -51,29 +46,31 @@
         </vibe-navbar>
 
         <!-- Hero Section -->
-        <section class="hero-section">
-            <vibe-container>
-                <vibe-row class="align-items-center">
-                    <vibe-col :lg="6">
-                        <h1 class="display-3 fw-bold mb-3">Build amazing apps with VibeUI</h1>
-                        <p class="lead mb-4">A modern Vue 3 component library built on Bootstrap 5.3. Create beautiful, responsive interfaces in minutes.</p>
-                        <div class="d-flex gap-3 mb-4">
-                            <vibe-button variant="light" size="lg" @click="handleGetStarted">
-                                <vibe-icon icon="rocket-takeoff-fill" class="me-2"></vibe-icon>
-                                Get Started
-                            </vibe-button>
-                            <vibe-button variant="light" outline size="lg">
-                                <vibe-icon icon="github" class="me-2"></vibe-icon>
-                                View on GitHub
-                            </vibe-button>
-                        </div>
-                    </vibe-col>
-                    <vibe-col :lg="6" class="text-center">
-                        <img src="https://via.placeholder.com/600x400/ffffff/667eea?text=VibeUI+Demo" alt="Demo" class="img-fluid rounded-4 shadow-lg">
-                    </vibe-col>
-                </vibe-row>
-            </vibe-container>
-        </section>
+        <vibe-hero
+            gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            align="start"
+            class="text-white"
+        >
+            <vibe-row class="align-items-center">
+                <vibe-col :lg="6">
+                    <h1 class="display-3 fw-bold mb-3">Build amazing apps with VibeUI</h1>
+                    <p class="lead mb-4">A modern Vue 3 component library built on Bootstrap 5.3. Create beautiful, responsive interfaces in minutes.</p>
+                    <div class="d-flex gap-3 mb-4">
+                        <vibe-button variant="light" size="lg" @click="handleGetStarted">
+                            <vibe-icon icon="rocket-takeoff-fill" class="me-2"></vibe-icon>
+                            Get Started
+                        </vibe-button>
+                        <vibe-button variant="light" outline size="lg">
+                            <vibe-icon icon="github" class="me-2"></vibe-icon>
+                            View on GitHub
+                        </vibe-button>
+                    </div>
+                </vibe-col>
+                <vibe-col :lg="6" class="text-center">
+                    <img src="https://via.placeholder.com/600x400/ffffff/667eea?text=VibeUI+Demo" alt="Demo" class="img-fluid rounded-4 shadow-lg">
+                </vibe-col>
+            </vibe-row>
+        </vibe-hero>
 
         <!-- Alert Demo -->
         <vibe-container class="my-5">

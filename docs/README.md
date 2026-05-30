@@ -93,6 +93,9 @@ The library handles:
 ### [Card](./components/card/)
 - [VibeCard](./components/card/card.md)
 
+### [Hero](./components/hero/)
+- [VibeHero](./components/hero/hero.md)
+
 ### [List](./components/list/)
 - [VibeListGroup](./components/list/list-group.md)
 

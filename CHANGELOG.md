@@ -4,6 +4,14 @@
 
 ---
 
+## VibeHero component (2026-05-30)
+
+### Added
+
+- **`VibeHero`** — a new hero/banner section component covering the Bootstrap 5.3 hero patterns (centered, two-column, dark, bordered) plus full-bleed background-image and gradient heroes. Reuses the existing prop vocabulary for consistency: `variant`/`textVariant`/`border` (as `VibeCard`), `fluid` (as `VibeContainer`), and `safeHref`/`safeLength`/`safeColor` sanitization for `bgImage`/`minHeight`/`overlay`. Gradients are validated to `*-gradient(...)` only. Used to replace the hand-rolled hero sections in the album and starter examples.
+
+---
+
 ## VibeCard section classes (2026-05-30)
 
 ### Added

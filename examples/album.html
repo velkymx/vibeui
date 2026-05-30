@@ -8,10 +8,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../dist/vibeui.css">
     <style>
-        .hero-image {
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1200') center/cover;
-            min-height: 400px;
-        }
         .card {
             transition: all 0.3s ease;
         }
@@ -52,29 +48,32 @@
         </vibe-navbar>
 
         <!-- Hero -->
-        <section class="hero-image text-white d-flex align-items-center">
-            <vibe-container>
-                <vibe-row>
-                    <vibe-col :lg="7" class="mx-auto text-center">
-                        <h1 class="display-3 fw-bold mb-3">Photo Gallery</h1>
-                        <p class="lead mb-4">
-                            Discover stunning photography from talented creators around the world.
-                            Browse our curated collection of beautiful moments captured in time.
-                        </p>
-                        <div class="d-flex gap-3 justify-content-center">
-                            <vibe-button variant="primary" size="lg">
-                                <vibe-icon icon="cloud-upload-fill" class="me-2"></vibe-icon>
-                                Upload Photos
-                            </vibe-button>
-                            <vibe-button variant="light" outline size="lg">
-                                <vibe-icon icon="collection-fill" class="me-2"></vibe-icon>
-                                Explore Gallery
-                            </vibe-button>
-                        </div>
-                    </vibe-col>
-                </vibe-row>
-            </vibe-container>
-        </section>
+        <vibe-hero
+            bg-image="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1200"
+            overlay
+            min-height="400px"
+            class="text-white"
+        >
+            <vibe-row>
+                <vibe-col :lg="7" class="mx-auto">
+                    <h1 class="display-3 fw-bold mb-3">Photo Gallery</h1>
+                    <p class="lead mb-4">
+                        Discover stunning photography from talented creators around the world.
+                        Browse our curated collection of beautiful moments captured in time.
+                    </p>
+                    <div class="d-flex gap-3 justify-content-center">
+                        <vibe-button variant="primary" size="lg">
+                            <vibe-icon icon="cloud-upload-fill" class="me-2"></vibe-icon>
+                            Upload Photos
+                        </vibe-button>
+                        <vibe-button variant="light" outline size="lg">
+                            <vibe-icon icon="collection-fill" class="me-2"></vibe-icon>
+                            Explore Gallery
+                        </vibe-button>
+                    </div>
+                </vibe-col>
+            </vibe-row>
+        </vibe-hero>
 
         <!-- Filter Tabs (data-driven via :items) -->
         <vibe-container class="mt-5">

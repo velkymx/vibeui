@@ -16,6 +16,9 @@ import VibeCol from './VibeCol.vue'
 // Card Components
 import VibeCard from './VibeCard.vue'
 
+// Hero Components
+import VibeHero from './VibeHero.vue'
+
 // Navigation Components
 import VibeBreadcrumb from './VibeBreadcrumb.vue'
 import VibeNav from './VibeNav.vue'
@@ -100,6 +103,9 @@ export {
 
   // Card
   VibeCard,
+
+  // Hero
+  VibeHero,
 
   // Navigation
   VibeBreadcrumb,
@@ -190,6 +196,9 @@ const VibeUIPlugin: Plugin = {
 
     // Card
     app.component('VibeCard', VibeCard)
+
+    // Hero
+    app.component('VibeHero', VibeHero)
 
     // Navigation
     app.component('VibeBreadcrumb', VibeBreadcrumb)
