@@ -14,6 +14,9 @@ Flexible content container component for displaying headers, bodies, footers, an
 | `body` | `String` | `undefined` | Card body text |
 | `header` | `String` | `undefined` | Card header text |
 | `footer` | `String` | `undefined` | Card footer text |
+| `headerClass` | `String \| Array \| Object` | `undefined` | Extra class(es) for the `.card-header` wrapper (e.g. a variant-colored header) |
+| `bodyClass` | `String \| Array \| Object` | `undefined` | Extra class(es) for the `.card-body` wrapper |
+| `footerClass` | `String \| Array \| Object` | `undefined` | Extra class(es) for the `.card-footer` wrapper |
 | `imgSrc` | `String` | `undefined` | Image URL |
 | `imgAlt` | `String` | `''` | Image alt text |
 | `imgTop` | `Boolean` | `false` | Display image at top |

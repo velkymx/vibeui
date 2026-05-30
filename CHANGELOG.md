@@ -4,6 +4,14 @@
 
 ---
 
+## VibeCard section classes (2026-05-30)
+
+### Added
+
+- **`VibeCard` — `headerClass` / `bodyClass` / `footerClass` props.** The header/body/footer wrapper divs previously had a fixed class, so a variant-colored header (e.g. `bg-primary text-white`) or extra body padding couldn't be expressed and consumers had to drop to a raw `.card`. These props add per-section class hooks. Used to convert the pricing example's highlighted-plan card from raw markup back to `VibeCard`.
+
+---
+
 ## Packaging (2026-05-29)
 
 ### Fixes

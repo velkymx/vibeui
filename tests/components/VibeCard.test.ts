@@ -53,6 +53,27 @@ describe('VibeCard', () => {
     expect(wrapper.text()).toContain('Test Footer')
   })
 
+  it('applies headerClass, bodyClass and footerClass to their sections', () => {
+    const wrapper = mount(VibeCard, {
+      props: {
+        header: 'H',
+        footer: 'F',
+        headerClass: 'bg-primary text-white',
+        bodyClass: 'p-4',
+        footerClass: 'text-muted'
+      },
+      slots: { default: 'Body' }
+    })
+
+    const header = wrapper.find('.card-header')
+    const body = wrapper.find('.card-body')
+    const footer = wrapper.find('.card-footer')
+    expect(header.classes()).toContain('bg-primary')
+    expect(header.classes()).toContain('text-white')
+    expect(body.classes()).toContain('p-4')
+    expect(footer.classes()).toContain('text-muted')
+  })
+
   it('renders top image when provided', () => {
     const wrapper = mount(VibeCard, {
       props: {
