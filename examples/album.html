@@ -24,6 +24,16 @@
             object-fit: cover;
         }
     </style>
+
+    <!-- VibeUI loads Bootstrap JS internally via `import('bootstrap')`; the UMD bundle
+         keeps that bare specifier, so the page maps it here so the sort dropdown works. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "bootstrap": "https://esm.sh/bootstrap@5.3.0"
+        }
+      }
+    </script>
 </head>
 <body>
     <div id="app">
@@ -220,9 +230,10 @@
             },
             computed: {
                 categoryNavItems() {
+                    // No href -> VibeNav renders clickable <button> nav-links (item-click
+                    // fires) without engaging Bootstrap's Tab JS against a bogus target.
                     return this.categories.map(c => ({
                         text: c.name,
-                        href: '#',
                         active: c.id === this.activeCategory
                     }));
                 },
@@ -234,8 +245,7 @@
                 }
             },
             methods: {
-                onCategoryClick({ index, event }) {
-                    event.preventDefault();
+                onCategoryClick({ index }) {
                     this.activeCategory = this.categories[index].id;
                 },
                 onSortClick({ item }) {
