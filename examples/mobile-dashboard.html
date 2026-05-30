@@ -85,26 +85,11 @@
                     </vibe-row>
 
                     <h2 class="h4 mt-5 mb-3">Recent Transactions</h2>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                    <th>Customer</th>
-                                    <th class="text-end">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="i in 5" :key="i">
-                                    <td>Oct 24, 2023</td>
-                                    <td><vibe-badge variant="success" subtle>Paid</vibe-badge></td>
-                                    <td>John Doe</td>
-                                    <td class="text-end fw-bold">$250.00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <vibe-data-table :items="transactions" :columns="txColumns" row-key="id" hover stack>
+                        <template #cell(status)="{ item }">
+                            <vibe-badge variant="success" subtle>{{ item.status }}</vibe-badge>
+                        </template>
+                    </vibe-data-table>
                 </vibe-col>
             </vibe-row>
         </vibe-container>
@@ -132,7 +117,20 @@
                     { text: 'Products', href: '#' },
                     { text: 'Customers', href: '#' }
                 ];
-                return { showSidebar, isMobile, menuItems };
+                const txColumns = [
+                    { key: 'date', label: 'Date', sortable: true },
+                    { key: 'status', label: 'Status' },
+                    { key: 'customer', label: 'Customer', searchable: true },
+                    { key: 'amount', label: 'Amount', sortable: true, class: 'text-end fw-bold' }
+                ];
+                const transactions = [
+                    { id: 1, date: 'Oct 24, 2023', status: 'Paid', customer: 'John Doe', amount: '$250.00' },
+                    { id: 2, date: 'Oct 23, 2023', status: 'Paid', customer: 'Jane Smith', amount: '$120.50' },
+                    { id: 3, date: 'Oct 22, 2023', status: 'Paid', customer: 'Bob Johnson', amount: '$89.99' },
+                    { id: 4, date: 'Oct 21, 2023', status: 'Paid', customer: 'Alice Brown', amount: '$432.00' },
+                    { id: 5, date: 'Oct 20, 2023', status: 'Paid', customer: 'Charlie Wilson', amount: '$15.75' }
+                ];
+                return { showSidebar, isMobile, menuItems, txColumns, transactions };
             }
         }).use(VibeUI.default).mount('#app');
     </script>
