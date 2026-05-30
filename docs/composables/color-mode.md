@@ -93,7 +93,8 @@ const options: { label: string; value: ColorMode }[] = [
     <VibeButton
       v-for="option in options"
       :key="option.value"
-      :variant="colorMode === option.value ? 'primary' : 'outline-secondary'"
+      :variant="colorMode === option.value ? 'primary' : 'secondary'"
+      :outline="colorMode !== option.value"
       @click="setColorMode(option.value)"
     >
       {{ option.label }}
@@ -151,7 +152,7 @@ const { clearColorMode } = useColorMode()
 </script>
 
 <template>
-  <VibeButton variant="outline-secondary" @click="clearColorMode">
+  <VibeButton variant="secondary" outline @click="clearColorMode">
     Use system default
   </VibeButton>
 </template>
