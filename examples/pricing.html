@@ -29,13 +29,15 @@
                     </p>
                 </div>
 
-                <vibe-row row-cols="1" row-cols-md="3" class="mb-3 text-center" :g="4">
+                <vibe-row row-cols="1" row-cols-md="3" class="mb-3 text-center" :gutters="4">
                     <vibe-col v-for="plan in pricingPlans" :key="plan.name">
-                        <vibe-card class="mb-4 rounded-3 shadow-sm" :class="plan.highlighted ? 'border-primary' : ''">
-                            <vibe-card-header class="py-3" :class="plan.highlighted ? 'bg-primary text-white' : ''">
+                        <!-- Raw .card: the variant-colored card-header (bg-primary on the
+                             highlighted plan) isn't expressible through VibeCard's props. -->
+                        <div class="card mb-4 rounded-3 shadow-sm" :class="plan.highlighted ? 'border-primary' : ''">
+                            <div class="card-header py-3" :class="plan.highlighted ? 'bg-primary text-white' : ''">
                                 <h4 class="my-0 fw-normal">{{ plan.name }}</h4>
-                            </vibe-card-header>
-                            <vibe-card-body>
+                            </div>
+                            <div class="card-body">
                                 <h1 class="card-title pricing-card-title">
                                     ${{ plan.price }}<small class="text-muted fw-light">/mo</small>
                                 </h1>
@@ -50,14 +52,15 @@
                                     </li>
                                 </ul>
                                 <vibe-button
-                                    :variant="plan.highlighted ? 'primary' : 'outline-primary'"
+                                    variant="primary"
+                                    :outline="!plan.highlighted"
                                     size="lg"
                                     class="w-100"
                                 >
                                     {{ plan.buttonText }}
                                 </vibe-button>
-                            </vibe-card-body>
-                        </vibe-card>
+                            </div>
+                        </div>
                     </vibe-col>
                 </vibe-row>
 
