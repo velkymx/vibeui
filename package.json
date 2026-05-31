@@ -34,6 +34,7 @@
     "test:coverage": "vitest run --project unit --coverage",
     "test:browser": "vitest run --project browser",
     "test:all": "vitest run",
+    "test:examples": "npm run build && playwright test",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -60,6 +61,7 @@
     "@floating-ui/dom": "^1.7.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/dompurify": "^3.0.5",
     "@vitejs/plugin-vue": "^6.0.4",
     "@vitest/browser": "^4.1.7",
@@ -85,11 +87,11 @@
     "typescript": "$typescript"
   },
   "peerDependencies": {
-    "vue": "^3.5.0",
     "bootstrap": "^5.3.0",
     "bootstrap-icons": "^1.11.0",
     "dompurify": "^3.0.0",
-    "quill": "^2.0.0"
+    "quill": "^2.0.0",
+    "vue": "^3.5.0"
   },
   "peerDependenciesMeta": {
     "bootstrap-icons": {
