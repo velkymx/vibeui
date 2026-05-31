@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - VibeUI Example</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../dist/vibeui.css">
+    <style>
+        .blog-title { font-family: Georgia, 'Times New Roman', serif; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <vibe-container>
+            <!-- Masthead -->
+            <header class="border-bottom py-3 mb-4">
+                <vibe-row class="align-items-center">
+                    <vibe-col :md="4" class="text-md-start text-center">
+                        <a href="#" class="text-muted small text-decoration-none">Subscribe</a>
+                    </vibe-col>
+                    <vibe-col :md="4" class="text-center">
+                        <a href="#" class="blog-title fs-2 fw-bold text-dark text-decoration-none">The Dispatch</a>
+                    </vibe-col>
+                    <vibe-col :md="4" class="text-md-end text-center">
+                        <vibe-button variant="primary" outline size="sm">
+                            <vibe-icon icon="person"></vibe-icon> Sign up
+                        </vibe-button>
+                    </vibe-col>
+                </vibe-row>
+            </header>
+
+            <!-- Category nav -->
+            <vibe-nav :items="categories" class="border-bottom mb-4 justify-content-center flex-nowrap overflow-auto"></vibe-nav>
+
+            <!-- Featured post -->
+            <vibe-card class="text-bg-dark mb-4 border-0">
+                <div class="card-body py-5 px-4">
+                    <h2 class="display-6 fw-bold">Title of a longer featured blog post</h2>
+                    <p class="lead my-3">Multiple lines of text that form the lede, informing new readers quickly and selectively about what's most interesting in this post.</p>
+                    <vibe-button variant="light">Continue reading <vibe-icon icon="arrow-right"></vibe-icon></vibe-button>
+                </div>
+            </vibe-card>
+
+            <!-- Two secondary features -->
+            <vibe-row :gutters="4" class="mb-5">
+                <vibe-col :md="6" v-for="f in featured" :key="f.title">
+                    <vibe-card class="h-100 shadow-sm" :header-class="`text-bg-${f.variant}`">
+                        <template #header>{{ f.category }}</template>
+                        <h4 class="fw-bold">{{ f.title }}</h4>
+                        <div class="text-muted small mb-2">{{ f.date }}</div>
+                        <p class="mb-2">{{ f.excerpt }}</p>
+                        <a href="#" class="text-decoration-none">Continue reading…</a>
+                    </vibe-card>
+                </vibe-col>
+            </vibe-row>
+
+            <vibe-row :gutters="5">
+                <!-- Posts -->
+                <vibe-col :md="8">
+                    <h3 class="border-bottom pb-2 mb-4">From the Firehose</h3>
+
+                    <article class="mb-5" v-for="post in pagedPosts" :key="post.title">
+                        <h2 class="fw-bold">{{ post.title }}</h2>
+                        <div class="text-muted mb-2">
+                            <vibe-badge :variant="post.variant" class="me-2">{{ post.tag }}</vibe-badge>
+                            {{ post.date }} · {{ post.author }}
+                        </div>
+                        <p>{{ post.body }}</p>
+                        <a href="#" class="text-decoration-none">Read more <vibe-icon icon="chevron-right"></vibe-icon></a>
+                    </article>
+
+                    <vibe-pagination
+                        v-model:current-page="page"
+                        :total-pages="totalPages"
+                        :max-visible-pages="5"
+                        class="justify-content-center"
+                    />
+                </vibe-col>
+
+                <!-- Sidebar -->
+                <vibe-col :md="4">
+                    <vibe-card class="bg-body-tertiary border-0 mb-4">
+                        <template #header>About</template>
+                        <p class="mb-0 text-muted">A small magazine-style blog template built entirely from VibeUI components.</p>
+                    </vibe-card>
+
+                    <h4 class="fst-italic">Recent posts</h4>
+                    <vibe-list-group class="mb-4" :items="recent">
+                        <template #item="{ item }">
+                            <div class="d-flex justify-content-between align-items-center w-100">
+                                <span>{{ item.text }}</span>
+                                <small class="text-muted">{{ item.meta }}</small>
+                            </div>
+                        </template>
+                    </vibe-list-group>
+
+                    <h4 class="fst-italic">Archives</h4>
+                    <vibe-nav vertical :items="archives" class="mb-4"></vibe-nav>
+
+                    <h4 class="fst-italic">Elsewhere</h4>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="text-dark"><vibe-icon icon="github" font-size="1.5rem"></vibe-icon></a>
+                        <a href="#" class="text-dark"><vibe-icon icon="twitter" font-size="1.5rem"></vibe-icon></a>
+                        <a href="#" class="text-dark"><vibe-icon icon="facebook" font-size="1.5rem"></vibe-icon></a>
+                    </div>
+                </vibe-col>
+            </vibe-row>
+        </vibe-container>
+
+        <footer class="bg-body-tertiary py-4 mt-5 text-center text-muted">
+            <small>Built with VibeUI by <a href="https://technosorcery.com" class="text-decoration-none">TechnoSorcery.com</a></small>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../dist/vibeui.umd.js"></script>
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const page = ref(1);
+                const perPage = 3;
+
+                const categories = [
+                    { text: 'World', href: '#', active: true },
+                    { text: 'Tech', href: '#' },
+                    { text: 'Design', href: '#' },
+                    { text: 'Culture', href: '#' },
+                    { text: 'Business', href: '#' },
+                    { text: 'Science', href: '#' }
+                ];
+                const featured = [
+                    { category: 'World', variant: 'primary', title: 'Featured post', date: 'Nov 12', excerpt: 'This is a wider card with supporting text below as a natural lead-in.' },
+                    { category: 'Design', variant: 'success', title: 'Post title', date: 'Nov 11', excerpt: 'This is a wider card with supporting text below as a natural lead-in.' }
+                ];
+                const posts = Array.from({ length: 7 }, (_, i) => ({
+                    title: `Sample blog post ${i + 1}`,
+                    tag: ['Tech', 'Design', 'World'][i % 3],
+                    variant: ['info', 'success', 'primary'][i % 3],
+                    date: `Nov ${12 - i}, 2024`,
+                    author: 'Jane Doe',
+                    body: 'This blog post shows a few different types of content that work with a default layout — body copy, links, and the occasional inline emphasis.'
+                }));
+                const totalPages = computed(() => Math.ceil(posts.length / perPage));
+                const pagedPosts = computed(() => posts.slice((page.value - 1) * perPage, page.value * perPage));
+
+                const recent = [
+                    { text: 'Example blog post title', meta: 'Nov 12' },
+                    { text: 'This is another blog post', meta: 'Nov 11' },
+                    { text: 'Longer blog post title here', meta: 'Nov 9' }
+                ];
+                const archives = Array.from({ length: 5 }, (_, i) => ({
+                    text: ['March', 'February', 'January', 'December', 'November'][i] + ' 2024',
+                    href: '#'
+                }));
+
+                return { categories, featured, posts, page, totalPages, pagedPosts, recent, archives };
+            }
+        }).use(VibeUI.default).mount('#app');
+    </script>
+</body>
+</html>
