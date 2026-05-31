@@ -261,7 +261,7 @@
               </vibe-card>
               <vibe-card class="smoke-card">
                 <template #header>VibeCarousel</template>
-                <vibe-carousel :slides="carouselSlides" :interval="3000" />
+                <vibe-carousel :items="carouselSlides" :interval="3000" />
               </vibe-card>
               <vibe-card class="smoke-card">
                 <template #header>VibeDropdown</template>
@@ -650,9 +650,9 @@
             collapseOpen: ref(false),
             // carousel
             carouselSlides: [
-              { caption: 'Slide 1', background: '#0d6efd' },
-              { caption: 'Slide 2', background: '#198754' },
-              { caption: 'Slide 3', background: '#dc3545' }
+              { src: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800', caption: 'Mountains', captionText: 'First slide' },
+              { src: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800', caption: 'Lake', captionText: 'Second slide' },
+              { src: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800', caption: 'Valley', captionText: 'Third slide' }
             ],
             // dropdown
             dropdownItems: [
