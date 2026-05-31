@@ -31,7 +31,8 @@ vibeui/
 │   │   ├── VibeButton.vue          # Renders as <button>, <a>, or <router-link>; variant="link"
 │   │   ├── VibeBadge.vue
 │   │   ├── VibeButtonGroup.vue
-│   │   ├── VibeCard.vue
+│   │   ├── VibeCard.vue              # v1.0: headerClass/bodyClass/footerClass + #image slot
+│   │   ├── VibeHero.vue              # v1.0: hero/banner section (variant/bordered/bgImage/gradient)
 │   │   ├── VibeCloseButton.vue
 │   │   ├── VibeSpinner.vue
 │   │   ├── VibePlaceholder.vue
@@ -165,6 +166,7 @@ app.use(VibeUI)
 // Individual components
 import {
   VibeButton, VibeAlert, VibeModal, VibeOffcanvas,
+  VibeCard, VibeHero,
   VibeFileInput, VibeSkeleton, VibeDatePicker, VibeAutocomplete,
   VibeTabs, VibeTab, VibeStepper,
   VibeSortable, VibeDraggable, VibeDroppable,
