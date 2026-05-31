@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky footer navbar - VibeUI Example</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../dist/vibeui.css">
+    <style>
+        /* Offset the fixed-top navbar so content isn't hidden behind it. */
+        body { padding-top: 3.5rem; }
+    </style>
+
+    <!-- Navbar collapse uses Bootstrap JS via `import('bootstrap')`; map the bare specifier. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "bootstrap": "https://esm.sh/bootstrap@5.3.0"
+        }
+      }
+    </script>
+</head>
+<body>
+    <div id="app" class="d-flex flex-column min-vh-100">
+        <vibe-navbar variant="dark" expand="md" position="fixed-top">
+            <vibe-navbar-brand href="#">
+                <vibe-icon icon="layers-fill" class="me-2"></vibe-icon>
+                Sticky
+            </vibe-navbar-brand>
+            <vibe-navbar-toggle target="nav1"></vibe-navbar-toggle>
+            <vibe-collapse id="nav1" is-nav>
+                <vibe-navbar-nav :items="navItems" class="ms-auto"></vibe-navbar-nav>
+            </vibe-collapse>
+        </vibe-navbar>
+
+        <main class="flex-grow-1">
+            <vibe-container class="py-5 text-center">
+                <h1 class="h3">Sticky footer with a fixed navbar</h1>
+                <p class="text-muted">A fixed top navbar plus a footer pinned to the bottom of the viewport.</p>
+                <vibe-button variant="primary">Get started</vibe-button>
+            </vibe-container>
+        </main>
+
+        <footer class="mt-auto py-3 bg-body-tertiary border-top">
+            <vibe-container class="text-center text-muted">
+                <small>Built with VibeUI by <a href="https://technosorcery.com" class="text-decoration-none">TechnoSorcery.com</a></small>
+            </vibe-container>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../dist/vibeui.umd.js"></script>
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    navItems: [
+                        { text: 'Home', href: '#', active: true },
+                        { text: 'About', href: '#' },
+                        { text: 'Contact', href: '#' }
+                    ]
+                }
+            }
+        }).use(VibeUI.default).mount('#app');
+    </script>
+</body>
+</html>
