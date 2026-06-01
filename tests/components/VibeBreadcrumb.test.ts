@@ -105,4 +105,29 @@ describe('VibeBreadcrumb', () => {
 
     expect(wrapper.find('strong').exists()).toBe(true)
   })
+
+  // Security: safeHref must strip javascript: URLs from breadcrumb links.
+  it('strips javascript: URL from breadcrumb item href', () => {
+    const wrapper = mount(VibeBreadcrumb, {
+      props: {
+        items: [
+          { text: 'Home', href: 'javascript:alert(1)' },
+          { text: 'Current', active: true }
+        ]
+      }
+    })
+    expect(wrapper.find('a').exists()).toBe(false)
+  })
+
+  it('preserves safe /path href in breadcrumb item', () => {
+    const wrapper = mount(VibeBreadcrumb, {
+      props: {
+        items: [
+          { text: 'Home', href: '/home' },
+          { text: 'Current', active: true }
+        ]
+      }
+    })
+    expect(wrapper.find('a').attributes('href')).toBe('/home')
+  })
 })

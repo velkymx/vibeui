@@ -23,6 +23,7 @@ Hidden sidebar for navigation or additional content.
 | `shown` | - | Emitted when offcanvas is fully shown |
 | `hide` | - | Emitted when offcanvas starts hiding |
 | `hidden` | - | Emitted when offcanvas is fully hidden |
+| `component-error` | `ComponentError` | Emitted if Bootstrap JS fails to load |
 
 ## Slots
 
@@ -70,7 +71,9 @@ const showOffcanvas = ref(false)
 
 **Teleportation:** By default, this component teleports its DOM elements to the `<body>` to avoid stacking context issues. You can customize this with the `teleport` prop.
 
-**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
+**Focus Return (WCAG 2.4.3):** When the offcanvas closes, focus is automatically returned to the element that opened it, including for programmatically opened panels.
+
+**Escape Hatch:** The exposed `_unsafe_bsInstance` template ref gives raw access to the underlying Bootstrap Offcanvas instance. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly **will** break the component. Prefer `v-model` and the exposed `show()` / `hide()` methods.
 
 ## Mobile Optimization
 

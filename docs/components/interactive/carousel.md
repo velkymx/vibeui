@@ -38,8 +38,9 @@ interface CarouselItem {
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `update:modelValue` | `Number` | Emitted when the active slide changes |
-| `slide` | - | Emitted when slide transition starts |
-| `slid` | - | Emitted when slide transition completes |
+| `slide` | `Event` | Emitted when slide transition starts (Bootstrap `slide.bs.carousel`) |
+| `slid` | `Event` | Emitted when slide transition completes (Bootstrap `slid.bs.carousel`) |
+| `component-error` | `ComponentError` | Emitted if Bootstrap JS fails to load |
 
 ## Slots
 
@@ -66,7 +67,10 @@ interface CarouselItem {
 <script setup>
 import { ref } from 'vue'
 const currentSlide = ref(0)
-const carouselItems = [...]
+const carouselItems = [
+  { src: '/img/slide-1.jpg', caption: 'First slide', captionText: 'Intro copy' },
+  { src: '/img/slide-2.jpg', caption: 'Second slide' }
+]
 </script>
 ```
 
@@ -76,13 +80,24 @@ const carouselItems = [...]
 <template>
   <VibeCarousel :items="carouselItems" />
 </template>
+
+<script setup>
+const carouselItems = [
+  { src: '/img/slide-1.jpg', alt: 'A scenic view' },
+  { src: '/img/slide-2.jpg', alt: 'A city street' }
+]
+</script>
 ```
 
 ## Important Notes
 
 **Automatic Initialization:** This component automatically initializes Bootstrap's Carousel functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
-**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
+**`item.src` is required:** Every slide is an image slide — each item must provide a `src`. Captions and alt text are optional (an accessible fallback `alt` is generated from `alt` → `caption` → `captionText` → `"Carousel slide N"`).
+
+**Empty items:** An empty `items` array is handled gracefully — the carousel simply renders no slides.
+
+**Escape Hatch:** The exposed `_unsafe_bsInstance` template ref gives raw access to the underlying Bootstrap Carousel instance. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly **will** break the component. To re-initialize after manual changes, call the exposed `refresh()` method instead.
 
 ## Bootstrap CSS Classes
 

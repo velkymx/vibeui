@@ -11,12 +11,6 @@ Group buttons together in a single line or vertically.
 | `role` | `String` | `'group'` | ARIA role attribute |
 | `ariaLabel` | `String` | `undefined` | ARIA label for accessibility |
 
-## Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `component-error` | `Object` | Emitted when an error occurs |
-
 ## Slots
 
 | Slot | Description |

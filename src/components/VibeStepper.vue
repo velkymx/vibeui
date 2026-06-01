@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type PropType } from 'vue'
+import { computed, ref, onBeforeUnmount, onDeactivated, type PropType } from 'vue'
 
 export interface StepperStep {
   label: string
@@ -25,6 +25,7 @@ const props = defineProps({
 const emit = defineEmits<{
   (e: 'update:modelValue', index: number): void
   (e: 'finish'): void
+  (e: 'component-error', error: unknown): void
 }>()
 
 const stepperClass = computed(() => {
@@ -34,6 +35,10 @@ const stepperClass = computed(() => {
 })
 
 const transitioning = ref(false)
+
+let isUnmounted = false
+onBeforeUnmount(() => { isUnmounted = true })
+onDeactivated(() => { isUnmounted = true })
 
 const isLast = computed(() => props.modelValue >= props.steps.length - 1)
 const isFirst = computed(() => props.modelValue <= 0)
@@ -58,23 +63,29 @@ const runGuard = async (
   direction: 'next' | 'prev'
 ): Promise<boolean> => {
   if (!guard) return true
-  const result = guard(props.modelValue, direction)
-  return result instanceof Promise ? await result : result
+  try {
+    const result = guard(props.modelValue, direction)
+    return result instanceof Promise ? await result : result
+  } catch (err) {
+    emit('component-error', err)
+    return false
+  }
 }
 
 const goNext = async () => {
-  if (transitioning.value) return
-  if (isLast.value) {
-    emit('finish')
-    return
-  }
+  if (!props.steps.length || transitioning.value) return
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforeNext, 'next')
+    if (isUnmounted) return
     if (!allowed) return
-    emit('update:modelValue', props.modelValue + 1)
+    if (isLast.value) {
+      emit('finish')
+    } else {
+      emit('update:modelValue', props.modelValue + 1)
+    }
   } finally {
-    transitioning.value = false
+    if (!isUnmounted) transitioning.value = false
   }
 }
 
@@ -84,13 +95,16 @@ const goPrev = async () => {
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforePrev, 'prev')
+    if (isUnmounted) return
     if (!allowed) return
-    emit('update:modelValue', props.modelValue - 1)
+    emit('update:modelValue', Math.max(0, props.modelValue - 1))
   } finally {
-    transitioning.value = false
+    if (!isUnmounted) transitioning.value = false
   }
 }
 
+// jumpTo runs ONE guard (beforeNext or beforePrev) regardless of how many steps
+// are skipped. Intermediate-step guards are intentionally not run on a jump.
 const jumpTo = async (idx: number) => {
   if (transitioning.value) return
   if (!canJumpTo(idx)) return
@@ -100,14 +114,19 @@ const jumpTo = async (idx: number) => {
     const direction: 'next' | 'prev' = idx > props.modelValue ? 'next' : 'prev'
     const guard = direction === 'next' ? props.beforeNext : props.beforePrev
     const allowed = await runGuard(guard, direction)
+    if (isUnmounted) return
     if (!allowed) return
     emit('update:modelValue', idx)
   } finally {
-    transitioning.value = false
+    if (!isUnmounted) transitioning.value = false
   }
 }
 
-const activeStep = computed(() => props.steps[props.modelValue])
+const activeStep = computed(() => {
+  if (!props.steps.length) return undefined
+  const idx = Math.max(0, Math.min(props.modelValue, props.steps.length - 1))
+  return props.steps[idx]
+})
 </script>
 
 <template>
@@ -115,11 +134,13 @@ const activeStep = computed(() => props.steps[props.modelValue])
     <ol class="vibe-stepper-header">
       <li
         v-for="(step, idx) in steps"
-        :key="idx"
+        :key="step.label ?? idx"
         :class="stepClass(idx)"
         :tabindex="canJumpTo(idx) || idx === modelValue ? 0 : -1"
         :aria-disabled="(canJumpTo(idx) || idx === modelValue) ? undefined : 'true'"
         @click="jumpTo(idx)"
+        @keydown.enter.prevent="jumpTo(idx)"
+        @keydown.space.prevent="jumpTo(idx)"
       >
         <span class="vibe-stepper-marker">
           <slot name="marker" :index="idx" :step="step" :active="idx === modelValue">

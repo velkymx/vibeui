@@ -250,4 +250,42 @@ describe('VibeFormSpinbutton', () => {
 
     expect(wrapper.find('.input-group').classes()).toContain('input-group-vertical')
   })
+
+  describe('invalid step handling', () => {
+    it('coerces step=NaN to 1 so increment does not emit NaN', async () => {
+      const wrapper = mount(VibeFormSpinbutton, {
+        props: { id: 'sb', modelValue: 5, step: NaN }
+      })
+
+      await wrapper.find('button[aria-label="Increment"]').trigger('click')
+
+      const emitted = wrapper.emitted('update:modelValue') as number[][]
+      expect(emitted).toBeTruthy()
+      const value = emitted[emitted.length - 1][0]
+      expect(Number.isNaN(value)).toBe(false)
+      expect(value).toBe(6) // 5 + safeStep(1)
+    })
+
+    it('coerces step=0 to 1 so increment advances by 1', async () => {
+      const wrapper = mount(VibeFormSpinbutton, {
+        props: { id: 'sb', modelValue: 2, step: 0 }
+      })
+
+      await wrapper.find('button[aria-label="Increment"]').trigger('click')
+
+      const emitted = wrapper.emitted('update:modelValue') as number[][]
+      expect(emitted[emitted.length - 1][0]).toBe(3)
+    })
+
+    it('coerces step=0 to 1 on decrement', async () => {
+      const wrapper = mount(VibeFormSpinbutton, {
+        props: { id: 'sb', modelValue: 2, step: 0 }
+      })
+
+      await wrapper.find('button[aria-label="Decrement"]').trigger('click')
+
+      const emitted = wrapper.emitted('update:modelValue') as number[][]
+      expect(emitted[emitted.length - 1][0]).toBe(1)
+    })
+  })
 })

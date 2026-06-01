@@ -101,4 +101,38 @@ describe('VibeSkeleton', () => {
       expect(el.getAttribute('role')).toBe('status')
     })
   })
+
+  describe('attribute fallthrough', () => {
+    // Multi-root (text fragment) and single-root variants must both forward
+    // consumer-supplied attrs/class instead of silently dropping them.
+    it('forwards class and data-* to the first line of the text variant', () => {
+      const wrapper = mount(VibeSkeleton, {
+        props: { variant: 'text', lines: 3 },
+        attrs: { class: 'my-skeleton', 'data-testid': 'sk' }
+      })
+      const first = wrapper.findAll('.vibe-skeleton-text')[0]
+      expect(first.classes()).toContain('my-skeleton')
+      expect(first.attributes('data-testid')).toBe('sk')
+    })
+
+    it('forwards class and data-* to the rect variant root', () => {
+      const wrapper = mount(VibeSkeleton, {
+        props: { variant: 'rect' },
+        attrs: { class: 'my-skeleton', 'data-testid': 'sk' }
+      })
+      const root = wrapper.find('.vibe-skeleton-rect')
+      expect(root.classes()).toContain('my-skeleton')
+      expect(root.attributes('data-testid')).toBe('sk')
+    })
+
+    it('forwards class and data-* to the card variant root', () => {
+      const wrapper = mount(VibeSkeleton, {
+        props: { variant: 'card' },
+        attrs: { class: 'my-skeleton', 'data-testid': 'sk' }
+      })
+      const root = wrapper.find('.vibe-skeleton-card')
+      expect(root.classes()).toContain('my-skeleton')
+      expect(root.attributes('data-testid')).toBe('sk')
+    })
+  })
 })

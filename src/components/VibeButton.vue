@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ButtonVariant, Size, ButtonType } from '../types'
+import type { ButtonVariant, Size, ButtonType, ComponentError } from '../types'
 
 const props = defineProps({
   variant: { type: String as () => ButtonVariant, default: 'primary' },
@@ -14,11 +14,15 @@ const props = defineProps({
   focusRing: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'click', event: MouseEvent): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const tag = computed(() => {
   if (props.href) return 'a'
-  if (props.to) return 'router-link'
+  // When disabled, render a span instead of router-link to block internal navigation
+  if (props.to) return props.disabled ? 'span' : 'router-link'
   return 'button'
 })
 
@@ -36,14 +40,18 @@ const buttonClass = computed(() => {
   if (props.size) classes.push(`btn-${props.size}`)
   if (props.active) classes.push('active')
   if (props.focusRing) classes.push('focus-ring')
+  // Bootstrap uses the 'disabled' CSS class for non-button elements
+  if (props.disabled && tag.value !== 'button') classes.push('disabled')
 
   return classes.join(' ')
 })
 
-const handleClick = (event: Event) => {
-  if (!props.disabled) {
-    emit('click', event)
+const handleClick = (event: MouseEvent) => {
+  if (props.disabled) {
+    event.preventDefault()
+    return
   }
+  emit('click', event)
 }
 </script>
 
@@ -53,9 +61,9 @@ const handleClick = (event: Event) => {
     :class="buttonClass"
     :type="href || to ? undefined : type"
     :href="href"
-    :to="to"
-    :disabled="disabled"
-    :aria-disabled="disabled"
+    :to="to || undefined"
+    :disabled="tag === 'button' ? disabled : undefined"
+    :aria-disabled="disabled || undefined"
     @click="handleClick"
   >
     <slot />

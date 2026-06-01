@@ -1,47 +1,75 @@
 # VibeFormSwitch
 
-Toggle switch component for boolean values.
-
-## Basic Usage
-
-```vue
-<script setup lang="ts">
-import { ref } from 'vue'
-const isEnabled = ref(false)
-</script>
-
-<template>
-  <VibeFormSwitch
-    v-model="isEnabled"
-    label="Enable notifications"
-  />
-</template>
-```
+Toggle switch for boolean values, rendered as an accessible `role="switch"` control.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `modelValue` | `Boolean` | `false` | The toggle state (v-model) |
-| `id` | `String` | `Auto-generated` | Unique identifier |
-| `label` | `String` | `undefined` | Label text |
-| `disabled` | `Boolean` | `false` | Disable the switch |
-| `required` | `Boolean` | `false` | Mark as required |
-| `inline` | `Boolean` | `false` | Display inline |
-| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Validation state |
-| `validationMessage` | `String` | `undefined` | Validation message |
-| `validateOn` | `'change' \| 'blur'` | `'change'` | When to validate |
-| `helpText` | `String` | `undefined` | Help text |
+| `modelValue` | `boolean` | `false` | The toggle state (v-model). |
+| `id` | `string` | auto-generated | Element id. Auto-generated, or inherited from a parent `VibeFormGroup`. |
+| `label` | `string` | `undefined` | Switch label text. |
+| `disabled` | `boolean` | `false` | Disable the switch. |
+| `required` | `boolean` | `false` | Mark as required. |
+| `inline` | `boolean` | `false` | Render inline (`.form-check-inline`). |
+| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Visual validation state. |
+| `validationMessage` | `string` | `undefined` | Feedback message for the current state. |
+| `validationRules` | `ValidationRule[] \| ValidatorFunction` | `undefined` | Rules carried for use with a validation composable. |
+| `validateOn` | `'change' \| 'blur'` | `'change'` | When the `validate` event fires. |
+| `helpText` | `string` | `undefined` | Help text below the switch. |
+
+## Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `update:modelValue` | `boolean` | Emitted on toggle. |
+| `change` | `Event` | Native change event. |
+| `blur` | `FocusEvent` | Emitted on blur. |
+| `focus` | `FocusEvent` | Emitted on focus. |
+| `validate` | — | Emitted when the `validateOn` trigger occurs. |
+
+## Slots
+
+None.
+
+## Usage
+
+### Standalone
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+const notifications = ref(true)
+</script>
+
+<template>
+  <VibeFormSwitch v-model="notifications" label="Email notifications" />
+</template>
+```
+
+### Inside a VibeFormGroup
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+const darkMode = ref(false)
+</script>
+
+<template>
+  <VibeFormGroup label="Appearance">
+    <VibeFormSwitch v-model="darkMode" label="Dark mode" />
+  </VibeFormGroup>
+</template>
+```
 
 ## Important Notes
 
-**Automatic ID Generation:** This component automatically generates a unique ID if one is not provided.
-
-**Automatic ID Injection:** When used inside a `VibeFormGroup`, this component will automatically inherit the group's ID to ensure proper label association and accessibility.
+- **Accessibility:** the underlying input is a checkbox with `role="switch"` and Bootstrap's `.form-switch` styling.
+- **Group linking:** wrapped in a `VibeFormGroup`, the switch consumes the group id so the label and feedback link automatically.
 
 ## Bootstrap CSS Classes
 
 - `.form-check`, `.form-switch`
-- `.form-check-input`
-- `.form-check-label`
+- `.form-check-input`, `.form-check-label`
+- `.form-check-inline`
 - `.is-valid`, `.is-invalid`

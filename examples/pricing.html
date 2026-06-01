@@ -29,34 +29,37 @@
                     </p>
                 </div>
 
-                <vibe-row row-cols="1" row-cols-md="3" class="mb-3 text-center" :g="4">
+                <vibe-row row-cols="1" row-cols-md="3" class="mb-3 text-center" :gutters="4">
                     <vibe-col v-for="plan in pricingPlans" :key="plan.name">
-                        <vibe-card class="mb-4 rounded-3 shadow-sm" :class="plan.highlighted ? 'border-primary' : ''">
-                            <vibe-card-header class="py-3" :class="plan.highlighted ? 'bg-primary text-white' : ''">
+                        <vibe-card
+                            class="mb-4 rounded-3 shadow-sm"
+                            :class="plan.highlighted ? 'border-primary' : ''"
+                            :header-class="['py-3', plan.highlighted ? 'bg-primary text-white' : '']"
+                        >
+                            <template #header>
                                 <h4 class="my-0 fw-normal">{{ plan.name }}</h4>
-                            </vibe-card-header>
-                            <vibe-card-body>
-                                <h1 class="card-title pricing-card-title">
-                                    ${{ plan.price }}<small class="text-muted fw-light">/mo</small>
-                                </h1>
-                                <ul class="list-unstyled mt-3 mb-4">
-                                    <li v-for="(feature, index) in plan.features" :key="index" class="mb-2">
-                                        <vibe-icon
-                                            :icon="feature.included ? 'check-circle' : 'x-circle'"
-                                            :class="feature.included ? 'text-success' : 'text-muted'"
-                                            class="me-2"
-                                        ></vibe-icon>
-                                        {{ feature.text }}
-                                    </li>
-                                </ul>
-                                <vibe-button
-                                    :variant="plan.highlighted ? 'primary' : 'outline-primary'"
-                                    size="lg"
-                                    class="w-100"
-                                >
-                                    {{ plan.buttonText }}
-                                </vibe-button>
-                            </vibe-card-body>
+                            </template>
+                            <h1 class="card-title pricing-card-title">
+                                ${{ plan.price }}<small class="text-muted fw-light">/mo</small>
+                            </h1>
+                            <ul class="list-unstyled mt-3 mb-4">
+                                <li v-for="(feature, index) in plan.features" :key="index" class="mb-2">
+                                    <vibe-icon
+                                        :icon="feature.included ? 'check-circle' : 'x-circle'"
+                                        :class="feature.included ? 'text-success' : 'text-muted'"
+                                        class="me-2"
+                                    ></vibe-icon>
+                                    {{ feature.text }}
+                                </li>
+                            </ul>
+                            <vibe-button
+                                variant="primary"
+                                :outline="!plan.highlighted"
+                                size="lg"
+                                class="w-100"
+                            >
+                                {{ plan.buttonText }}
+                            </vibe-button>
                         </vibe-card>
                     </vibe-col>
                 </vibe-row>

@@ -6,7 +6,7 @@ Data-driven progress bar component supporting single or multiple bars.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `height` | `String` | `undefined` | Custom height (e.g., `'20px'`, `'2rem'`) |
+| `height` | `String` | `undefined` | Custom height (e.g., `'20px'`, `'2rem'`). Validated as a CSS length; invalid values are ignored |
 | `bars` | `ProgressBar[]` | Required | Array of progress bars to display |
 
 ### ProgressBar Interface
@@ -172,6 +172,12 @@ const tasks = ref([
   </div>
 </template>
 ```
+
+## Important Notes
+
+**Validated height:** The `height` prop is validated as a CSS length string before being applied (CSS injection defense). Invalid values are ignored and the default Bootstrap height is used.
+
+**Safe values:** Each bar's percentage is clamped to 0–100. A `value` of `NaN` (or a non-finite number) renders safely as 0%. A `max` of `0` or less also renders as 0%.
 
 ## Bootstrap CSS Classes
 

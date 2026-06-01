@@ -10,8 +10,6 @@ const props = defineProps({
   tag: { type: String, default: 'div' }
 })
 
-const emit = defineEmits(['component-error'])
-
 const spinnerClass = computed(() => {
   const classes = [`spinner-${props.type}`]
   if (props.variant) classes.push(`text-${props.variant}`)

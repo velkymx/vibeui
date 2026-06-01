@@ -25,7 +25,6 @@ const onDragStart = (event: DragEvent) => {
   setActiveDrag(props.payload, props.group)
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('application/vibe-group', props.group)
   }
   emit('dragstart', { payload: props.payload, group: props.group, event })
 }

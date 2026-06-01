@@ -33,6 +33,7 @@ interface StepperStep {
 |-------|---------|-------------|
 | `update:modelValue` | `Number` | Active step changed |
 | `finish` | — | Emitted when next is clicked on the last step |
+| `component-error` | `unknown` | Emitted if a `beforeNext` / `beforePrev` guard throws |
 
 ### Slots
 

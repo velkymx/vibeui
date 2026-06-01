@@ -1,6 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
-import type { DataTableColumn } from '../types'
+import { ref, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
+import type { DataTableColumn, ComponentError } from '../types'
+import { safeCssObject } from '../utils/safeCss'
 
 const props = defineProps({
   // Data
@@ -43,7 +44,16 @@ const perPage = defineModel<number>('perPage', { default: 10 })
 const sortBy = defineModel<string | undefined>('sortBy', { default: undefined })
 const sortDesc = defineModel<boolean>('sortDesc', { default: false })
 
-const emit = defineEmits(['row-clicked', 'component-error'])
+const emit = defineEmits<{
+  (e: 'row-clicked', item: T, globalIndex: number): void
+  (e: 'component-error', error: ComponentError): void
+}>()
+
+const _instance = getCurrentInstance()
+const isRowClickable = computed(() => {
+  const p = _instance?.vnode.props
+  return typeof p?.onRowClicked === 'function' || typeof p?.['onRow-clicked'] === 'function'
+})
 
 // Local state for search
 const searchQuery = ref('')
@@ -71,8 +81,10 @@ const getRowKey = (item: T, index: number): string | number => {
     )
   }
 
-  // Fallback to index - not ideal but avoids expensive JSON.stringify
-  return index
+  // Fallback: use a globally unique index by combining page offset + local index.
+  // Page-local index alone causes duplicate Vue keys across pages (page 1 and page 2
+  // both have indices 0..perPage-1), which makes Vue patch wrong DOM rows.
+  return `__row_${(startRow.value - 1) + index}`
 }
 
 // Debounced search with proper cleanup
@@ -185,7 +197,7 @@ const paginatedItems = computed(() => {
 // Pagination info
 const totalRows = computed(() => props.items.length)
 const totalFilteredRows = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.ceil(totalFilteredRows.value / perPage.value))
+const totalPages = computed(() => Math.ceil(totalFilteredRows.value / Math.max(1, perPage.value)))
 const startRow = computed(() => {
   if (totalFilteredRows.value === 0) return 0
   return (currentPage.value - 1) * perPage.value + 1
@@ -204,6 +216,16 @@ const infoString = computed(() => {
     .replace('{end}', String(endRow.value))
     .replace('{total}', String(totalFilteredRows.value))
     .replace('{totalRows}', String(totalRows.value))
+})
+
+const visiblePages = computed(() => {
+  const lo = currentPage.value - 2
+  const hi = currentPage.value + 2
+  const pages: number[] = []
+  for (let p = Math.max(1, lo); p <= Math.min(totalPages.value, hi); p++) {
+    pages.push(p)
+  }
+  return pages
 })
 
 // Table classes
@@ -231,6 +253,12 @@ const handleSort = (column: DataTableColumn<T>) => {
   }
 }
 
+watch(totalPages, (newTotal) => {
+  if (newTotal > 0 && currentPage.value > newTotal) {
+    currentPage.value = newTotal
+  }
+})
+
 const handlePageChange = (page: number) => {
   if (page < 1 || page > totalPages.value) return
   currentPage.value = page
@@ -241,7 +269,7 @@ const handlePerPageChange = () => {
 }
 
 const handleRowClick = (item: T, index: number) => {
-  emit('row-clicked', item, index)
+  emit('row-clicked', item, (startRow.value - 1) + index)
 }
 
 const getCellValue = (item: T, column: DataTableColumn<T>) => {
@@ -252,19 +280,41 @@ const getCellValue = (item: T, column: DataTableColumn<T>) => {
   return value
 }
 
-const getSortIcon = (column: DataTableColumn<T>) => {
-  if (!props.sortable || column.sortable === false) return ''
-  if (sortBy.value !== column.key) return '⇅'
-  return sortDesc.value ? '↓' : '↑'
-}
-
-const getThStyle = (column: DataTableColumn<T>) => {
-  const style = { ...column.thStyle }
-  if (props.sortable && column.sortable !== false) {
-    style.cursor = 'pointer'
+// Precompute sort icons once per sort-state/columns change instead of calling a function
+// per header cell on every render. Keyed by column (consistent with the style maps).
+const sortIconMap = computed(() => {
+  const m = new Map<DataTableColumn<T>, string>()
+  for (const column of props.columns) {
+    if (!props.sortable || column.sortable === false) {
+      m.set(column, '')
+    } else if (sortBy.value !== column.key) {
+      m.set(column, '⇅')
+    } else {
+      m.set(column, sortDesc.value ? '↓' : '↑')
+    }
   }
-  return style
-}
+  return m
+})
+
+// Precompute sanitized per-column styles once per columns/sortable change. Returning a
+// stable object reference per column lets Vue's :style (compared by reference) skip DOM
+// patching when nothing changed, instead of allocating a fresh object every render/cell.
+// safeCssObject also filters consumer-supplied styles to an allowlist (CSS-injection defense).
+const thStyleMap = computed(() => {
+  const m = new Map<DataTableColumn<T>, Record<string, string>>()
+  for (const column of props.columns) {
+    const style = safeCssObject(column.thStyle)
+    if (props.sortable && column.sortable !== false) style.cursor = 'pointer'
+    m.set(column, style)
+  }
+  return m
+})
+
+const tdStyleMap = computed(() => {
+  const m = new Map<DataTableColumn<T>, Record<string, string>>()
+  for (const column of props.columns) m.set(column, safeCssObject(column.tdStyle))
+  return m
+})
 </script>
 
 <template>
@@ -306,12 +356,12 @@ const getThStyle = (column: DataTableColumn<T>) => {
               v-for="column in columns"
               :key="column.key"
               :class="column.headerClass"
-              :style="getThStyle(column)"
+              :style="thStyleMap.get(column)"
               @click="handleSort(column)"
             >
               {{ column.label }}
               <span v-if="sortable && column.sortable !== false" class="ms-1">
-                {{ getSortIcon(column) }}
+                {{ sortIconMap.get(column) }}
               </span>
             </th>
           </tr>
@@ -320,14 +370,14 @@ const getThStyle = (column: DataTableColumn<T>) => {
           <tr
             v-for="(item, index) in paginatedItems"
             :key="getRowKey(item, index)"
+            :style="isRowClickable ? { cursor: 'pointer' } : undefined"
             @click="handleRowClick(item, index)"
-            :style="{ cursor: 'pointer' }"
           >
             <td
               v-for="column in columns"
               :key="column.key"
               :class="column.class"
-              :style="column.tdStyle"
+              :style="tdStyleMap.get(column)"
               :data-label="column.label"
             >
               <slot :name="`cell(${column.key})`" :item="item" :value="item[column.key]" :index="index">
@@ -355,14 +405,14 @@ const getThStyle = (column: DataTableColumn<T>) => {
         <nav>
           <ul class="pagination justify-content-md-end mb-0">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(currentPage - 1)">
+              <button type="button" class="page-link" @click="handlePageChange(currentPage - 1)">
                 Previous
-              </a>
+              </button>
             </li>
 
             <!-- First page -->
             <li v-if="currentPage > 3" class="page-item">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(1)">1</a>
+              <button type="button" class="page-link" @click="handlePageChange(1)">1</button>
             </li>
             <li v-if="currentPage > 4" class="page-item disabled">
               <span class="page-link">...</span>
@@ -370,16 +420,14 @@ const getThStyle = (column: DataTableColumn<T>) => {
 
             <!-- Page numbers around current page -->
             <li
-              v-for="page in Array.from({ length: totalPages }, (_, i) => i + 1).filter(
-                p => p >= currentPage - 2 && p <= currentPage + 2
-              )"
+              v-for="page in visiblePages"
               :key="page"
               class="page-item"
               :class="{ active: page === currentPage }"
             >
-              <a class="page-link" href="#" @click.prevent="handlePageChange(page)">
+              <button type="button" class="page-link" @click="handlePageChange(page)">
                 {{ page }}
-              </a>
+              </button>
             </li>
 
             <!-- Last page -->
@@ -387,15 +435,15 @@ const getThStyle = (column: DataTableColumn<T>) => {
               <span class="page-link">...</span>
             </li>
             <li v-if="currentPage < totalPages - 2" class="page-item">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(totalPages)">
+              <button type="button" class="page-link" @click="handlePageChange(totalPages)">
                 {{ totalPages }}
-              </a>
+              </button>
             </li>
 
             <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-              <a class="page-link" href="#" @click.prevent="handlePageChange(currentPage + 1)">
+              <button type="button" class="page-link" @click="handlePageChange(currentPage + 1)">
                 Next
-              </a>
+              </button>
             </li>
           </ul>
         </nav>

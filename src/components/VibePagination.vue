@@ -1,18 +1,32 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Size } from '../types'
+import type { Size, ComponentError } from '../types'
 
 const props = defineProps({
   size: { type: String as () => Size, default: undefined },
   ariaLabel: { type: String, default: 'Pagination' },
   totalPages: { type: Number, required: true },
-  currentPage: { type: Number, default: 1 },
+  currentPage: {
+    type: Number,
+    default: 1,
+    validator: (v: number) => {
+      if (import.meta.env.DEV && (!Number.isInteger(v) || v < 1)) {
+        console.warn(`[VibePagination] currentPage must be a positive integer, got ${v}`)
+      }
+      return true
+    }
+  },
   showPrevNext: { type: Boolean, default: true },
   prevText: { type: String, default: 'Previous' },
-  nextText: { type: String, default: 'Next' }
+  nextText: { type: String, default: 'Next' },
+  maxVisiblePages: { type: Number, default: 7 }
 })
 
-const emit = defineEmits(['update:currentPage', 'page-click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:currentPage', page: number): void
+  (e: 'page-click', page: number): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const paginationClass = computed(() => {
   const classes = ['pagination']
@@ -20,8 +34,35 @@ const paginationClass = computed(() => {
   return classes.join(' ')
 })
 
-const pages = computed(() => {
-  return Array.from({ length: props.totalPages }, (_, i) => i + 1)
+// Returns page numbers and null for ellipsis separators
+const visibleItems = computed((): (number | null)[] => {
+  const total = props.totalPages
+  if (total === 0) return []
+  if (import.meta.env.DEV && props.maxVisiblePages < 5) {
+    console.warn('[VibePagination] maxVisiblePages must be at least 5. Got:', props.maxVisiblePages)
+  }
+  const max = Math.max(5, props.maxVisiblePages)
+
+  if (total <= max) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+
+  const sidePages = Math.max(1, max - 4)
+  const half = Math.floor(sidePages / 2)
+  let lo = Math.max(2, props.currentPage - half)
+  let hi = lo + sidePages - 1
+
+  if (hi > total - 1) {
+    hi = total - 1
+    lo = Math.max(2, hi - sidePages + 1)
+  }
+
+  const result: (number | null)[] = [1]
+  if (lo > 2) result.push(null)
+  for (let p = lo; p <= hi; p++) result.push(p)
+  if (hi < total - 1) result.push(null)
+  result.push(total)
+  return result
 })
 
 const handlePageClick = (page: number) => {
@@ -31,8 +72,8 @@ const handlePageClick = (page: number) => {
   }
 }
 
-const isPrevDisabled = computed(() => props.currentPage === 1)
-const isNextDisabled = computed(() => props.currentPage === props.totalPages)
+const isPrevDisabled = computed(() => props.totalPages === 0 || props.currentPage <= 1)
+const isNextDisabled = computed(() => props.totalPages === 0 || props.currentPage >= props.totalPages)
 </script>
 
 <template>
@@ -44,7 +85,6 @@ const isNextDisabled = computed(() => props.currentPage === props.totalPages)
           class="page-link"
           type="button"
           :disabled="isPrevDisabled"
-          :aria-disabled="isPrevDisabled"
           @click="handlePageClick(currentPage - 1)"
         >
           <!-- Scoped slot for custom prev button -->
@@ -54,24 +94,24 @@ const isNextDisabled = computed(() => props.currentPage === props.totalPages)
         </button>
       </li>
 
-      <!-- Page numbers -->
-      <li
-        v-for="page in pages"
-        :key="page"
-        :class="['page-item', { active: page === currentPage }]"
-      >
-        <button
-          class="page-link"
-          type="button"
-          :aria-current="page === currentPage ? 'page' : undefined"
-          @click="handlePageClick(page)"
-        >
-          <!-- Scoped slot for custom page rendering -->
-          <slot name="page" :page="page" :active="page === currentPage">
-            {{ page }}
-          </slot>
-        </button>
-      </li>
+      <!-- Page numbers (with optional ellipsis) -->
+      <template v-for="(item, idx) in visibleItems" :key="item !== null ? `p${item}` : `e${idx}`">
+        <li v-if="item === null" class="page-item disabled" aria-hidden="true">
+          <span class="page-link">…</span>
+        </li>
+        <li v-else :class="['page-item', { active: item === currentPage }]">
+          <button
+            class="page-link"
+            type="button"
+            :aria-current="item === currentPage ? 'page' : undefined"
+            @click="handlePageClick(item)"
+          >
+            <slot name="page" :page="item" :active="item === currentPage">
+              {{ item }}
+            </slot>
+          </button>
+        </li>
+      </template>
 
       <!-- Next button -->
       <li v-if="showPrevNext" :class="['page-item', { disabled: isNextDisabled }]">
@@ -79,7 +119,6 @@ const isNextDisabled = computed(() => props.currentPage === props.totalPages)
           class="page-link"
           type="button"
           :disabled="isNextDisabled"
-          :aria-disabled="isNextDisabled"
           @click="handlePageClick(currentPage + 1)"
         >
           <!-- Scoped slot for custom next button -->

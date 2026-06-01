@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { PropType } from 'vue'
 import type { Variant, Tag } from '../types'
+
+// Vue's class-binding value form (string, array, or object map).
+type ClassValue = string | unknown[] | Record<string, unknown>
 
 const props = defineProps({
   variant: { type: String as () => Variant, default: undefined },
@@ -12,14 +16,17 @@ const props = defineProps({
   body: { type: String, default: undefined },
   header: { type: String, default: undefined },
   footer: { type: String, default: undefined },
+  // Per-section class hooks — let consumers style the header/body/footer wrappers
+  // (e.g. a variant-colored header) without dropping to a raw .card.
+  headerClass: { type: [String, Array, Object] as PropType<ClassValue>, default: undefined },
+  bodyClass: { type: [String, Array, Object] as PropType<ClassValue>, default: undefined },
+  footerClass: { type: [String, Array, Object] as PropType<ClassValue>, default: undefined },
   // Image props
   imgSrc: { type: String, default: undefined },
   imgAlt: { type: String, default: '' },
-  imgTop: { type: Boolean, default: true },
+  imgTop: { type: Boolean, default: false },
   imgBottom: { type: Boolean, default: false }
 })
-
-const emit = defineEmits(['component-error'])
 
 const cardClass = computed(() => {
   const classes = ['card']
@@ -40,13 +47,17 @@ const cardClass = computed(() => {
       class="card-img-top"
     >
 
+    <!-- Image slot: a direct card child (outside .card-body) for a card image with
+         custom composition — e.g. a card-img-top with an absolutely-positioned overlay. -->
+    <slot name="image" />
+
     <!-- Header -->
-    <div v-if="header || $slots.header" class="card-header">
+    <div v-if="header || $slots.header" :class="['card-header', headerClass]">
       <slot name="header">{{ header }}</slot>
     </div>
 
     <!-- Body -->
-    <div v-if="title || body || $slots.default || $slots.body" class="card-body">
+    <div v-if="title || body || $slots.title || $slots.body || !!$slots.default" :class="['card-body', bodyClass]">
       <h5 v-if="title || $slots.title" class="card-title">
         <slot name="title">{{ title }}</slot>
       </h5>
@@ -58,7 +69,7 @@ const cardClass = computed(() => {
     </div>
 
     <!-- Footer -->
-    <div v-if="footer || $slots.footer" class="card-footer">
+    <div v-if="footer || $slots.footer" :class="['card-footer', footerClass]">
       <slot name="footer">{{ footer }}</slot>
     </div>
 

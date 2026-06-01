@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
 import type { Tag, Variant } from '../types'
+import { safeHref } from '../utils/safeHref'
 
 const props = defineProps({
   tag: { type: String as PropType<Tag | 'a'>, default: 'a' },
   href: { type: String, default: undefined },
   to: { type: [String, Object], default: undefined },
   variant: { type: String as PropType<Variant>, default: undefined },
-  underline: { type: [Boolean, String] as PropType<boolean | '0' | '1' | '2' | '3'>, default: true },
+  underline: { type: [Boolean, String] as PropType<boolean | '0'>, default: true },
   underlineVariant: { type: String as PropType<Variant>, default: undefined },
   underlineOpacity: { type: [String, Number] as PropType<'0' | '10' | '25' | '50' | '75' | '100' | 0 | 10 | 25 | 50 | 75 | 100>, default: undefined },
   offset: { type: [String, Number] as PropType<'1' | '2' | '3' | 1 | 2 | 3>, default: undefined },
@@ -28,14 +29,8 @@ const linkClass = computed(() => {
     classes.push(`link-${props.variant}`)
   }
 
-  // Underline handling
   if (props.underline === false || props.underline === '0') {
-    classes.push('link-underline-0')
-  } else if (typeof props.underline === 'string' && ['1', '2', '3'].includes(props.underline)) {
-    classes.push('link-underline', `link-underline-opacity-${props.underline}`) // wait, BS use underline-opacity?
-    // BS 5.3 underline utilities:
-    // .link-underline
-    // .link-underline-opacity-0, 10, 25, 50, 75, 100
+    classes.push('link-underline-opacity-0')
   }
 
   if (props.underlineVariant) {
@@ -66,8 +61,8 @@ const linkClass = computed(() => {
   <component
     :is="componentTag"
     :class="linkClass"
-    :href="href"
-    :to="to"
+    :to="isRouterLink ? to : undefined"
+    :href="isRouterLink ? undefined : safeHref(href)"
   >
     <slot />
   </component>

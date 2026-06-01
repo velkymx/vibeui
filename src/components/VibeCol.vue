@@ -33,8 +33,6 @@ const props = defineProps({
   alignSelf: { type: String as PropType<AlignItems>, default: undefined }
 })
 
-const emit = defineEmits(['component-error'])
-
 const colClass = computed(() => {
   const classes: string[] = []
 

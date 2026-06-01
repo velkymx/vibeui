@@ -36,9 +36,15 @@ const circleHeight = computed(() => {
 })
 
 const sharedAttrs = {
-  'aria-busy': true,
+  'aria-busy': 'true',
   role: 'status'
 } as const
+
+// The `text` variant renders a multi-root fragment, so Vue cannot auto-inherit
+// consumer attrs (class, data-*, listeners) — it would silently drop them with a
+// dev warning. Disable automatic inheritance and bind $attrs explicitly on each
+// variant's root (the first line for the text fragment).
+defineOptions({ inheritAttrs: false })
 </script>
 
 <template>
@@ -56,6 +62,7 @@ const sharedAttrs = {
         width: i === lineCount && lineCount > 1 ? '60%' : toCss(width),
         height: toCss(height)
       }"
+      v-bind="i === 1 ? $attrs : undefined"
       role="status"
       aria-busy="true"
     />
@@ -65,20 +72,20 @@ const sharedAttrs = {
     v-else-if="variant === 'rect'"
     :class="[...baseClasses, 'vibe-skeleton-rect']"
     :style="{ width: toCss(width), height: toCss(height) }"
-    v-bind="sharedAttrs"
+    v-bind="{ ...$attrs, ...sharedAttrs }"
   />
 
   <div
     v-else-if="variant === 'circle'"
     :class="[...baseClasses, 'vibe-skeleton-circle']"
     :style="{ width: circleWidth, height: circleHeight }"
-    v-bind="sharedAttrs"
+    v-bind="{ ...$attrs, ...sharedAttrs }"
   />
 
   <div
     v-else-if="variant === 'card'"
     class="vibe-skeleton-card"
-    v-bind="sharedAttrs"
+    v-bind="{ ...$attrs, ...sharedAttrs }"
   >
     <div
       :class="['vibe-skeleton', 'vibe-skeleton-rect', animated ? 'vibe-skeleton-animated' : '']"

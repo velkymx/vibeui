@@ -210,13 +210,16 @@ describe('VibeTabs', () => {
     })
   })
 
-  it('throws when VibeTab is used outside VibeTabs', () => {
+  it('logs console.error and renders gracefully when VibeTab is used outside VibeTabs', () => {
+    const errors: string[] = []
     const consoleSpy = console.error
-    console.error = () => {}
+    console.error = (...args: any[]) => errors.push(String(args[0]))
     try {
+      // Should NOT throw — graceful degradation via console.error
       expect(() =>
         mount(VibeTab, { props: { name: 'a', label: 'A' } })
-      ).toThrow(/must be a descendant of <VibeTabs>/)
+      ).not.toThrow()
+      expect(errors.some(e => /must be a descendant of <VibeTabs>/.test(e))).toBe(true)
     } finally {
       console.error = consoleSpy
     }

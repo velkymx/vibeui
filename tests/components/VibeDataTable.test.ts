@@ -176,6 +176,30 @@ describe('VibeDataTable', () => {
 
       expect(wrapper.text()).toContain('Showing 1 to')
     })
+
+    it('shows correct info after filter-to-zero then clear', async () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, searchable: true, searchDebounce: 0, paginated: true, perPage: 2, showInfo: true }
+      })
+
+      const input = wrapper.find('input[type="search"]')
+      await input.setValue('zzznomatch')
+      await input.trigger('input')
+      await nextTick()
+      await new Promise(r => setTimeout(r, 10))
+
+      // empty-state row is the only row when no results
+      expect(wrapper.text()).toContain('No data available')
+      expect(wrapper.text()).not.toContain('Showing 1 to')
+
+      await input.setValue('')
+      await input.trigger('input')
+      await nextTick()
+      await new Promise(r => setTimeout(r, 10))
+
+      expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+      expect(wrapper.text()).toContain('Showing 1 to')
+    })
   })
 
   describe('sorting functionality', () => {
@@ -500,6 +524,45 @@ describe('VibeDataTable', () => {
       })
 
       expect(wrapper.text()).toContain('formatted-Alice')
+    })
+  })
+
+  // Security: thStyle/tdStyle from column config must be filtered to a safe allowlist
+  // to prevent CSS injection (exfiltration / UI spoofing) when config is API-sourced.
+  describe('style sanitization', () => {
+    it('strips disallowed CSS properties from thStyle', () => {
+      const dangerousColumns: DataTableColumn[] = [
+        {
+          key: 'name',
+          label: 'Name',
+          thStyle: { width: '100px', backgroundImage: 'url(http://evil.com/x.png)' } as Record<string, string>
+        }
+      ]
+      const wrapper = mount(VibeDataTable, {
+        props: { columns: dangerousColumns, items }
+      })
+      const th = wrapper.find('thead th')
+      const style = th.attributes('style') ?? ''
+      expect(style).toContain('width')
+      expect(style).not.toContain('background-image')
+      expect(style).not.toContain('evil.com')
+    })
+
+    it('strips disallowed CSS properties from tdStyle', () => {
+      const dangerousColumns: DataTableColumn[] = [
+        {
+          key: 'name',
+          label: 'Name',
+          tdStyle: { color: 'red', animation: 'blink 1s infinite' } as Record<string, string>
+        }
+      ]
+      const wrapper = mount(VibeDataTable, {
+        props: { columns: dangerousColumns, items }
+      })
+      const td = wrapper.find('tbody td')
+      const style = td.attributes('style') ?? ''
+      expect(style).toContain('color')
+      expect(style).not.toContain('animation')
     })
   })
 })

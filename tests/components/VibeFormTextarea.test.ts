@@ -222,4 +222,35 @@ describe('VibeFormTextarea', () => {
 
     expect(wrapper.emitted('focus')).toBeTruthy()
   })
+
+  // Regression: computed refs auto-unwrap in templates — helpId.value / feedbackId.value
+  // double-dereferences to undefined, producing aria-describedby="undefined undefined"
+  describe('aria-describedby correctness', () => {
+    it('contains real ID, not "undefined", when helpText present', () => {
+      const wrapper = mount(VibeFormTextarea, {
+        props: { id: 'txt', helpText: 'Max 500 chars' }
+      })
+      const describedBy = wrapper.find('textarea').attributes('aria-describedby')
+      expect(describedBy).toBe('txt-help')
+      expect(describedBy).not.toContain('undefined')
+    })
+
+    it('contains real ID, not "undefined", when validationMessage present', () => {
+      const wrapper = mount(VibeFormTextarea, {
+        props: { id: 'txt', validationState: 'invalid' as const, validationMessage: 'Required' }
+      })
+      const describedBy = wrapper.find('textarea').attributes('aria-describedby')
+      expect(describedBy).toBe('txt-feedback')
+      expect(describedBy).not.toContain('undefined')
+    })
+
+    it('lists both IDs when helpText and validationMessage both present', () => {
+      const wrapper = mount(VibeFormTextarea, {
+        props: { id: 'txt', helpText: 'Help', validationState: 'invalid' as const, validationMessage: 'Required' }
+      })
+      const describedBy = wrapper.find('textarea').attributes('aria-describedby')
+      expect(describedBy).toBe('txt-help txt-feedback')
+      expect(describedBy).not.toContain('undefined')
+    })
+  })
 })

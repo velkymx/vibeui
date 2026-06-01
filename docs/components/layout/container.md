@@ -13,12 +13,6 @@ Responsive container component wrapping Bootstrap's `.container`, `.container-fl
 
 `'sm' | 'md' | 'lg' | 'xl' | 'xxl'`
 
-## Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `component-error` | `Object` | Emitted when an error occurs |
-
 ## Slots
 
 | Slot | Description |

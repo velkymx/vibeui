@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, onBeforeUnmount } from 'vue'
-
-interface TabsContext {
-  register: (name: string, label: string, disabled: boolean) => void
-  unregister: (name: string) => void
-  isActive: (name: string) => boolean
-  hasBeenActive: (name: string) => boolean
-  lazy: boolean
-}
+import { TABS_CONTEXT_KEY } from '../injectionKeys'
 
 const props = defineProps({
   name: { type: String, required: true },
@@ -15,21 +8,24 @@ const props = defineProps({
   disabled: { type: Boolean, default: false }
 })
 
-const ctx = inject<TabsContext | null>('vibeTabsContext', null)
+const ctx = inject(TABS_CONTEXT_KEY, null)
 if (!ctx) {
-  throw new Error('[VibeTab] must be a descendant of <VibeTabs>')
+  // Use console.error instead of throw so app.config.errorHandler can catch it
+  // and the component renders without tearing down the entire component tree
+  console.error('[VibeTab] must be a descendant of <VibeTabs>')
 }
 
 onMounted(() => {
-  ctx.register(props.name, props.label, props.disabled)
+  ctx?.register(props.name, props.label, props.disabled)
 })
 
 onBeforeUnmount(() => {
-  ctx.unregister(props.name)
+  ctx?.unregister(props.name)
 })
 
-const isActive = computed(() => ctx.isActive(props.name))
+const isActive = computed(() => ctx?.isActive(props.name) ?? false)
 const shouldRender = computed(() => {
+  if (!ctx) return true
   if (!ctx.lazy) return true
   return ctx.hasBeenActive(props.name)
 })
