@@ -33,7 +33,6 @@ const startX = ref(0)
 const startY = ref(0)
 const startW = ref(0)
 const startH = ref(0)
-let activePointerId: number | null = null
 
 watch(
   () => props.width,
@@ -54,25 +53,23 @@ const snap = (v: number): number => Math.round(v / props.grid) * props.grid
 const clampW = (w: number) => Math.min(props.maxWidth, Math.max(props.minWidth, w))
 const clampH = (h: number) => Math.min(props.maxHeight, Math.max(props.minHeight, h))
 
+const applyAspect = (w: number, h: number, fromWidth: boolean): { w: number; h: number } => {
+  if (!props.aspectRatio) return { w, h }
+  if (fromWidth) return { w, h: w / props.aspectRatio }
+  return { w: h * props.aspectRatio, h }
+}
 
 const containerStyle = computed(() => ({
   width: `${currentWidth.value}px`,
   height: `${currentHeight.value}px`
 }))
 
-const validHandles = computed(() => {
-  if (import.meta.env.DEV) {
-    const invalid = props.handles.filter(h => !ALL_HANDLES.includes(h))
-    if (invalid.length) console.warn(`[VibeResizable] Invalid handle values: ${invalid.join(', ')}. Valid: ${ALL_HANDLES.join(', ')}`)
-  }
-  return props.handles.filter(h => ALL_HANDLES.includes(h))
-})
+const validHandles = computed(() => props.handles.filter(h => ALL_HANDLES.includes(h)))
 
 const onPointerDown = (handle: Handle, event: PointerEvent) => {
   if (props.disabled) return
   event.stopPropagation()
   activeHandle.value = handle
-  activePointerId = event.pointerId
   startX.value = event.clientX
   startY.value = event.clientY
   startW.value = currentWidth.value
@@ -81,15 +78,8 @@ const onPointerDown = (handle: Handle, event: PointerEvent) => {
   emit('resizestart', { width: currentWidth.value, height: currentHeight.value })
 }
 
-// Pre-bound per-handle pointerdown handlers. Built once over the fixed handle set so
-// the template binds a stable function reference per handle instead of allocating a
-// new inline arrow for every handle on every render.
-const pointerDownHandlers = Object.fromEntries(
-  ALL_HANDLES.map(h => [h, (e: PointerEvent) => onPointerDown(h, e)])
-) as Record<Handle, (e: PointerEvent) => void>
-
 const onPointerMove = (event: PointerEvent) => {
-  if (!activeHandle.value || event.pointerId !== activePointerId) return
+  if (!activeHandle.value) return
   const dx = event.clientX - startX.value
   const dy = event.clientY - startY.value
 
@@ -102,33 +92,10 @@ const onPointerMove = (event: PointerEvent) => {
   if (handle.includes('s')) nextH = startH.value + dy
   if (handle.includes('n')) nextH = startH.value - dy
 
-  const hasHoriz = handle.includes('e') || handle.includes('w')
-  const hasVert = handle.includes('n') || handle.includes('s')
-  const isCorner = hasHoriz && hasVert
-  const widthDriven = hasHoriz && (!isCorner || !props.aspectRatio || Math.abs(dx) >= Math.abs(dy))
-
-  if (props.aspectRatio) {
-    if (widthDriven) {
-      nextW = clampW(snap(nextW))
-      nextH = nextW / props.aspectRatio
-      const clampedH = clampH(nextH)
-      if (clampedH !== nextH) {
-        nextH = clampedH
-        nextW = clampW(nextH * props.aspectRatio)
-      }
-    } else {
-      nextH = clampH(snap(nextH))
-      nextW = nextH * props.aspectRatio
-      const clampedW = clampW(nextW)
-      if (clampedW !== nextW) {
-        nextW = clampedW
-        nextH = clampH(nextW / props.aspectRatio)
-      }
-    }
-  } else {
-    nextW = clampW(snap(nextW))
-    nextH = clampH(snap(nextH))
-  }
+  const widthDriven = handle.includes('e') || handle.includes('w')
+  const aspected = applyAspect(nextW, nextH, widthDriven)
+  nextW = clampW(snap(aspected.w))
+  nextH = clampH(snap(aspected.h))
 
   if (nextW !== currentWidth.value) {
     currentWidth.value = nextW
@@ -142,10 +109,9 @@ const onPointerMove = (event: PointerEvent) => {
 }
 
 const onPointerUp = (event: PointerEvent) => {
-  if (!activeHandle.value || event.pointerId !== activePointerId) return
+  if (!activeHandle.value) return
   ;(event.target as HTMLElement).releasePointerCapture?.(event.pointerId)
   activeHandle.value = null
-  activePointerId = null
   emit('resizeend', { width: currentWidth.value, height: currentHeight.value })
 }
 </script>
@@ -162,7 +128,7 @@ const onPointerUp = (event: PointerEvent) => {
       :key="h"
       :class="['vibe-resizable-handle', `vibe-resizable-handle-${h}`]"
       :data-handle="h"
-      @pointerdown="pointerDownHandlers[h]"
+      @pointerdown="(e: PointerEvent) => onPointerDown(h, e)"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
     />

@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import type { PropType } from 'vue'
+import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
-// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue
-// emit boilerplate. The returned ref is read in the template and assigned on change.
-const modelValue = defineModel<boolean>({ default: false })
-
 const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false
+  },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
@@ -22,18 +21,17 @@ const props = defineProps({
   helpText: { type: String, default: undefined }
 })
 
-const emit = defineEmits<{
-  (e: 'validate'): void
-  (e: 'blur', event: FocusEvent): void
-  (e: 'focus', event: FocusEvent): void
-  (e: 'change', event: Event): void
-}>()
+const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change'])
 
-const formGroup = inject(FORM_GROUP_KEY, null)
+const formGroup = inject<{
+  id: ComputedRef<string>
+  consumeId: () => string | null
+  hasLabel: ComputedRef<boolean>
+  hasValidation: ComputedRef<boolean>
+  hasHelp: ComputedRef<boolean>
+} | null>('vibeFormGroup', null)
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('switch')
-const computedId = computed(() => props.id || _groupId || _generatedId)
+const computedId = computed(() => props.id || formGroup?.consumeId() || useId('switch'))
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
@@ -53,7 +51,7 @@ const inputClass = computed(() => {
 
 const handleChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  modelValue.value = target.checked
+  emit('update:modelValue', target.checked)
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
@@ -79,7 +77,7 @@ const handleFocus = (event: FocusEvent) => {
       :disabled="disabled"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="helpText && validationMessage ? `${computedId}-help ${computedId}-feedback` : helpText ? `${computedId}-help` : validationMessage ? `${computedId}-feedback` : undefined"
+      :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
@@ -88,11 +86,11 @@ const handleFocus = (event: FocusEvent) => {
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
     </label>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">

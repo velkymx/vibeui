@@ -41,6 +41,12 @@ Row component for Bootstrap's grid system. Provides gutters, row columns, and al
 - **AlignItems:** `'start' | 'center' | 'end' | 'baseline' | 'stretch'`
 - **JustifyContent:** `'start' | 'center' | 'end' | 'around' | 'between' | 'evenly'`
 
+## Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `component-error` | `Object` | Emitted when an error occurs |
+
 ## Slots
 
 | Slot | Description |

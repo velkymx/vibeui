@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>VibeUI v1.0 — Smoke Test</title>
+    <title>VibeUI v0.9 — Smoke Test</title>
 
     <!-- Bootstrap 5.3 CSS + Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
@@ -48,67 +48,69 @@
   </head>
 
   <body>
-    <!-- Everything below lives INSIDE the Vue app (#app) so the page chrome —
-         navbar, grid, and the per-demo cards — is rendered by real VibeUI
-         components, not hand-written Bootstrap markup. -->
-    <div id="app">
-      <vibe-navbar variant="body-tertiary" :expand="true" position="sticky-top" class="border-bottom">
-        <vibe-navbar-brand class="fw-bold">VibeUI v1.0 Smoke Test</vibe-navbar-brand>
+    <nav class="navbar navbar-expand bg-body-tertiary border-bottom sticky-top">
+      <div class="container-fluid">
+        <span class="navbar-brand fw-bold">VibeUI v0.9 Smoke Test</span>
         <div class="d-flex align-items-center gap-3">
           <span class="smoke-status" id="suite-status">loading…</span>
           <span class="smoke-status text-bg-warning d-none" id="suite-errors"></span>
-          <vibe-button id="theme-toggle" variant="secondary" outline size="sm">Toggle theme</vibe-button>
+          <button id="theme-toggle" class="btn btn-outline-secondary btn-sm">Toggle theme</button>
         </div>
-      </vibe-navbar>
+      </div>
+    </nav>
 
-      <vibe-container fluid class="mt-3">
-        <vibe-row>
-          <vibe-col :lg="2" tag="aside" class="d-none d-lg-block">
-            <nav class="smoke-toc">
-              <a href="#core">Core</a>
-              <a href="#layout">Layout</a>
-              <a href="#card-list">Card / List</a>
-              <a href="#nav">Navigation</a>
-              <a href="#progress-feedback">Progress / Feedback</a>
-              <a href="#tabs-stepper">Tabs / Stepper</a>
-              <a href="#interactive">Interactive</a>
-              <a href="#tooltip-popover">Tooltip / Popover</a>
-              <a href="#dnd">Drag &amp; Drop</a>
-              <a href="#slider-resizable">Slider / Resizable</a>
-              <a href="#datepicker">Date Picker</a>
-              <a href="#autocomplete">Autocomplete</a>
-              <a href="#data-table">DataTable</a>
-              <a href="#forms">Forms</a>
-              <a href="#wysiwyg">Wysiwyg</a>
-              <a href="#charts">Charts</a>
-              <a href="#composables">Composables</a>
-              <a href="#toast">Toast</a>
-            </nav>
-          </vibe-col>
+    <div id="app" class="container-fluid mt-3">
+      <div class="row">
+        <aside class="col-lg-2 d-none d-lg-block">
+          <nav class="smoke-toc">
+            <a href="#core">Core</a>
+            <a href="#layout">Layout</a>
+            <a href="#card-list">Card / List</a>
+            <a href="#nav">Navigation</a>
+            <a href="#progress-feedback">Progress / Feedback</a>
+            <a href="#tabs-stepper">Tabs / Stepper</a>
+            <a href="#interactive">Interactive</a>
+            <a href="#tooltip-popover">Tooltip / Popover</a>
+            <a href="#dnd">Drag &amp; Drop</a>
+            <a href="#slider-resizable">Slider / Resizable</a>
+            <a href="#datepicker">Date Picker</a>
+            <a href="#autocomplete">Autocomplete</a>
+            <a href="#data-table">DataTable</a>
+            <a href="#forms">Forms</a>
+            <a href="#wysiwyg">Wysiwyg</a>
+            <a href="#composables">Composables</a>
+            <a href="#toast">Toast</a>
+          </nav>
+        </aside>
 
-          <vibe-col :lg="10" tag="main">
-            <!-- ===================== CORE ===================== -->
-            <section id="core" class="smoke-section mb-5">
-              <h2>Core</h2>
+        <main class="col-lg-10">
+          <!-- ===================== CORE ===================== -->
+          <section id="core" class="smoke-section mb-5">
+            <h2>Core</h2>
 
-              <vibe-card class="smoke-card">
-                <template #header>VibeAlert</template>
+            <div class="card smoke-card">
+              <div class="card-header">VibeAlert</div>
+              <div class="card-body">
                 <vibe-alert variant="primary" message="Primary alert (message prop)" />
                 <vibe-alert variant="success" subtle message="Subtle success" />
                 <vibe-alert variant="warning" dismissible>
                   <strong>Locked.</strong> Slot content with <vibe-button size="sm" variant="primary" @click="onAlertAction">Unlock</vibe-button>
                 </vibe-alert>
-              </vibe-card>
+              </div>
+            </div>
 
-              <vibe-card class="smoke-card">
-                <template #header>VibeBadge</template>
+            <div class="card smoke-card">
+              <div class="card-header">VibeBadge</div>
+              <div class="card-body">
                 <vibe-badge v-for="v in variants" :key="v" :variant="v" class="me-1">{{ v }}</vibe-badge>
                 <vibe-badge variant="primary" pill class="me-1">pill</vibe-badge>
                 <vibe-badge variant="success" subtle>subtle</vibe-badge>
-              </vibe-card>
+              </div>
+            </div>
 
-              <vibe-card class="smoke-card">
-                <template #header>VibeButton</template>
+            <div class="card smoke-card">
+              <div class="card-header">VibeButton</div>
+              <div class="card-body">
                 <div>
                   <vibe-button v-for="v in variants" :key="v" :variant="v" class="me-1">{{ v }}</vibe-button>
                   <vibe-button variant="link">link</vibe-button>
@@ -123,93 +125,109 @@
                   <vibe-button variant="primary" disabled>disabled</vibe-button>
                   <vibe-button variant="primary" active>active</vibe-button>
                 </div>
-              </vibe-card>
+              </div>
+            </div>
 
-              <vibe-card class="smoke-card">
-                <template #header>VibeButtonGroup</template>
+            <div class="card smoke-card">
+              <div class="card-header">VibeButtonGroup</div>
+              <div class="card-body">
                 <vibe-button-group>
                   <vibe-button variant="primary">Left</vibe-button>
                   <vibe-button variant="primary">Center</vibe-button>
                   <vibe-button variant="primary">Right</vibe-button>
                 </vibe-button-group>
-              </vibe-card>
+              </div>
+            </div>
 
-              <vibe-card class="smoke-card">
-                <template #header>VibeCloseButton / VibeSpinner / VibePlaceholder / VibeSkeleton</template>
+            <div class="card smoke-card">
+              <div class="card-header">VibeCloseButton / VibeSpinner / VibePlaceholder / VibeSkeleton</div>
+              <div class="card-body">
                 <vibe-close-button />
                 <vibe-spinner variant="primary" />
                 <vibe-spinner type="grow" variant="success" />
                 <vibe-placeholder :width="6" />
                 <hr />
-                <vibe-row>
-                  <vibe-col :cols="3"><vibe-skeleton :lines="3" /></vibe-col>
-                  <vibe-col :cols="3"><vibe-skeleton variant="rect" :height="60" /></vibe-col>
-                  <vibe-col :cols="3"><vibe-skeleton variant="circle" :width="48" /></vibe-col>
-                  <vibe-col :cols="3"><vibe-skeleton variant="card" /></vibe-col>
-                </vibe-row>
-              </vibe-card>
+                <div class="row">
+                  <div class="col-3"><vibe-skeleton :lines="3" /></div>
+                  <div class="col-3"><vibe-skeleton variant="rect" :height="60" /></div>
+                  <div class="col-3"><vibe-skeleton variant="circle" :width="48" /></div>
+                  <div class="col-3"><vibe-skeleton variant="card" /></div>
+                </div>
+              </div>
+            </div>
 
-              <vibe-card class="smoke-card">
-                <template #header>VibeLink / VibeIcon</template>
+            <div class="card smoke-card">
+              <div class="card-header">VibeLink / VibeIcon</div>
+              <div class="card-body">
                 <vibe-link href="#" variant="primary">Primary link</vibe-link>
-                <vibe-icon icon="house" class="ms-2" />
-                <vibe-icon icon="star-fill" class="ms-2 text-warning" />
-              </vibe-card>
-            </section>
+                <vibe-icon name="house" class="ms-2" />
+                <vibe-icon name="star-fill" class="ms-2 text-warning" />
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== LAYOUT ===================== -->
-            <section id="layout" class="smoke-section mb-5">
-              <h2>Layout</h2>
-              <vibe-card class="smoke-card">
-                <template #header>Container / Row / Col</template>
+          <!-- ===================== LAYOUT ===================== -->
+          <section id="layout" class="smoke-section mb-5">
+            <h2>Layout</h2>
+            <div class="card smoke-card">
+              <div class="card-header">Container / Row / Col</div>
+              <div class="card-body">
                 <vibe-container>
                   <vibe-row>
                     <vibe-col :cols="6"><div class="bg-primary-subtle p-2 rounded">col 6</div></vibe-col>
                     <vibe-col :cols="6"><div class="bg-success-subtle p-2 rounded">col 6</div></vibe-col>
                   </vibe-row>
                 </vibe-container>
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== CARD / LIST ===================== -->
-            <section id="card-list" class="smoke-section mb-5">
-              <h2>Card / List</h2>
-              <vibe-row>
-                <vibe-col :md="6">
-                  <vibe-card title="Card title" subtitle="Subtitle">
-                    <p class="mb-0">Card body content.</p>
-                  </vibe-card>
-                </vibe-col>
-                <vibe-col :md="6">
-                  <vibe-list-group :items="listItems" />
-                </vibe-col>
-              </vibe-row>
-            </section>
+          <!-- ===================== CARD / LIST ===================== -->
+          <section id="card-list" class="smoke-section mb-5">
+            <h2>Card / List</h2>
+            <div class="row">
+              <div class="col-md-6">
+                <vibe-card title="Card title" subtitle="Subtitle">
+                  <p class="mb-0">Card body content.</p>
+                </vibe-card>
+              </div>
+              <div class="col-md-6">
+                <vibe-list-group :items="listItems" />
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== NAVIGATION ===================== -->
-            <section id="nav" class="smoke-section mb-5">
-              <h2>Navigation</h2>
-              <vibe-card class="smoke-card">
-                <template #header>Breadcrumb</template>
+          <!-- ===================== NAVIGATION ===================== -->
+          <section id="nav" class="smoke-section mb-5">
+            <h2>Navigation</h2>
+            <div class="card smoke-card">
+              <div class="card-header">Breadcrumb</div>
+              <div class="card-body">
                 <vibe-breadcrumb :items="breadcrumb" />
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>Nav (tabs / pills / underline)</template>
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">Nav (tabs / pills / underline)</div>
+              <div class="card-body">
                 <vibe-nav :items="navItems" pill />
                 <vibe-nav :items="navItems" tabs class="mt-2" />
                 <vibe-nav :items="navItems" underline class="mt-2" />
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibePagination</template>
-                <vibe-pagination v-model:current-page="page" :total-pages="20" :max-visible-pages="7" />
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibePagination</div>
+              <div class="card-body">
+                <vibe-pagination v-model="page" :total-rows="120" :per-page="10" />
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== PROGRESS / FEEDBACK ===================== -->
-            <section id="progress-feedback" class="smoke-section mb-5">
-              <h2>Progress / Feedback</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeProgress</template>
+          <!-- ===================== PROGRESS / FEEDBACK ===================== -->
+          <section id="progress-feedback" class="smoke-section mb-5">
+            <h2>Progress / Feedback</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeProgress</div>
+              <div class="card-body">
                 <vibe-progress :bars="[{ value: 65, variant: 'primary', showValue: true }]" />
                 <vibe-progress :bars="[{ value: 45, variant: 'success', striped: true, animated: true }]" class="mt-2" />
                 <vibe-progress :bars="[
@@ -217,22 +235,26 @@
                   { value: 25, variant: 'warning' },
                   { value: 15, variant: 'danger' }
                 ]" class="mt-2" />
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== TABS / STEPPER ===================== -->
-            <section id="tabs-stepper" class="smoke-section mb-5">
-              <h2>Tabs / Stepper</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeTabs</template>
+          <!-- ===================== TABS / STEPPER ===================== -->
+          <section id="tabs-stepper" class="smoke-section mb-5">
+            <h2>Tabs / Stepper</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeTabs</div>
+              <div class="card-body">
                 <vibe-tabs v-model="tabActive" variant="tabs">
                   <vibe-tab name="alpha" label="Alpha">Alpha pane content</vibe-tab>
                   <vibe-tab name="beta" label="Beta">Beta pane content</vibe-tab>
                   <vibe-tab name="gamma" label="Gamma" disabled>Disabled</vibe-tab>
                 </vibe-tabs>
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeStepper</template>
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeStepper</div>
+              <div class="card-body">
                 <vibe-stepper
                   v-model="stepperActive"
                   :steps="stepperSteps"
@@ -242,33 +264,43 @@
                     <p>Step {{ index + 1 }}: <strong>{{ step.label }}</strong></p>
                   </template>
                 </vibe-stepper>
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== INTERACTIVE ===================== -->
-            <section id="interactive" class="smoke-section mb-5">
-              <h2>Interactive</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeAccordion</template>
+          <!-- ===================== INTERACTIVE ===================== -->
+          <section id="interactive" class="smoke-section mb-5">
+            <h2>Interactive</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeAccordion</div>
+              <div class="card-body">
                 <vibe-accordion :items="accordionItems" />
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeCollapse</template>
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeCollapse</div>
+              <div class="card-body">
                 <vibe-button variant="primary" @click="collapseOpen = !collapseOpen">Toggle collapse</vibe-button>
                 <vibe-collapse v-model="collapseOpen">
                   <div class="border rounded p-2 mt-2">Collapsible body</div>
                 </vibe-collapse>
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeCarousel</template>
-                <vibe-carousel :items="carouselSlides" :interval="3000" />
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeDropdown</template>
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeCarousel</div>
+              <div class="card-body">
+                <vibe-carousel :slides="carouselSlides" :interval="3000" />
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeDropdown</div>
+              <div class="card-body">
                 <vibe-dropdown text="Dropdown" :items="dropdownItems" />
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeModal / VibeOffcanvas</template>
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeModal / VibeOffcanvas</div>
+              <div class="card-body">
                 <vibe-button variant="primary" @click="modalOpen = true">Open modal</vibe-button>
                 <vibe-button variant="secondary" @click="modalXl = true">Open XL modal</vibe-button>
                 <vibe-button variant="info" @click="offcanvasOpen = true">Open offcanvas</vibe-button>
@@ -282,13 +314,15 @@
                 <vibe-offcanvas v-model="offcanvasOpen" title="Offcanvas">
                   <p>Offcanvas body</p>
                 </vibe-offcanvas>
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== TOOLTIP / POPOVER ===================== -->
-            <section id="tooltip-popover" class="smoke-section mb-5">
-              <h2>Tooltip / Popover</h2>
-              <vibe-card class="smoke-card">
+          <!-- ===================== TOOLTIP / POPOVER ===================== -->
+          <section id="tooltip-popover" class="smoke-section mb-5">
+            <h2>Tooltip / Popover</h2>
+            <div class="card smoke-card">
+              <div class="card-body">
                 <vibe-tooltip text="Component-form tooltip">
                   <vibe-button variant="primary">Hover me</vibe-button>
                 </vibe-tooltip>
@@ -296,25 +330,29 @@
                 <vibe-popover title="Popover" content="Popover body text">
                   <vibe-button variant="info">Click for popover</vibe-button>
                 </vibe-popover>
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== DRAG & DROP ===================== -->
-            <section id="dnd" class="smoke-section mb-5">
-              <h2>Drag &amp; Drop</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeSortable</template>
+          <!-- ===================== DRAG & DROP ===================== -->
+          <section id="dnd" class="smoke-section mb-5">
+            <h2>Drag &amp; Drop</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeSortable</div>
+              <div class="card-body">
                 <vibe-sortable v-model="sortItems">
                   <template #default="{ item }">
                     <div class="border rounded p-2 mb-1 bg-body">{{ item }}</div>
                   </template>
                 </vibe-sortable>
                 <small class="text-muted">Order: {{ sortItems.join(', ') }}</small>
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeDraggable + VibeDroppable</template>
-                <vibe-row :gutters="3">
-                  <vibe-col :cols="6">
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeDraggable + VibeDroppable</div>
+              <div class="card-body">
+                <div class="row g-3">
+                  <div class="col-6">
                     <vibe-droppable group="cards" @drop="onDropFromTodo">
                       <div class="border rounded p-3 bg-light-subtle min-vh-25">
                         <h6>To do</h6>
@@ -323,8 +361,8 @@
                         </vibe-draggable>
                       </div>
                     </vibe-droppable>
-                  </vibe-col>
-                  <vibe-col :cols="6">
+                  </div>
+                  <div class="col-6">
                     <vibe-droppable group="cards" @drop="onDropFromDone">
                       <div class="border rounded p-3 bg-light-subtle min-vh-25">
                         <h6>Done</h6>
@@ -333,16 +371,18 @@
                         </vibe-draggable>
                       </div>
                     </vibe-droppable>
-                  </vibe-col>
-                </vibe-row>
-              </vibe-card>
-            </section>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== SLIDER / RESIZABLE ===================== -->
-            <section id="slider-resizable" class="smoke-section mb-5">
-              <h2>Slider / Resizable</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeSlider</template>
+          <!-- ===================== SLIDER / RESIZABLE ===================== -->
+          <section id="slider-resizable" class="smoke-section mb-5">
+            <h2>Slider / Resizable</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeSlider</div>
+              <div class="card-body">
                 <label class="form-label">Single ({{ sliderValue }})</label>
                 <vibe-slider v-model="sliderValue" :min="0" :max="100" :step="5" />
 
@@ -351,43 +391,51 @@
 
                 <label class="form-label mt-3">Vertical</label>
                 <vibe-slider v-model="sliderVertical" vertical :min="0" :max="100" />
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeResizable</template>
+              </div>
+            </div>
+            <div class="card smoke-card">
+              <div class="card-header">VibeResizable</div>
+              <div class="card-body">
                 <vibe-resizable
                   v-model:width="resizeW"
                   v-model:height="resizeH"
                   :handles="['se', 's', 'e']"
                   :grid="10"
                 >
-                  <vibe-card class="h-100">{{ resizeW }} × {{ resizeH }}</vibe-card>
+                  <div class="card h-100">
+                    <div class="card-body">{{ resizeW }} × {{ resizeH }}</div>
+                  </div>
                 </vibe-resizable>
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== DATE PICKER ===================== -->
-            <section id="datepicker" class="smoke-section mb-5">
-              <h2>Date Picker</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeDatePicker (single + range)</template>
-                <vibe-row>
-                  <vibe-col :md="4">
+          <!-- ===================== DATE PICKER ===================== -->
+          <section id="datepicker" class="smoke-section mb-5">
+            <h2>Date Picker</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeDatePicker (single + range)</div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-4">
                     <vibe-date-picker v-model="dateSingle" label="Single" placeholder="Pick a date" />
                     <small class="text-muted">{{ dateSingle || '—' }}</small>
-                  </vibe-col>
-                  <vibe-col :md="6">
+                  </div>
+                  <div class="col-md-6">
                     <vibe-date-picker v-model="dateRange" range label="Range" />
                     <small class="text-muted">{{ dateRange.join(' → ') || '—' }}</small>
-                  </vibe-col>
-                </vibe-row>
-              </vibe-card>
-            </section>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== AUTOCOMPLETE ===================== -->
-            <section id="autocomplete" class="smoke-section mb-5">
-              <h2>Autocomplete</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeAutocomplete</template>
+          <!-- ===================== AUTOCOMPLETE ===================== -->
+          <section id="autocomplete" class="smoke-section mb-5">
+            <h2>Autocomplete</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeAutocomplete</div>
+              <div class="card-body">
                 <vibe-autocomplete
                   v-model="autocompleteQuery"
                   :source="autocompleteSource"
@@ -398,13 +446,15 @@
                   @select="onAutocompleteSelect"
                 />
                 <small class="text-muted">Selected: {{ autocompleteSelected || '—' }}</small>
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== DATA TABLE ===================== -->
-            <section id="data-table" class="smoke-section mb-5">
-              <h2>Data Table</h2>
-              <vibe-card class="smoke-card">
+          <!-- ===================== DATA TABLE ===================== -->
+          <section id="data-table" class="smoke-section mb-5">
+            <h2>Data Table</h2>
+            <div class="card smoke-card">
+              <div class="card-body">
                 <vibe-data-table
                   :items="tableRows"
                   :columns="tableColumns"
@@ -412,13 +462,15 @@
                   striped
                   hover
                 />
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== FORMS ===================== -->
-            <section id="forms" class="smoke-section mb-5">
-              <h2>Forms</h2>
-              <vibe-card class="smoke-card">
+          <!-- ===================== FORMS ===================== -->
+          <section id="forms" class="smoke-section mb-5">
+            <h2>Forms</h2>
+            <div class="card smoke-card">
+              <div class="card-body">
                 <vibe-form-group label="Email">
                   <vibe-form-input v-model="form.email" type="email" placeholder="you@example.com" />
                 </vibe-form-group>
@@ -458,7 +510,7 @@
                 <vibe-form-group label="Composer (input + button)">
                   <vibe-input-group>
                     <template #prepend>
-                      <span class="input-group-text"><vibe-icon icon="chat" /></span>
+                      <span class="input-group-text"><vibe-icon name="chat" /></span>
                     </template>
                     <vibe-form-input v-model="form.comment" no-wrapper placeholder="Add a comment…" />
                     <template #append>
@@ -478,51 +530,27 @@
                   />
                   <small class="text-muted">Accepted: {{ form.files.length }} • Rejected: {{ rejectedFileCount }}</small>
                 </vibe-form-group>
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== WYSIWYG ===================== -->
-            <section id="wysiwyg" class="smoke-section mb-5">
-              <h2>Wysiwyg</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeFormWysiwyg (toolbar="standard")</template>
+          <!-- ===================== WYSIWYG ===================== -->
+          <section id="wysiwyg" class="smoke-section mb-5">
+            <h2>Wysiwyg</h2>
+            <div class="card smoke-card">
+              <div class="card-header">VibeFormWysiwyg (toolbar="standard")</div>
+              <div class="card-body">
                 <vibe-form-wysiwyg v-model="form.richText" toolbar="standard" />
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== CHARTS ===================== -->
-            <section id="charts" class="smoke-section mb-5">
-              <h2>Charts (v1.0)</h2>
-              <vibe-card class="smoke-card">
-                <template #header>VibeChartLine</template>
-                <vibe-chart-line :data="chartLineData" smooth fill legend="top" />
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeChartBar (grouped + stacked)</template>
-                <vibe-row>
-                  <vibe-col :md="6">
-                    <p class="small text-muted mb-1">Grouped</p>
-                    <vibe-chart-bar :data="chartBarData" />
-                  </vibe-col>
-                  <vibe-col :md="6">
-                    <p class="small text-muted mb-1">Stacked</p>
-                    <vibe-chart-bar :data="chartBarData" stacked />
-                  </vibe-col>
-                </vibe-row>
-              </vibe-card>
-              <vibe-card class="smoke-card">
-                <template #header>VibeChartPie</template>
-                <div style="max-width: 320px">
-                  <vibe-chart-pie :data="chartPieData" />
-                </div>
-              </vibe-card>
-            </section>
-
-            <!-- ===================== COMPOSABLES ===================== -->
-            <section id="composables" class="smoke-section mb-5">
-              <h2>Composables</h2>
-              <vibe-card class="smoke-card">
-                <template #header>useForm + useFormValidation</template>
+          <!-- ===================== COMPOSABLES ===================== -->
+          <section id="composables" class="smoke-section mb-5">
+            <h2>Composables</h2>
+            <div class="card smoke-card">
+              <div class="card-header">useForm + useFormValidation</div>
+              <div class="card-body">
                 <vibe-form-group label="Name">
                   <vibe-form-input v-model="multiForm.fields.name" />
                 </vibe-form-group>
@@ -535,26 +563,28 @@
                   <span class="smoke-status">isDirty: {{ multiForm.isDirty.value }} • isValid: {{ multiForm.isValid.value }}</span>
                 </div>
                 <pre class="mt-2 mb-0 small">{{ multiForm.errors }}</pre>
-              </vibe-card>
-            </section>
+              </div>
+            </div>
+          </section>
 
-            <!-- ===================== TOAST ===================== -->
-            <section id="toast" class="smoke-section mb-5">
-              <h2>Toast (service)</h2>
-              <vibe-card class="smoke-card">
+          <!-- ===================== TOAST ===================== -->
+          <section id="toast" class="smoke-section mb-5">
+            <h2>Toast (service)</h2>
+            <div class="card smoke-card">
+              <div class="card-body">
                 <vibe-button variant="primary" @click="toast.show('Hello from useToast')">show()</vibe-button>
                 <vibe-button variant="success" @click="toast.success('Saved')">success</vibe-button>
                 <vibe-button variant="danger" @click="toast.error('Failed')">error</vibe-button>
                 <vibe-button variant="warning" @click="toast.warn('Heads up')">warn</vibe-button>
                 <vibe-button variant="info" @click="toast.info('FYI')">info</vibe-button>
                 <vibe-button variant="secondary" @click="toast.clear">clear</vibe-button>
-              </vibe-card>
-              <vibe-toast-host />
-            </section>
+              </div>
+            </div>
+            <vibe-toast-host />
+          </section>
 
-          </vibe-col>
-        </vibe-row>
-      </vibe-container>
+        </main>
+      </div>
     </div>
 
     <!-- App entry -->
@@ -650,9 +680,9 @@
             collapseOpen: ref(false),
             // carousel
             carouselSlides: [
-              { src: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800', caption: 'Mountains', captionText: 'First slide' },
-              { src: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800', caption: 'Lake', captionText: 'Second slide' },
-              { src: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800', caption: 'Valley', captionText: 'Third slide' }
+              { caption: 'Slide 1', background: '#0d6efd' },
+              { caption: 'Slide 2', background: '#198754' },
+              { caption: 'Slide 3', background: '#dc3545' }
             ],
             // dropdown
             dropdownItems: [
@@ -730,25 +760,6 @@
             // composables
             multiForm,
             validateMultiForm,
-            // charts
-            chartLineData: {
-              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-              datasets: [
-                { label: 'Revenue', data: [12000, 18000, 15000, 22000, 19000, 27000] },
-                { label: 'Costs',   data: [8000,  10000, 9500,  12000, 11000, 14000] }
-              ]
-            },
-            chartBarData: {
-              labels: ['Q1', 'Q2', 'Q3', 'Q4'],
-              datasets: [
-                { label: 'Product A', data: [120, 145, 132, 170] },
-                { label: 'Product B', data: [80,  95,  88,  105] }
-              ]
-            },
-            chartPieData: {
-              labels: ['Direct', 'Organic', 'Referral', 'Social'],
-              datasets: [{ label: 'Traffic', data: [40, 30, 20, 10] }]
-            },
             // toast
             toast
           }
@@ -760,12 +771,9 @@
       // Surface render errors AND the component-error events that VibeUI
       // emits when a Bootstrap / Quill dynamic import fails.
       const errorBag = []
+      const errorBadge = document.getElementById('suite-errors')
       const flushErrors = () => {
         if (errorBag.length === 0) return
-        // Re-query each call: #suite-errors now lives inside #app, so Vue replaces
-        // the node on mount — a reference captured before mount would be stale.
-        const errorBadge = document.getElementById('suite-errors')
-        if (!errorBadge) return
         errorBadge.textContent = `${errorBag.length} runtime error(s) — see console`
         errorBadge.classList.remove('d-none')
       }

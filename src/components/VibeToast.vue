@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import type { Variant, ToastPlacement, ComponentError } from '../types'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import type { Variant, ToastPlacement } from '../types'
 import { useId } from '../composables/useId'
 
 interface BootstrapToast {
@@ -9,10 +9,8 @@ interface BootstrapToast {
   dispose: () => void
 }
 
-const _toastId = useId('toast')
-
 const props = defineProps({
-  id: { type: String, default: undefined },
+  id: { type: String, default: () => useId('toast') },
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
   variant: { type: String as () => Variant, default: undefined },
@@ -25,18 +23,10 @@ const props = defineProps({
   noContainer: { type: Boolean, default: false }
 })
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'show'): void
-  (e: 'shown'): void
-  (e: 'hide'): void
-  (e: 'hidden'): void
-  (e: 'component-error', error: ComponentError): void
-}>()
+const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
 
-const computedId = computed(() => props.id ?? _toastId)
 const toastRef = ref<HTMLElement | null>(null)
-const bsToast = shallowRef<BootstrapToast | null>(null)
+const bsToast = ref<BootstrapToast | null>(null)
 const isVisible = ref(false)
 
 const toastClass = computed(() => {
@@ -58,11 +48,11 @@ const containerClass = computed(() => {
 })
 
 const onShow = () => {
+  isVisible.value = true
   emit('show')
 }
 
 const onShown = () => {
-  isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
 }
@@ -77,32 +67,15 @@ const onHidden = () => {
   emit('update:modelValue', false)
 }
 
-const detachToastListeners = () => {
-  const el = toastRef.value
-  if (!el) return
-  el.removeEventListener('show.bs.toast', onShow)
-  el.removeEventListener('shown.bs.toast', onShown)
-  el.removeEventListener('hide.bs.toast', onHide)
-  el.removeEventListener('hidden.bs.toast', onHidden)
-}
-
-let initInFlight = false
-let isUnmounted = false
-
 const initToast = async () => {
-  if (!toastRef.value || initInFlight) return
-  initInFlight = true
-
-  detachToastListeners()
+  if (!toastRef.value) return
 
   if (bsToast.value) {
     bsToast.value.dispose()
-    bsToast.value = null
   }
 
   try {
     const bootstrap = await import('bootstrap')
-    if (!toastRef.value || isUnmounted) return
     const Toast = bootstrap.Toast
 
     bsToast.value = new Toast(toastRef.value, {
@@ -124,16 +97,18 @@ const initToast = async () => {
       componentName: 'VibeToast',
       originalError: error
     })
-  } finally {
-    initInFlight = false
   }
 }
 
 onMounted(initToast)
 
 onBeforeUnmount(() => {
-  isUnmounted = true
-  detachToastListeners()
+  if (toastRef.value) {
+    toastRef.value.removeEventListener('show.bs.toast', onShow)
+    toastRef.value.removeEventListener('shown.bs.toast', onShown)
+    toastRef.value.removeEventListener('hide.bs.toast', onHide)
+    toastRef.value.removeEventListener('hidden.bs.toast', onHidden)
+  }
 
   if (bsToast.value) {
     bsToast.value.dispose()
@@ -156,16 +131,14 @@ watch([() => props.autohide, () => props.delay], initToast)
 const show = () => bsToast.value?.show()
 const hide = () => bsToast.value?.hide()
 
-// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
-// Calling dispose()/other lifecycle methods on it directly WILL break this component.
-defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
+defineExpose({ show, hide, bsInstance: bsToast })
 </script>
 
 <template>
   <div
     v-if="noContainer"
     ref="toastRef"
-    :id="computedId"
+    :id="id"
     :class="toastClass"
     role="alert"
     aria-live="assertive"
@@ -192,7 +165,7 @@ defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
     <div :class="containerClass" style="z-index: 1090">
       <div
         ref="toastRef"
-        :id="computedId"
+        :id="id"
         :class="toastClass"
         role="alert"
         aria-live="assertive"

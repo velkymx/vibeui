@@ -39,38 +39,18 @@ function applyAndUpdate(mode: ColorMode) {
   callbacks.forEach(cb => cb(mode))
 }
 
-// Read stored preference immediately to prevent flash on first render.
-let _initial: ColorMode = 'auto'
-try {
-  const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
-  if (raw !== null && raw in NEXT_MODE) _initial = raw as ColorMode
-} catch { /* ignore SSR / private browsing */ }
+// Sync DOM with the initial default immediately on module load.
+// Prevents a flash where colorMode.value says 'auto' but <html> has no data-bs-theme.
+applyAndUpdate('auto')
 
-const onSystemThemeChange = () => {
-  if (colorMode.value === 'auto') {
-    applyColorMode('auto')
-    callbacks.forEach(cb => cb('auto'))
-  }
-}
-
-let systemThemeMq: MediaQueryList | null = null
-
-function attachSystemListener() {
-  if (typeof window === 'undefined') return
-  systemThemeMq = window.matchMedia('(prefers-color-scheme: dark)')
-  systemThemeMq.addEventListener('change', onSystemThemeChange)
-}
-
-function detachSystemListener() {
-  systemThemeMq?.removeEventListener('change', onSystemThemeChange)
-  systemThemeMq = null
-}
-
-// Bug 1 fix: gate module-level side effects behind window check for SSR safety
+// Listen for system theme changes
 if (typeof window !== 'undefined') {
-  applyAndUpdate(_initial)
-  attachSystemListener()
-  initialized = true
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (colorMode.value === 'auto') {
+      applyColorMode('auto')
+      callbacks.forEach(cb => cb('auto'))
+    }
+  })
 }
 
 export function useColorMode() {
@@ -86,12 +66,9 @@ export function useColorMode() {
 
   function initColorMode() {
     if (initialized) return
-    // Bug 1 fix: initColorMode is the real init path when window was unavailable at module load (SSR).
-    // Detach any listener left by clearColorMode before re-attaching to avoid duplicates.
-    detachSystemListener()
     let stored: ColorMode = 'auto'
     try {
-      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
+      const raw = localStorage.getItem(STORAGE_KEY)
       if (raw !== null && raw in NEXT_MODE) {
         stored = raw as ColorMode
       }
@@ -99,23 +76,17 @@ export function useColorMode() {
       // ignore
     }
     applyAndUpdate(stored)
-    attachSystemListener()
     initialized = true
   }
 
   function clearColorMode() {
-    detachSystemListener()
     try {
       localStorage.removeItem(STORAGE_KEY)
     } catch {
       // ignore — ref and DOM still reset even if storage removal fails
     }
-    applyAndUpdate('auto')
-    // Re-attach so OS theme changes still update the DOM while in auto mode.
-    // initialized stays false so initColorMode() can run again and re-read storage.
-    // initColorMode() calls detachSystemListener() before re-attaching to prevent duplicates.
-    attachSystemListener()
     initialized = false
+    applyAndUpdate('auto')
   }
 
   function toggleColorMode() {
@@ -125,15 +96,9 @@ export function useColorMode() {
   /**
    * Register a callback to be called whenever the color mode changes.
    * Useful for syncing native UI elements (like status bar) in hybrid apps.
-   * Returns an off-function to remove the callback and prevent memory leaks.
    */
-  function onColorModeChange(callback: (mode: ColorMode) => void): () => void {
-    // Bug 2 fix: return a removal function to prevent memory leaks
+  function onColorModeChange(callback: (mode: ColorMode) => void) {
     callbacks.push(callback)
-    return () => {
-      const idx = callbacks.indexOf(callback)
-      if (idx !== -1) callbacks.splice(idx, 1)
-    }
   }
 
   return {
@@ -157,8 +122,6 @@ export function _resetColorMode() {
   } catch {
     // ignore in SSR / stubbed environments
   }
-  detachSystemListener()
   initialized = false
   applyAndUpdate('auto')
-  attachSystemListener()
 }

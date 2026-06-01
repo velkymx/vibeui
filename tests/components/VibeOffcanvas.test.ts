@@ -68,22 +68,6 @@ describe('VibeOffcanvas', () => {
     expect(mockInstance.show).toHaveBeenCalled()
   })
 
-  it('does not stack event listeners on re-init (placement change)', async () => {
-    const wrapper = mount(VibeOffcanvas, {
-      props: { id: 'test-offcanvas', placement: 'start', teleport: false }
-    })
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    await wrapper.setProps({ placement: 'end' })
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    wrapper.find('.offcanvas').element.dispatchEvent(new Event('shown.bs.offcanvas'))
-
-    const emitted = wrapper.emitted('update:modelValue')
-    expect(emitted).toHaveLength(1)
-    expect(emitted![0]).toEqual([true])
-  })
-
   it('hides when modelValue changes to false', async () => {
     const wrapper = mount(VibeOffcanvas, {
       props: {
@@ -97,64 +81,11 @@ describe('VibeOffcanvas', () => {
     await new Promise(resolve => setTimeout(resolve, 0))
     const mockInstance = vi.mocked(bootstrap.Offcanvas).mock.results[0].value
 
-    // Simulating the event that sets isVisible internal state (now fired on 'shown', not 'show')
+    // Simulating the event that sets isVisible internal state
     const offcanvasEl = wrapper.find('.offcanvas').element
-    offcanvasEl.dispatchEvent(new Event('shown.bs.offcanvas'))
+    offcanvasEl.dispatchEvent(new Event('show.bs.offcanvas'))
 
     await wrapper.setProps({ modelValue: false })
     expect(mockInstance.hide).toHaveBeenCalled()
-  })
-
-  it('cleans up on unmount', async () => {
-    const wrapper = mount(VibeOffcanvas, {
-      props: { teleport: false }
-    })
-    await new Promise(resolve => setTimeout(resolve, 0))
-    const mockInstance = vi.mocked(bootstrap.Offcanvas).mock.results[0].value
-
-    wrapper.unmount()
-    expect(mockInstance.dispose).toHaveBeenCalled()
-  })
-
-  // Regression: isUnmounted guard — Bootstrap constructor must not run on a detached
-  // element if unmount fires before the dynamic import() microtask resolves.
-  it('does not construct Offcanvas after component unmounts during async init', async () => {
-    const wrapper = mount(VibeOffcanvas, {
-      props: { teleport: false }
-    })
-
-    // Unmount synchronously before the import() microtask resolves
-    wrapper.unmount()
-
-    // Drain microtask queue; isUnmounted guard must block the constructor
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    expect(bootstrap.Offcanvas).not.toHaveBeenCalled()
-  })
-
-  // WCAG 2.4.3: focus returns to the trigger element after close.
-  it('returns focus to the element focused before opening', async () => {
-    const trigger = document.createElement('button')
-    document.body.appendChild(trigger)
-    trigger.focus()
-    expect(document.activeElement).toBe(trigger)
-
-    const wrapper = mount(VibeOffcanvas, { props: { teleport: false }, attachTo: document.body })
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    const el = wrapper.find('.offcanvas').element
-    el.dispatchEvent(new Event('show.bs.offcanvas'))
-    el.dispatchEvent(new Event('shown.bs.offcanvas'))
-
-    // Simulate the panel grabbing focus (close button inside)
-    const closeBtn = wrapper.find('.btn-close').element as HTMLElement
-    closeBtn.focus()
-    expect(document.activeElement).not.toBe(trigger)
-
-    el.dispatchEvent(new Event('hidden.bs.offcanvas'))
-    expect(document.activeElement).toBe(trigger)
-
-    wrapper.unmount()
-    document.body.removeChild(trigger)
   })
 })

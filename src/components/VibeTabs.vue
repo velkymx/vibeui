@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, provide, reactive, ref, watch, type PropType } from 'vue'
-import { TABS_CONTEXT_KEY } from '../injectionKeys'
+import { computed, provide, reactive, ref, watch, type PropType } from 'vue'
 
 type TabsVariant = 'tabs' | 'pills' | 'underline'
 
@@ -33,10 +32,7 @@ const activeName = computed(() => internalActive.value)
 watch(
   () => props.modelValue,
   (val) => {
-    if (val === undefined) {
-      // Explicit deselection from parent — clear internalActive
-      internalActive.value = undefined
-    } else if (val !== internalActive.value) {
+    if (val !== undefined && val !== internalActive.value) {
       internalActive.value = val
       visited.add(val)
     }
@@ -64,32 +60,19 @@ const navClass = computed(() => {
 
 const containerClass = computed(() => (props.vertical ? 'd-flex' : ''))
 
-provide(TABS_CONTEXT_KEY, {
+provide('vibeTabsContext', {
   register: (name: string, label: string, disabled: boolean) => {
     if (registry.find(t => t.name === name)) return
     registry.push({ name, label, disabled })
     if (internalActive.value === undefined && !disabled) {
       internalActive.value = name
       visited.add(name)
-      // Wrap in nextTick to avoid emitting during child onMounted (mid-parent-render-cycle)
-      nextTick(() => emit('update:modelValue', name))
+      emit('update:modelValue', name)
     }
   },
   unregister: (name: string) => {
-    const wasActive = internalActive.value === name
-    // Filter by reference instead of splice-by-index to be safe for concurrent unmounts
-    const newRegistry = registry.filter(r => r.name !== name)
-    registry.splice(0, registry.length, ...newRegistry)
-    if (wasActive) {
-      const next = registry.find(t => !t.disabled)
-      const nextName = next?.name
-      internalActive.value = nextName
-      if (nextName !== undefined) {
-        visited.add(nextName)
-        emit('update:modelValue', nextName)
-        emit('change', nextName)
-      }
-    }
+    const idx = registry.findIndex(t => t.name === name)
+    if (idx >= 0) registry.splice(idx, 1)
   },
   isActive: (name: string) => internalActive.value === name,
   hasBeenActive: (name: string) => visited.has(name),

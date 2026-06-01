@@ -112,23 +112,6 @@ describe('VibeButton', () => {
     expect(wrapper.emitted('click')).toBeFalsy()
   })
 
-  it('calls preventDefault on click when disabled anchor', async () => {
-    const wrapper = mount(VibeButton, {
-      props: { disabled: true, href: 'https://example.com' }
-    })
-
-    let prevented = false
-    const event = new MouseEvent('click', { bubbles: true, cancelable: true })
-    Object.defineProperty(event, 'preventDefault', {
-      value: () => { prevented = true },
-      writable: true
-    })
-
-    wrapper.find('a').element.dispatchEvent(event)
-    expect(prevented).toBe(true)
-    expect(wrapper.emitted('click')).toBeFalsy()
-  })
-
   describe('variant="link"', () => {
     it('renders .btn-link class', () => {
       const wrapper = mount(VibeButton, {

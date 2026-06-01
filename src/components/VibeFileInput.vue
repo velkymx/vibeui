@@ -23,8 +23,7 @@ const emit = defineEmits<{
   (e: 'invalid', rejected: File[]): void
 }>()
 
-const _generatedId = useId('file-input')
-const computedId = computed(() => props.id || _generatedId)
+const computedId = computed(() => props.id || useId('file-input'))
 const isDragging = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 
@@ -90,21 +89,15 @@ const handleChange = (event: Event) => {
 
 const handleDrop = (event: DragEvent) => {
   event.preventDefault()
-  dragCounter = 0
   isDragging.value = false
   if (props.disabled) return
   const files = event.dataTransfer?.files ? Array.from(event.dataTransfer.files) : []
   processFiles(files)
 }
 
-let dragCounter = 0
-
 const handleDragEnter = (event: DragEvent) => {
   event.preventDefault()
-  if (!props.disabled) {
-    dragCounter++
-    isDragging.value = true
-  }
+  if (!props.disabled) isDragging.value = true
 }
 
 const handleDragOver = (event: DragEvent) => {
@@ -113,22 +106,13 @@ const handleDragOver = (event: DragEvent) => {
 
 const handleDragLeave = (event: DragEvent) => {
   event.preventDefault()
-  dragCounter = Math.max(0, dragCounter - 1)
-  if (dragCounter === 0) isDragging.value = false
+  isDragging.value = false
 }
 
 const openFileBrowser = () => {
   if (props.disabled) return
   inputRef.value?.click()
 }
-
-const clearFiles = () => {
-  if (inputRef.value) inputRef.value.value = ''
-  emit('update:modelValue', [])
-  emit('change', [])
-}
-
-defineExpose({ clearFiles })
 
 const dropzoneClass = computed(() => {
   const c = ['vibe-file-input-dropzone']
@@ -140,7 +124,6 @@ const dropzoneClass = computed(() => {
 // Document-level safety net: if a drag escapes the dropzone (off the page,
 // dropped on a different target, ESC), our local @dragleave doesn't always fire.
 const onDocumentDragEnd = () => {
-  dragCounter = 0
   isDragging.value = false
 }
 

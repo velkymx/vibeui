@@ -65,4 +65,4 @@ bottom start | bottom center | bottom end
 
 ## Internal use
 
-`VibeDropdown`, `VibeTooltip`, `VibePopover`, `VibeDatePicker`, and `VibeAutocomplete` currently use Bootstrap's bundled Popper or component-local positioning rather than `usePosition`.
+Future v0.9 work will route `VibeDropdown`, `VibeTooltip`, `VibePopover`, `VibeDatePicker`, and `VibeAutocomplete` through `usePosition` for consistent collision handling. They currently use Bootstrap's bundled Popper or component-local positioning.

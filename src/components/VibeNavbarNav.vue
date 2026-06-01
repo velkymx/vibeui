@@ -1,62 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import type { NavItem, DropdownItem, ComponentError } from '../types'
-
-interface BootstrapDropdown {
-  dispose: () => void
-}
+import type { NavItem, DropdownItem } from '../types'
 
 const props = defineProps({
   tag: { type: String, default: 'ul' },
   items: { type: Array as () => NavItem[], default: undefined }
 })
 
-const emit = defineEmits<{
-  (e: 'item-click', payload: { item: NavItem; index: number; event: Event }): void
-  (e: 'dropdown-item-click', payload: { item: NavItem; itemIndex: number; child: DropdownItem; childIndex: number; event: Event }): void
-  (e: 'component-error', error: ComponentError): void
-}>()
-
-const navbarNavRef = ref<HTMLElement | null>(null)
-const bsDropdowns = new Map<HTMLElement, BootstrapDropdown>()
-
-const initDropdowns = async () => {
-  if (!navbarNavRef.value) return
-  try {
-    const bootstrap = await import('bootstrap')
-    const Dropdown = bootstrap.Dropdown
-    const toggleEls = navbarNavRef.value.querySelectorAll<HTMLElement>('[data-bs-toggle="dropdown"]')
-    toggleEls.forEach(el => {
-      if (!bsDropdowns.has(el)) {
-        bsDropdowns.set(el, new Dropdown(el) as BootstrapDropdown)
-      }
-    })
-  } catch (error) {
-    emit('component-error', {
-      message: 'Bootstrap JS not loaded. Dropdowns will use data attributes only.',
-      componentName: 'VibeNavbarNav',
-      originalError: error
-    })
-  }
-}
-
-onMounted(initDropdowns)
-
-onBeforeUnmount(() => {
-  bsDropdowns.forEach(d => d.dispose())
-  bsDropdowns.clear()
-})
-
-// deep: false — dropdown presence depends on items array identity, not leaf values.
-// Replacing the items array (the data-driven update pattern) changes identity and
-// triggers a rebuild; deep traversal only added cost for leaf mutations that do not
-// affect dropdown structure.
-watch(() => props.items, async () => {
-  bsDropdowns.forEach(d => d.dispose())
-  bsDropdowns.clear()
-  await nextTick()
-  await initDropdowns()
-}, { deep: false })
+const emit = defineEmits(['item-click', 'dropdown-item-click', 'component-error'])
 
 const getItemClass = (item: NavItem) => {
   const classes = ['nav-item']
@@ -75,7 +25,7 @@ const getLinkClass = (item: NavItem) => {
 const getItemTag = (item: NavItem) => {
   if (item.href) return 'a'
   if (item.to) return 'router-link'
-  return 'button'
+  return 'a'
 }
 
 const getDropdownItemClass = (child: DropdownItem) => {
@@ -99,25 +49,26 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
 </script>
 
 <template>
-  <component :is="tag" ref="navbarNavRef" class="navbar-nav">
+  <component :is="tag" class="navbar-nav">
     <!-- Data-driven mode: generate from items array -->
     <template v-if="items && items.length > 0">
-      <li v-for="(item, index) in items" :key="item.href || item.text || String(index)" :class="getItemClass(item)">
+      <li v-for="(item, index) in items" :key="index" :class="getItemClass(item)">
 
         <!-- Dropdown item -->
         <template v-if="item.children?.length">
-          <button
-            type="button"
+          <a
             :class="getLinkClass(item)"
+            href="#"
+            role="button"
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
             <slot name="item" :item="item" :index="index">
               {{ item.text }}
             </slot>
-          </button>
+          </a>
           <ul class="dropdown-menu">
-            <template v-for="(child, childIndex) in item.children" :key="child.href || child.text || String(childIndex)">
+            <template v-for="(child, childIndex) in item.children" :key="childIndex">
               <li v-if="child.divider">
                 <hr class="dropdown-divider">
               </li>
@@ -147,9 +98,8 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
           v-else
           :is="getItemTag(item)"
           :class="getLinkClass(item)"
-          :href="item.href || undefined"
+          :href="item.href"
           :to="item.to"
-          :type="!item.href && !item.to ? 'button' : undefined"
           :aria-current="item.active ? 'page' : undefined"
           :aria-disabled="item.disabled"
           @click="handleItemClick(item, index, $event)"

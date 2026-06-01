@@ -18,28 +18,15 @@ export function useBreakpoints() {
   const isXl = ref(false)
   const isXxl = ref(false)
 
-  const cleanups: Array<() => void> = []
-
-  // Cache MediaQueryList objects at setup time to avoid throwaway objects on every update()
-  let mqls: Record<string, MediaQueryList> | null = null
-
-  if (typeof window !== 'undefined') {
-    mqls = {
-      sm:  window.matchMedia(`(min-width: ${breakpoints.sm}px)`),
-      md:  window.matchMedia(`(min-width: ${breakpoints.md}px)`),
-      lg:  window.matchMedia(`(min-width: ${breakpoints.lg}px)`),
-      xl:  window.matchMedia(`(min-width: ${breakpoints.xl}px)`),
-      xxl: window.matchMedia(`(min-width: ${breakpoints.xxl}px)`)
-    }
-  }
+  const queries: Record<string, MediaQueryList> = {}
 
   const update = () => {
-    if (!mqls) return
-    isSm.value  = mqls.sm.matches
-    isMd.value  = mqls.md.matches
-    isLg.value  = mqls.lg.matches
-    isXl.value  = mqls.xl.matches
-    isXxl.value = mqls.xxl.matches
+    if (typeof window === 'undefined') return
+    isSm.value = window.matchMedia(`(min-width: ${breakpoints.sm}px)`).matches
+    isMd.value = window.matchMedia(`(min-width: ${breakpoints.md}px)`).matches
+    isLg.value = window.matchMedia(`(min-width: ${breakpoints.lg}px)`).matches
+    isXl.value = window.matchMedia(`(min-width: ${breakpoints.xl}px)`).matches
+    isXxl.value = window.matchMedia(`(min-width: ${breakpoints.xxl}px)`).matches
   }
 
   // Initial update
@@ -49,22 +36,21 @@ export function useBreakpoints() {
   const isMobile = computed(() => !isMd.value)
   const isTablet = computed(() => isMd.value && !isLg.value)
 
-  if (mqls) {
-    // Register change listeners on cached MediaQueryList objects
-    const listener = () => update()
-    Object.values(mqls).forEach((mql) => {
-      mql.addEventListener('change', listener)
-      cleanups.push(() => mql.removeEventListener('change', listener))
+  // Use matchMedia listeners for efficiency
+  if (typeof window !== 'undefined') {
+    Object.entries(breakpoints).forEach(([key, value]) => {
+      const query = window.matchMedia(`(min-width: ${value}px)`)
+      const listener = () => {
+        update()
+      }
+      query.addEventListener('change', listener)
+      
+      // Automatic cleanup if in component context
+      if (getCurrentInstance()) {
+        onUnmounted(() => query.removeEventListener('change', listener))
+      }
     })
-
-    if (getCurrentInstance()) {
-      onUnmounted(() => cleanups.forEach(fn => fn()))
-    } else {
-      console.warn('[useBreakpoints] Called outside component context. Call the returned cleanup() function manually to prevent listener leaks.')
-    }
   }
-
-  const cleanup = () => cleanups.forEach(fn => fn())
 
   return {
     isXs,
@@ -74,7 +60,6 @@ export function useBreakpoints() {
     isXl,
     isXxl,
     isMobile,
-    isTablet,
-    cleanup
+    isTablet
   }
 }

@@ -11,6 +11,12 @@ Small count and labeling component with Bootstrap 5.3 styling.
 | `pill` | `Boolean` | `false` | Renders badge with rounded pill shape |
 | `tag` | `String` | `'span'` | HTML tag to render: `'span'`, `'a'`, or any valid tag |
 
+## Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `component-error` | `Object` | Emitted when an error occurs |
+
 ## Slots
 
 | Slot | Description |

@@ -1,5 +1,5 @@
 import type { Directive, DirectiveBinding } from 'vue'
-import type { TooltipPlacement } from '../types'
+import type { Placement } from '../types'
 
 interface BootstrapTooltipInstance {
   dispose: () => void
@@ -10,8 +10,9 @@ interface TooltipOptions {
   title?: string
   text?: string
   content?: string
-  placement?: TooltipPlacement
+  placement?: Placement
   trigger?: string
+  html?: boolean
 }
 
 type TooltipBindingValue = string | TooltipOptions | undefined
@@ -45,27 +46,22 @@ const resolveTrigger = (trigger?: string): string => {
 const structuralChanged = (a: TooltipOptions, b: TooltipOptions): boolean => {
   if ((a.placement || 'top') !== (b.placement || 'top')) return true
   if (resolveTrigger(a.trigger) !== resolveTrigger(b.trigger)) return true
+  if (!!a.html !== !!b.html) return true
   return false
 }
 
 const create = async (el: AugmentedElement, opts: TooltipOptions): Promise<void> => {
   if (el[PENDING_KEY] || el[INSTANCE_KEY]) return
   el[PENDING_KEY] = true
-  // Save the opts we're creating with so we can detect updates that arrived during the async gap
-  const latestOpts = opts
-  el[OPTS_KEY] = opts
   try {
     const bootstrap = await import('bootstrap')
     el[INSTANCE_KEY] = new bootstrap.Tooltip(el, {
       title: opts.title || '',
       placement: opts.placement || 'top',
       trigger: resolveTrigger(opts.trigger),
-      html: false
+      html: opts.html || false
     }) as unknown as BootstrapTooltipInstance
-    // Apply any opts that arrived during the async gap (updated hook stores them in OPTS_KEY)
-    if (el[OPTS_KEY] !== latestOpts && el[INSTANCE_KEY]) {
-      el[INSTANCE_KEY].setContent({ '.tooltip-inner': el[OPTS_KEY]?.title ?? '' })
-    }
+    el[OPTS_KEY] = opts
   } catch {
     // Bootstrap JS not loaded; data attributes already set on el for fallback styling.
   }
@@ -86,7 +82,8 @@ const applyDataAttrs = (el: AugmentedElement, opts: TooltipOptions): void => {
   else el.removeAttribute('data-bs-title')
   el.setAttribute('data-bs-placement', opts.placement || 'top')
   el.setAttribute('data-bs-trigger', resolveTrigger(opts.trigger))
-  el.removeAttribute('data-bs-html')
+  if (opts.html) el.setAttribute('data-bs-html', 'true')
+  else el.removeAttribute('data-bs-html')
 }
 
 export const vTooltip: Directive<AugmentedElement, TooltipBindingValue> = {
@@ -100,19 +97,15 @@ export const vTooltip: Directive<AugmentedElement, TooltipBindingValue> = {
     applyDataAttrs(el, opts)
     const prev = el[OPTS_KEY] || {}
     const instance = el[INSTANCE_KEY]
-    // Always update OPTS_KEY so a pending create() can detect newer opts after it resolves
-    el[OPTS_KEY] = opts
-    if (el[PENDING_KEY]) {
-      // create() is still in flight; it will pick up the updated OPTS_KEY after it resolves
-      return
-    }
     if (instance && structuralChanged(prev, opts)) {
       destroy(el)
+      el[OPTS_KEY] = opts
       void create(el, opts)
       return
     }
     if (instance) {
       instance.setContent({ '.tooltip-inner': opts.title || '' })
+      el[OPTS_KEY] = opts
     }
   },
   beforeUnmount(el) {

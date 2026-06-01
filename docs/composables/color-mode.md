@@ -17,9 +17,8 @@ import { useColorMode } from '@velkymx/vibeui'
 | `colorMode` | `Ref<ColorMode>` | Reactive current mode. Bind to template or watch for changes. |
 | `setColorMode(mode)` | `(mode: ColorMode) => void` | Set a specific mode. Persists to `localStorage` and updates `<html data-bs-theme>`. |
 | `toggleColorMode()` | `() => void` | Cycle through `light → dark → auto → light`. |
-| `initColorMode()` | `() => void` | Restore the saved preference from `localStorage` and attach the system-theme listener. **Call once at app startup, before mount.** Subsequent calls are no-ops while already initialized. |
-| `clearColorMode()` | `() => void` | Reset to `auto`, remove the `localStorage` key, and **keep the system listener attached** so auto mode stays reactive to OS theme changes. |
-| `onColorModeChange(cb)` | `(cb: (mode: ColorMode) => void) => () => void` | Register a callback that fires whenever the mode changes. Returns an **unsubscribe function** — call it to remove the callback and avoid leaks. Useful for hybrid app status bars. |
+| `initColorMode()` | `() => void` | Restore the saved preference from `localStorage`. **Call once at app startup.** Subsequent calls are no-ops. |
+| `onColorModeChange(cb)` | `(mode: ColorMode) => void` | Register a callback that fires whenever the mode changes. Useful for hybrid app status bars. |
 
 ## Type
 
@@ -93,8 +92,7 @@ const options: { label: string; value: ColorMode }[] = [
     <VibeButton
       v-for="option in options"
       :key="option.value"
-      :variant="colorMode === option.value ? 'primary' : 'secondary'"
-      :outline="colorMode !== option.value"
+      :variant="colorMode === option.value ? 'primary' : 'outline-secondary'"
       @click="setColorMode(option.value)"
     >
       {{ option.label }}
@@ -121,43 +119,6 @@ watch(colorMode, (mode) => {
 </script>
 ```
 
-### Subscribing outside a component
-
-`onColorModeChange` is for non-reactive sinks (a hybrid app status bar, an analytics call). It returns an unsubscribe function — call it on teardown.
-
-```vue
-<script setup lang="ts">
-import { onUnmounted } from 'vue'
-import { useColorMode } from '@velkymx/vibeui'
-
-const { onColorModeChange } = useColorMode()
-
-const off = onColorModeChange((mode) => {
-  // e.g. sync the native status bar color in a Capacitor app
-})
-
-onUnmounted(off)
-</script>
-```
-
-### Resetting to system default
-
-`clearColorMode` removes the saved preference and returns to `auto`. The OS theme listener stays attached, so the app keeps tracking system theme changes afterward.
-
-```vue
-<script setup lang="ts">
-import { useColorMode } from '@velkymx/vibeui'
-
-const { clearColorMode } = useColorMode()
-</script>
-
-<template>
-  <VibeButton variant="secondary" outline @click="clearColorMode">
-    Use system default
-  </VibeButton>
-</template>
-```
-
 ### Scoping color mode to a single component
 
 Bootstrap's `data-bs-theme` attribute works on any element, not just `<html>`. For cases where one section of the page should always be dark regardless of the app-level setting, apply it directly in the template instead of using the composable.
@@ -174,6 +135,7 @@ Bootstrap's `data-bs-theme` attribute works on any element, not just `<html>`. F
 
 - **Persistence** — the selected mode is stored in `localStorage` under the key `vibe-color-mode`. It survives page reloads.
 - **System Theme Reactivity** — when the mode is set to `'auto'`, VibeUI automatically listens for OS-level theme changes (via `matchMedia`) and updates the DOM immediately without a page reload.
-- **SSR-safe** — all `document` and `localStorage` access is guarded. The composable is safe to import in server-rendered environments; applying the theme simply does nothing when `document` is undefined. On the client, `initColorMode()` is the real init path that reads storage and attaches the listener.
+- **SSR-safe** — all `document` and `localStorage` access is guarded. The composable is safe to import in server-rendered environments; `applyColorMode` simply does nothing when `document` is undefined.
+...
 - **Invalid values** — `setColorMode` silently ignores any value that is not `'light'`, `'dark'`, or `'auto'`. No error is thrown.
-- **`initColorMode` is idempotent** — while initialized, repeat calls are no-ops and do not overwrite changes the user made after init. Calling `clearColorMode()` un-initializes the singleton, so a later `initColorMode()` can re-read storage.
+- **`initColorMode` is idempotent** — it is safe to call it multiple times (e.g. from multiple entry points). Only the first call reads `localStorage` and applies the theme. All subsequent calls are no-ops and do not overwrite changes the user made after initialization.

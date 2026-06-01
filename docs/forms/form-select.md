@@ -1,98 +1,54 @@
 # VibeFormSelect
 
-Single or multiple selection dropdown driven by an `options` array, with built-in validation and accessibility.
+Custom select component with support for single and multiple selection.
+
+## Basic Usage
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+const selected = ref('')
+const options = [
+  { value: '1', text: 'Option 1' },
+  { value: '2', text: 'Option 2' }
+]
+</script>
+
+<template>
+  <VibeFormSelect
+    v-model="selected"
+    label="Choose an option"
+    :options="options"
+  />
+</template>
+```
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `modelValue` | `FormSelectOptionValue \| FormSelectOptionValue[]` | `''` | Selected value(s). An array when `multiple` is set. `FormSelectOptionValue` is `string \| number \| boolean \| null \| undefined`. |
-| `options` | `FormSelectOption[]` | `[]` | Options to render: `{ value, text, disabled? }`. |
-| `id` | `string` | auto-generated | Element id. Auto-generated, or inherited from a parent `VibeFormGroup`. |
-| `label` | `string` | `undefined` | Standalone label text. |
-| `multiple` | `boolean` | `false` | Allow multiple selection (model becomes an array). |
-| `selectSize` | `number` | `undefined` | Number of visible rows (native `size`). |
-| `htmlSize` | `number` | `undefined` | Number of visible rows (native `size`); takes precedence over `selectSize`. |
-| `placeholder` | `string` | `undefined` | Disabled placeholder option (single-select only). |
-| `disabled` | `boolean` | `false` | Disable the select. |
-| `required` | `boolean` | `false` | Mark as required. |
-| `size` | `'sm' \| 'lg'` | `undefined` | Control size (`.form-select-sm/lg`). |
-| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Visual validation state. |
-| `validationMessage` | `string` | `undefined` | Feedback message for the current state. |
-| `validationRules` | `ValidationRule[] \| ValidatorFunction` | `undefined` | Rules carried for use with a validation composable. |
-| `validateOn` | `'change' \| 'blur'` | `'change'` | When the `validate` event fires. |
-| `helpText` | `string` | `undefined` | Help text below the select. |
-
-## Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `update:modelValue` | `FormSelectOptionValue \| FormSelectOptionValue[]` | Emitted on selection. Array when `multiple`. |
-| `change` | `Event` | Native change event. |
-| `blur` | `FocusEvent` | Emitted on blur. |
-| `focus` | `FocusEvent` | Emitted on focus. |
-| `validate` | — | Emitted when the `validateOn` trigger occurs. |
-
-## Slots
-
-| Slot | Description |
-|------|-------------|
-| default | Override the auto-rendered `<option>` list (provide your own `<option>` / `<optgroup>` elements). |
-
-## Usage
-
-### Recommended: inside a VibeFormGroup
-
-```vue
-<script setup lang="ts">
-import { ref } from 'vue'
-import type { FormSelectOption } from '@velkymx/vibeui'
-
-const country = ref('')
-const options: FormSelectOption[] = [
-  { value: 'us', text: 'United States' },
-  { value: 'ca', text: 'Canada' },
-  { value: 'mx', text: 'Mexico' }
-]
-</script>
-
-<template>
-  <VibeFormGroup label="Country">
-    <VibeFormSelect v-model="country" :options="options" placeholder="Choose…" />
-  </VibeFormGroup>
-</template>
-```
-
-### Multiple selection
-
-```vue
-<script setup lang="ts">
-import { ref } from 'vue'
-import type { FormSelectOption } from '@velkymx/vibeui'
-
-const tags = ref<string[]>([])
-const options: FormSelectOption[] = [
-  { value: 'vue', text: 'Vue' },
-  { value: 'ts', text: 'TypeScript' },
-  { value: 'bs', text: 'Bootstrap' }
-]
-</script>
-
-<template>
-  <VibeFormGroup label="Tags">
-    <VibeFormSelect v-model="tags" :options="options" multiple :select-size="5" />
-  </VibeFormGroup>
-</template>
-```
+| `modelValue` | `any` | `''` | Selected value (v-model) |
+| `id` | `String` | `Auto-generated` | Unique identifier |
+| `label` | `String` | `undefined` | Label text |
+| `options` | `FormSelectOption[]` | `[]` | Array of options |
+| `multiple` | `Boolean` | `false` | Enable multiple selection |
+| `selectSize` | `Number` | `undefined` | Visible rows |
+| `disabled` | `Boolean` | `false` | Disable the select |
+| `required` | `Boolean` | `false` | Mark as required |
+| `size` | `'sm' \| 'lg'` | `undefined` | Select size |
+| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Validation state |
+| `validationMessage` | `String` | `undefined` | Validation message |
+| `validateOn` | `'change' \| 'blur'` | `'change'` | When to validate |
+| `helpText` | `String` | `undefined` | Help text |
 
 ## Important Notes
 
-- **Non-string values preserved:** option values keep their original type (`number`, `boolean`, etc.). The component encodes options by index internally, so `v-model` round-trips the exact value — you do not have to stringify.
-- **Placeholder:** only applies to single-select; it renders a disabled empty-value option.
-- **Group linking:** wrapped in a `VibeFormGroup`, the select consumes the group id so the label and feedback link automatically.
+**Automatic ID Generation:** This component automatically generates a unique ID if one is not provided.
+
+**Automatic ID Injection:** When used inside a `VibeFormGroup`, this component will automatically inherit the group's ID to ensure proper label association and accessibility.
 
 ## Bootstrap CSS Classes
 
 - `.form-select`
-- `.form-select-{sm|lg}`
+- `.form-select-{size}`
 - `.is-valid`, `.is-invalid`

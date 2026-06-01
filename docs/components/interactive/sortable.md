@@ -7,7 +7,6 @@ Drag-and-drop reorderable list. Generic over the row type; binds an ordered arra
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `modelValue` | `T[]` | required | Ordered array (v-model) |
-| `itemKey` | `String` | `undefined` | Property name on each item to use as the `:key`. When omitted, index is used as key. Set this when items have a stable unique identifier to avoid key conflicts during reorder. |
 | `disabled` | `Boolean` | `false` | Disable dragging |
 | `tag` | `String` | `'div'` | Container element |
 | `itemTag` | `String` | `'div'` | Element wrapping each item |
@@ -49,4 +48,4 @@ Items get `data-vibe-sortable-item` for testability and styling. The currently d
 - **VibeSortable**: a single ordered list whose only operation is reorder.
 - **VibeDraggable + VibeDroppable**: cross-list moves, kanban boards, builders, anywhere the source and target are different containers.
 
-> **Scope:** VibeSortable handles in-list reorder only. Cross-list moves between two `<VibeSortable>` instances are not supported — use `VibeDraggable` + `VibeDroppable` for that.
+> **v0.9 scope**: VibeSortable handles in-list reorder only. Cross-list moves between two `<VibeSortable>` instances are not supported — use `VibeDraggable` + `VibeDroppable` for that.

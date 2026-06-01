@@ -9,6 +9,8 @@ const props = defineProps({
   tag: { type: String as () => Tag | 'a', default: 'span' }
 })
 
+const emit = defineEmits(['component-error'])
+
 const badgeClass = computed(() => {
   const classes = ['badge']
   

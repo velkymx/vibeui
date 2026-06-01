@@ -22,8 +22,6 @@ interface NavItem {
   text: string
   href?: string
   to?: string | object
-  /** Tab panel selector (e.g. '#panel-id') for tabs/pills mode with router-link items */
-  target?: string
   active?: boolean
   disabled?: boolean
   children?: NavItem[] // Support for dropdowns
@@ -47,28 +45,6 @@ interface NavItem {
 | `item` | `{ item, index }` | Custom item rendering |
 
 ## Usage
-
-### Custom item content (`#item` slot)
-
-Use the `item` slot to render richer nav links — e.g. an icon next to the label. The slot is scoped with `{ item, index }`.
-
-```vue
-<template>
-  <VibeNav :items="navItems">
-    <template #item="{ item }">
-      <VibeIcon :icon="item.icon" class="me-2" />
-      {{ item.text }}
-    </template>
-  </VibeNav>
-</template>
-
-<script setup>
-const navItems = [
-  { text: 'Home', href: '#', icon: 'house', active: true },
-  { text: 'Profile', href: '#', icon: 'person' }
-]
-</script>
-```
 
 ### Interactive Tabs
 
@@ -96,48 +72,9 @@ const tabPanes = [
 </script>
 ```
 
-### Tabs with Vue Router Links
-
-Items using `to` (router-link) also work in tabs/pills mode. Provide a `target` field pointing to the panel ID, and Bootstrap Tab events (`show`, `shown`, `hide`, `hidden`) will fire correctly:
-
-```vue
-<template>
-  <VibeNav tabs :items="navItems" @shown="onShown" />
-  <div class="tab-content mt-3">
-    <div id="overview-pane" class="tab-pane fade show active">Overview content</div>
-    <div id="settings-pane" class="tab-pane fade">Settings content</div>
-  </div>
-</template>
-
-<script setup>
-const navItems = [
-  { text: 'Overview', to: '/overview', target: '#overview-pane', active: true },
-  { text: 'Settings', to: '/settings', target: '#settings-pane' }
-]
-
-const onShown = (event) => {
-  console.log('Tab shown:', event.target)
-}
-</script>
-```
-
-Items with `to` starting with `#` are also treated as tab targets without needing an explicit `target` field.
-
-## Exposed Methods
-
-| Method | Description |
-|--------|-------------|
-| `refresh()` | Tears down and re-initializes Bootstrap Tab instances. Call after dynamically changing items if needed. |
-
-> **Escape hatch:** `_unsafe_bsInstances` (a `Map` of the underlying Bootstrap `Tab` instances) is also exposed. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on these directly WILL break the component.
-
 ## Important Notes
 
-**`href` sanitization:** Item and child `href` values are sanitized. Only `https?://`, root-relative (`/path`), relative (`./`, `../`), and anchor (`#anchor`) URLs are allowed; `javascript:`, `data:`, and protocol-relative (`//`) URLs are stripped. Use `to` for Vue Router navigation.
-
-**Disabled button items:** Items without `href` or `to` (plain button items) receive the HTML `disabled` attribute when `disabled: true` is set. Link and router-link items only get the disabled visual style — the browser attribute is omitted because `<a disabled>` has no native effect.
-
-**Automatic Initialization:** When using `tabs` or `pills`, this component automatically initializes Bootstrap's Tab functionality for items that target a local panel ID via `href="#..."`, `target="#..."`, or `to="#..."`.
+**Automatic Initialization:** When using `tabs` or `pills`, this component automatically initializes Bootstrap's Tab functionality for any items that target a local ID (e.g., `href="#my-tab"`).
 
 **State Management:** For complex tab state, combine `VibeNav` with `VibeTabContent` and manage the `active` state through your data.
 

@@ -14,12 +14,9 @@ Flexible content container component for displaying headers, bodies, footers, an
 | `body` | `String` | `undefined` | Card body text |
 | `header` | `String` | `undefined` | Card header text |
 | `footer` | `String` | `undefined` | Card footer text |
-| `headerClass` | `String \| Array \| Object` | `undefined` | Extra class(es) for the `.card-header` wrapper (e.g. a variant-colored header) |
-| `bodyClass` | `String \| Array \| Object` | `undefined` | Extra class(es) for the `.card-body` wrapper |
-| `footerClass` | `String \| Array \| Object` | `undefined` | Extra class(es) for the `.card-footer` wrapper |
 | `imgSrc` | `String` | `undefined` | Image URL |
 | `imgAlt` | `String` | `''` | Image alt text |
-| `imgTop` | `Boolean` | `false` | Display image at top |
+| `imgTop` | `Boolean` | `true` | Display image at top |
 | `imgBottom` | `Boolean` | `false` | Display image at bottom |
 
 ## Slots
@@ -27,7 +24,6 @@ Flexible content container component for displaying headers, bodies, footers, an
 | Slot | Description |
 |------|-------------|
 | `default` | Additional body content |
-| `image` | A direct card child rendered **outside** `.card-body` (before the header) — for a card image with custom composition, e.g. a `card-img-top` with an absolutely-positioned overlay/badge |
 | `header` | Custom header content |
 | `title` | Custom title content |
 | `body` | Custom body content |
@@ -66,7 +62,6 @@ Flexible content container component for displaying headers, bodies, footers, an
   <VibeCard
     img-src="/path/to/image.jpg"
     img-alt="Card image"
-    img-top
     title="Card with Image"
     body="This card has an image at the top."
   />
@@ -180,7 +175,6 @@ Use the default slot with Bootstrap grid:
       <VibeCard
         img-src="/path/to/image1.jpg"
         img-alt="Card 1"
-        img-top
         title="Card 1"
         body="Card content here."
       />
@@ -189,7 +183,6 @@ Use the default slot with Bootstrap grid:
       <VibeCard
         img-src="/path/to/image2.jpg"
         img-alt="Card 2"
-        img-top
         title="Card 2"
         body="Card content here."
       />
@@ -198,7 +191,6 @@ Use the default slot with Bootstrap grid:
       <VibeCard
         img-src="/path/to/image3.jpg"
         img-alt="Card 3"
-        img-top
         title="Card 3"
         body="Card content here."
       />

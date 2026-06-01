@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../dist/vibeui.css">
     <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 0;
+        }
         .feature-icon {
             width: 4rem;
             height: 4rem;
@@ -19,16 +24,6 @@
             margin-bottom: 1rem;
         }
     </style>
-
-    <!-- VibeUI loads Bootstrap JS internally via `import('bootstrap')`; the UMD bundle
-         keeps that bare specifier, so the page maps it here so the dropdown works. -->
-    <script type="importmap">
-      {
-        "imports": {
-          "bootstrap": "https://esm.sh/bootstrap@5.3.0"
-        }
-      }
-    </script>
 </head>
 <body>
     <div id="app">
@@ -39,44 +34,42 @@
                     VibeUI
                 </vibe-navbar-brand>
                 <vibe-navbar-toggle target="navbarNav"></vibe-navbar-toggle>
-                <vibe-collapse id="navbarNav" is-nav>
+                <vibe-collapse id="navbarNav" navbar>
                     <vibe-navbar-nav :items="navItems" class="ms-auto"></vibe-navbar-nav>
                 </vibe-collapse>
             </vibe-container>
         </vibe-navbar>
 
         <!-- Hero Section -->
-        <vibe-hero
-            gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-            align="start"
-            class="text-white"
-        >
-            <vibe-row class="align-items-center">
-                <vibe-col :lg="6">
-                    <h1 class="display-3 fw-bold mb-3">Build amazing apps with VibeUI</h1>
-                    <p class="lead mb-4">A modern Vue 3 component library built on Bootstrap 5.3. Create beautiful, responsive interfaces in minutes.</p>
-                    <div class="d-flex gap-3 mb-4">
-                        <vibe-button variant="light" size="lg" @click="handleGetStarted">
-                            <vibe-icon icon="rocket-takeoff-fill" class="me-2"></vibe-icon>
-                            Get Started
-                        </vibe-button>
-                        <vibe-button variant="light" outline size="lg">
-                            <vibe-icon icon="github" class="me-2"></vibe-icon>
-                            View on GitHub
-                        </vibe-button>
-                    </div>
-                </vibe-col>
-                <vibe-col :lg="6" class="text-center">
-                    <img src="https://via.placeholder.com/600x400/ffffff/667eea?text=VibeUI+Demo" alt="Demo" class="img-fluid rounded-4 shadow-lg">
-                </vibe-col>
-            </vibe-row>
-        </vibe-hero>
+        <section class="hero-section">
+            <vibe-container>
+                <vibe-row class="align-items-center">
+                    <vibe-col :lg="6">
+                        <h1 class="display-3 fw-bold mb-3">Build amazing apps with VibeUI</h1>
+                        <p class="lead mb-4">A modern Vue 3 component library built on Bootstrap 5.3. Create beautiful, responsive interfaces in minutes.</p>
+                        <div class="d-flex gap-3 mb-4">
+                            <vibe-button variant="light" size="lg" @click="handleGetStarted">
+                                <vibe-icon icon="rocket-takeoff-fill" class="me-2"></vibe-icon>
+                                Get Started
+                            </vibe-button>
+                            <vibe-button variant="outline-light" size="lg">
+                                <vibe-icon icon="github" class="me-2"></vibe-icon>
+                                View on GitHub
+                            </vibe-button>
+                        </div>
+                    </vibe-col>
+                    <vibe-col :lg="6" class="text-center">
+                        <img src="https://via.placeholder.com/600x400/ffffff/667eea?text=VibeUI+Demo" alt="Demo" class="img-fluid rounded-4 shadow-lg">
+                    </vibe-col>
+                </vibe-row>
+            </vibe-container>
+        </section>
 
         <!-- Alert Demo -->
         <vibe-container class="my-5">
             <vibe-row>
                 <vibe-col :cols="12">
-                    <vibe-alert v-model="showAlert" variant="success" dismissible class="shadow-sm">
+                    <vibe-alert v-model="showAlert" variant="success" dismissable class="shadow-sm">
                         <vibe-icon icon="check-circle-fill" class="me-2"></vibe-icon>
                         <strong>Welcome!</strong> This is a live demo of VibeUI components. Try clicking the buttons below!
                     </vibe-alert>
@@ -92,7 +85,7 @@
                     <p class="lead text-muted">Everything you need to build modern web applications</p>
                 </vibe-col>
             </vibe-row>
-            <vibe-row :gutters="4">
+            <vibe-row :g="4">
                 <vibe-col :md="4" v-for="feature in features" :key="feature.title">
                     <div class="text-center h-100">
                         <div :class="`feature-icon bg-${feature.color} bg-opacity-10 text-${feature.color}`">
@@ -122,11 +115,20 @@
                                 <vibe-icon icon="share-fill" class="me-2"></vibe-icon>
                                 Share
                             </vibe-button>
-                            <vibe-dropdown id="demo-dropdown" text="More" variant="secondary" :items="moreItems">
-                                <template #item="{ item }">
-                                    <vibe-icon :icon="item.icon" class="me-2"></vibe-icon>
-                                    {{ item.text }}
-                                </template>
+                            <vibe-dropdown id="demo-dropdown" text="More" variant="secondary">
+                                <vibe-dropdown-item href="#">
+                                    <vibe-icon icon="bookmark" class="me-2"></vibe-icon>
+                                    Bookmark
+                                </vibe-dropdown-item>
+                                <vibe-dropdown-item href="#">
+                                    <vibe-icon icon="download" class="me-2"></vibe-icon>
+                                    Download
+                                </vibe-dropdown-item>
+                                <vibe-dropdown-item divider></vibe-dropdown-item>
+                                <vibe-dropdown-item href="#">
+                                    <vibe-icon icon="flag" class="me-2"></vibe-icon>
+                                    Report
+                                </vibe-dropdown-item>
                             </vibe-dropdown>
                         </div>
 
@@ -137,26 +139,24 @@
                             <vibe-badge variant="warning">Responsive</vibe-badge>
                         </div>
 
-                        <vibe-progress
-                            class="mb-2"
-                            height="20px"
-                            :bars="[{ value: 75, variant: 'primary', striped: true, animated: true, label: '75% Complete' }]"
-                        ></vibe-progress>
+                        <vibe-progress class="mb-2" :height="20">
+                            <vibe-progress-bar :value="75" variant="primary" striped animated>75% Complete</vibe-progress-bar>
+                        </vibe-progress>
                     </vibe-col>
                     <vibe-col :lg="6">
                         <vibe-card class="shadow border-0">
-                            <h5 class="card-title fw-bold mb-3">Component Showcase</h5>
-                            <vibe-list-group flush :items="showcaseItems">
-                                <template #item="{ item }">
-                                    <div class="d-flex justify-content-between align-items-center">
+                            <vibe-card-body class="p-4">
+                                <h5 class="card-title fw-bold mb-3">Component Showcase</h5>
+                                <vibe-list-group flush>
+                                    <vibe-list-group-item v-for="item in showcaseItems" :key="item.name" class="d-flex justify-content-between align-items-center">
                                         <div>
                                             <vibe-icon :icon="item.icon" :class="`text-${item.color} me-2`"></vibe-icon>
                                             {{ item.name }}
                                         </div>
                                         <vibe-badge :variant="item.color" pill>{{ item.count }}</vibe-badge>
-                                    </div>
-                                </template>
-                            </vibe-list-group>
+                                    </vibe-list-group-item>
+                                </vibe-list-group>
+                            </vibe-card-body>
                         </vibe-card>
                     </vibe-col>
                 </vibe-row>
@@ -165,7 +165,7 @@
 
         <!-- Stats -->
         <vibe-container class="py-5 my-5">
-            <vibe-row class="text-center" :gutters="4">
+            <vibe-row class="text-center" :g="4">
                 <vibe-col :md="3" v-for="stat in stats" :key="stat.label">
                     <div class="h-100">
                         <div :class="`display-4 fw-bold text-${stat.color}`">{{ stat.value }}</div>
@@ -186,7 +186,7 @@
                             <vibe-icon icon="download" class="me-2"></vibe-icon>
                             Install Now
                         </vibe-button>
-                        <vibe-button variant="light" outline size="lg">
+                        <vibe-button variant="outline-light" size="lg">
                             <vibe-icon icon="book" class="me-2"></vibe-icon>
                             Read Docs
                         </vibe-button>
@@ -198,7 +198,7 @@
         <!-- Footer -->
         <footer class="bg-dark text-white py-5">
             <vibe-container>
-                <vibe-row :gutters="4">
+                <vibe-row :g="4">
                     <vibe-col :lg="4">
                         <h5 class="fw-bold mb-3">
                             <vibe-icon icon="lightning-charge-fill" class="me-2"></vibe-icon>
@@ -262,12 +262,6 @@
                         { text: 'Examples', href: '#' },
                         { text: 'Docs', href: '#' },
                         { text: 'GitHub', href: '#' }
-                    ],
-                    moreItems: [
-                        { text: 'Bookmark', icon: 'bookmark', href: '#' },
-                        { text: 'Download', icon: 'download', href: '#' },
-                        { divider: true },
-                        { text: 'Report', icon: 'flag', href: '#' }
                     ],
                     features: [
                         {

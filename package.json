@@ -4,13 +4,10 @@
   "description": "A lightweight Vue 3 component library for Bootstrap 5.3 with dual-mode support (shorthand props and composable slots)",
   "main": "./dist/vibeui.umd.js",
   "module": "./dist/vibeui.es.js",
-  "types": "./dist/src/index.d.ts",
-  "sideEffects": [
-    "**/*.css"
-  ],
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/vibeui.es.js",
       "require": "./dist/vibeui.umd.js"
     },
@@ -19,10 +16,8 @@
   "files": [
     "dist",
     "llms.txt",
-    "AGENTS.md",
     "CLAUDE.md",
-    "docs",
-    "examples"
+    "docs"
   ],
   "scripts": {
     "dev": "vite",
@@ -30,13 +25,10 @@
     "preview": "vite preview",
     "examples": "npm run build && cd examples && python3 -m http.server 8000",
     "smoke": "npm run build && cp dist/vibeui.es.js dist/vibeui.css smoke/dist/ && cd smoke && python3 -m http.server 8001",
-    "test": "vitest --project unit",
-    "test:ui": "vitest --ui --project unit",
-    "test:run": "vitest run --project unit",
-    "test:coverage": "vitest run --project unit --coverage",
-    "test:browser": "vitest run --project browser",
-    "test:all": "vitest run",
-    "test:examples": "npm run build && playwright test",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -60,46 +52,27 @@
   },
   "homepage": "https://github.com/velkymx/vibeui#readme",
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6"
+    "@floating-ui/dom": "^1.7.6",
+    "vue": "^3.5.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0",
-    "@types/dompurify": "^3.0.5",
     "@vitejs/plugin-vue": "^6.0.4",
-    "@vitest/browser": "^4.1.7",
-    "@vitest/browser-playwright": "^4.1.7",
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
-    "@vue/language-core": "^3.3.2",
     "@vue/test-utils": "^2.4.6",
-    "bootstrap": "^5.3.8",
-    "dompurify": "^3.4.7",
     "happy-dom": "^20.1.0",
-    "playwright": "^1.60.0",
     "quill": "^2.0.3",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.14",
-    "vite-plugin-dts": "^5.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.0.16",
-    "vitest-browser-vue": "^2.1.0",
-    "vue": "^3.5.0",
     "vue-tsc": "^3.2.5"
   },
-  "overrides": {
-    "typescript": "$typescript"
-  },
   "peerDependencies": {
-    "bootstrap": "^5.3.0",
-    "bootstrap-icons": "^1.11.0",
-    "dompurify": "^3.0.0",
-    "quill": "^2.0.0",
     "vue": "^3.5.0"
   },
   "peerDependenciesMeta": {
     "bootstrap-icons": {
-      "optional": true
-    },
-    "dompurify": {
       "optional": true
     },
     "quill": {

@@ -27,7 +27,6 @@ Modal dialogs for lightboxes, user notifications, or custom content.
 | `shown` | - | Emitted when modal is fully shown |
 | `hide` | - | Emitted when modal starts hiding |
 | `hidden` | - | Emitted when modal is fully hidden |
-| `component-error` | `ComponentError` | Emitted if Bootstrap JS fails to load |
 
 ## Slots
 
@@ -60,6 +59,23 @@ const showModal = ref(false)
 </script>
 ```
 
+### Basic Modal (Data Attributes)
+
+```vue
+<template>
+  <div>
+    <!-- You can still use standard Bootstrap data attributes -->
+    <VibeButton variant="primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+      Launch Modal
+    </VibeButton>
+
+    <VibeModal id="exampleModal" title="Modal Title">
+      <p>Modal body text goes here.</p>
+    </VibeModal>
+  </div>
+</template>
+```
+
 ### Sized Modals
 
 ```vue
@@ -90,24 +106,15 @@ const showModal = ref(false)
 
 ```vue
 <template>
-  <VibeModal v-model="showModal" title="Custom Footer">
+  <VibeModal title="Custom Footer">
     <p>Modal with custom footer buttons.</p>
 
     <template #footer>
       <VibeButton variant="secondary" @click="showModal = false">Close</VibeButton>
-      <VibeButton variant="primary" @click="save">Save changes</VibeButton>
+      <VibeButton variant="primary">Save changes</VibeButton>
     </template>
   </VibeModal>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-const showModal = ref(true)
-function save() {
-  // persist changes...
-  showModal.value = false
-}
-</script>
 ```
 
 ## Important Notes
@@ -116,9 +123,7 @@ function save() {
 
 **Teleportation:** By default, this component teleports its DOM elements to the `<body>` to avoid stacking context issues. You can customize this with the `teleport` prop.
 
-**Focus Return (WCAG 2.4.3):** When the modal closes, focus is automatically returned to the element that opened it, including for programmatically opened modals.
-
-**Escape Hatch:** The exposed `_unsafe_bsInstance` template ref gives raw access to the underlying Bootstrap Modal instance. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly **will** break the component. Prefer `v-model` and the exposed `show()` / `hide()` methods.
+**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
 ## Mobile Optimization
 
