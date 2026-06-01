@@ -18,6 +18,64 @@ VibeUI is a thin but complete abstraction layer over Bootstrap. It does three th
 
 ---
 
+## Building With VibeUI — start here
+
+This is the whole workflow: **load → use → leverage**. Follow it and you won't fight the library. (Detailed reference sections follow; the per-component docs are linked in the Documentation Index at the end — read a component's doc before using it.)
+
+### 1. Load
+
+```bash
+npm install @velkymx/vibeui bootstrap
+```
+```ts
+import { createApp } from 'vue'
+import VibeUI from '@velkymx/vibeui'
+import 'bootstrap/dist/css/bootstrap.min.css'   // YOU import the CSS
+createApp(App).use(VibeUI).mount('#app')         // registers every component + the v-vibe-tooltip directive
+```
+
+- **Import Bootstrap CSS yourself. Never import Bootstrap JS** — VibeUI loads it internally, on demand, per component.
+- `app.use(VibeUI)` registers everything globally. Or import by name for tree-shaking **and** full template type-checking: `import { VibeButton, VibeModal } from '@velkymx/vibeui'`.
+- **Non-bundler / UMD / CDN pages:** the internal `import('bootstrap')` is a bare specifier, so add an import map or interactive components silently fail:
+  `<script type="importmap">{ "imports": { "bootstrap": "https://esm.sh/bootstrap@5.3" } }</script>`
+
+### 2. Use — props, `v-model`, `:items`, slots
+
+- **Style with props:** `variant`, `size`, `outline` (boolean). For one-offs pass `class`/`style` — they merge onto the component root.
+- **Visibility is `v-model`:** `<VibeModal v-model="open" />` (also Offcanvas / Toast / Collapse / Alert). Do not call Bootstrap `show`/`hide`.
+- **Data-driven components take arrays — never hand-write the Bootstrap markup:**
+  - `:items` → `VibeNav`, `VibeDropdown`, `VibeListGroup`, `VibeBreadcrumb`, `VibeNavbarNav`
+  - `:items` (`CarouselItem[]`, each needs `src`) → `VibeCarousel`
+  - `:options` → `VibeFormSelect`
+  - `:bars` → `VibeProgress`
+  - `:columns` + `:items` → `VibeDataTable`
+- **Custom content uses slots:** `#item` (Nav/Dropdown/ListGroup), `#header`/`#footer`/`#image` (Card), `cell(<key>)` (DataTable), default slot for body.
+- **Imperative actions use the exposed methods via a template ref:** `modal.value?.show()` / `.hide()` / `.toggle()` / `.refresh()`. Drive the component — never reach around it to Bootstrap.
+
+### 3. Leverage
+
+- **Forms:** wrap controls in `<VibeFormGroup label="…">` (auto-links label + id + a11y). Validate with `useForm` + `validators` (`required`/`email`/`minLength`/…) and bind `:validation-state` / `:validation-message` per field.
+- **Composables:** `useToast` (global toasts; mount `<VibeToastHost/>` once), `useColorMode` (light/dark/auto), `useBreakpoints` (`isMobile`/`isTablet`/…), `useForm`, `usePosition`.
+- **Layout & sections:** `VibeContainer` / `VibeRow` (`:gutters`) / `VibeCol` (`:cols`/`:md`/…/`:order`); `VibeHero` for banner/hero sections; `VibeCard` (with `headerClass`/`bodyClass`/`#image`).
+- **Copy whole patterns** from the full-page templates in `examples/` (Album, Pricing, Checkout, Sign-in, Dashboard, Sidebars, Cover, Product, Carousel, Blog).
+
+### Read the doc first
+
+A component's exact props/events/slots live in its doc page (Documentation Index, bottom). **Read it before building — do not guess props or reverse-engineer from `dist/`.** The documented API is the source of truth.
+
+### Common mistakes — do NOT do these
+
+- ❌ `variant="outline-secondary"` → ✅ `variant="secondary" outline` (outline is a boolean prop)
+- ❌ `<VibeIcon name="house" />` → ✅ `<VibeIcon icon="house" />`
+- ❌ `<VibeCarousel :slides="…" />` → ✅ `<VibeCarousel :items="…" />` (each `CarouselItem` needs `src`)
+- ❌ `<vibe-card-body>`, `<vibe-list-group-item>`, `<vibe-nav-item>`, `<vibe-dropdown-item>`, `<vibe-progress-bar>` — **none of these exist.** Use the default / `#item` slot and `:items` / `:bars`.
+- ❌ hand-written `<ul class="nav">` / `<div class="card">` → ✅ `<VibeNav :items>` / `<VibeCard>`
+- ❌ `import 'bootstrap/dist/js/…'` or `new bootstrap.Modal()` → ✅ never; use props, `v-model`, and exposed methods
+- ❌ UMD/CDN page with no `bootstrap` import map → interactive components silently fall back / fail
+- ❌ guessing a prop name → ✅ open the component's doc page first
+
+---
+
 ## Project Structure
 
 ```
@@ -692,20 +750,6 @@ All charts are responsive via `ResizeObserver`, render at device pixel ratio for
 - Does not require Vue Router (optional peer dep for `href`/`to` props on `VibeButton`)
 - Does not require QuillJS (optional peer dep for `VibeFormWysiwyg`)
 - Does not provide a theme system beyond Bootstrap's `data-bs-theme` color modes
-
-## API Best Practices
-
-Follow this workflow — it prevents the most common mistakes (guessing props, reverse-engineering from `dist/`, or wiring Bootstrap JS yourself):
-
-1. **Read the component's doc first, then build.** Every component has a doc page (see the Documentation Index below) with its exact props, events, slots, and a usage example. Do **not** infer the API from the compiled `dist/` files or from memory — the documented props, `:items` shapes, and slot names are the source of truth.
-2. **Use the documented API, not raw Bootstrap markup.** Data-driven components take arrays: `VibeNav` / `VibeDropdown` / `VibeListGroup` / `VibeBreadcrumb` use `:items`, `VibeProgress` uses `:bars`, `VibeDataTable` uses `:columns` + `:items`. Reach for the component, not a hand-written `<ul class="nav">` or `<div class="card">`.
-3. **Visibility is `v-model`.** `VibeModal` / `VibeOffcanvas` / `VibeToast` / `VibeCollapse` use `v-model` for open/closed state. Do not call Bootstrap's `show()`/`hide()` yourself.
-4. **Style via props first, then class/slots.** Variants and sizes are props (`variant="primary"`, `size="lg"`, `outline`). For one-offs, pass `class`/`style` — they merge onto the component root. Use slots (`#item`, `#header`, `#image`, `cell(<key>)`, etc.) for custom content.
-5. **Never import Bootstrap JS.** VibeUI loads it internally via dynamic `import('bootstrap')`. The consumer imports Bootstrap **CSS** once. In a non-bundler/UMD context, provide an import map mapping `bootstrap` to a CDN ESM build.
-6. **Outline buttons use the `outline` prop**, not `variant="outline-secondary"`. For any "is this a prop or a class?" question, the doc is authoritative.
-7. **Trust the types.** Props are strictly typed — a wrong prop name or enum value is a TypeScript error. Import components by name for full template type-checking.
-
-See also the full-page templates in [`examples/`](examples/index.html) for end-to-end usage of these patterns.
 
 ## Documentation Index
 
