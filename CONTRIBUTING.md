@@ -37,10 +37,13 @@ npm test              # unit suite, watch mode (fast inner loop)
 npm run test:run      # unit suite, single run (what CI's unit job runs)
 npm run test:coverage # unit suite with coverage
 npm run test:browser  # browser suite, single run (real Chromium)
-npm run test:all      # both projects
+npm run test:all      # both Vitest projects (unit + browser)
+npm run test:examples # Playwright: load every examples/*.html in Chromium, assert it mounts cleanly
 ```
 
 `test` / `test:run` / `test:coverage` are pinned to the `unit` project so the inner loop never pays browser-launch cost.
+
+`test:examples` builds `dist`, statically serves the repo, and loads each example page end-to-end (UMD bundle + `bootstrap` import map + CDN Vue). It needs **network access** (jsDelivr / esm.sh / Unsplash), so it's an opt-in local gate — not part of the required CI `e2e` job, which would otherwise depend on CDN uptime.
 
 ### One-time browser setup
 
