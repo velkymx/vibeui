@@ -26,6 +26,11 @@ export default defineConfig({
     rollupOptions: {
       external: ['vue', /^quill/, /^bootstrap/],
       output: {
+        // The package intentionally ships a default export (the VibeUI plugin) alongside
+        // named exports (components/composables). Declaring 'named' acknowledges the mix
+        // and silences Rollup's MIXED_EXPORTS warning. In UMD/CJS the default is reached
+        // via `VibeUI.default` (as the examples do); the ESM `export default` is preserved.
+        exports: 'named',
         globals: {
           vue: 'Vue',
           quill: 'Quill',
