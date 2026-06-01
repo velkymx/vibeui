@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
-import type { PropType, ComputedRef } from 'vue'
+import { computed, inject, ref, watch, onMounted } from 'vue'
+import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
+import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
+// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
+const modelValue = defineModel<boolean | string | number | (string | number | boolean)[]>({ default: false })
+
 const props = defineProps({
-  modelValue: {
-    type: [Boolean, Array] as PropType<any>,
-    default: false
-  },
   value: { type: [String, Number, Boolean], default: true },
+  uncheckedValue: { type: [String, Number, Boolean], default: false },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
@@ -24,17 +25,20 @@ const props = defineProps({
   reverse: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change'])
+const emit = defineEmits<{
+  (e: 'validate'): void
+  (e: 'blur', event: FocusEvent): void
+  (e: 'focus', event: FocusEvent): void
+  (e: 'change', event: Event): void
+}>()
 
-const formGroup = inject<{
-  id: ComputedRef<string>
-  consumeId: () => string | null
-  hasLabel: ComputedRef<boolean>
-  hasValidation: ComputedRef<boolean>
-  hasHelp: ComputedRef<boolean>
-} | null>('vibeFormGroup', null)
+const formGroup = inject(FORM_GROUP_KEY, null)
 
-const computedId = computed(() => props.id || formGroup?.consumeId() || useId('checkbox'))
+const _groupId = formGroup?.consumeId()
+const _generatedId = useId('checkbox')
+const computedId = computed(() => props.id || _groupId || _generatedId)
+const helpId = computed(() => `${computedId.value}-help`)
+const feedbackId = computed(() => `${computedId.value}-feedback`)
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
@@ -54,17 +58,18 @@ const inputClass = computed(() => {
 })
 
 const isChecked = computed(() => {
-  if (Array.isArray(props.modelValue)) {
-    return props.modelValue.includes(props.value)
+  if (props.indeterminate) return false
+  if (Array.isArray(modelValue.value)) {
+    return modelValue.value.includes(props.value)
   }
-  return props.modelValue === props.value
+  return modelValue.value === props.value
 })
 
 const handleChange = (event: Event) => {
   const target = event.target as HTMLInputElement
   let newValue: any
-  if (Array.isArray(props.modelValue)) {
-    newValue = [...props.modelValue]
+  if (Array.isArray(modelValue.value)) {
+    newValue = [...modelValue.value]
     if (target.checked) {
       newValue.push(props.value)
     } else {
@@ -72,9 +77,9 @@ const handleChange = (event: Event) => {
       if (index > -1) newValue.splice(index, 1)
     }
   } else {
-    newValue = target.checked ? props.value : (props.value === true ? false : null)
+    newValue = target.checked ? props.value : props.uncheckedValue
   }
-  emit('update:modelValue', newValue)
+  modelValue.value = newValue
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
@@ -87,20 +92,30 @@ const handleBlur = (event: FocusEvent) => {
 const handleFocus = (event: FocusEvent) => {
   emit('focus', event)
 }
+
+const inputRef = ref<HTMLInputElement | null>(null)
+
+onMounted(() => {
+  if (inputRef.value) inputRef.value.indeterminate = props.indeterminate
+})
+
+watch(() => props.indeterminate, (val) => {
+  if (inputRef.value) inputRef.value.indeterminate = val
+})
 </script>
 
 <template>
   <div :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
     <input
+      ref="inputRef"
       :id="computedId"
       type="checkbox"
       :class="inputClass"
       :checked="isChecked"
       :disabled="disabled"
       :required="required"
-      :indeterminate="indeterminate"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
+      :aria-describedby="helpText && validationMessage ? `${helpId} ${feedbackId}` : helpText ? helpId : validationMessage ? feedbackId : undefined"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
@@ -109,11 +124,11 @@ const handleFocus = (event: FocusEvent) => {
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
     </label>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">

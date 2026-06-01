@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
+import type { ComponentError } from '../types'
+import { safeLength, safeColor } from '../utils/safeCss'
 
 const props = defineProps({
   // Icon name (e.g., 'house', 'heart-fill', 'star')
@@ -20,24 +22,20 @@ const props = defineProps({
   // Flip and rotate
   flipH: { type: Boolean, default: false },
   flipV: { type: Boolean, default: false },
-  rotate: { type: Number as PropType<90 | 180 | 270>, default: undefined }
+  rotate: { type: Number as PropType<90 | 180 | 270>, default: undefined },
+  ariaHidden: { type: Boolean, default: true },
+  ariaLabel: { type: String, default: undefined }
 })
 
-const emit = defineEmits(['click', 'component-error'])
+const emit = defineEmits<{
+  (e: 'click', event: MouseEvent): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const iconClass = computed(() => {
   const classes = ['bi', `bi-${props.icon}`]
 
-  // Size classes
-  if (props.size) {
-    // Handle numeric sizes (1x, 2x, etc)
-    if (['1x', '2x', '3x', '4x', '5x'].includes(props.size)) {
-      // These need custom font-size via style
-    } else {
-      // Bootstrap utilities for sm/lg
-      classes.push(`bi-${props.size}`)
-    }
-  }
+  // Size handled via iconStyle (font-size), no class needed
 
   // Custom class
   if (props.customClass) {
@@ -50,12 +48,15 @@ const iconClass = computed(() => {
 const iconStyle = computed(() => {
   const style: Record<string, string> = {}
 
-  // Font size handling
+  // Font size handling — validate against safe length pattern before applying
   if (props.fontSize) {
-    style.fontSize = props.fontSize
+    const safe = safeLength(props.fontSize)
+    if (safe) style.fontSize = safe
   } else if (props.size) {
     // Map size prop to font-size
     const sizeMap: Record<string, string> = {
+      'sm': '0.875rem',
+      'lg': '1.25rem',
       '1x': '1rem',
       '2x': '2rem',
       '3x': '3rem',
@@ -67,9 +68,10 @@ const iconStyle = computed(() => {
     }
   }
 
-  // Color
+  // Color — validate against safe color pattern before applying
   if (props.color) {
-    style.color = props.color
+    const safe = safeColor(props.color)
+    if (safe) style.color = safe
   }
 
   // Transforms
@@ -86,8 +88,8 @@ const iconStyle = computed(() => {
   return Object.keys(style).length > 0 ? style : undefined
 })
 
-const handleClick = (event: Event) => {
-  emit('click', event)
+const handleClick = (event: MouseEvent) => {
+  if (props.ariaLabel || !props.ariaHidden) emit('click', event)
 }
 </script>
 
@@ -95,7 +97,9 @@ const handleClick = (event: Event) => {
   <i
     :class="iconClass"
     :style="iconStyle"
-    :aria-hidden="true"
+    :aria-hidden="ariaLabel ? undefined : (ariaHidden ? 'true' : undefined)"
+    :aria-label="ariaLabel"
+    :role="ariaLabel ? 'img' : undefined"
     @click="handleClick"
   ></i>
 </template>

@@ -124,6 +124,37 @@ describe('useColorMode', () => {
     expect(localStorage.getItem('vibe-color-mode')).toBeNull()
   })
 
+  // Regression: clearColorMode detached system listener but never re-attached it.
+  // After clear, OS theme changes must still update data-bs-theme when mode is auto.
+  it('re-attaches system theme listener after clearColorMode so auto mode stays reactive', () => {
+    const listeners: Array<(e: { matches: boolean }) => void> = []
+    const mockMql = {
+      matches: false,
+      addEventListener: vi.fn((_: string, fn: (e: { matches: boolean }) => void) => {
+        listeners.push(fn)
+      }),
+      removeEventListener: vi.fn((_: string, fn: unknown) => {
+        const idx = listeners.indexOf(fn as (e: { matches: boolean }) => void)
+        if (idx !== -1) listeners.splice(idx, 1)
+      })
+    }
+    vi.spyOn(window, 'matchMedia').mockReturnValue(mockMql as unknown as MediaQueryList)
+
+    const { clearColorMode } = useColorMode()
+    clearColorMode()
+
+    // After clearColorMode, a listener must be registered for auto-mode reactivity
+    expect(mockMql.addEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+    expect(listeners.length).toBeGreaterThan(0)
+
+    // Simulate OS switching to dark — data-bs-theme must update
+    mockMql.matches = true
+    listeners.forEach(fn => fn({ matches: true }))
+    expect(document.documentElement.getAttribute('data-bs-theme')).toBe('dark')
+
+    vi.restoreAllMocks()
+  })
+
   it('allows initColorMode to run again after clearColorMode', () => {
     const { colorMode, initColorMode, clearColorMode } = useColorMode()
     initColorMode()

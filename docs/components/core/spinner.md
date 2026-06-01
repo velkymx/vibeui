@@ -12,12 +12,6 @@ Loading spinner with border or grow animation styles.
 | `label` | `String` | `'Loading...'` | Screen reader text |
 | `tag` | `String` | `'div'` | HTML tag to render |
 
-## Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `component-error` | `Object` | Emitted when an error occurs |
-
 ## Usage
 
 ### Basic Spinner

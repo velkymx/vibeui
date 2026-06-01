@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 
 interface BootstrapAlert {
   close: () => void
@@ -10,63 +10,83 @@ const props = defineProps({
   variant: { type: String, default: 'primary' },
   subtle: { type: Boolean, default: false },
   modelValue: { type: Boolean, default: true },
-  // Misspelled prop kept for back-compat. Prefer `dismissible`. Will be
-  // removed in v1.0.
-  dismissable: { type: Boolean, default: false },
   dismissible: { type: Boolean, default: false },
   message: { type: String, default: '' },
   fade: { type: Boolean, default: true }
 })
 
-const isDismissible = computed(() => props.dismissible || props.dismissable)
+import type { ComponentError } from '../types'
 
-if (props.dismissable && !props.dismissible) {
-  console.warn(
-    '[VibeAlert] The `dismissable` prop is deprecated due to a typo; use `dismissible`. Both work in v0.9 but `dismissable` will be removed in v1.0.'
-  )
-}
-
-const emit = defineEmits(['update:modelValue', 'close', 'closed', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'close'): void
+  (e: 'closed'): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const alertRef = ref<HTMLElement | null>(null)
-const bsAlert = ref<BootstrapAlert | null>(null)
+const bsAlert = shallowRef<BootstrapAlert | null>(null)
 const isVisible = ref(props.modelValue)
+
+let alertListenersAttached = false
+let initInFlight = false
+let pendingReinit = false
+let isUnmounted = false
 
 const onClose = () => {
   emit('close')
 }
 
 const onClosed = () => {
+  bsAlert.value = null
   isVisible.value = false
   emit('update:modelValue', false)
   emit('closed')
 }
 
-onMounted(async () => {
-  if (!alertRef.value) return
+const attachAlertListeners = () => {
+  if (alertListenersAttached || !alertRef.value) return
+  alertRef.value.addEventListener('close.bs.alert', onClose)
+  alertRef.value.addEventListener('closed.bs.alert', onClosed)
+  alertListenersAttached = true
+}
 
+const detachAlertListeners = () => {
+  if (!alertListenersAttached || !alertRef.value) return
+  alertRef.value.removeEventListener('close.bs.alert', onClose)
+  alertRef.value.removeEventListener('closed.bs.alert', onClosed)
+  alertListenersAttached = false
+}
+
+const setupBootstrap = async () => {
+  if (initInFlight) { pendingReinit = true; return }
+  initInFlight = true
+  detachAlertListeners()
   try {
+    if (!alertRef.value || bsAlert.value) return
     const bootstrap = await import('bootstrap')
-    const Alert = bootstrap.Alert
-
-    bsAlert.value = new Alert(alertRef.value) as BootstrapAlert
-
-    alertRef.value.addEventListener('close.bs.alert', onClose)
-    alertRef.value.addEventListener('closed.bs.alert', onClosed)
+    if (!alertRef.value || isUnmounted) return
+    bsAlert.value = new bootstrap.Alert(alertRef.value) as BootstrapAlert
+    attachAlertListeners()
   } catch (error) {
     emit('component-error', {
       message: 'Bootstrap JS not loaded. Alert will use basic Vue logic.',
       componentName: 'VibeAlert',
       originalError: error
     })
+  } finally {
+    initInFlight = false
+    if (pendingReinit) { pendingReinit = false; void setupBootstrap() }
   }
+}
+
+onMounted(() => {
+  if (isVisible.value) void setupBootstrap()
 })
 
 onBeforeUnmount(() => {
-  if (alertRef.value) {
-    alertRef.value.removeEventListener('close.bs.alert', onClose)
-    alertRef.value.removeEventListener('closed.bs.alert', onClosed)
-  }
+  isUnmounted = true
+  detachAlertListeners()
 
   if (bsAlert.value) {
     bsAlert.value.dispose()
@@ -74,11 +94,19 @@ onBeforeUnmount(() => {
   }
 })
 
-watch(() => props.modelValue, (newVal) => {
+watch(() => props.modelValue, async (newVal) => {
   if (newVal) {
     isVisible.value = true
-  } else if (bsAlert.value && isVisible.value) {
-    bsAlert.value.close()
+    await nextTick()
+    void setupBootstrap()
+  } else if (isVisible.value) {
+    if (bsAlert.value) {
+      bsAlert.value.close()
+    } else {
+      isVisible.value = false
+      emit('update:modelValue', false)
+      emit('closed')
+    }
   } else {
     isVisible.value = false
   }
@@ -101,7 +129,7 @@ const alertClass = computed(() => {
   } else {
     classes.push(`alert-${props.variant}`)
   }
-  if (isDismissible.value) classes.push('alert-dismissible')
+  if (props.dismissible) classes.push('alert-dismissible')
   if (props.fade) classes.push('fade', 'show')
   return classes.join(' ')
 })
@@ -114,9 +142,9 @@ const alertClass = computed(() => {
     :class="alertClass"
     role="alert"
   >
-    <slot>{{ message }}</slot>
+    <template v-if="message">{{ message }}</template><slot />
     <button
-      v-if="isDismissible"
+      v-if="dismissible"
       type="button"
       class="btn-close"
       aria-label="Close"

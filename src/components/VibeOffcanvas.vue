@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import type { OffcanvasPlacement } from '../types'
+import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
 
@@ -10,8 +10,12 @@ interface BootstrapOffcanvas {
   dispose: () => void
 }
 
+// Hoisted to setup so the id is owned by this instance and stable (useId() in a
+// defineProps default factory runs during prop normalization — fragile across Vue versions).
+const _generatedId = useId('offcanvas')
+
 const props = defineProps({
-  id: { type: String, default: () => useId('offcanvas') },
+  id: { type: String, default: undefined },
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
   placement: { type: String as () => OffcanvasPlacement, default: 'start' },
@@ -20,20 +24,48 @@ const props = defineProps({
   teleport: { type: [String, Boolean], default: 'body' }
 })
 
-const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'show'): void
+  (e: 'shown'): void
+  (e: 'hide'): void
+  (e: 'hidden'): void
+  (e: 'component-error', error: ComponentError): void
+}>()
+
+const computedId = computed(() => props.id || _generatedId)
 
 const offcanvasRef = ref<HTMLElement | null>(null)
-const bsOffcanvas = ref<BootstrapOffcanvas | null>(null)
+const bsOffcanvas = shallowRef<BootstrapOffcanvas | null>(null)
 const isVisible = ref(false)
+
+// Bug 1: in-flight guard to prevent concurrent async init races
+let initInFlight = false
+
+// Bug 4: track whether listeners are attached to prevent stacking
+let listenersAttached = false
+
+// Set first in onBeforeUnmount — guards the post-await section against constructing
+// a Bootstrap Offcanvas instance on a detached element during a mount/unmount race.
+let isUnmounted = false
+
+// WCAG 2.4.3: focus must return to the trigger after close. Bootstrap's restore is
+// unreliable when shown programmatically, so capture/restore the pre-open focus ourselves.
+let preFocusEl: HTMLElement | null = null
 
 const offcanvasClass = computed(() => `offcanvas offcanvas-${props.placement}`)
 
+// Bug 3: isVisible is now set in onShown (not onShow) to align with modelValue emit
 const onShow = () => {
-  isVisible.value = true
+  // Capture pre-open focus (fires on show.bs.offcanvas, before focus moves into the panel).
+  if (typeof document !== 'undefined') {
+    preFocusEl = document.activeElement as HTMLElement | null
+  }
   emit('show')
 }
 
 const onShown = () => {
+  isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
 }
@@ -46,17 +78,53 @@ const onHidden = () => {
   isVisible.value = false
   emit('hidden')
   emit('update:modelValue', false)
+  // WCAG 2.4.3: return focus to the element that opened the offcanvas.
+  if (preFocusEl && typeof preFocusEl.focus === 'function') {
+    preFocusEl.focus()
+  }
+  preFocusEl = null
 }
 
+// Bug 4: listener attach/detach helpers
+function attachListeners() {
+  if (listenersAttached || !offcanvasRef.value) return
+  offcanvasRef.value.addEventListener('show.bs.offcanvas', onShow)
+  offcanvasRef.value.addEventListener('shown.bs.offcanvas', onShown)
+  offcanvasRef.value.addEventListener('hide.bs.offcanvas', onHide)
+  offcanvasRef.value.addEventListener('hidden.bs.offcanvas', onHidden)
+  listenersAttached = true
+}
+
+function detachListeners() {
+  if (!listenersAttached || !offcanvasRef.value) return
+  offcanvasRef.value.removeEventListener('show.bs.offcanvas', onShow)
+  offcanvasRef.value.removeEventListener('shown.bs.offcanvas', onShown)
+  offcanvasRef.value.removeEventListener('hide.bs.offcanvas', onHide)
+  offcanvasRef.value.removeEventListener('hidden.bs.offcanvas', onHidden)
+  listenersAttached = false
+}
+
+// Bug 1: async init with in-flight guard
+// Bug 4: detach old listeners before dispose, attach after new instance
 const initOffcanvas = async () => {
   if (!offcanvasRef.value) return
 
-  if (bsOffcanvas.value) {
-    bsOffcanvas.value.dispose()
-  }
+  // Bug 1: prevent concurrent init races
+  if (initInFlight) return
+  initInFlight = true
 
   try {
+    if (bsOffcanvas.value) {
+      detachListeners()
+      bsOffcanvas.value.dispose()
+      bsOffcanvas.value = null
+    }
+
     const bootstrap = await import('bootstrap')
+
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!offcanvasRef.value || isUnmounted) return
+
     const Offcanvas = bootstrap.Offcanvas
 
     bsOffcanvas.value = new Offcanvas(offcanvasRef.value, {
@@ -65,10 +133,7 @@ const initOffcanvas = async () => {
       keyboard: props.backdrop !== 'static'
     }) as BootstrapOffcanvas
 
-    offcanvasRef.value.addEventListener('show.bs.offcanvas', onShow)
-    offcanvasRef.value.addEventListener('shown.bs.offcanvas', onShown)
-    offcanvasRef.value.addEventListener('hide.bs.offcanvas', onHide)
-    offcanvasRef.value.addEventListener('hidden.bs.offcanvas', onHidden)
+    attachListeners()
 
     if (props.modelValue) {
       bsOffcanvas.value.show()
@@ -79,26 +144,20 @@ const initOffcanvas = async () => {
       componentName: 'VibeOffcanvas',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
 onMounted(initOffcanvas)
 
+// Bug 2: just call dispose() directly — Bootstrap handles cleanup internally
+// Bug 4: detach listeners before dispose
 onBeforeUnmount(() => {
-  if (offcanvasRef.value) {
-    offcanvasRef.value.removeEventListener('show.bs.offcanvas', onShow)
-    offcanvasRef.value.removeEventListener('shown.bs.offcanvas', onShown)
-    offcanvasRef.value.removeEventListener('hide.bs.offcanvas', onHide)
-    offcanvasRef.value.removeEventListener('hidden.bs.offcanvas', onHidden)
-  }
-
-  if (bsOffcanvas.value) {
-    if (isVisible.value) {
-      bsOffcanvas.value.hide()
-    }
-    bsOffcanvas.value.dispose()
-    bsOffcanvas.value = null
-  }
+  isUnmounted = true
+  detachListeners()
+  bsOffcanvas.value?.dispose()
+  bsOffcanvas.value = null
 })
 
 watch(() => props.modelValue, (newValue) => {
@@ -121,22 +180,24 @@ useBackButton(() => {
   if (isVisible.value) hide()
 })
 
-defineExpose({ show, hide, bsInstance: bsOffcanvas })
+// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on it directly WILL break this component.
+defineExpose({ show, hide, _unsafe_bsInstance: bsOffcanvas })
 </script>
 
 <template>
   <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
     <div
       ref="offcanvasRef"
-      :id="id"
+      :id="computedId"
       :class="offcanvasClass"
       tabindex="-1"
-      :aria-labelledby="`${id}-label`"
+      :aria-labelledby="`${computedId}-label`"
       :data-bs-backdrop="backdrop === false ? 'false' : backdrop === 'static' ? 'static' : 'true'"
       :data-bs-scroll="scroll"
     >
       <div class="offcanvas-header">
-        <h5 :id="`${id}-label`" class="offcanvas-title">
+        <h5 :id="`${computedId}-label`" class="offcanvas-title">
           <slot name="header">{{ title }}</slot>
         </h5>
         <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>

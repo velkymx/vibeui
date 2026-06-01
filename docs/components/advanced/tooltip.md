@@ -1,15 +1,23 @@
 # VibeTooltip
 
-Tooltips for displaying contextual information. Requires Bootstrap JS and initialization.
+Tooltips for displaying contextual information. Bootstrap's tooltip JS is initialized automatically when the component mounts.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `content` | `String` | Required | Tooltip text content |
-| `placement` | `Placement` | `'top'` | Tooltip position: `'top'`, `'bottom'`, `'start'`, `'end'` |
-| `trigger` | `String` | `'hover focus'` | Trigger events (space-separated) |
-| `html` | `Boolean` | `false` | Allow HTML content |
+| `text` | `String` | `undefined` | Tooltip text content (preferred) |
+| `content` | `String` | `undefined` | **Deprecated.** Use `text` instead |
+| `placement` | `TooltipPlacement` | `'top'` | Tooltip position: `'top'`, `'bottom'`, `'start'`, `'end'` |
+| `trigger` | `String` | `'hover focus'` | Trigger events (space-separated): `'hover'`, `'focus'`, `'click'` |
+
+Content is always rendered as plain text — HTML is not supported (this is intentional, to avoid XSS).
+
+## Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `component-error` | `{ message, componentName, originalError }` | Emitted if Bootstrap JS is unavailable at mount |
 
 ## Slots
 
@@ -17,13 +25,17 @@ Tooltips for displaying contextual information. Requires Bootstrap JS and initia
 |------|-------------|
 | `default` | Element that triggers the tooltip |
 
+## Exposed
+
+> **Escape hatch:** `_unsafe_bsInstance` (the underlying Bootstrap `Tooltip` instance) is exposed via a template ref. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly WILL break the component.
+
 ## Usage
 
 ### Basic Tooltip
 
 ```vue
 <template>
-  <VibeTooltip content="Tooltip text">
+  <VibeTooltip text="Tooltip text">
     <VibeButton variant="secondary">Hover me</VibeButton>
   </VibeTooltip>
 </template>
@@ -34,19 +46,19 @@ Tooltips for displaying contextual information. Requires Bootstrap JS and initia
 ```vue
 <template>
   <div>
-    <VibeTooltip content="Tooltip on top" placement="top">
+    <VibeTooltip text="Tooltip on top" placement="top">
       <VibeButton variant="secondary">Top</VibeButton>
     </VibeTooltip>
 
-    <VibeTooltip content="Tooltip on right" placement="end">
+    <VibeTooltip text="Tooltip on right" placement="end">
       <VibeButton variant="secondary">End</VibeButton>
     </VibeTooltip>
 
-    <VibeTooltip content="Tooltip on bottom" placement="bottom">
+    <VibeTooltip text="Tooltip on bottom" placement="bottom">
       <VibeButton variant="secondary">Bottom</VibeButton>
     </VibeTooltip>
 
-    <VibeTooltip content="Tooltip on left" placement="start">
+    <VibeTooltip text="Tooltip on left" placement="start">
       <VibeButton variant="secondary">Start</VibeButton>
     </VibeTooltip>
   </div>
@@ -57,55 +69,22 @@ Tooltips for displaying contextual information. Requires Bootstrap JS and initia
 
 ```vue
 <template>
-  <VibeTooltip content="Click to see tooltip" trigger="click">
+  <VibeTooltip text="Click to see tooltip" trigger="click">
     <VibeButton variant="primary">Click me</VibeButton>
-  </VibeTooltip>
-</template>
-```
-
-### HTML Content
-
-```vue
-<template>
-  <VibeTooltip content="<em>Tooltip</em> with <strong>HTML</strong>" html>
-    <VibeButton variant="info">HTML Tooltip</VibeButton>
   </VibeTooltip>
 </template>
 ```
 
 ## Important Notes
 
-**Automatic Initialization:** This component automatically initializes Bootstrap's Tooltip functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
+**Automatic Initialization:** This component initializes Bootstrap's Tooltip for you when it mounts. Bootstrap's JS is loaded internally — do not import or initialize Bootstrap JS yourself.
 
-**Touch Optimization:** On touch devices, the tooltip automatically switches its trigger from `hover focus` to `click` to ensure reliable behavior on mobile screens.
+**Touch Optimization:** On touch devices, when the trigger is `hover focus` it automatically switches to `click` for reliable behavior on mobile screens. Initialization is SSR-safe.
 
-**Manual Initialization (Optional):** If you are not using the automatic initialization or need to initialize tooltips on non-VibeUI elements:
-
-```javascript
-// Initialize all tooltips
-import { Tooltip } from 'bootstrap'
-...
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new Tooltip(tooltipTriggerEl))
-```
-
-Or in Vue:
-
-```vue
-<script setup>
-import { onMounted } from 'vue'
-import { Tooltip } from 'bootstrap'
-
-onMounted(() => {
-  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-  const tooltipList = [...tooltipTriggerList].map(el => new Tooltip(el))
-})
-</script>
-```
+**Reactive content:** Updating `text` (or the deprecated `content`) updates the live tooltip without a re-init.
 
 ## Bootstrap CSS Classes
 
-- Uses Bootstrap's `data-bs-toggle="tooltip"` attributes
 - `.tooltip`
 - `.tooltip-arrow`
 - `.tooltip-inner`

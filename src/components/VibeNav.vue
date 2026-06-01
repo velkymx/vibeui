@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import type { NavItem } from '../types'
+import type { NavItem, ComponentError } from '../types'
+import { safeHref } from '../utils/safeHref'
 
 interface BootstrapTab {
   show: () => void
@@ -18,10 +19,21 @@ const props = defineProps({
   tag: { type: String, default: 'ul' }
 })
 
-const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'component-error'])
+const emit = defineEmits<{
+  (e: 'item-click', payload: { item: NavItem; index: number; event: Event }): void
+  (e: 'show', event: Event): void
+  (e: 'shown', event: Event): void
+  (e: 'hide', event: Event): void
+  (e: 'hidden', event: Event): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const navRef = ref<HTMLElement | null>(null)
 const bsTabs = new Map<HTMLElement, BootstrapTab>()
+
+// Guards concurrent initTabs calls and post-unmount Bootstrap construction.
+let initInFlight = false
+let isUnmounted = false
 
 const navClass = computed(() => {
   const classes = ['nav']
@@ -40,11 +52,15 @@ const onHide = (event: any) => emit('hide', event)
 const onHidden = (event: any) => emit('hidden', event)
 
 const initTabs = async () => {
-  if (!navRef.value) return
+  if (!navRef.value || initInFlight) return
+  initInFlight = true
 
   try {
     const bootstrap = await import('bootstrap')
     const Tab = bootstrap.Tab
+
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!navRef.value || isUnmounted) return
 
     const tabTriggerEls = navRef.value.querySelectorAll('[data-bs-toggle="tab"], [data-bs-toggle="pill"]')
     tabTriggerEls.forEach((el) => {
@@ -66,12 +82,16 @@ const initTabs = async () => {
       componentName: 'VibeNav',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
 }
 
 onMounted(initTabs)
 
 onBeforeUnmount(() => {
+  isUnmounted = true
+
   bsTabs.forEach((bsTab, el) => {
     el.removeEventListener('show.bs.tab', onShow)
     el.removeEventListener('shown.bs.tab', onShown)
@@ -84,9 +104,27 @@ onBeforeUnmount(() => {
 
 // Watch for items changes to re-initialize tabs
 watch(() => props.items, async () => {
+  bsTabs.forEach((bsTab, el) => {
+    el.removeEventListener('show.bs.tab', onShow)
+    el.removeEventListener('shown.bs.tab', onShown)
+    el.removeEventListener('hide.bs.tab', onHide)
+    el.removeEventListener('hidden.bs.tab', onHidden)
+    bsTab.dispose()
+  })
+  bsTabs.clear()
   await nextTick()
   await initTabs()
-}, { deep: true })
+}, { deep: false })
+
+const getTabTarget = (item: NavItem): string | undefined => {
+  if (item.href?.startsWith('#')) return item.href
+  if (item.target) return item.target
+  if (typeof item.to === 'string') {
+    const idx = item.to.indexOf('#')
+    if (idx !== -1) return item.to.slice(idx)
+  }
+  return undefined
+}
 
 const handleItemClick = (item: NavItem, index: number, event: Event) => {
   if (!item.disabled) {
@@ -94,30 +132,44 @@ const handleItemClick = (item: NavItem, index: number, event: Event) => {
   }
 }
 
-defineExpose({ bsInstances: bsTabs, refresh: initTabs })
+const refresh = async () => {
+  bsTabs.forEach((bsTab, el) => {
+    el.removeEventListener('show.bs.tab', onShow)
+    el.removeEventListener('shown.bs.tab', onShown)
+    el.removeEventListener('hide.bs.tab', onHide)
+    el.removeEventListener('hidden.bs.tab', onHidden)
+    bsTab.dispose()
+  })
+  bsTabs.clear()
+  await nextTick()
+  await initTabs()
+}
+
+// _unsafe_bsInstances is an escape hatch, NOT part of the stable API.
+// Calling dispose()/other lifecycle methods on these directly WILL break this component.
+defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
 </script>
 
 <template>
   <component :is="tag" ref="navRef" :class="navClass">
     <li
       v-for="(item, index) in items"
-      :key="index"
+      :key="item.href || (item.to ? String(item.to) : undefined) || item.text || String(index)"
       class="nav-item"
       :class="{ dropdown: item.children && item.children.length > 0 }"
     >
       <template v-if="item.children && item.children.length > 0">
-        <a
+        <button
+          type="button"
           class="nav-link dropdown-toggle"
           data-bs-toggle="dropdown"
-          href="#"
-          role="button"
           aria-expanded="false"
           :class="{ active: item.active, disabled: item.disabled }"
         >
           {{ item.text }}
-        </a>
+        </button>
         <ul class="dropdown-menu">
-          <li v-for="(child, childIndex) in item.children" :key="childIndex">
+          <li v-for="(child, childIndex) in item.children" :key="child.href || child.text || String(childIndex)">
             <template v-if="child.divider">
               <hr class="dropdown-divider">
             </template>
@@ -126,10 +178,10 @@ defineExpose({ bsInstances: bsTabs, refresh: initTabs })
             </template>
             <template v-else>
               <component
-                :is="child.href ? 'a' : child.to ? 'router-link' : 'button'"
+                :is="safeHref(child.href) ? 'a' : child.to ? 'router-link' : 'button'"
                 class="dropdown-item"
                 :class="{ active: child.active, disabled: child.disabled }"
-                :href="child.href"
+                :href="safeHref(child.href)"
                 :to="child.to"
                 :type="!child.href && !child.to ? 'button' : undefined"
               >
@@ -141,18 +193,19 @@ defineExpose({ bsInstances: bsTabs, refresh: initTabs })
       </template>
       <template v-else>
         <component
-          :is="item.href ? 'a' : item.to ? 'router-link' : 'button'"
+          :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
           class="nav-link"
           :class="{ active: item.active, disabled: item.disabled }"
-          :href="item.href"
+          :href="safeHref(item.href)"
           :to="item.to"
           :type="!item.href && !item.to ? 'button' : undefined"
+          :disabled="(!item.href && !item.to && item.disabled) || undefined"
           :aria-current="item.active ? 'page' : undefined"
-          :data-bs-toggle="(tabs || pills) && (item.href && item.href.startsWith('#')) ? (tabs ? 'tab' : 'pill') : undefined"
-          :data-bs-target="item.href && item.href.startsWith('#') ? item.href : undefined"
+          :data-bs-toggle="(tabs || pills) && getTabTarget(item) ? (tabs ? 'tab' : 'pill') : undefined"
+          :data-bs-target="getTabTarget(item)"
           @click="handleItemClick(item, index, $event)"
         >
-          {{ item.text }}
+          <slot name="item" :item="item" :index="index">{{ item.text }}</slot>
         </component>
       </template>
     </li>

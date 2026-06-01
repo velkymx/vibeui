@@ -21,6 +21,7 @@ Toggle visibility of content with smooth transitions.
 | `shown` | - | Emitted when collapse is fully shown |
 | `hide` | - | Emitted when collapse starts hiding |
 | `hidden` | - | Emitted when collapse is fully hidden |
+| `component-error` | `ComponentError` | Emitted if Bootstrap JS fails to load |
 
 ## Slots
 
@@ -93,9 +94,9 @@ When used inside a `VibeNavbar`, add `is-nav` to get the `navbar-collapse` class
 
 **Automatic Initialization:** This component automatically initializes Bootstrap's Collapse functionality when it is mounted, ensuring that smooth sliding transitions are used.
 
-**State Synchronization:** Refactored to ensure that clicking a toggle (like `VibeNavbarToggle`) updates both Vue's internal state and Bootstrap's JavaScript instance simultaneously.
+**State Synchronization:** Clicking a toggle (like `VibeNavbarToggle`) updates both Vue's `v-model` state and Bootstrap's JavaScript instance simultaneously, so the two never drift out of sync.
 
-**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
+**Pre-init fallback:** Before Bootstrap JS finishes loading, an open collapse (`v-model` true) still renders visible via the `.show` class; once Bootstrap is ready it takes ownership of the class.
 
 ## Bootstrap CSS Classes
 

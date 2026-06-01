@@ -138,4 +138,19 @@ describe('VibeSortable', () => {
     const vm = wrapper.vm as unknown as { items: string[] }
     expect(vm.items).toEqual(['a', 'b', 'c'])
   })
+
+  it('accepts itemKey prop and renders items', () => {
+    const items = [
+      { id: 'x', label: 'X' },
+      { id: 'y', label: 'Y' },
+      { id: 'z', label: 'Z' }
+    ]
+    const wrapper = mount(VibeSortable as any, {
+      props: { modelValue: items, itemKey: 'id' },
+      slots: { default: ({ item }: { item: { id: string; label: string } }) => item.label }
+    })
+    const nodes = wrapper.findAll('[data-vibe-sortable-item]')
+    expect(nodes).toHaveLength(3)
+    expect(nodes.map(n => n.text())).toEqual(['X', 'Y', 'Z'])
+  })
 })

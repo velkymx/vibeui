@@ -1,8 +1,44 @@
 # VibeFormCheckbox
 
-Checkbox component for single boolean values or multiple selections.
+Checkbox for a single boolean value or as part of a grouped multi-select (array model).
 
-## Basic Usage
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `modelValue` | `boolean \| string \| number \| (string \| number \| boolean)[]` | `false` | v-model. A boolean (or `value`/`uncheckedValue`) for single checkboxes; an array for grouped checkboxes. |
+| `value` | `string \| number \| boolean` | `true` | Value emitted/added to the array when checked. |
+| `uncheckedValue` | `string \| number \| boolean` | `false` | Value emitted when unchecked (non-array model only). |
+| `id` | `string` | auto-generated | Element id. Auto-generated, or inherited from a parent `VibeFormGroup`. |
+| `label` | `string` | `undefined` | Checkbox label text. |
+| `disabled` | `boolean` | `false` | Disable the checkbox. |
+| `required` | `boolean` | `false` | Mark as required. |
+| `inline` | `boolean` | `false` | Render inline (`.form-check-inline`). |
+| `indeterminate` | `boolean` | `false` | Show the indeterminate (mixed) state. |
+| `reverse` | `boolean` | `false` | Place the label before the checkbox (`.form-check-reverse`). |
+| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Visual validation state. |
+| `validationMessage` | `string` | `undefined` | Feedback message for the current state. |
+| `validationRules` | `ValidationRule[] \| ValidatorFunction` | `undefined` | Rules carried for use with a validation composable. |
+| `validateOn` | `'change' \| 'blur'` | `'change'` | When the `validate` event fires. |
+| `helpText` | `string` | `undefined` | Help text below the checkbox. |
+
+## Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `update:modelValue` | `boolean \| string \| number \| (string \| number \| boolean)[]` | Emitted on toggle. Array result when the model is an array. |
+| `change` | `Event` | Native change event. |
+| `blur` | `FocusEvent` | Emitted on blur. |
+| `focus` | `FocusEvent` | Emitted on focus. |
+| `validate` | — | Emitted when the `validateOn` trigger occurs. |
+
+## Slots
+
+None.
+
+## Usage
+
+### Single checkbox
 
 ```vue
 <script setup lang="ts">
@@ -11,40 +47,54 @@ const agreed = ref(false)
 </script>
 
 <template>
+  <VibeFormCheckbox v-model="agreed" label="I accept the terms" />
+</template>
+```
+
+### Custom checked / unchecked values
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+const status = ref('off')
+</script>
+
+<template>
   <VibeFormCheckbox
-    v-model="agreed"
-    label="I agree to the terms"
+    v-model="status"
+    value="on"
+    unchecked-value="off"
+    label="Enable feature"
   />
 </template>
 ```
 
-## Props
+### Grouped checkboxes (array model)
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `modelValue` | `any` | `false` | The checked state (v-model) |
-| `value` | `any` | `true` | Value when checked |
-| `id` | `String` | `Auto-generated` | Unique identifier |
-| `label` | `String` | `undefined` | Label text |
-| `disabled` | `Boolean` | `false` | Disable the checkbox |
-| `required` | `Boolean` | `false` | Mark as required |
-| `inline` | `Boolean` | `false` | Display inline |
-| `indeterminate` | `Boolean` | `false` | Set indeterminate state |
-| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Validation state |
-| `validationMessage` | `String` | `undefined` | Validation message |
-| `validateOn` | `'change' \| 'blur'` | `'change'` | When to validate |
-| `helpText` | `String` | `undefined` | Help text |
-| `reverse` | `Boolean` | `false` | Reverse label and input |
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+const selected = ref<string[]>([])
+</script>
+
+<template>
+  <VibeFormGroup label="Interests">
+    <VibeFormCheckbox v-model="selected" value="vue" label="Vue" />
+    <VibeFormCheckbox v-model="selected" value="ts" label="TypeScript" />
+    <VibeFormCheckbox v-model="selected" value="css" label="CSS" />
+  </VibeFormGroup>
+</template>
+```
 
 ## Important Notes
 
-**Automatic ID Generation:** This component automatically generates a unique ID if one is not provided.
-
-**Automatic ID Injection:** When used inside a `VibeFormGroup`, this component will automatically inherit the group's ID to ensure proper label association and accessibility.
+- **Array vs. single model:** if `modelValue` is an array, checking adds `value` and unchecking removes it. Otherwise the model toggles between `value` and `uncheckedValue`.
+- **Indeterminate:** purely visual; it does not change the checked value and is reset once the user toggles.
+- **Group linking:** in a grouped layout, the first checkbox consumes the `VibeFormGroup` id; subsequent checkboxes generate their own ids.
 
 ## Bootstrap CSS Classes
 
 - `.form-check`
-- `.form-check-input`
-- `.form-check-label`
+- `.form-check-input`, `.form-check-label`
+- `.form-check-inline`, `.form-check-reverse`
 - `.is-valid`, `.is-invalid`

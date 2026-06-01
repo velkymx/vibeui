@@ -25,3 +25,12 @@ dist-ssr
 /coverage
 coding-agent-rules.md
 TODO.md
+
+# Vitest browser-mode artifacts (failure screenshots / attachments)
+.vitest-attachments/
+tests/browser/__screenshots__/
+
+# Playwright example-page e2e artifacts
+/test-results/
+/playwright-report/
+/e2e/.cache/

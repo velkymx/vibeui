@@ -1,5 +1,12 @@
 // Shared TypeScript types for VibeUI components
 
+/** Payload emitted by the `component-error` event on all Bootstrap-backed components. */
+export interface ComponentError {
+  message: string
+  componentName: string
+  originalError: unknown
+}
+
 export type ColorMode = 'light' | 'dark' | 'auto'
 
 export type Variant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
@@ -9,7 +16,7 @@ export type Size = 'sm' | 'lg'
 
 export type ButtonType = 'button' | 'submit' | 'reset'
 
-export type Placement = 'top' | 'bottom' | 'start' | 'end'
+export type TooltipPlacement = 'top' | 'bottom' | 'start' | 'end'
 
 export type Tag = 'div' | 'span' | 'section' | 'article' | 'nav' | 'aside' | 'header' | 'footer' | 'main'
 
@@ -72,6 +79,8 @@ export interface NavItem {
   text: string
   href?: string
   to?: string | object
+  /** Tab panel ID (e.g. '#panel-id') for tabs/pills mode when using router-link */
+  target?: string
   active?: boolean
   disabled?: boolean
   children?: DropdownItem[]
@@ -142,7 +151,8 @@ export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url'
 
 export type ValidationState = 'valid' | 'invalid' | null
 
-export type ValidatorFunction = (value: any) => boolean | string | Promise<boolean | string>
+/** Return true for valid, false for invalid (uses rule.message), or a non-empty string as the error message (also invalid). */
+export type ValidatorFunction = (value: unknown) => boolean | string | Promise<boolean | string>
 
 export interface ValidationRule {
   validator: ValidatorFunction
@@ -161,3 +171,17 @@ export interface FormSelectOption {
   text: string
   disabled?: boolean
 }
+
+// Chart types
+export interface ChartDataset {
+  label: string
+  data: number[]
+  color?: string
+}
+
+export interface ChartData {
+  labels: string[]
+  datasets: ChartDataset[]
+}
+
+export type ChartLegendPosition = 'top' | 'bottom' | 'none'

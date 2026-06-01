@@ -42,8 +42,6 @@ const props = defineProps({
   justifyContent: { type: String as PropType<JustifyContent>, default: undefined }
 })
 
-const emit = defineEmits(['component-error'])
-
 const rowClass = computed(() => {
   const classes: string[] = ['row']
 

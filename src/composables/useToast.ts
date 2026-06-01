@@ -25,7 +25,25 @@ interface ToastStore {
 }
 
 const store = reactive<ToastStore>({ toasts: [] })
+const toastMap = new Map<string, ToastSpec>()
 let counter = 0
+
+// The store is a module-level singleton. In SSR (one module instance shared across all
+// requests) that leaks toasts between users unless reset per request. Warn in DEV-SSR so
+// the requirement to call resetToastStoreForSSR() per request is not silently missed.
+if (
+  import.meta.env.DEV &&
+  typeof window === 'undefined' &&
+  // Detect Node without pulling in @types/node (this is a browser-first library):
+  // read process off globalThis rather than the bare global name.
+  typeof (globalThis as { process?: unknown }).process !== 'undefined'
+) {
+  console.warn(
+    '[VibeUI useToast] SSR detected: the toast store is a module-level singleton shared ' +
+    'across requests. Call resetToastStoreForSSR() in your per-request server entry to ' +
+    'prevent cross-request toast leakage.'
+  )
+}
 
 const nextId = (): string => {
   counter += 1
@@ -33,8 +51,14 @@ const nextId = (): string => {
 }
 
 const push = (body: string, options: ToastShowOptions): ToastSpec => {
+  const id = options.id ?? nextId()
+  const existing = toastMap.get(id)
+  if (existing) {
+    Object.assign(existing, { body, title: options.title, variant: options.variant, placement: options.placement, autohide: options.autohide, delay: options.delay })
+    return existing
+  }
   const spec: ToastSpec = {
-    id: options.id ?? nextId(),
+    id,
     body,
     title: options.title,
     variant: options.variant,
@@ -42,18 +66,21 @@ const push = (body: string, options: ToastShowOptions): ToastSpec => {
     autohide: options.autohide,
     delay: options.delay
   }
+  toastMap.set(id, spec)
   store.toasts.push(spec)
   return spec
 }
 
 const dismissById = (id: string): boolean => {
+  if (!toastMap.has(id)) return false
+  toastMap.delete(id)
   const idx = store.toasts.findIndex(t => t.id === id)
-  if (idx === -1) return false
-  store.toasts.splice(idx, 1)
+  if (idx !== -1) store.toasts.splice(idx, 1)
   return true
 }
 
 const clear = (): void => {
+  toastMap.clear()
   store.toasts.splice(0, store.toasts.length)
 }
 
@@ -84,6 +111,7 @@ export function useToast(): UseToastReturn {
 }
 
 export const __resetToastStoreForTests = (): void => {
+  toastMap.clear()
   clear()
   counter = 0
 }

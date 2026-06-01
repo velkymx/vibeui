@@ -7,8 +7,6 @@ const props = defineProps({
   tag: { type: String as PropType<Tag>, default: 'div' }
 })
 
-const emit = defineEmits(['component-error'])
-
 const containerClass = computed(() => {
   if (props.fluid === false) {
     return 'container'

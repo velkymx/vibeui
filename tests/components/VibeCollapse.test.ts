@@ -46,6 +46,21 @@ describe('VibeCollapse', () => {
     expect(mockInstance.show).toHaveBeenCalled()
   })
 
+  it('with modelValue=true on mount, changing to false triggers hide', async () => {
+    const wrapper = mount(VibeCollapse, {
+      props: { id: 'test-collapse', modelValue: true }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+    const mockInstance = vi.mocked(bootstrap.Collapse).mock.results[0].value
+
+    // Simulate Bootstrap dispatching 'show.bs.collapse' (from show() call)
+    wrapper.find('.collapse').element.dispatchEvent(new Event('show.bs.collapse'))
+
+    await wrapper.setProps({ modelValue: false })
+    expect(mockInstance.hide).toHaveBeenCalled()
+  })
+
   it('toggles when modelValue changes', async () => {
     const wrapper = mount(VibeCollapse, {
       props: {

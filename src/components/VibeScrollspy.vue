@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import type { Tag } from '../types'
+import { shallowRef, ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated, computed } from 'vue'
+import type { Tag, ComponentError } from '../types'
+import { safeLength } from '../utils/safeCss'
 
 interface BootstrapScrollSpy {
   refresh: () => void
@@ -9,34 +10,53 @@ interface BootstrapScrollSpy {
 
 const props = defineProps({
   target: { type: String, required: true },
-  offset: { type: Number, default: 10 },
+  /** @deprecated Bootstrap 5.2+ uses rootMargin. Use rootMargin instead. */
+  offset: { type: Number, default: undefined },
+  rootMargin: { type: String, default: '0px 0px -25%' },
   method: { type: String, default: 'auto' },
   smoothScroll: { type: Boolean, default: false },
-  tag: { type: String as () => Tag, default: 'div' }
+  tag: { type: String as () => Tag, default: 'div' },
+  height: { type: String, default: '100%' }
 })
 
-const emit = defineEmits(['activate', 'component-error'])
+const emit = defineEmits<{
+  (e: 'activate', event: Event): void
+  (e: 'component-error', error: ComponentError): void
+}>()
 
 const scrollspyRef = ref<HTMLElement | null>(null)
-const bsScrollspy = ref<BootstrapScrollSpy | null>(null)
+const bsScrollspy = shallowRef<BootstrapScrollSpy | null>(null)
+let initInFlight = false
+
+// Set first in onBeforeUnmount — guards post-await section against constructing
+// a Bootstrap ScrollSpy instance on a detached element.
+let isUnmounted = false
 
 const onActivate = (event: any) => {
   emit('activate', event)
 }
 
-onMounted(async () => {
-  if (!scrollspyRef.value) return
+const initScrollspy = async () => {
+  if (!scrollspyRef.value || initInFlight) return
+  initInFlight = true
 
   try {
     const bootstrap = await import('bootstrap')
     const ScrollSpy = bootstrap.ScrollSpy
 
+    // Guard: component may have unmounted while the import was in-flight.
+    if (!scrollspyRef.value || isUnmounted) return
+
+    if (props.offset !== undefined) {
+      console.warn('[VibeScrollspy] The `offset` prop is deprecated (Bootstrap 5.2+). Use `rootMargin` instead.')
+    }
+
     bsScrollspy.value = new ScrollSpy(scrollspyRef.value, {
       target: props.target,
-      offset: props.offset,
+      rootMargin: props.rootMargin,
       method: props.method,
       smoothScroll: props.smoothScroll
-    }) as BootstrapScrollSpy
+    } as any) as BootstrapScrollSpy
 
     scrollspyRef.value.addEventListener('activate.bs.scrollspy', onActivate)
   } catch (error) {
@@ -45,10 +65,28 @@ onMounted(async () => {
       componentName: 'VibeScrollspy',
       originalError: error
     })
+  } finally {
+    initInFlight = false
   }
+}
+
+onMounted(initScrollspy)
+
+// Re-init when configuration props change after mount
+watch([() => props.target, () => props.rootMargin, () => props.method, () => props.smoothScroll], async () => {
+  if (scrollspyRef.value) {
+    scrollspyRef.value.removeEventListener('activate.bs.scrollspy', onActivate)
+  }
+  bsScrollspy.value?.dispose()
+  bsScrollspy.value = null
+  await nextTick()
+  if (!scrollspyRef.value) return
+  await initScrollspy()
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
+
   if (scrollspyRef.value) {
     scrollspyRef.value.removeEventListener('activate.bs.scrollspy', onActivate)
   }
@@ -59,12 +97,12 @@ onBeforeUnmount(() => {
   }
 })
 
-// Provide a way to refresh the ScrollSpy if content changes
-const refresh = () => {
-  if (bsScrollspy.value) {
-    bsScrollspy.value.refresh()
-  }
-}
+const safeHeight = computed(() => safeLength(props.height) ?? '100%')
+
+const refresh = () => bsScrollspy.value?.refresh()
+
+// Refresh when reactivated inside KeepAlive so positions are recalculated
+onActivated(refresh)
 
 defineExpose({ refresh })
 </script>
@@ -75,11 +113,11 @@ defineExpose({ refresh })
     ref="scrollspyRef"
     data-bs-spy="scroll"
     :data-bs-target="target"
-    :data-bs-offset="offset"
+    :data-bs-root-margin="rootMargin"
     :data-bs-method="method"
-    :data-bs-smooth-scroll="smoothScroll"
+    :data-bs-smooth-scroll="smoothScroll ? 'true' : undefined"
     tabindex="0"
-    style="position: relative; height: 100%; overflow: auto;"
+    :style="{ position: 'relative', height: safeHeight, overflow: 'auto' }"
   >
     <slot />
   </component>

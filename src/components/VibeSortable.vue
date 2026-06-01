@@ -1,8 +1,12 @@
+<!-- NOTE: VibeSortable manages its own drag state (draggingIndex). It is NOT compatible
+     with dndStore / VibeDraggable / VibeDroppable — mixing them causes undefined behavior.
+     Use VibeDraggable + VibeDroppable for cross-list or free-form drag-drop scenarios. -->
 <script setup lang="ts" generic="T">
-import { ref, type PropType } from 'vue'
+import { ref, onMounted, onBeforeUnmount, onActivated, type PropType } from 'vue'
 
 const props = defineProps({
   modelValue: { type: Array as PropType<T[]>, required: true },
+  itemKey: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
   tag: { type: String, default: 'div' },
   itemTag: { type: String, default: 'div' }
@@ -21,10 +25,7 @@ const onDragStart = (event: DragEvent, index: number) => {
     return
   }
   draggingIndex.value = index
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', String(index))
-  }
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
 }
 
 const onDragOver = (event: DragEvent) => {
@@ -50,6 +51,23 @@ const onDrop = (event: DragEvent, targetIndex: number) => {
 const onDragEnd = () => {
   draggingIndex.value = null
 }
+
+// Unified handlers read the row index from the element's data-sortable-index attribute,
+// so the template binds one stable function reference instead of allocating a new inline
+// arrow per item per render.
+const indexOf = (event: Event): number =>
+  Number((event.currentTarget as HTMLElement).dataset.sortableIndex)
+const onDragStartEvt = (event: DragEvent) => onDragStart(event, indexOf(event))
+const onDropEvt = (event: DragEvent) => onDrop(event, indexOf(event))
+
+const clearDrag = () => { draggingIndex.value = null }
+onMounted(() => {
+  document.addEventListener('dragend', clearDrag)
+})
+onBeforeUnmount(() => document.removeEventListener('dragend', clearDrag))
+// Reset stale drag state on KeepAlive reactivation — user may have been mid-drag
+// when the component was deactivated; draggingIndex would remain non-null otherwise.
+onActivated(() => { draggingIndex.value = null })
 </script>
 
 <template>
@@ -57,14 +75,15 @@ const onDragEnd = () => {
     <component
       :is="itemTag"
       v-for="(item, index) in modelValue"
-      :key="index"
+      :key="itemKey ? (item as any)[itemKey] : index"
       class="vibe-sortable-item"
       :class="{ 'vibe-sortable-dragging': draggingIndex === index }"
       :draggable="!disabled"
       data-vibe-sortable-item
-      @dragstart="(e: DragEvent) => onDragStart(e, index)"
+      :data-sortable-index="index"
+      @dragstart="onDragStartEvt"
       @dragover="onDragOver"
-      @drop="(e: DragEvent) => onDrop(e, index)"
+      @drop="onDropEvt"
       @dragend="onDragEnd"
     >
       <slot :item="item" :index="index" />

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product - VibeUI Example</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="../dist/vibeui.css">
+    <style>
+        .feature-box { overflow: hidden; }
+        .feature-box img { object-fit: cover; }
+        .product-img { height: 220px; object-fit: cover; }
+    </style>
+
+    <!-- VibeUI loads Bootstrap JS internally via `import('bootstrap')`; the UMD bundle
+         keeps that bare specifier, so the page maps it here (navbar collapse). -->
+    <script type="importmap">
+      {
+        "imports": {
+          "bootstrap": "https://esm.sh/bootstrap@5.3.0"
+        }
+      }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <vibe-navbar variant="white" expand="lg" class="border-bottom">
+            <vibe-navbar-brand href="#">
+                <vibe-icon icon="boxes" class="me-2"></vibe-icon>
+                Northwind
+            </vibe-navbar-brand>
+            <vibe-navbar-toggle target="navbarNav"></vibe-navbar-toggle>
+            <vibe-collapse id="navbarNav" is-nav>
+                <vibe-navbar-nav :items="navItems" class="ms-auto"></vibe-navbar-nav>
+            </vibe-collapse>
+        </vibe-navbar>
+
+        <!-- Hero -->
+        <vibe-hero gradient="linear-gradient(135deg, #0d6efd 0%, #6610f2 100%)" class="text-white">
+            <vibe-col :lg="8" class="mx-auto">
+                <vibe-badge variant="light" class="text-dark mb-3">New release</vibe-badge>
+                <h1 class="display-4 fw-bold mb-3">The Northwind 2 has arrived.</h1>
+                <p class="lead mb-4">Engineered for the everyday — lighter, faster, and built to last.</p>
+                <vibe-button variant="light" size="lg">
+                    <vibe-icon icon="cart-plus-fill" class="me-2"></vibe-icon>
+                    Buy now — $199
+                </vibe-button>
+            </vibe-col>
+        </vibe-hero>
+
+        <!-- Feature columns -->
+        <vibe-container class="py-5">
+            <vibe-row :gutters="4" class="text-center">
+                <vibe-col :md="4" v-for="f in features" :key="f.title">
+                    <vibe-icon :icon="f.icon" class="text-primary mb-2" font-size="2.5rem"></vibe-icon>
+                    <h4 class="fw-bold">{{ f.title }}</h4>
+                    <p class="text-muted">{{ f.body }}</p>
+                </vibe-col>
+            </vibe-row>
+        </vibe-container>
+
+        <!-- Checkerboard feature boxes -->
+        <vibe-container class="pb-5">
+            <vibe-row :gutters="4">
+                <vibe-col :md="6" v-for="box in featureBoxes" :key="box.title">
+                    <vibe-card class="feature-box h-100 border-0 shadow-sm" body-class="p-4">
+                        <h3 class="fw-bold">{{ box.title }}</h3>
+                        <p class="text-muted">{{ box.body }}</p>
+                        <vibe-button variant="primary" outline>Learn more</vibe-button>
+                    </vibe-card>
+                </vibe-col>
+            </vibe-row>
+        </vibe-container>
+
+        <!-- Product grid -->
+        <vibe-container class="pb-5">
+            <h2 class="text-center fw-bold mb-4">Pick your finish</h2>
+            <vibe-row row-cols="1" row-cols-sm="2" row-cols-lg="3" :gutters="4">
+                <vibe-col v-for="p in products" :key="p.name">
+                    <vibe-card class="h-100 border-0 shadow-sm" header-class="bg-body-tertiary fw-semibold">
+                        <template #image>
+                            <div class="position-relative">
+                                <img :src="p.img" class="card-img-top product-img" :alt="p.name">
+                                <vibe-badge v-if="p.tag" :variant="p.tagVariant" class="position-absolute top-0 end-0 m-2">
+                                    {{ p.tag }}
+                                </vibe-badge>
+                            </div>
+                        </template>
+                        <template #header>{{ p.name }}</template>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fs-5 fw-bold">{{ p.price }}</span>
+                            <vibe-button variant="primary" size="sm">
+                                <vibe-icon icon="cart-plus" class="me-1"></vibe-icon>
+                                Add
+                            </vibe-button>
+                        </div>
+                    </vibe-card>
+                </vibe-col>
+            </vibe-row>
+        </vibe-container>
+
+        <footer class="bg-dark text-white-50 py-4">
+            <vibe-container class="d-flex justify-content-between align-items-center">
+                <span><vibe-icon icon="boxes" class="me-2"></vibe-icon>Northwind © 2024</span>
+                <small>Built with VibeUI by <a href="https://technosorcery.com" class="text-white">TechnoSorcery.com</a></small>
+            </vibe-container>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../dist/vibeui.umd.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    navItems: [
+                        { text: 'Overview', href: '#', active: true },
+                        { text: 'Specs', href: '#' },
+                        { text: 'Reviews', href: '#' },
+                        { text: 'Buy', href: '#' }
+                    ],
+                    features: [
+                        { icon: 'lightning-charge-fill', title: 'Faster', body: 'Twice the throughput of the previous generation.' },
+                        { icon: 'battery-full', title: 'All-day battery', body: 'Up to 20 hours on a single charge.' },
+                        { icon: 'shield-check', title: 'Built to last', body: 'Aerospace-grade aluminium chassis.' }
+                    ],
+                    featureBoxes: [
+                        { title: 'Designed around you', body: 'Every detail considered, from the weight in your hand to the sound of the keys.' },
+                        { title: 'Ready for anything', body: 'A workhorse for creators, developers, and everyone in between.' }
+                    ],
+                    products: [
+                        { name: 'Graphite', price: '$199', tag: 'Popular', tagVariant: 'primary', img: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400' },
+                        { name: 'Silver', price: '$199', tag: 'New', tagVariant: 'success', img: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400' },
+                        { name: 'Midnight', price: '$229', tag: 'Limited', tagVariant: 'danger', img: 'https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=400' }
+                    ]
+                }
+            }
+        }).use(VibeUI.default).mount('#app');
+    </script>
+</body>
+</html>
