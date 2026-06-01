@@ -13,6 +13,8 @@
 
 **The Vue 3 component library for people who already love Bootstrap.**
 
+> **🤖 Building with an AI assistant?** Point it at [`llms.txt`](./llms.txt) (quick-start guardrails + a link to every doc) and [`docs/`](./docs/README.md). Every component's props, events, and slots are documented — **don't let it guess props or reverse-engineer from `dist/`.** Quick reminders: data-driven components use `:items` / `:bars` / `:options`, visibility uses `v-model`, outline buttons use the `outline` prop, and granular tags like `<vibe-card-body>` / `<vibe-nav-item>` do **not** exist (use slots). All of this ships inside the npm package — see also [`AGENTS.md`](./AGENTS.md).
+
 
 
 

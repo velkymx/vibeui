@@ -19,8 +19,10 @@
   "files": [
     "dist",
     "llms.txt",
+    "AGENTS.md",
     "CLAUDE.md",
-    "docs"
+    "docs",
+    "examples"
   ],
   "scripts": {
     "dev": "vite",
