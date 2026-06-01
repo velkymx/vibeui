@@ -48,6 +48,7 @@ You keep the Bootstrap you know. VibeUI handles the Vue you'd rather not write.
   - [Forms](#forms)
 - [Composables](#composables)
 - [Directives](#directives)
+- [Examples](#examples)
 - [Documentation](#documentation)
 
 ## Quick Start
@@ -168,6 +169,7 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | `VibeNavbar` | Responsive navbar with collapse | [docs](./docs/components/navigation/navbar.md) |
 | `VibeNavbarBrand` | Navbar brand/logo link | [docs](./docs/components/navigation/navbar.md) |
 | `VibeNavbarToggle` | Navbar collapse toggle button | [docs](./docs/components/navigation/navbar.md) |
+| `VibeNavbarNav` | Navbar nav list from items array | [docs](./docs/components/navigation/navbar.md) |
 | `VibePagination` | Pagination with ellipsis and page window | [docs](./docs/components/navigation/pagination.md) |
 | `VibeScrollspy` | Scroll-aware nav highlighting | [docs](./docs/components/advanced/scrollspy.md) |
 
@@ -175,7 +177,8 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeCard` | Card container with header, body, footer slots | [docs](./docs/components/card/card.md) |
+| `VibeCard` | Card container with header/body/footer slots, section classes, and an image slot | [docs](./docs/components/card/card.md) |
+| `VibeHero` | Hero / banner section (variant, bordered, bgImage, gradient, overlay) | [docs](./docs/components/hero/hero.md) |
 | `VibeListGroup` | List group with router-link support | [docs](./docs/components/list/list-group.md) |
 
 ### Interactive
@@ -197,6 +200,7 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | `VibeStepper` | Multi-step wizard with validation | [docs](./docs/components/interactive/stepper.md) |
 | `VibeTabs` | Tabbed interface from items array | [docs](./docs/components/interactive/tabs.md) |
 | `VibeTab` | Individual tab panel | [docs](./docs/components/interactive/tabs.md) |
+| `VibeTabContent` | Standalone tab-pane content host | [docs](./docs/components/interactive/tabs.md) |
 | `VibeToast` | Toast notification component with v-model | [docs](./docs/components/interactive/toast.md) |
 | `VibeToastHost` | Toast container for `useToast()` service | [docs](./docs/composables/use-toast.md) |
 
@@ -257,7 +261,26 @@ Form validation rules and `useForm()` API: [docs](./docs/forms/validation.md)
 |-----------|-------------|------|
 | `v-vibe-tooltip` | Directive-based tooltip on any element | [docs](./docs/directives/v-tooltip.md) |
 
+## Examples
+
+Full-page templates built entirely with VibeUI components — open [`examples/index.html`](./examples/index.html) (see [`examples/README.md`](./examples/README.md) for how to run them):
+
+| Example | Shows |
+|---------|-------|
+| [Starter](./examples/starter.html) | Navbar, hero, features, interactive components, footer |
+| [Album](./examples/album.html) | Photo grid with cards, badges, and an icon nav |
+| [Pricing](./examples/pricing.html) | Pricing cards with variant-colored headers |
+| [Checkout](./examples/checkout.html) | Full billing form, order summary, and validation |
+| [Sign-in](./examples/sign-in.html) | Centered form with `useForm` validation |
+| [Dashboard](./examples/dashboard.html) | Admin shell with sidebar and `VibeDataTable` |
+| [Sidebars](./examples/sidebars.html) | Desktop sidebar + mobile offcanvas nav |
+| [Product](./examples/product.html) | Marketing page with hero, feature grid, product cards |
+| [Carousel](./examples/carousel.html) | Full-width `VibeCarousel` + featurettes |
+| [Cover](./examples/cover.html) | Full-viewport one-page `VibeHero` |
+| [Blog](./examples/blog.html) | Magazine layout with pagination and sidebar |
+| [Jumbotron](./examples/jumbotron.html) | Modern jumbotron via the bordered `VibeHero` |
+
 ## Documentation
 
-Full API reference and examples: [`docs/`](./docs/README.md)
+Full API reference: [`docs/`](./docs/README.md)
 LLM-optimized reference: [`llms.txt`](./llms.txt)
