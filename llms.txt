@@ -60,7 +60,7 @@ vibeui/
 │   │   ├── VibeOffcanvas.vue       # Bootstrap JS — v-model, Teleport to body
 │   │   ├── VibeToast.vue           # Bootstrap JS — v-model OR no-container mode for host
 │   │   ├── VibeToastHost.vue       # v0.9: hosts queued toasts from useToast()
-│   │   ├── VibeCarousel.vue        # Bootstrap JS — v-model:activeIndex
+│   │   ├── VibeCarousel.vue        # Bootstrap JS — v-model (active slide index)
 │   │   ├── VibeTooltip.vue         # Bootstrap JS — reactive re-init on prop change
 │   │   ├── VibePopover.vue         # Bootstrap JS — reactive re-init on prop change
 │   │   ├── VibeScrollspy.vue
@@ -119,7 +119,7 @@ vibeui/
 │       ├── use-form.md
 │       ├── use-position.md
 │       └── use-toast.md
-├── examples/                       # Standalone HTML files (CDN-based, no build needed)
+├── examples/                       # Standalone HTML demo pages (load ../dist + CDNs; run `npm run build` first, or `npm run examples`)
 ├── smoke/                          # v0.9: manual smoke test page
 │   ├── index.html                  # `npm run smoke` builds + serves on :8001
 │   └── dist/                       # gitignored; populated by `npm run smoke`
@@ -355,9 +355,9 @@ Components like `VibeBreadcrumb`, `VibeListGroup`, `VibeDropdown`, `VibeAccordio
 </VibeFormGroup>
 ```
 
-### Accessing the Bootstrap instance
+### Accessing the Bootstrap instance (escape hatch)
 
-Every interactive component exposes its Bootstrap instance via a template ref:
+Most Bootstrap-JS components expose their underlying instance via a template ref as **`_unsafe_bsInstance`**. The `_unsafe_` prefix is intentional: it is an escape hatch, NOT part of the stable API. Calling Bootstrap lifecycle methods on it directly will desync the component's internal state. Prefer props and `v-model`; reach for this only when no prop/`v-model` covers your case. (Multi-instance components such as `VibeNav` and `VibeAccordion` expose `_unsafe_bsInstances` — a `Map`.)
 
 ```vue
 <template>
@@ -366,7 +366,7 @@ Every interactive component exposes its Bootstrap instance via a template ref:
 
 <script setup>
 const modal = useTemplateRef('modal')
-// modal.value.bsInstance → native Bootstrap Modal instance
+// modal.value?._unsafe_bsInstance → native Bootstrap Modal instance (use sparingly)
 </script>
 ```
 
@@ -568,16 +568,18 @@ For component-form usage with rich slot content, use `<VibeTooltip>`.
 
 ## Testing
 
-**Stack:** Vitest + @vue/test-utils + happy-dom
+Two Vitest projects share one Vite pipeline:
+- **`unit`** — `@vue/test-utils` + happy-dom, with **Bootstrap JS mocked** (`tests/mocks/bootstrap.ts`, aliased only in this project). Fast.
+- **`browser`** — real headless Chromium (Playwright provider) running the **real** Bootstrap JS + Quill — the integration paths happy-dom can't reach.
 
-**Run tests:**
 ```bash
-npx vitest run         # single run
-npx vitest             # watch mode
-npx vitest --coverage  # coverage report
+npm run test:run      # unit suite (what CI runs)
+npm run test:browser  # browser suite, real Chromium
+npm run test:all      # both projects
+npm run test:examples # Playwright: load every examples/*.html and assert it mounts (needs CDN network)
 ```
 
-**Bootstrap JS is mocked** in tests. The mock lives at `tests/mocks/bootstrap.ts` and is aliased in `vite.config.ts`. Component tests never trigger real Bootstrap JS initialization.
+So unit tests never trigger real Bootstrap JS; the browser tests deliberately do.
 
 **Pattern for component tests:**
 ```ts
@@ -684,3 +686,47 @@ All charts are responsive via `ResizeObserver`, render at device pixel ratio for
 - Does not require Vue Router (optional peer dep for `href`/`to` props on `VibeButton`)
 - Does not require QuillJS (optional peer dep for `VibeFormWysiwyg`)
 - Does not provide a theme system beyond Bootstrap's `data-bs-theme` color modes
+
+## API Best Practices
+
+Follow this workflow — it prevents the most common mistakes (guessing props, reverse-engineering from `dist/`, or wiring Bootstrap JS yourself):
+
+1. **Read the component's doc first, then build.** Every component has a doc page (see the Documentation Index below) with its exact props, events, slots, and a usage example. Do **not** infer the API from the compiled `dist/` files or from memory — the documented props, `:items` shapes, and slot names are the source of truth.
+2. **Use the documented API, not raw Bootstrap markup.** Data-driven components take arrays: `VibeNav` / `VibeDropdown` / `VibeListGroup` / `VibeBreadcrumb` use `:items`, `VibeProgress` uses `:bars`, `VibeDataTable` uses `:columns` + `:items`. Reach for the component, not a hand-written `<ul class="nav">` or `<div class="card">`.
+3. **Visibility is `v-model`.** `VibeModal` / `VibeOffcanvas` / `VibeToast` / `VibeCollapse` use `v-model` for open/closed state. Do not call Bootstrap's `show()`/`hide()` yourself.
+4. **Style via props first, then class/slots.** Variants and sizes are props (`variant="primary"`, `size="lg"`, `outline`). For one-offs, pass `class`/`style` — they merge onto the component root. Use slots (`#item`, `#header`, `#image`, `cell(<key>)`, etc.) for custom content.
+5. **Never import Bootstrap JS.** VibeUI loads it internally via dynamic `import('bootstrap')`. The consumer imports Bootstrap **CSS** once. In a non-bundler/UMD context, provide an import map mapping `bootstrap` to a CDN ESM build.
+6. **Outline buttons use the `outline` prop**, not `variant="outline-secondary"`. For any "is this a prop or a class?" question, the doc is authoritative.
+7. **Trust the types.** Props are strictly typed — a wrong prop name or enum value is a TypeScript error. Import components by name for full template type-checking.
+
+See also the full-page templates in [`examples/`](examples/index.html) for end-to-end usage of these patterns.
+
+## Documentation Index
+
+Per-component and per-API reference. **Read the relevant page before building with a component.**
+
+**Start here:** [docs/README.md](docs/README.md) · [Getting started / starter template](docs/getting-started/starter-template.md) · [Versioning & stability policy](docs/versioning.md)
+
+**Layout:** [VibeContainer](docs/components/layout/container.md) · [VibeRow](docs/components/layout/row.md) · [VibeCol](docs/components/layout/col.md)
+
+**Core:** [VibeAlert](docs/components/core/alert.md) · [VibeBadge](docs/components/core/badge.md) · [VibeButton](docs/components/core/button.md) · [VibeButtonGroup](docs/components/core/button-group.md) · [VibeCloseButton](docs/components/core/close-button.md) · [VibeLink](docs/components/core/link.md) · [VibePlaceholder](docs/components/core/placeholder.md) · [VibeSkeleton](docs/components/core/skeleton.md) · [VibeSpinner](docs/components/core/spinner.md)
+
+**Card / Hero / List:** [VibeCard](docs/components/card/card.md) · [VibeHero](docs/components/hero/hero.md) · [VibeListGroup](docs/components/list/list-group.md)
+
+**Navigation:** [VibeBreadcrumb](docs/components/navigation/breadcrumb.md) · [VibeNav](docs/components/navigation/nav.md) · [VibeNavbar](docs/components/navigation/navbar.md) · [VibePagination](docs/components/navigation/pagination.md)
+
+**Interactive:** [VibeAccordion](docs/components/interactive/accordion.md) · [VibeCarousel](docs/components/interactive/carousel.md) · [VibeCollapse](docs/components/interactive/collapse.md) · [VibeDatePicker](docs/components/interactive/date-picker.md) · [VibeDraggable / VibeDroppable](docs/components/interactive/draggable.md) · [VibeDropdown](docs/components/interactive/dropdown.md) · [VibeModal](docs/components/interactive/modal.md) · [VibeOffcanvas](docs/components/interactive/offcanvas.md) · [VibeResizable](docs/components/interactive/resizable.md) · [VibeSlider](docs/components/interactive/slider.md) · [VibeSortable](docs/components/interactive/sortable.md) · [VibeStepper](docs/components/interactive/stepper.md) · [VibeTabs / VibeTab](docs/components/interactive/tabs.md) · [VibeToast](docs/components/interactive/toast.md)
+
+**Advanced:** [VibePopover](docs/components/advanced/popover.md) · [VibeScrollspy](docs/components/advanced/scrollspy.md) · [VibeTooltip](docs/components/advanced/tooltip.md)
+
+**Data & Charts:** [VibeDataTable](docs/components/data/datatable.md) · [VibeChartBar](docs/components/charts/chart-bar.md) · [VibeChartLine](docs/components/charts/chart-line.md) · [VibeChartPie](docs/components/charts/chart-pie.md)
+
+**Progress:** [VibeProgress](docs/components/progress/progress.md)
+
+**Forms:** [overview](docs/forms/README.md) · [VibeAutocomplete](docs/forms/autocomplete.md) · [VibeFileInput](docs/forms/file-input.md) · [VibeFormCheckbox](docs/forms/form-checkbox.md) · [VibeFormDatepicker](docs/forms/form-datepicker.md) · [VibeFormGroup](docs/forms/form-group.md) · [VibeFormInput](docs/forms/form-input.md) · [VibeFormRadio](docs/forms/form-radio.md) · [VibeFormSelect](docs/forms/form-select.md) · [VibeFormSpinbutton](docs/forms/form-spinbutton.md) · [VibeFormSwitch](docs/forms/form-switch.md) · [VibeFormTextarea](docs/forms/form-textarea.md) · [VibeFormWysiwyg](docs/forms/form-wysiwyg.md) · [VibeInputGroup](docs/forms/input-group.md) · [Validation & useForm](docs/forms/validation.md)
+
+**Composables:** [useBackButton](docs/composables/back-button.md) · [useBreakpoints](docs/composables/breakpoints.md) · [useColorMode](docs/composables/color-mode.md) · [useForm](docs/composables/use-form.md) · [usePosition](docs/composables/use-position.md) · [useToast](docs/composables/use-toast.md)
+
+**Directives:** [v-vibe-tooltip](docs/directives/v-tooltip.md)
+
+**Utilities:** [Position utility classes](docs/utilities/position.md)
