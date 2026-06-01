@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { PropType } from 'vue'
 import type { Variant, Tag } from '../types'
+
+// Vue's class-binding value form (string, array, or object map).
+type ClassValue = string | unknown[] | Record<string, unknown>
 
 const props = defineProps({
   variant: { type: String as () => Variant, default: undefined },
@@ -14,9 +18,9 @@ const props = defineProps({
   footer: { type: String, default: undefined },
   // Per-section class hooks — let consumers style the header/body/footer wrappers
   // (e.g. a variant-colored header) without dropping to a raw .card.
-  headerClass: { type: [String, Array, Object] as () => unknown, default: undefined },
-  bodyClass: { type: [String, Array, Object] as () => unknown, default: undefined },
-  footerClass: { type: [String, Array, Object] as () => unknown, default: undefined },
+  headerClass: { type: [String, Array, Object] as PropType<ClassValue>, default: undefined },
+  bodyClass: { type: [String, Array, Object] as PropType<ClassValue>, default: undefined },
+  footerClass: { type: [String, Array, Object] as PropType<ClassValue>, default: undefined },
   // Image props
   imgSrc: { type: String, default: undefined },
   imgAlt: { type: String, default: '' },
