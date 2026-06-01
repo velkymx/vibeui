@@ -438,35 +438,4 @@ describe('VibeFormSelect', () => {
       expect(select.selectedIndex).toBe(1)
     })
   })
-
-  // Regression: computed refs auto-unwrap in templates — helpId.value / feedbackId.value
-  // double-dereferences to undefined, producing aria-describedby="undefined undefined"
-  describe('aria-describedby correctness', () => {
-    it('contains real ID, not "undefined", when helpText present', () => {
-      const wrapper = mount(VibeFormSelect, {
-        props: { id: 'sel', options: [], helpText: 'Pick one' }
-      })
-      const describedBy = wrapper.find('select').attributes('aria-describedby')
-      expect(describedBy).toBe('sel-help')
-      expect(describedBy).not.toContain('undefined')
-    })
-
-    it('contains real ID, not "undefined", when validationMessage present', () => {
-      const wrapper = mount(VibeFormSelect, {
-        props: { id: 'sel', options: [], validationState: 'invalid' as const, validationMessage: 'Required' }
-      })
-      const describedBy = wrapper.find('select').attributes('aria-describedby')
-      expect(describedBy).toBe('sel-feedback')
-      expect(describedBy).not.toContain('undefined')
-    })
-
-    it('lists both IDs when helpText and validationMessage both present', () => {
-      const wrapper = mount(VibeFormSelect, {
-        props: { id: 'sel', options: [], helpText: 'Help', validationState: 'invalid' as const, validationMessage: 'Required' }
-      })
-      const describedBy = wrapper.find('select').attributes('aria-describedby')
-      expect(describedBy).toBe('sel-help sel-feedback')
-      expect(describedBy).not.toContain('undefined')
-    })
-  })
 })

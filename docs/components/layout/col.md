@@ -33,6 +33,12 @@ Column component for Bootstrap's grid system. Supports responsive sizing, offset
 - **OrderValue:** `0 | 1 | 2 | 3 | 4 | 5 | 'first' | 'last'`
 - **AlignItems:** `'start' | 'center' | 'end' | 'baseline' | 'stretch'`
 
+## Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `component-error` | `Object` | Emitted when an error occurs |
+
 ## Slots
 
 | Slot | Description |

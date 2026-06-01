@@ -1,28 +1,25 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import type { PropType } from 'vue'
+import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
-// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
-// The validator option still forwards to the underlying prop.
-const modelValue = defineModel<string>({
-  default: '',
-  validator: (value: unknown) => {
-    if (import.meta.env.DEV && value !== null && typeof value === 'object') {
-      console.error(
-        `[VibeFormDatepicker] Invalid prop: modelValue must be a string, received object. ` +
-        `If you're using useFormValidation(), bind to the .value property: ` +
-        `v-model="field.value" instead of v-model="field"`
-      )
-      return false
-    }
-    return true
-  }
-})
-
 const props = defineProps({
+  modelValue: {
+    type: String,
+    default: '',
+    validator: (value: any) => {
+      if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+        console.error(
+          `[VibeFormDatepicker] Invalid prop: modelValue must be a string, received object. ` +
+          `If you're using useFormValidation(), bind to the .value property: ` +
+          `v-model="field.value" instead of v-model="field"`
+        )
+        return false
+      }
+      return true
+    }
+  },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   disabled: { type: Boolean, default: false },
@@ -39,21 +36,17 @@ const props = defineProps({
   type: { type: String as () => 'date' | 'time' | 'datetime-local' | 'month' | 'week', default: 'date' }
 })
 
-const emit = defineEmits<{
-  (e: 'validate'): void
-  (e: 'blur', event: FocusEvent): void
-  (e: 'focus', event: FocusEvent): void
-  (e: 'input', event: Event): void
-  (e: 'change', event: Event): void
-}>()
+const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
 
-const formGroup = inject(FORM_GROUP_KEY, null)
+const formGroup = inject<{
+  id: ComputedRef<string>
+  consumeId: () => string | null
+  hasLabel: ComputedRef<boolean>
+  hasValidation: ComputedRef<boolean>
+  hasHelp: ComputedRef<boolean>
+} | null>('vibeFormGroup', null)
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('datepicker')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const helpId = computed(() => `${computedId.value}-help`)
-const feedbackId = computed(() => `${computedId.value}-feedback`)
+const computedId = computed(() => props.id || formGroup?.consumeId() || useId('datepicker'))
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
@@ -68,7 +61,7 @@ const inputClass = computed(() => {
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  modelValue.value = target.value
+  emit('update:modelValue', target.value)
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
@@ -105,20 +98,20 @@ const handleFocus = (event: FocusEvent) => {
       :min="min"
       :max="max"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="helpText && validationMessage ? `${helpId} ${feedbackId}` : helpText ? helpId : validationMessage ? feedbackId : undefined"
+      :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
       @input="handleInput"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
     />
-    <div v-if="shouldRenderHelp" :id="helpId" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
-      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide a valid date.' }}
       </div>
     </template>

@@ -16,9 +16,6 @@ import VibeCol from './VibeCol.vue'
 // Card Components
 import VibeCard from './VibeCard.vue'
 
-// Hero Components
-import VibeHero from './VibeHero.vue'
-
 // Navigation Components
 import VibeBreadcrumb from './VibeBreadcrumb.vue'
 import VibeNav from './VibeNav.vue'
@@ -52,11 +49,6 @@ import VibeTooltip from './VibeTooltip.vue'
 import VibePopover from './VibePopover.vue'
 import VibeScrollspy from './VibeScrollspy.vue'
 import VibeIcon from './VibeIcon.vue'
-
-// Chart Components
-import VibeChartLine from './VibeChartLine.vue'
-import VibeChartBar from './VibeChartBar.vue'
-import VibeChartPie from './VibeChartPie.vue'
 
 // Data Components
 import VibeDataTable from './VibeDataTable.vue'
@@ -104,9 +96,6 @@ export {
   // Card
   VibeCard,
 
-  // Hero
-  VibeHero,
-
   // Navigation
   VibeBreadcrumb,
   VibeNav,
@@ -140,11 +129,6 @@ export {
   VibePopover,
   VibeScrollspy,
   VibeIcon,
-
-  // Chart
-  VibeChartLine,
-  VibeChartBar,
-  VibeChartPie,
 
   // Data
   VibeDataTable,
@@ -197,9 +181,6 @@ const VibeUIPlugin: Plugin = {
     // Card
     app.component('VibeCard', VibeCard)
 
-    // Hero
-    app.component('VibeHero', VibeHero)
-
     // Navigation
     app.component('VibeBreadcrumb', VibeBreadcrumb)
     app.component('VibeNav', VibeNav)
@@ -233,11 +214,6 @@ const VibeUIPlugin: Plugin = {
     app.component('VibePopover', VibePopover)
     app.component('VibeScrollspy', VibeScrollspy)
     app.component('VibeIcon', VibeIcon)
-
-    // Chart
-    app.component('VibeChartLine', VibeChartLine)
-    app.component('VibeChartBar', VibeChartBar)
-    app.component('VibeChartPie', VibeChartPie)
 
     // Data
     app.component('VibeDataTable', VibeDataTable)

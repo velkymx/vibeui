@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Tag, ListGroupItem, ComponentError } from '../types'
-import { safeHref } from '../utils/safeHref'
+import type { Tag, ListGroupItem } from '../types'
 
 const props = defineProps({
   flush: { type: Boolean, default: false },
@@ -11,10 +10,7 @@ const props = defineProps({
   items: { type: Array as () => ListGroupItem[], required: true }
 })
 
-const emit = defineEmits<{
-  (e: 'item-click', payload: { item: ListGroupItem; index: number; event: Event }): void
-  (e: 'component-error', error: ComponentError): void
-}>()
+const emit = defineEmits(['item-click', 'component-error'])
 
 const listGroupClass = computed(() => {
   const classes = ['list-group']
@@ -30,6 +26,11 @@ const listGroupClass = computed(() => {
   return classes.join(' ')
 })
 
+const getItemTag = (item: ListGroupItem) => {
+  if (item.href) return 'a'
+  if (item.to) return 'router-link'
+  return 'li'
+}
 
 const getItemClass = (item: ListGroupItem) => {
   const classes = ['list-group-item']
@@ -48,14 +49,14 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
 
 <template>
   <component :is="tag" :class="listGroupClass">
-    <template v-for="(item, index) in items" :key="item.href ?? item.text ?? index">
     <component
-      v-memo="[item.href, item.to, item.active, item.disabled, item.variant, item.text]"
-      :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'li'"
+      :is="getItemTag(item)"
+      v-for="(item, index) in items"
+      :key="index"
       :class="getItemClass(item)"
-      :href="safeHref(item.href)"
+      :href="item.href"
       :to="item.to"
-      :aria-disabled="item.disabled || undefined"
+      :aria-disabled="item.disabled"
       :aria-current="item.active"
       @click="handleItemClick(item, index, $event)"
     >
@@ -64,6 +65,5 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
         {{ item.text }}
       </slot>
     </component>
-    </template>
   </component>
 </template>

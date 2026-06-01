@@ -1,34 +1,22 @@
 # VibePopover
 
-Popovers for displaying contextual content overlays. Bootstrap's popover JS is initialized automatically when the component mounts.
+Popovers for displaying rich content overlays. Requires Bootstrap JS and initialization.
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `text` | `String` | `undefined` | Popover body content (preferred) |
-| `content` | `String` | `undefined` | Alias for `text` |
 | `title` | `String` | `undefined` | Popover title |
-| `placement` | `TooltipPlacement` | `'top'` | Popover position: `'top'`, `'bottom'`, `'start'`, `'end'` |
-| `trigger` | `String` | `'click'` | Trigger events (space-separated): `'click'`, `'hover'`, `'focus'` |
-
-Provide either `text` or `content` (they are interchangeable). Content is always rendered as plain text — HTML is not supported (this is intentional, to avoid XSS).
-
-## Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `component-error` | `{ message, componentName, originalError }` | Emitted if Bootstrap JS is unavailable at mount |
+| `content` | `String` | Required | Popover content text |
+| `placement` | `Placement` | `'top'` | Popover position: `'top'`, `'bottom'`, `'start'`, `'end'` |
+| `trigger` | `String` | `'click'` | Trigger events (space-separated) |
+| `html` | `Boolean` | `false` | Allow HTML content |
 
 ## Slots
 
 | Slot | Description |
 |------|-------------|
 | `default` | Element that triggers the popover |
-
-## Exposed
-
-> **Escape hatch:** `_unsafe_bsInstance` (the underlying Bootstrap `Popover` instance) is exposed via a template ref. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly WILL break the component.
 
 ## Usage
 
@@ -38,7 +26,7 @@ Provide either `text` or `content` (they are interchangeable). Content is always
 <template>
   <VibePopover
     title="Popover Title"
-    text="This is the popover content"
+    content="This is the popover content"
   >
     <VibeButton variant="danger">Click me</VibeButton>
   </VibePopover>
@@ -52,7 +40,7 @@ Provide either `text` or `content` (they are interchangeable). Content is always
   <div>
     <VibePopover
       title="Top Popover"
-      text="Popover on top"
+      content="Popover on top"
       placement="top"
     >
       <VibeButton variant="secondary">Top</VibeButton>
@@ -60,7 +48,7 @@ Provide either `text` or `content` (they are interchangeable). Content is always
 
     <VibePopover
       title="End Popover"
-      text="Popover on right"
+      content="Popover on right"
       placement="end"
     >
       <VibeButton variant="secondary">End</VibeButton>
@@ -68,7 +56,7 @@ Provide either `text` or `content` (they are interchangeable). Content is always
 
     <VibePopover
       title="Bottom Popover"
-      text="Popover on bottom"
+      content="Popover on bottom"
       placement="bottom"
     >
       <VibeButton variant="secondary">Bottom</VibeButton>
@@ -76,7 +64,7 @@ Provide either `text` or `content` (they are interchangeable). Content is always
 
     <VibePopover
       title="Start Popover"
-      text="Popover on left"
+      content="Popover on left"
       placement="start"
     >
       <VibeButton variant="secondary">Start</VibeButton>
@@ -91,10 +79,24 @@ Provide either `text` or `content` (they are interchangeable). Content is always
 <template>
   <VibePopover
     title="Hover Popover"
-    text="This appears on hover"
+    content="This appears on hover"
     trigger="hover focus"
   >
     <VibeButton variant="info">Hover me</VibeButton>
+  </VibePopover>
+</template>
+```
+
+### HTML Content
+
+```vue
+<template>
+  <VibePopover
+    title="<strong>HTML Title</strong>"
+    content="<em>HTML</em> content with <a href='#'>link</a>"
+    html
+  >
+    <VibeButton variant="warning">HTML Popover</VibeButton>
   </VibePopover>
 </template>
 ```
@@ -103,7 +105,7 @@ Provide either `text` or `content` (they are interchangeable). Content is always
 
 ```vue
 <template>
-  <VibePopover text="Just content, no title">
+  <VibePopover content="Just content, no title">
     <VibeButton variant="success">No Title</VibeButton>
   </VibePopover>
 </template>
@@ -111,14 +113,37 @@ Provide either `text` or `content` (they are interchangeable). Content is always
 
 ## Important Notes
 
-**Automatic Initialization:** This component initializes Bootstrap's Popover for you when it mounts. Bootstrap's JS is loaded internally — do not import or initialize Bootstrap JS yourself.
+**Automatic Initialization:** This component automatically initializes Bootstrap's Popover functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
-**Touch Optimization:** On touch devices, if the trigger is `hover focus`, it automatically switches to `click` for reliable behavior on mobile screens. Initialization is SSR-safe.
+**Touch Optimization:** On touch devices, if the trigger is set to `hover focus`, it automatically switches to `click` to ensure reliable behavior on mobile screens.
 
-**Reactive content:** Updating `text`/`content`/`title` updates the live popover without a re-init.
+**Manual Initialization (Optional):** If you are not using the automatic initialization or need to initialize popovers on non-VibeUI elements:
+
+```javascript
+// Initialize all popovers
+import { Popover } from 'bootstrap'
+...
+const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new Popover(popoverTriggerEl))
+```
+
+Or in Vue:
+
+```vue
+<script setup>
+import { onMounted } from 'vue'
+import { Popover } from 'bootstrap'
+
+onMounted(() => {
+  const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+  const popoverList = [...popoverTriggerList].map(el => new Popover(el))
+})
+</script>
+```
 
 ## Bootstrap CSS Classes
 
+- Uses Bootstrap's `data-bs-toggle="popover"` attributes
 - `.popover`
 - `.popover-arrow`
 - `.popover-header`

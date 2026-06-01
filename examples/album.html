@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="../dist/vibeui.css">
     <style>
+        .hero-image {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1200') center/cover;
+            min-height: 400px;
+        }
         .card {
             transition: all 0.3s ease;
         }
@@ -20,16 +24,6 @@
             object-fit: cover;
         }
     </style>
-
-    <!-- VibeUI loads Bootstrap JS internally via `import('bootstrap')`; the UMD bundle
-         keeps that bare specifier, so the page maps it here so the sort dropdown works. -->
-    <script type="importmap">
-      {
-        "imports": {
-          "bootstrap": "https://esm.sh/bootstrap@5.3.0"
-        }
-      }
-    </script>
 </head>
 <body>
     <div id="app">
@@ -41,52 +35,50 @@
                     PhotoAlbum
                 </vibe-navbar-brand>
                 <vibe-navbar-toggle target="navbarNav"></vibe-navbar-toggle>
-                <vibe-collapse id="navbarNav" is-nav>
+                <vibe-collapse id="navbarNav" navbar>
                     <vibe-navbar-nav :items="navItems" class="ms-auto"></vibe-navbar-nav>
                 </vibe-collapse>
             </vibe-container>
         </vibe-navbar>
 
         <!-- Hero -->
-        <vibe-hero
-            bg-image="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1200"
-            overlay
-            min-height="400px"
-            class="text-white"
-        >
-            <vibe-row>
-                <vibe-col :lg="7" class="mx-auto">
-                    <h1 class="display-3 fw-bold mb-3">Photo Gallery</h1>
-                    <p class="lead mb-4">
-                        Discover stunning photography from talented creators around the world.
-                        Browse our curated collection of beautiful moments captured in time.
-                    </p>
-                    <div class="d-flex gap-3 justify-content-center">
-                        <vibe-button variant="primary" size="lg">
-                            <vibe-icon icon="cloud-upload-fill" class="me-2"></vibe-icon>
-                            Upload Photos
-                        </vibe-button>
-                        <vibe-button variant="light" outline size="lg">
-                            <vibe-icon icon="collection-fill" class="me-2"></vibe-icon>
-                            Explore Gallery
-                        </vibe-button>
-                    </div>
-                </vibe-col>
-            </vibe-row>
-        </vibe-hero>
+        <section class="hero-image text-white d-flex align-items-center">
+            <vibe-container>
+                <vibe-row>
+                    <vibe-col :lg="7" class="mx-auto text-center">
+                        <h1 class="display-3 fw-bold mb-3">Photo Gallery</h1>
+                        <p class="lead mb-4">
+                            Discover stunning photography from talented creators around the world.
+                            Browse our curated collection of beautiful moments captured in time.
+                        </p>
+                        <div class="d-flex gap-3 justify-content-center">
+                            <vibe-button variant="primary" size="lg">
+                                <vibe-icon icon="cloud-upload-fill" class="me-2"></vibe-icon>
+                                Upload Photos
+                            </vibe-button>
+                            <vibe-button variant="outline-light" size="lg">
+                                <vibe-icon icon="collection-fill" class="me-2"></vibe-icon>
+                                Explore Gallery
+                            </vibe-button>
+                        </div>
+                    </vibe-col>
+                </vibe-row>
+            </vibe-container>
+        </section>
 
-        <!-- Filter Tabs (data-driven via :items) -->
+        <!-- Filter Tabs -->
         <vibe-container class="mt-5">
-            <vibe-nav
-                tabs
-                class="justify-content-center"
-                :items="categoryNavItems"
-                @item-click="onCategoryClick"
-            >
-                <template #item="{ item }">
-                    <vibe-icon :icon="item.icon" class="me-2"></vibe-icon>
-                    {{ item.text }}
-                </template>
+            <vibe-nav tabs class="justify-content-center">
+                <vibe-nav-item
+                    v-for="category in categories"
+                    :key="category.id"
+                    :active="category.id === activeCategory"
+                    @click="activeCategory = category.id"
+                    href="#"
+                >
+                    <vibe-icon :icon="category.icon" class="me-2"></vibe-icon>
+                    {{ category.name }}
+                </vibe-nav-item>
             </vibe-nav>
         </vibe-container>
 
@@ -98,57 +90,54 @@
                         <h2 class="mb-0">{{ activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1) }} Collection</h2>
                         <p class="text-muted mb-0">{{ filteredItems.length }} photos</p>
                     </div>
-                    <vibe-dropdown
-                        id="sort-dropdown"
-                        text="Sort By"
-                        variant="secondary"
-                        :items="sortItems"
-                        @item-click="onSortClick"
-                    ></vibe-dropdown>
+                    <vibe-dropdown id="sort-dropdown" text="Sort By" variant="outline-secondary">
+                        <vibe-dropdown-item @click="sortBy = 'recent'">Most Recent</vibe-dropdown-item>
+                        <vibe-dropdown-item @click="sortBy = 'popular'">Most Popular</vibe-dropdown-item>
+                        <vibe-dropdown-item @click="sortBy = 'title'">Title</vibe-dropdown-item>
+                    </vibe-dropdown>
                 </div>
 
-                <vibe-row row-cols="1" row-cols-sm="2" row-cols-md="3" row-cols-lg="4" :gutters="4">
+                <vibe-row row-cols="1" row-cols-sm="2" row-cols-md="3" row-cols-lg="4" :g="4">
                     <vibe-col v-for="item in filteredItems" :key="item.id">
                         <vibe-card class="h-100 border-0 shadow-sm">
-                            <template #image>
-                                <div class="position-relative">
-                                    <img :src="item.image" class="card-img-top" :alt="item.title">
-                                    <vibe-badge
-                                        :variant="item.badge.variant"
-                                        class="position-absolute top-0 end-0 m-2"
-                                    >
-                                        {{ item.badge.text }}
-                                    </vibe-badge>
-                                </div>
-                            </template>
-
-                            <h5 class="card-title mb-2">{{ item.title }}</h5>
-                            <p class="card-text text-muted small mb-3">{{ item.description }}</p>
-
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-primary rounded-circle me-2" style="width: 32px; height: 32px;"></div>
-                                    <small class="text-muted">{{ item.author }}</small>
-                                </div>
+                            <div class="position-relative">
+                                <img :src="item.image" class="card-img-top" :alt="item.title">
+                                <vibe-badge
+                                    :variant="item.badge.variant"
+                                    class="position-absolute top-0 end-0 m-2"
+                                >
+                                    {{ item.badge.text }}
+                                </vibe-badge>
                             </div>
+                            <vibe-card-body>
+                                <h5 class="card-title mb-2">{{ item.title }}</h5>
+                                <p class="card-text text-muted small mb-3">{{ item.description }}</p>
 
-                            <div class="d-flex justify-content-between align-items-center">
-                                <vibe-button-group size="sm">
-                                    <vibe-button variant="primary" outline>
-                                        <vibe-icon icon="eye"></vibe-icon>
-                                    </vibe-button>
-                                    <vibe-button variant="primary" outline>
-                                        <vibe-icon icon="heart"></vibe-icon>
-                                    </vibe-button>
-                                    <vibe-button variant="primary" outline>
-                                        <vibe-icon icon="share"></vibe-icon>
-                                    </vibe-button>
-                                </vibe-button-group>
-                                <small class="text-muted">
-                                    <vibe-icon icon="clock" class="me-1"></vibe-icon>
-                                    {{ item.time }}
-                                </small>
-                            </div>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary rounded-circle me-2" style="width: 32px; height: 32px;"></div>
+                                        <small class="text-muted">{{ item.author }}</small>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <vibe-button variant="outline-primary">
+                                            <vibe-icon icon="eye"></vibe-icon>
+                                        </vibe-button>
+                                        <vibe-button variant="outline-primary">
+                                            <vibe-icon icon="heart"></vibe-icon>
+                                        </vibe-button>
+                                        <vibe-button variant="outline-primary">
+                                            <vibe-icon icon="share"></vibe-icon>
+                                        </vibe-button>
+                                    </div>
+                                    <small class="text-muted">
+                                        <vibe-icon icon="clock" class="me-1"></vibe-icon>
+                                        {{ item.time }}
+                                    </small>
+                                </div>
+                            </vibe-card-body>
                         </vibe-card>
                     </vibe-col>
                 </vibe-row>
@@ -209,15 +198,10 @@
                         { text: 'Contact', href: '#' }
                     ],
                     categories: [
-                        { id: 'all', name: 'All Photos', icon: 'grid-3x3-gap' },
+                        { id: 'all', name: 'All Photos', icon: 'grid-3x3' },
                         { id: 'nature', name: 'Nature', icon: 'tree' },
                         { id: 'urban', name: 'Urban', icon: 'building' },
                         { id: 'people', name: 'People', icon: 'people' }
-                    ],
-                    sortItems: [
-                        { text: 'Most Recent', value: 'recent' },
-                        { text: 'Most Popular', value: 'popular' },
-                        { text: 'Title', value: 'title' }
                     ],
                     albumItems: [
                         { id: 1, category: 'nature', title: 'Mountain Sunrise', author: 'Sarah Chen', description: 'Breathtaking view from the summit', image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', time: '2 hours ago', badge: { text: 'Featured', variant: 'primary' } },
@@ -232,28 +216,11 @@
                 }
             },
             computed: {
-                categoryNavItems() {
-                    // No href -> VibeNav renders clickable <button> nav-links (item-click
-                    // fires) without engaging Bootstrap's Tab JS against a bogus target.
-                    return this.categories.map(c => ({
-                        text: c.name,
-                        icon: c.icon,
-                        active: c.id === this.activeCategory
-                    }));
-                },
                 filteredItems() {
                     if (this.activeCategory === 'all') {
                         return this.albumItems;
                     }
                     return this.albumItems.filter(item => item.category === this.activeCategory);
-                }
-            },
-            methods: {
-                onCategoryClick({ index }) {
-                    this.activeCategory = this.categories[index].id;
-                },
-                onSortClick({ item }) {
-                    this.sortBy = item.value;
                 }
             }
         }).use(VibeUI.default).mount('#app');

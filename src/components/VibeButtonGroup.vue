@@ -9,6 +9,8 @@ const props = defineProps({
   ariaLabel: { type: String, default: undefined }
 })
 
+const emit = defineEmits(['component-error'])
+
 const groupClass = computed(() => {
   const classes = [props.vertical ? 'btn-group-vertical' : 'btn-group']
   if (props.size) classes.push(`btn-group-${props.size}`)

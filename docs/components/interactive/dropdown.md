@@ -39,7 +39,6 @@ interface DropdownItem {
 | `shown` | - | Emitted when dropdown is fully shown |
 | `hide` | - | Emitted when dropdown starts hiding |
 | `hidden` | - | Emitted when dropdown is fully hidden |
-| `component-error` | `ComponentError` | Emitted if Bootstrap JS fails to load |
 
 ## Slots
 
@@ -51,75 +50,40 @@ interface DropdownItem {
 
 ## Usage
 
-### Basic Dropdown
-
-```vue
-<template>
-  <VibeDropdown text="Dropdown Menu" :items="dropdownItems" @item-click="onItemClick" />
-</template>
-
-<script setup>
-const dropdownItems = [
-  { header: true, text: 'Actions' },
-  { text: 'Edit', href: '#edit' },
-  { text: 'Duplicate', href: '#duplicate' },
-  { divider: true },
-  { text: 'Delete', href: '#delete', active: false }
-]
-
-function onItemClick({ item, index }) {
-  console.log('clicked', item.text, 'at', index)
-}
-</script>
-```
-
-### Custom Item Rendering (Slots)
-
-The `item` and `header` slots receive `{ item, index }` so you can render rich markup while still driving the menu from the `items` array:
-
-```vue
-<template>
-  <VibeDropdown text="Menu" :items="dropdownItems">
-    <template #item="{ item }">
-      <i :class="item.icon" class="me-2" />{{ item.text }}
-    </template>
-  </VibeDropdown>
-</template>
-
-<script setup>
-const dropdownItems = [
-  { text: 'Profile', href: '#', icon: 'bi bi-person' },
-  { text: 'Settings', href: '#', icon: 'bi bi-gear' }
-]
-</script>
-```
-
 ### Programmatic Control
 
 ```vue
 <template>
   <div>
-    <VibeButton @click="myDropdown.toggle()">External Toggle</VibeButton>
-
-    <VibeDropdown ref="myDropdown" text="Dropdown Menu" :items="dropdownItems" />
+    <VibeButton @click="$refs.myDropdown.toggle()">External Toggle</VibeButton>
+    
+    <VibeDropdown
+      ref="myDropdown"
+      text="Dropdown Menu"
+      :items="dropdownItems"
+    />
   </div>
 </template>
+```
 
-<script setup>
-import { ref } from 'vue'
-const myDropdown = ref(null)
-const dropdownItems = [
-  { text: 'Edit', href: '#edit' },
-  { text: 'Delete', href: '#delete' }
-]
-</script>
+### Basic Dropdown
+
+```vue
+<template>
+  <VibeDropdown
+    text="Dropdown Menu"
+    :items="dropdownItems"
+  />
+</template>
 ```
 
 ## Important Notes
 
 **Automatic Initialization:** This component automatically initializes Bootstrap's Dropdown functionality when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
-**Programmatic Methods:** The component exposes `show()`, `hide()`, and `toggle()` via template refs for programmatic control.
+**Programmatic Methods:** You can call `show()`, `hide()`, and `toggle()` on the component instance via template refs.
+
+**Instance Exposure:** You can access the underlying Bootstrap instance via template ref using the `bsInstance` property.
 
 ## Bootstrap CSS Classes
 

@@ -210,7 +210,6 @@ declare module 'quill' {
     getSemanticHTML(): string
     setContents(delta: unknown, source?: string): void
     clipboard: {
-      /** WARNING: XSS surface — sanitize html before passing (e.g. DOMPurify) */
       dangerouslyPasteHTML(html: string, source?: string): void
     }
     on(event: string, handler: (...args: unknown[]) => void): void
@@ -224,22 +223,4 @@ declare module 'quill' {
 declare module 'quill/dist/quill.snow.css' {
   const content: string
   export default content
-}
-
-declare module 'dompurify' {
-  interface DOMPurifyConfig {
-    ALLOWED_TAGS?: string[]
-    ALLOWED_ATTR?: string[]
-    FORBID_TAGS?: string[]
-    FORBID_ATTR?: string[]
-    FORCE_BODY?: boolean
-  }
-
-  interface DOMPurifyI {
-    sanitize(source: string, config?: DOMPurifyConfig): string
-    isSupported: boolean
-  }
-
-  const DOMPurify: DOMPurifyI
-  export default DOMPurify
 }

@@ -1,8 +1,7 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeDraggable from '../../src/components/VibeDraggable.vue'
 import VibeDroppable from '../../src/components/VibeDroppable.vue'
-import { setActiveDrag, clearActiveDrag } from '../../src/components/dndStore'
 import { defineComponent, h } from 'vue'
 
 const fireDragSequence = (fromEl: Element, toEl: Element, dataTransfer = new DataTransfer()) => {
@@ -156,15 +155,11 @@ describe('VibeDroppable', () => {
     })
     const wrapper = mount(Slot)
     expect(wrapper.find('.idle').exists()).toBe(true)
-    // Simulate a VibeDraggable drag being active (required since VibeDroppable
-    // now rejects dragenter events that don't originate from a VibeDraggable)
-    setActiveDrag({}, 'g')
     wrapper.element.dispatchEvent(new DragEvent('dragenter', { bubbles: true, dataTransfer: new DataTransfer() }))
     await Promise.resolve()
     expect(wrapper.find('.over').exists()).toBe(true)
     wrapper.element.dispatchEvent(new DragEvent('dragleave', { bubbles: true, dataTransfer: new DataTransfer() }))
     await Promise.resolve()
     expect(wrapper.find('.idle').exists()).toBe(true)
-    clearActiveDrag()
   })
 })

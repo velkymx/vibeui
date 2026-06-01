@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { inject, computed } from 'vue'
-import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
+import { inject, computed, onMounted, ref } from 'vue'
 
 interface BootstrapCollapse {
   toggle: () => void
@@ -13,19 +12,22 @@ const props = defineProps({
   ariaLabel: { type: String, default: 'Toggle navigation' }
 })
 
-import type { ComponentError } from '../types'
+const emit = defineEmits(['component-error'])
 
-const emit = defineEmits<{
-  (e: 'component-error', error: ComponentError): void
-}>()
-
-const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
+const navbar = inject<{
+  collapseStates: Record<string, boolean>
+  toggleCollapse: (id: string) => void
+} | null>('vibeNavbarCollapse', null)
 
 const isExpanded = computed(() => navbar?.collapseStates[props.target] ?? false)
 
 const handleClick = async () => {
-  if (navbar) navbar.toggleCollapse(props.target)
+  // 1. Sync Vue state if inside VibeNavbar
+  if (navbar) {
+    navbar.toggleCollapse(props.target)
+  }
 
+  // 2. Sync Bootstrap JS instance if available
   try {
     const targetEl = document.getElementById(props.target)
     if (targetEl) {
@@ -34,8 +36,7 @@ const handleClick = async () => {
       bsCollapse.toggle()
     }
   } catch (error) {
-    if (navbar) navbar.toggleCollapse(props.target)
-    emit('component-error', { message: 'Bootstrap JS toggle failed.', componentName: 'VibeNavbarToggle', originalError: error })
+    // Fallback to data-attributes handled by Bootstrap's global listener
   }
 }
 </script>
@@ -44,6 +45,8 @@ const handleClick = async () => {
   <button
     class="navbar-toggler"
     type="button"
+    :data-bs-target="`#${target}`"
+    data-bs-toggle="collapse"
     :aria-controls="target"
     :aria-expanded="isExpanded"
     :aria-label="ariaLabel"

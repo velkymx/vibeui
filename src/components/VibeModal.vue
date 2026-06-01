@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import type { Size, ComponentError } from '../types'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import type { Size } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
 
@@ -11,12 +11,8 @@ interface BootstrapModal {
   handleUpdate: () => void
 }
 
-// Hoisted to setup so the id is owned by this instance and stable (useId() in a
-// defineProps default factory runs during prop normalization — fragile across Vue versions).
-const _generatedId = useId('modal')
-
 const props = defineProps({
-  id: { type: String, default: undefined },
+  id: { type: String, default: () => useId('modal') },
   modelValue: { type: Boolean, default: false },
   title: { type: String, default: '' },
   size: { type: String as () => Size | 'xl', default: undefined },
@@ -29,35 +25,11 @@ const props = defineProps({
   teleport: { type: [String, Boolean], default: 'body' }
 })
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'show'): void
-  (e: 'shown'): void
-  (e: 'hide'): void
-  (e: 'hidden'): void
-  (e: 'component-error', error: ComponentError): void
-}>()
-
-const computedId = computed(() => props.id || _generatedId)
+const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
 
 const modalRef = ref<HTMLElement | null>(null)
-const bsModal = shallowRef<BootstrapModal | null>(null)
+const bsModal = ref<BootstrapModal | null>(null)
 const isVisible = ref(false)
-
-// WCAG 2.4.3: focus must return to the trigger after the modal closes. Bootstrap's
-// own restore is unreliable when the modal is shown programmatically (no trigger
-// element), so capture the pre-open focus ourselves and restore it on close.
-let preFocusEl: HTMLElement | null = null
-
-// Bug 1: in-flight guard to prevent concurrent async init races
-let initInFlight = false
-
-// Bug 4: track whether listeners are attached to prevent stacking
-let listenersAttached = false
-
-// Set first in onBeforeUnmount — guards the post-await section against constructing
-// a Bootstrap Modal instance on a detached element during a mount/unmount race.
-let isUnmounted = false
 
 const dialogClass = computed(() => {
   const classes = ['modal-dialog']
@@ -72,18 +44,12 @@ const dialogClass = computed(() => {
   return classes.join(' ')
 })
 
-// Bug 3: isVisible is now set in onShown (not onShow) to align with modelValue emit
 const onShow = () => {
-  // Capture the element that had focus before the modal opened (fires on show.bs.modal,
-  // before Bootstrap moves focus into the dialog).
-  if (typeof document !== 'undefined') {
-    preFocusEl = document.activeElement as HTMLElement | null
-  }
+  isVisible.value = true
   emit('show')
 }
 
 const onShown = () => {
-  isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
 }
@@ -96,54 +62,18 @@ const onHidden = () => {
   isVisible.value = false
   emit('hidden')
   emit('update:modelValue', false)
-  // WCAG 2.4.3: return focus to the element that opened the modal.
-  if (preFocusEl && typeof preFocusEl.focus === 'function') {
-    preFocusEl.focus()
-  }
-  preFocusEl = null
 }
 
-// Bug 4: listener attach/detach helpers
-function attachListeners() {
-  if (listenersAttached || !modalRef.value) return
-  modalRef.value.addEventListener('show.bs.modal', onShow)
-  modalRef.value.addEventListener('shown.bs.modal', onShown)
-  modalRef.value.addEventListener('hide.bs.modal', onHide)
-  modalRef.value.addEventListener('hidden.bs.modal', onHidden)
-  listenersAttached = true
-}
-
-function detachListeners() {
-  if (!listenersAttached || !modalRef.value) return
-  modalRef.value.removeEventListener('show.bs.modal', onShow)
-  modalRef.value.removeEventListener('shown.bs.modal', onShown)
-  modalRef.value.removeEventListener('hide.bs.modal', onHide)
-  modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
-  listenersAttached = false
-}
-
-// Bug 1: async init with in-flight guard
-// Bug 4: detach old listeners before dispose, attach after new instance
 const initModal = async () => {
   if (!modalRef.value) return
 
-  // Bug 1: prevent concurrent init races
-  if (initInFlight) return
-  initInFlight = true
+  // Cleanup existing instance
+  if (bsModal.value) {
+    bsModal.value.dispose()
+  }
 
   try {
-    // Cleanup existing instance
-    if (bsModal.value) {
-      detachListeners()
-      bsModal.value.dispose()
-      bsModal.value = null
-    }
-
     const bootstrap = await import('bootstrap')
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!modalRef.value || isUnmounted) return
-
     const Modal = bootstrap.Modal
 
     bsModal.value = new Modal(modalRef.value, {
@@ -152,7 +82,10 @@ const initModal = async () => {
       focus: true
     }) as BootstrapModal
 
-    attachListeners()
+    modalRef.value.addEventListener('show.bs.modal', onShow)
+    modalRef.value.addEventListener('shown.bs.modal', onShown)
+    modalRef.value.addEventListener('hide.bs.modal', onHide)
+    modalRef.value.addEventListener('hidden.bs.modal', onHidden)
 
     if (props.modelValue) {
       bsModal.value.show()
@@ -163,20 +96,26 @@ const initModal = async () => {
       componentName: 'VibeModal',
       originalError: error
     })
-  } finally {
-    initInFlight = false
   }
 }
 
 onMounted(initModal)
 
-// Bug 2: just call dispose() directly — Bootstrap handles backdrop cleanup internally
-// Bug 4: detach listeners before dispose
 onBeforeUnmount(() => {
-  isUnmounted = true
-  detachListeners()
-  bsModal.value?.dispose()
-  bsModal.value = null
+  if (modalRef.value) {
+    modalRef.value.removeEventListener('show.bs.modal', onShow)
+    modalRef.value.removeEventListener('shown.bs.modal', onShown)
+    modalRef.value.removeEventListener('hide.bs.modal', onHide)
+    modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
+  }
+
+  if (bsModal.value) {
+    if (isVisible.value) {
+      bsModal.value.hide()
+    }
+    bsModal.value.dispose()
+    bsModal.value = null
+  }
 })
 
 watch(() => props.modelValue, (newValue) => {
@@ -200,27 +139,26 @@ useBackButton(() => {
   if (isVisible.value) hide()
 })
 
-// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
-// Calling dispose()/other lifecycle methods on it directly WILL break this component.
-defineExpose({ show, hide, handleUpdate, _unsafe_bsInstance: bsModal })
+defineExpose({ show, hide, handleUpdate, bsInstance: bsModal })
 </script>
 
 <template>
   <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
     <div
       ref="modalRef"
-      :id="computedId"
+      :id="id"
       class="modal fade"
+      :class="{ show: isVisible }"
       tabindex="-1"
-      :aria-labelledby="`${computedId}-label`"
-      :aria-hidden="isVisible ? undefined : 'true'"
+      :aria-labelledby="`${id}-label`"
+      :aria-hidden="!isVisible"
       :data-bs-backdrop="staticBackdrop ? 'static' : undefined"
       :data-bs-keyboard="!staticBackdrop"
     >
       <div :class="dialogClass">
         <div class="modal-content">
           <div v-if="!hideHeader" class="modal-header">
-            <h5 :id="`${computedId}-label`" class="modal-title">
+            <h5 :id="`${id}-label`" class="modal-title">
               <slot name="header">{{ title }}</slot>
             </h5>
             <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>

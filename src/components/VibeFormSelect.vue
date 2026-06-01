@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import type { PropType } from 'vue'
+import type { PropType, ComputedRef } from 'vue'
 import type { FormSelectOption, FormSelectOptionValue, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
 // Per-option DOM value is the option's array index ("vi:0", "vi:1", ...).
@@ -26,10 +25,11 @@ const findIndexForValue = (options: FormSelectOption[], value: FormSelectOptionV
   return -1
 }
 
-// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
-const modelValue = defineModel<FormSelectOptionValue | FormSelectOptionValue[]>({ default: '' })
-
 const props = defineProps({
+  modelValue: {
+    type: [String, Number, Array] as PropType<any>,
+    default: ''
+  },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   options: { type: Array as PropType<FormSelectOption[]>, default: () => [] },
@@ -47,20 +47,17 @@ const props = defineProps({
   helpText: { type: String, default: undefined }
 })
 
-const emit = defineEmits<{
-  (e: 'validate'): void
-  (e: 'blur', event: FocusEvent): void
-  (e: 'focus', event: FocusEvent): void
-  (e: 'change', event: Event): void
-}>()
+const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change'])
 
-const formGroup = inject(FORM_GROUP_KEY, null)
+const formGroup = inject<{
+  id: ComputedRef<string>
+  consumeId: () => string | null
+  hasLabel: ComputedRef<boolean>
+  hasValidation: ComputedRef<boolean>
+  hasHelp: ComputedRef<boolean>
+} | null>('vibeFormGroup', null)
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('select')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const helpId = computed(() => `${computedId.value}-help`)
-const feedbackId = computed(() => `${computedId.value}-feedback`)
+const computedId = computed(() => props.id || formGroup?.consumeId() || useId('select'))
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
@@ -82,25 +79,25 @@ const decodeOption = (encoded: string): FormSelectOptionValue => {
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLSelectElement
-  let newValue: FormSelectOptionValue | FormSelectOptionValue[]
+  let newValue: unknown
   if (props.multiple) {
     newValue = Array.from(target.selectedOptions).map(option => decodeOption(option.value))
   } else {
     newValue = decodeOption(target.value)
   }
-  modelValue.value = newValue
+  emit('update:modelValue', newValue)
 }
 
 const encodedModelValue = computed(() => {
-  if (Array.isArray(modelValue.value)) {
-    return modelValue.value
+  if (Array.isArray(props.modelValue)) {
+    return props.modelValue
       .map((v: FormSelectOptionValue) => {
         const idx = findIndexForValue(props.options, v)
         return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
       })
       .filter(v => v !== PLACEHOLDER_VALUE)
   }
-  const idx = findIndexForValue(props.options, modelValue.value as FormSelectOptionValue)
+  const idx = findIndexForValue(props.options, props.modelValue as FormSelectOptionValue)
   return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
 })
 
@@ -134,7 +131,7 @@ const handleFocus = (event: FocusEvent) => {
       :disabled="disabled"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="helpText && validationMessage ? `${helpId} ${feedbackId}` : helpText ? helpId : validationMessage ? feedbackId : undefined"
+      :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
       @input="handleInput"
       @change="handleChange"
       @blur="handleBlur"
@@ -144,7 +141,7 @@ const handleFocus = (event: FocusEvent) => {
       <slot>
         <option
           v-for="(option, idx) in options"
-          :key="option.value !== undefined ? String(option.value) : option.text"
+          :key="idx"
           :value="encodeIndex(idx)"
           :disabled="option.disabled"
         >
@@ -152,11 +149,11 @@ const handleFocus = (event: FocusEvent) => {
         </option>
       </slot>
     </select>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">

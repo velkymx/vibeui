@@ -75,9 +75,7 @@ describe('VibeAlert', () => {
     expect(wrapper.text()).toContain('Locked')
   })
 
-  // Behavior change (CR6): message prop and slot content now coexist.
-  // Slot appends after message — both render. Old behavior (slot-overrides) is gone.
-  it('renders message prop and slot content together when both provided', () => {
+  it('slot wins over message prop when both provided', () => {
     const wrapper = mount(VibeAlert, {
       props: { message: 'fallback text', variant: 'info' },
       slots: { default: '<span class="from-slot">slot text</span>' }
@@ -85,8 +83,7 @@ describe('VibeAlert', () => {
 
     expect(wrapper.find('.from-slot').exists()).toBe(true)
     expect(wrapper.text()).toContain('slot text')
-    // message prop also renders — slot no longer overrides it
-    expect(wrapper.text()).toContain('fallback text')
+    expect(wrapper.text()).not.toContain('fallback text')
   })
 
   it('falls back to message prop when no slot provided', () => {
@@ -106,9 +103,9 @@ describe('VibeAlert', () => {
     expect(wrapper.find('.only-slot').exists()).toBe(true)
   })
 
-  it('renders dismissible close button alongside slot content', () => {
+  it('renders dismissable close button alongside slot content', () => {
     const wrapper = mount(VibeAlert, {
-      props: { dismissible: true },
+      props: { dismissable: true },
       slots: { default: '<span>body</span>' }
     })
 
@@ -125,26 +122,8 @@ describe('VibeAlert', () => {
     expect(alert.text()).toBe('')
   })
 
-  it('initializes Bootstrap instance when modelValue transitions false→true', async () => {
-    const wrapper = mount(VibeAlert, {
-      props: { message: 'Test', modelValue: false }
-    })
-
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(bootstrap.Alert).not.toHaveBeenCalled()
-
-    await wrapper.setProps({ modelValue: true })
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    expect(bootstrap.Alert).toHaveBeenCalled()
-    const mockInstance = vi.mocked(bootstrap.Alert).mock.results[0].value
-
-    await wrapper.setProps({ modelValue: false })
-    expect(mockInstance.close).toHaveBeenCalled()
-  })
-
-  describe('dismissible', () => {
-    it('shows close button when dismissible=true', () => {
+  describe('M15 dismissible alias', () => {
+    it('dismissible (correctly spelled) shows the close button', () => {
       const wrapper = mount(VibeAlert, {
         props: { message: 'x', dismissible: true }
       })
@@ -152,11 +131,29 @@ describe('VibeAlert', () => {
       expect(wrapper.find('button.btn-close').exists()).toBe(true)
     })
 
-    it('hides close button when dismissible=false', () => {
+    it('dismissable (legacy) still works', () => {
       const wrapper = mount(VibeAlert, {
-        props: { message: 'x', dismissible: false }
+        props: { message: 'x', dismissable: true }
       })
-      expect(wrapper.find('button.btn-close').exists()).toBe(false)
+      expect(wrapper.find('.alert-dismissible').exists()).toBe(true)
+    })
+
+    it('either prop being true is sufficient', () => {
+      const wrapper = mount(VibeAlert, {
+        props: { message: 'x', dismissable: false, dismissible: true }
+      })
+      expect(wrapper.find('button.btn-close').exists()).toBe(true)
+    })
+
+    it('using dismissable emits a deprecation warning in dev', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mount(VibeAlert, {
+        props: { message: 'x', dismissable: true }
+      })
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('dismissable')
+      )
+      warn.mockRestore()
     })
   })
 })

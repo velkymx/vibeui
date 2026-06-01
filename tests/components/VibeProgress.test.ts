@@ -118,16 +118,6 @@ describe('VibeProgress', () => {
     expect(wrapper.find('.progress').attributes('style')).toContain('height: 30px')
   })
 
-  // Security: freeform height prop must be validated before binding to :style.
-  it('rejects a malicious height value', () => {
-    const bars: ProgressBar[] = [{ value: 50 }]
-    const wrapper = mount(VibeProgress, {
-      props: { bars, height: 'expression(alert(1))' }
-    })
-    const style = wrapper.find('.progress').attributes('style') ?? ''
-    expect(style).not.toContain('expression')
-  })
-
   it('sets correct ARIA attributes', () => {
     const bars: ProgressBar[] = [{ value: 60 }]
 

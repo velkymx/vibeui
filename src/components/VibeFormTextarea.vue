@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import type { PropType } from 'vue'
+import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
-// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
-const modelValue = defineModel<string>({ default: '' })
-
 const props = defineProps({
+  modelValue: {
+    type: String,
+    default: ''
+  },
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
   placeholder: { type: String, default: undefined },
@@ -27,21 +27,17 @@ const props = defineProps({
   showCharCount: { type: Boolean, default: false }
 })
 
-const emit = defineEmits<{
-  (e: 'validate'): void
-  (e: 'blur', event: FocusEvent): void
-  (e: 'focus', event: FocusEvent): void
-  (e: 'input', event: Event): void
-  (e: 'change', event: Event): void
-}>()
+const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'input', 'change'])
 
-const formGroup = inject(FORM_GROUP_KEY, null)
+const formGroup = inject<{
+  id: ComputedRef<string>
+  consumeId: () => string | null
+  hasLabel: ComputedRef<boolean>
+  hasValidation: ComputedRef<boolean>
+  hasHelp: ComputedRef<boolean>
+} | null>('vibeFormGroup', null)
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('textarea')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const helpId = computed(() => `${computedId.value}-help`)
-const feedbackId = computed(() => `${computedId.value}-feedback`)
+const computedId = computed(() => props.id || formGroup?.consumeId() || useId('textarea'))
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => (!!props.helpText || props.showCharCount) && !formGroup?.hasHelp.value)
@@ -59,11 +55,11 @@ const textareaStyle = computed(() => {
   return undefined
 })
 
-const currentCount = computed(() => modelValue.value?.length || 0)
+const currentCount = computed(() => props.modelValue?.length || 0)
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLTextAreaElement
-  modelValue.value = target.value
+  emit('update:modelValue', target.value)
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
@@ -101,13 +97,13 @@ const handleFocus = (event: FocusEvent) => {
       :readonly="readonly"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="(helpText || showCharCount) && validationMessage ? `${helpId} ${feedbackId}` : (helpText || showCharCount) ? helpId : validationMessage ? feedbackId : undefined"
+      :aria-describedby="validationMessage || helpText || showCharCount ? `${computedId}-feedback` : undefined"
       @input="handleInput"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
     ></textarea>
-    <div v-if="shouldRenderHelp" :id="helpId" class="form-text d-flex justify-content-between">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text d-flex justify-content-between">
       <span>{{ helpText }}</span>
       <span v-if="showCharCount" class="ms-auto">
         <template v-if="maxlength">{{ currentCount }} / {{ maxlength }}</template>
@@ -115,10 +111,10 @@ const handleFocus = (event: FocusEvent) => {
       </span>
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
-      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide a valid value.' }}
       </div>
     </template>

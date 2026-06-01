@@ -147,25 +147,4 @@ describe('VibeListGroup', () => {
 
     expect(wrapper.emitted('item-click')).toBeFalsy()
   })
-
-  // Security: safeHref must strip javascript: URLs from list group item links.
-  it('strips javascript: URL from item href — renders li not a', () => {
-    const wrapper = mount(VibeListGroup, {
-      props: {
-        items: [{ text: 'Exploit', href: 'javascript:alert(1)' }]
-      }
-    })
-    // When safeHref returns undefined, no href → component falls back to li, not a
-    const link = wrapper.find('a')
-    expect(link.exists() && link.attributes('href')).toBeFalsy()
-  })
-
-  it('preserves safe https:// href on list group item', () => {
-    const wrapper = mount(VibeListGroup, {
-      props: {
-        items: [{ text: 'Safe', href: 'https://example.com' }]
-      }
-    })
-    expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
-  })
 })
