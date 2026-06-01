@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { PropType } from 'vue'
 import type { Variant, Tag, ContainerType } from '../types'
 import { safeHref } from '../utils/safeHref'
 import { safeLength, safeColor } from '../utils/safeCss'
@@ -13,7 +14,7 @@ const props = defineProps({
   // Content alignment.
   align: { type: String as () => 'start' | 'center' | 'end', default: 'center' },
   // Inner container — same fluid vocabulary as VibeContainer.
-  fluid: { type: [Boolean, String] as () => boolean | ContainerType, default: false },
+  fluid: { type: [Boolean, String] as PropType<boolean | ContainerType>, default: false },
   // Freeform sizes/URLs are sanitized, consistent with the rest of the library.
   minHeight: { type: String, default: undefined },
   bgImage: { type: String, default: undefined },
