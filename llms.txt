@@ -643,7 +643,7 @@ If the component uses Bootstrap JS:
 - Dynamically import: `const { Foo } = await import('bootstrap')`
 - Initialize in `onMounted`, dispose in `onBeforeUnmount`
 - Watch functional props and call `instance.dispose()` + reinitialize on change
-- Expose `bsInstance` via `defineExpose`
+- Expose safe imperative methods (`show()` / `hide()` / `refresh()`) via `defineExpose`. Follow the existing convention of also exposing the raw instance only under the `_unsafe_bsInstance` name (escape hatch — never a plain `bsInstance`)
 
 ---
 
