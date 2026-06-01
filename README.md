@@ -1,4 +1,4 @@
-<div align="center"><img src="vibeui.png">
+<div align="center"><img src="https://github.com/velkymx/vibeui/blob/1.0-main/vibeui.png?raw=true">
 
 [![Vue 3](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![Bootstrap 5.3](https://img.shields.io/badge/Bootstrap-5.3-7952B3?logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
