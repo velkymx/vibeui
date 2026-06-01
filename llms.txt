@@ -355,9 +355,13 @@ Components like `VibeBreadcrumb`, `VibeListGroup`, `VibeDropdown`, `VibeAccordio
 </VibeFormGroup>
 ```
 
-### Accessing the Bootstrap instance (escape hatch)
+### Programmatic control (template ref)
 
-Most Bootstrap-JS components expose their underlying instance via a template ref as **`_unsafe_bsInstance`**. The `_unsafe_` prefix is intentional: it is an escape hatch, NOT part of the stable API. Calling Bootstrap lifecycle methods on it directly will desync the component's internal state. Prefer props and `v-model`; reach for this only when no prop/`v-model` covers your case. (Multi-instance components such as `VibeNav` and `VibeAccordion` expose `_unsafe_bsInstances` — a `Map`.)
+Visibility is normally driven by `v-model` — prefer that. When you must trigger an action imperatively (e.g. open a modal from a non-template handler), interactive components expose **safe methods** via a template ref. Use these, not the underlying Bootstrap object:
+
+- `VibeModal` / `VibeOffcanvas` / `VibeToast` → `show()`, `hide()`
+- `VibeDropdown` → `show()`, `hide()`, `toggle()`
+- `VibeCarousel` / `VibeAccordion` / `VibeNav` / `VibeScrollspy` → `refresh()`
 
 ```vue
 <template>
@@ -366,9 +370,11 @@ Most Bootstrap-JS components expose their underlying instance via a template ref
 
 <script setup>
 const modal = useTemplateRef('modal')
-// modal.value?._unsafe_bsInstance → native Bootstrap Modal instance (use sparingly)
+modal.value?.show()   // or modal.value?.hide()
 </script>
 ```
+
+Drive every component through its props, `v-model`, slots, and these exposed methods. Do not reach around the component to Bootstrap's own JS — VibeUI owns that lifecycle, and bypassing it desyncs component state.
 
 ### Teleportation
 
