@@ -231,6 +231,30 @@ describe('validators', () => {
       const { validator } = validators.email('Bad email')
       expect(await validator('x')).toBe('Bad email')
     })
+
+    it('accepts multi-dot and plus-addressed domains', async () => {
+      const { validator } = validators.email()
+      expect(await validator('first.last@sub.example.com')).toBe(true)
+      expect(await validator('user+tag@a.co')).toBe(true)
+      expect(await validator('x@y.z')).toBe(true)
+    })
+
+    it('rejects malformed addresses', async () => {
+      const { validator } = validators.email()
+      for (const bad of ['a@b', 'a@.com', 'a@b.', '@b.com', 'a@', 'a b@c.com', 'a@@b.com', 'a@b c.com']) {
+        expect(await validator(bad), bad).not.toBe(true)
+      }
+    })
+
+    it('is not vulnerable to ReDoS (runs in linear time on pathological input)', () => {
+      const { validator } = validators.email()
+      // Non-matching input (trailing space) forces an ambiguous [^\s@]+\.[^\s@]+ regex
+      // to exhaustively backtrack over every '.' position — O(n^2).
+      const evil = 'a@' + 'a.'.repeat(50000) + ' '
+      const start = performance.now()
+      validator(evil)
+      expect(performance.now() - start).toBeLessThan(50)
+    })
   })
 
   describe('minLength', () => {

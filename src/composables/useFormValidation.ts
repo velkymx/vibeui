@@ -113,8 +113,18 @@ export const validators = {
   email: (message = 'Please enter a valid email address'): ValidationRule => ({
     validator: (value: unknown) => {
       if (value === null || value === undefined || value === '') return true
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      return emailRegex.test(String(value)) || message
+      const str = String(value)
+      // Linear, ReDoS-safe equivalent of /^[^\s@]+@[^\s@]+\.[^\s@]+$/. A single regex
+      // with two `[^\s@]+` quantifiers around `\.` backtracks polynomially on hostile
+      // input (CodeQL: "Polynomial regular expression on uncontrolled data"), so validate
+      // structurally with index scans instead — all operations here are O(n).
+      if (/\s/.test(str)) return message                          // no whitespace
+      const at = str.indexOf('@')
+      if (at <= 0 || at !== str.lastIndexOf('@')) return message  // exactly one '@', local part non-empty
+      const domain = str.slice(at + 1)
+      // domain needs a '.' with a non-empty label on each side: a dot somewhere in [1, len-2]
+      if (!domain.slice(1, -1).includes('.')) return message
+      return true
     },
     message
   }),
