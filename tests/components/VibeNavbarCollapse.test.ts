@@ -159,7 +159,7 @@ describe('VibeNavbar collapse integration', () => {
     expect(wrapper.findAll('.nav-link')[1].text()).toBe('Admin')
   })
 
-  it('VibeNavbarToggle renders with correct aria attributes', () => {
+  it('VibeNavbarToggle uses data-bs attributes for standard Bootstrap compatibility', () => {
     const wrapper = mount(VibeNavbar, {
       slots: {
         default: '<VibeNavbarToggle target="nav" />'
@@ -170,8 +170,8 @@ describe('VibeNavbar collapse integration', () => {
     })
 
     const button = wrapper.find('.navbar-toggler')
-    expect(button.attributes('aria-controls')).toBe('nav')
-    expect(button.attributes('aria-expanded')).toBeDefined()
+    expect(button.attributes('data-bs-toggle')).toBe('collapse')
+    expect(button.attributes('data-bs-target')).toBe('#nav')
   })
 
   it('VibeNavbarToggle updates aria-expanded reactively', async () => {

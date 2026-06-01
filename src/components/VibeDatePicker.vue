@@ -32,37 +32,25 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const _generatedId = useId('datepicker')
-const computedId = computed(() => props.id || _generatedId)
+const computedId = computed(() => props.id || useId('datepicker'))
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const toIso = (d: Date): IsoDate => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-const ISO_FORMAT = /^\d{4}-\d{2}-\d{2}$/
 const fromIso = (iso: IsoDate): Date => {
-  // Guard: empty or malformed ISO strings produce NaN dates (e.g. fromIso("") → new Date(0,-1,0))
-  if (!ISO_FORMAT.test(iso)) {
-    if (import.meta.env.DEV) {
-      console.warn(`[VibeDatePicker] fromIso received non-ISO string: "${iso}". Falling back to today.`)
-    }
-    return new Date()
-  }
   const [y, m, d] = iso.split('-').map(Number)
   return new Date(y, m - 1, d)
 }
+
+const ISO_FORMAT = /^\d{4}-\d{2}-\d{2}$/
 const validateIsoString = (value: string | undefined, propName: string): void => {
-  // DEV-only, and the raw value is not logged — min/max can be derived from user data
-  // (birth/medical/financial dates); echoing it to the console is a PII-leak vector in
-  // shared-screen or remote-debug sessions.
-  if (import.meta.env.DEV && value !== undefined && !ISO_FORMAT.test(value)) {
+  if (value !== undefined && !ISO_FORMAT.test(value)) {
     console.warn(
-      `[VibeDatePicker] Invalid ${propName} prop. Expected zero-padded YYYY-MM-DD; comparisons are lexical and will be wrong otherwise.`
+      `[VibeDatePicker] Invalid ${propName} prop "${value}". Expected zero-padded YYYY-MM-DD; comparisons are lexical and will be wrong otherwise.`
     )
   }
 }
-watch(() => [props.min, props.max] as const, ([min, max]) => {
-  validateIsoString(min, 'min')
-  validateIsoString(max, 'max')
-}, { immediate: true })
+validateIsoString(props.min, 'min')
+validateIsoString(props.max, 'max')
 
 const isOpen = ref(false)
 // today is computed fresh each grid eval so a long-lived datepicker that
@@ -115,18 +103,13 @@ interface DayCell {
   isRangeEnd: boolean
 }
 
-// Resolved once at setup. Today's date only changes at midnight, so recomputing it on
-// every monthGrid re-eval (each keyboard navigation) just allocated a Date + ISO string
-// for no benefit. A picker left open across midnight keeps the mount-time "today" — an
-// acceptable, rare edge.
-const todayIso = toIso(todayDate())
-
 const monthGrid = computed<DayCell[]>(() => {
   const cells: DayCell[] = []
   const firstOfMonth = new Date(viewYear.value, viewMonth.value, 1)
   const dayOfWeek = firstOfMonth.getDay()
   const offset = (dayOfWeek - props.weekStart + 7) % 7
   const start = new Date(viewYear.value, viewMonth.value, 1 - offset)
+  const todayIso = toIso(todayDate())
 
   for (let i = 0; i < 42; i++) {
     const d = new Date(start)
@@ -270,8 +253,7 @@ const shiftFocusedMonths = async (months: number) => {
   const targetMonth = d.getMonth() + months
   const targetYear = d.getFullYear() + Math.floor(targetMonth / 12)
   const normalisedMonth = ((targetMonth % 12) + 12) % 12
-  const lastDay = new Date(targetYear, normalisedMonth + 1, 0).getDate()
-  d.setFullYear(targetYear, normalisedMonth, Math.min(d.getDate(), lastDay))
+  d.setFullYear(targetYear, normalisedMonth, Math.min(d.getDate(), 28))
   await setFocusedDate(toIso(d))
 }
 

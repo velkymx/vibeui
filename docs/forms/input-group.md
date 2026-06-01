@@ -1,70 +1,71 @@
 # VibeInputGroup
 
-Wraps a control with prepended/appended text, buttons, or other elements using Bootstrap's input-group.
+Input groups allow you to prepend or append text, buttons, or other elements to your input fields.
+
+## Basic Usage
+
+```vue
+<VibeInputGroup prepend="@">
+  <VibeFormInput noWrapper v-model="username" placeholder="Username" />
+</VibeInputGroup>
+
+<VibeInputGroup append=".00">
+  <VibeFormInput noWrapper v-model="price" placeholder="Price" />
+</VibeInputGroup>
+```
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `size` | `'sm' \| 'lg'` | `undefined` | Input-group size. |
-| `prepend` | `string` | `undefined` | Convenience text rendered before the control as `.input-group-text`. |
-| `append` | `string` | `undefined` | Convenience text rendered after the control as `.input-group-text`. |
-| `tag` | `Tag` | `'div'` | Root element tag. |
-
-## Events
-
-None.
+| `prepend` | `String` | `undefined` | Shorthand for prepending text |
+| `append` | `String` | `undefined` | Shorthand for appending text |
+| `size` | `'sm' \| 'lg'` | `undefined` | Size of the input group |
+| `tag` | `String` | `'div'` | HTML tag to use for the container |
 
 ## Slots
 
 | Slot | Description |
 |------|-------------|
-| default | The control to wrap (typically a `VibeFormInput` with `no-wrapper`). |
-| `prepend` | Custom prepended content (overrides the `prepend` prop). |
-| `append` | Custom appended content (overrides the `append` prop). |
+| `default` | The main content, usually a `VibeFormInput` with the `noWrapper` prop |
+| `prepend` | Slot for complex prepend content (e.g., icons or buttons) |
+| `append` | Slot for complex append content |
 
-## Usage
-
-### Text prepend / append
+## Advanced Example
 
 ```vue
-<script setup lang="ts">
-import { ref } from 'vue'
-const price = ref('')
-</script>
-
-<template>
-  <VibeInputGroup prepend="$" append=".00">
-    <VibeFormInput v-model="price" type="number" no-wrapper />
-  </VibeInputGroup>
-</template>
+<VibeInputGroup>
+  <template #prepend>
+    <VibeButton variant="outline-secondary">Search</VibeButton>
+  </template>
+  <VibeFormInput noWrapper v-model="query" />
+  <template #append>
+    <span class="input-group-text">
+      <VibeIcon name="search" />
+    </span>
+  </template>
+</VibeInputGroup>
 ```
 
-### Custom slots with a button
+## Icon-Prepend + Button-Append (Composer Pattern)
+
+For chat / comment composers and search bars where you need an icon on the left and a button on the right alongside the text input. Wrap the icon in `<span class="input-group-text">` so Bootstrap renders the correct connected border-radius.
 
 ```vue
-<script setup lang="ts">
-import { ref } from 'vue'
-const term = ref('')
-</script>
-
-<template>
-  <VibeInputGroup>
-    <VibeFormInput v-model="term" placeholder="Search" no-wrapper />
-    <template #append>
-      <VibeButton variant="primary">Go</VibeButton>
-    </template>
-  </VibeInputGroup>
-</template>
+<VibeInputGroup>
+  <template #prepend>
+    <span class="input-group-text">
+      <VibeIcon name="chat" />
+    </span>
+  </template>
+  <VibeFormInput noWrapper v-model="comment" placeholder="Add a comment..." />
+  <template #append>
+    <VibeButton variant="primary" @click="post">Post</VibeButton>
+  </template>
+</VibeInputGroup>
 ```
 
-## Important Notes
+The slot pattern accepts any element. The `prepend` and `append` props remain available as a shortcut for plain `.input-group-text` content.
 
-- **Use `no-wrapper` on the input:** pass `no-wrapper` to `VibeFormInput` so it renders just the `<input>` and Bootstrap can style it as part of the group.
-- **Slots override props:** providing the `prepend`/`append` slots replaces the corresponding text props.
-
-## Bootstrap CSS Classes
-
-- `.input-group`
-- `.input-group-{sm|lg}`
-- `.input-group-text`
+## Mobile Note
+Input groups work seamlessly with the `noWrapper` prop on `VibeFormInput`, ensuring that the Bootstrap `.input-group` classes apply correctly without extra wrapping divs breaking the layout.

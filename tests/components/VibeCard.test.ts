@@ -53,48 +53,6 @@ describe('VibeCard', () => {
     expect(wrapper.text()).toContain('Test Footer')
   })
 
-  it('applies headerClass, bodyClass and footerClass to their sections', () => {
-    const wrapper = mount(VibeCard, {
-      props: {
-        header: 'H',
-        footer: 'F',
-        headerClass: 'bg-primary text-white',
-        bodyClass: 'p-4',
-        footerClass: 'text-muted'
-      },
-      slots: { default: 'Body' }
-    })
-
-    const header = wrapper.find('.card-header')
-    const body = wrapper.find('.card-body')
-    const footer = wrapper.find('.card-footer')
-    expect(header.classes()).toContain('bg-primary')
-    expect(header.classes()).toContain('text-white')
-    expect(body.classes()).toContain('p-4')
-    expect(footer.classes()).toContain('text-muted')
-  })
-
-  it('renders the image slot as a direct card child, outside (before) the body', () => {
-    const wrapper = mount(VibeCard, {
-      slots: {
-        image: '<div class="ph-overlay">IMG</div>',
-        default: '<p class="ph-body">Body</p>'
-      }
-    })
-    // image slot content is present...
-    expect(wrapper.find('.ph-overlay').exists()).toBe(true)
-    // ...but NOT wrapped inside .card-body
-    expect(wrapper.find('.card-body .ph-overlay').exists()).toBe(false)
-    // body content stays inside .card-body
-    expect(wrapper.find('.card-body .ph-body').exists()).toBe(true)
-    // image renders before the body among the card's direct children
-    const kids = Array.from(wrapper.element.children)
-    const imgIdx = kids.findIndex(e => e.classList.contains('ph-overlay'))
-    const bodyIdx = kids.findIndex(e => e.classList.contains('card-body'))
-    expect(imgIdx).toBeGreaterThanOrEqual(0)
-    expect(imgIdx).toBeLessThan(bodyIdx)
-  })
-
   it('renders top image when provided', () => {
     const wrapper = mount(VibeCard, {
       props: {

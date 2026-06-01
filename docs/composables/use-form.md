@@ -37,7 +37,7 @@ For multi-field forms, that destructure pattern multiplied per field becomes noi
 | `errors` | `Record<keyof T, string>` (reactive) | Per-field error message. Empty string = no error. |
 | `touched` | `Record<keyof T, boolean>` (reactive) | Per-field touched flag. |
 | `isDirty` | `ComputedRef<boolean>` | True if any field differs from initial. |
-| `isValid` | `ComputedRef<boolean>` | `false` until the first `validate()` or `validateField()` call; then `true` if no field has an error. |
+| `isValid` | `ComputedRef<boolean>` | True if no field has an error. |
 | `values` | `ComputedRef<T>` | Snapshot of current field values. |
 | `validate(rules)` | `(rules) => Promise<{ valid, errors }>` | Run rules; populates `errors` map. |
 | `validateField(key, rule)` | `(key, rule) => Promise<string>` | Run rules for one field. |

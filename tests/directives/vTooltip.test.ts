@@ -45,10 +45,10 @@ describe('v-vibe-tooltip directive', () => {
     expect(el.getAttribute('data-bs-placement')).toBe('top')
   })
 
-  it('accepts options object with placement, always passes html: false', async () => {
+  it('accepts options object with placement and html', async () => {
     const Component = defineComponent({
       directives: { 'vibe-tooltip': vTooltip },
-      template: '<button v-vibe-tooltip="{ title: \'X\', placement: \'bottom\' }">y</button>'
+      template: '<button v-vibe-tooltip="{ title: \'X\', placement: \'bottom\', html: true }">y</button>'
     })
 
     const wrapper = mount(Component)
@@ -58,11 +58,11 @@ describe('v-vibe-tooltip directive', () => {
     const opts = args[1] as { title: string; placement: string; html: boolean }
     expect(opts.title).toBe('X')
     expect(opts.placement).toBe('bottom')
-    expect(opts.html).toBe(false)
+    expect(opts.html).toBe(true)
 
     const el = wrapper.find('button').element
     expect(el.getAttribute('data-bs-placement')).toBe('bottom')
-    expect(el.getAttribute('data-bs-html')).toBeNull()
+    expect(el.getAttribute('data-bs-html')).toBe('true')
   })
 
   it('updates content via setContent on binding change', async () => {
@@ -187,7 +187,7 @@ describe('v-vibe-tooltip directive', () => {
   })
 
   describe('M17 stale data-bs-* attrs', () => {
-    it('never sets data-bs-html attribute', async () => {
+    it('removes data-bs-html when html flips from true to false', async () => {
       const Component = defineComponent({
         directives: { 'vibe-tooltip': vTooltip },
         props: ['opts'],
@@ -195,12 +195,12 @@ describe('v-vibe-tooltip directive', () => {
       })
 
       const wrapper = mount(Component, {
-        props: { opts: { title: 'X' } }
+        props: { opts: { title: 'X', html: true } }
       })
       await flushAsync()
-      expect(wrapper.find('button').attributes('data-bs-html')).toBeUndefined()
+      expect(wrapper.find('button').attributes('data-bs-html')).toBe('true')
 
-      await wrapper.setProps({ opts: { title: 'Y' } })
+      await wrapper.setProps({ opts: { title: 'X', html: false } })
       await flushAsync()
       expect(wrapper.find('button').attributes('data-bs-html')).toBeUndefined()
     })

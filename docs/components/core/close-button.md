@@ -14,7 +14,7 @@ Generic close button for dismissing content like modals and alerts.
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `click` | `MouseEvent` | Emitted when button is clicked (unless disabled) |
+| `click` | `Event` | Emitted when button is clicked (unless disabled) |
 | `component-error` | `Object` | Emitted when an error occurs |
 
 ## Usage
@@ -22,15 +22,15 @@ Generic close button for dismissing content like modals and alerts.
 ### Basic Close Button
 
 ```vue
+<template>
+  <VibeCloseButton @click="handleClose" />
+</template>
+
 <script setup>
 const handleClose = () => {
   console.log('Closed!')
 }
 </script>
-
-<template>
-  <VibeCloseButton @click="handleClose" />
-</template>
 ```
 
 ### White Variant

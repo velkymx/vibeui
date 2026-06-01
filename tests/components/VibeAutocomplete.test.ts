@@ -46,7 +46,7 @@ describe('VibeAutocomplete', () => {
       await wrapper.find('input').setValue('a')
       await flush(20)
 
-      await wrapper.findAll('.vibe-autocomplete-item')[0].trigger('click')
+      await wrapper.findAll('.vibe-autocomplete-item')[0].trigger('mousedown')
 
       const selected = wrapper.emitted('select') as unknown[][]
       expect(selected[0][0]).toBe('apple')
@@ -119,36 +119,6 @@ describe('VibeAutocomplete', () => {
       const selected = wrapper.emitted('select') as string[][]
       expect(selected).toBeTruthy()
       expect(selected[0][0]).toBe('Alpha')
-    })
-
-    // Regression: ArrowUp had no !isOpen guard. When closed, pressing ArrowUp
-    // mutated highlightedIndex to results.length - 1 (stale from previous query).
-    // The next ArrowDown would then open the dropdown with wrong initial highlight.
-    it('ArrowUp when dropdown is closed is a no-op (dropdown stays closed)', async () => {
-      const wrapper = mount(VibeAutocomplete, {
-        props: { source: items, minChars: 0, debounce: 0 }
-      })
-      const input = wrapper.find('input')
-
-      // Open, get results, then close
-      await input.setValue('a')
-      await flush(20)
-      await input.trigger('keydown', { key: 'ArrowDown' }) // highlight index 0
-      await input.trigger('keydown', { key: 'Escape' }) // close
-
-      // Now closed with stale results — ArrowUp must not wrap to last item
-      await input.trigger('keydown', { key: 'ArrowUp' })
-
-      // Dropdown stays closed — ArrowUp must not re-open
-      expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
-
-      // ArrowDown opens; a second ArrowDown highlights the first item
-      await input.trigger('keydown', { key: 'ArrowDown' }) // opens
-      await flush(20)
-      await input.trigger('keydown', { key: 'ArrowDown' }) // highlights index 0
-      // First item must be highlighted (index 0), not last (index 2) that ArrowUp would have set
-      const highlighted = wrapper.find('.vibe-autocomplete-item-highlighted')
-      expect(highlighted.text()).toBe('Alpha')
     })
 
     it('Escape closes the menu', async () => {

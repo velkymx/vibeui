@@ -2,7 +2,6 @@
 import { computed, provide, ref } from 'vue'
 import type { ValidationState } from '../types'
 import { useId } from '../composables/useId'
-import { FORM_GROUP_KEY } from '../injectionKeys'
 
 const props = defineProps({
   label: { type: String, default: undefined },
@@ -17,8 +16,7 @@ const props = defineProps({
   labelAlign: { type: String as () => 'start' | 'center' | 'end', default: undefined }
 })
 
-const _generatedId = useId('form-group')
-const computedId = computed(() => props.labelFor || _generatedId)
+const computedId = computed(() => props.labelFor || useId('form-group'))
 const isIdConsumed = ref(false)
 
 /**
@@ -32,7 +30,7 @@ const consumeId = () => {
   return computedId.value
 }
 
-provide(FORM_GROUP_KEY, {
+provide('vibeFormGroup', {
   id: computedId,
   consumeId,
   hasLabel: computed(() => !!props.label),
@@ -75,7 +73,6 @@ const contentClass = computed(() => {
 })
 
 const feedbackId = computed(() => `${computedId.value}-feedback`)
-const helpId = computed(() => `${computedId.value}-help`)
 </script>
 
 <template>
@@ -92,10 +89,10 @@ const helpId = computed(() => `${computedId.value}-help`)
     <div v-if="row && labelCols" :class="contentClass">
       <slot />
 
-      <div v-if="helpText" :id="helpId" class="form-text">
+      <div v-if="helpText && !validationMessage" :id="feedbackId" class="form-text">
         {{ helpText }}
       </div>
-      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
@@ -115,10 +112,10 @@ const helpId = computed(() => `${computedId.value}-help`)
         <span v-if="required" class="text-danger">*</span>
       </label>
 
-      <div v-if="helpText" :id="helpId" class="form-text">
+      <div v-if="helpText && !validationMessage" :id="feedbackId" class="form-text">
         {{ helpText }}
       </div>
-      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">

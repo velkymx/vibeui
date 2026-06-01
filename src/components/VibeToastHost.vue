@@ -21,13 +21,7 @@ const grouped = computed<Array<{ placement: ToastPlacement; toasts: ToastSpec[] 
   return Array.from(buckets.entries()).map(([placement, toasts]) => ({ placement, toasts }))
 })
 
-// Placement → container class string. The placement set is small and finite, and the
-// mapping never changes, so memoize: each distinct placement is computed once and reused
-// across renders instead of rebuilding the class string per group per render.
-const containerClassCache = new Map<ToastPlacement, string>()
 const containerClassFor = (p: ToastPlacement): string => {
-  const cached = containerClassCache.get(p)
-  if (cached !== undefined) return cached
   const classes = ['toast-container', 'position-fixed', 'p-3']
   if (p.includes('top')) classes.push('top-0')
   if (p.includes('bottom')) classes.push('bottom-0')
@@ -35,9 +29,7 @@ const containerClassFor = (p: ToastPlacement): string => {
   if (p.includes('start')) classes.push('start-0')
   if (p.includes('end')) classes.push('end-0')
   if (p.includes('center') && !p.includes('middle')) classes.push('start-50', 'translate-middle-x')
-  const result = classes.join(' ')
-  containerClassCache.set(p, result)
-  return result
+  return classes.join(' ')
 }
 </script>
 

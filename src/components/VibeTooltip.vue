@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-import type { TooltipPlacement, ComponentError } from '../types'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import type { Placement } from '../types'
 
 interface BootstrapTooltip {
   dispose: () => void
@@ -10,29 +10,18 @@ interface BootstrapTooltip {
 const props = defineProps({
   content: { type: String, default: undefined },
   text: { type: String, default: undefined },
-  placement: { type: String as () => TooltipPlacement, default: 'top' },
-  trigger: { type: String, default: 'hover focus' }
+  placement: { type: String as () => Placement, default: 'top' },
+  trigger: { type: String, default: 'hover focus' },
+  html: { type: Boolean, default: false }
 })
 
-const emit = defineEmits<{
-  (e: 'component-error', error: ComponentError): void
-}>()
-
-// Deprecation warning for content prop
-if (props.content !== undefined && props.text === undefined) {
-  console.warn('[VibeTooltip] The `content` prop is deprecated and may be removed in a future version. Use `text` instead.')
-}
+const emit = defineEmits(['component-error'])
 
 const tooltipRef = ref<HTMLElement | null>(null)
-const bsTooltip = shallowRef<BootstrapTooltip | null>(null)
-
-// Tracks whether onBeforeUnmount has fired. The template ref (tooltipRef) may still be
-// non-null during the window between onBeforeUnmount and Vue removing the DOM element,
-// so a plain !tooltipRef.value check post-await is insufficient in all environments.
-let isUnmounted = false
+const bsTooltip = ref<BootstrapTooltip | null>(null)
 
 const isTouchDevice = () => {
-  return typeof window !== 'undefined' && ('ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0))
+  return typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
 }
 
 const computedTrigger = computed(() => {
@@ -42,31 +31,23 @@ const computedTrigger = computed(() => {
   return props.trigger
 })
 
-let initInFlight = false
-let pendingReinit = false
-
 const initTooltip = async () => {
   if (!tooltipRef.value) return
-  if (initInFlight) { pendingReinit = true; return }
-  initInFlight = true
 
+  // Clean up existing instance if any
   if (bsTooltip.value) {
     bsTooltip.value.dispose()
   }
 
   try {
     const bootstrap = await import('bootstrap')
-    // Guard against race: component may have unmounted while the import was in-flight.
-    // isUnmounted is set in onBeforeUnmount (before Vue removes the DOM), so this check
-    // fires even when tooltipRef.value is still non-null during teardown.
-    if (!tooltipRef.value || isUnmounted) return
     const Tooltip = bootstrap.Tooltip
 
     bsTooltip.value = new Tooltip(tooltipRef.value, {
       title: props.text || props.content || '',
       placement: props.placement,
       trigger: computedTrigger.value,
-      html: false
+      html: props.html
     }) as BootstrapTooltip
   } catch (error) {
     emit('component-error', {
@@ -74,16 +55,12 @@ const initTooltip = async () => {
       componentName: 'VibeTooltip',
       originalError: error
     })
-  } finally {
-    initInFlight = false
-    if (pendingReinit) { pendingReinit = false; void initTooltip() }
   }
 }
 
 onMounted(initTooltip)
 
 onBeforeUnmount(() => {
-  isUnmounted = true
   if (bsTooltip.value) {
     bsTooltip.value.dispose()
     bsTooltip.value = null
@@ -98,20 +75,19 @@ watch([() => props.content, () => props.text], () => {
 })
 
 // Watch for functional changes that require re-initialization
-watch([() => props.placement, () => props.trigger], initTooltip)
+watch([() => props.placement, () => props.trigger, () => props.html], initTooltip)
 
-// _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
-// Calling dispose()/other lifecycle methods on it directly WILL break this component.
-defineExpose({ _unsafe_bsInstance: bsTooltip })
+defineExpose({ bsInstance: bsTooltip })
 </script>
 
 <template>
   <span
     ref="tooltipRef"
-
+    data-bs-toggle="tooltip"
     :data-bs-placement="placement"
     :data-bs-title="text || content"
-    :data-bs-trigger="computedTrigger"
+    :data-bs-trigger="trigger"
+    :data-bs-html="html"
   >
     <slot />
   </span>

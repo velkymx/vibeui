@@ -82,8 +82,6 @@ const navItems = [
 
 ## Important Notes
 
-**`href` sanitization:** `VibeNavbarBrand` (and `VibeNavbarNav` items) sanitize `href` values. Only `https?://`, root-relative (`/path`), relative (`./`, `../`), and anchor (`#anchor`) URLs are allowed; `javascript:`, `data:`, and protocol-relative (`//`) URLs are stripped. Use `to` for Vue Router navigation.
-
 **Automatic Synchronization:** `VibeNavbarToggle` is refactored to ensure that clicking it updates both Vue's internal state and the underlying Bootstrap `Collapse` instance simultaneously.
 
 **Smooth Transitions:** `VibeCollapse` now utilizes Bootstrap's JavaScript engine by default, providing smooth sliding animations when toggled via the navbar.

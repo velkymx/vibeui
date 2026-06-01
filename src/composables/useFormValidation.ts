@@ -1,4 +1,4 @@
-import { ref, computed, watch, type Ref } from 'vue'
+import { ref, computed, type Ref } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, FormValidationResult } from '../types'
 
 export type FormFieldValue = string | number | boolean | null | undefined
@@ -10,20 +10,9 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
   const isDirty = ref(false)
   const isTouched = ref(false)
   const isValidating = ref(false)
-  let validateSeq = 0
-
-  watch(value, () => {
-    if (validationState.value === 'invalid') {
-      validationState.value = null
-      validationMessage.value = ''
-    }
-  })
 
   const validate = async (rules: ValidationRule[] | ValidatorFunction | undefined): Promise<FormValidationResult> => {
-    const seq = ++validateSeq
-
     if (!rules) {
-      if (seq !== validateSeq) return { valid: true }
       validationState.value = null
       validationMessage.value = ''
       return { valid: true }
@@ -32,13 +21,14 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
     isValidating.value = true
 
     try {
+      // Convert single validator to array format
       const rulesArray: ValidationRule[] = Array.isArray(rules)
         ? rules
         : [{ validator: rules }]
 
+      // Run all validators
       for (const rule of rulesArray) {
         const result = await rule.validator(value.value)
-        if (seq !== validateSeq) return { valid: true }
 
         if (result === false || typeof result === 'string') {
           validationState.value = 'invalid'
@@ -48,13 +38,11 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
         }
       }
 
-      if (seq !== validateSeq) return { valid: true }
       validationState.value = 'valid'
       validationMessage.value = ''
       isValidating.value = false
       return { valid: true }
     } catch (error) {
-      if (seq !== validateSeq) return { valid: true }
       validationState.value = 'invalid'
       validationMessage.value = 'Validation error occurred'
       isValidating.value = false
@@ -111,38 +99,26 @@ export const validators = {
   }),
 
   email: (message = 'Please enter a valid email address'): ValidationRule => ({
-    validator: (value: unknown) => {
-      if (value === null || value === undefined || value === '') return true
-      const str = String(value)
-      // Linear, ReDoS-safe equivalent of /^[^\s@]+@[^\s@]+\.[^\s@]+$/. A single regex
-      // with two `[^\s@]+` quantifiers around `\.` backtracks polynomially on hostile
-      // input (CodeQL: "Polynomial regular expression on uncontrolled data"), so validate
-      // structurally with index scans instead — all operations here are O(n).
-      if (/\s/.test(str)) return message                          // no whitespace
-      const at = str.indexOf('@')
-      if (at <= 0 || at !== str.lastIndexOf('@')) return message  // exactly one '@', local part non-empty
-      const domain = str.slice(at + 1)
-      // domain needs a '.' with a non-empty label on each side: a dot somewhere in [1, len-2]
-      if (!domain.slice(1, -1).includes('.')) return message
-      return true
+    validator: (value: string) => {
+      if (!value) return true
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      return emailRegex.test(value) || message
     },
     message
   }),
 
   minLength: (min: number, message?: string): ValidationRule => ({
-    validator: (value: unknown) => {
-      if (value === null || value === undefined || value === '') return true
-      const str = String(value)
-      return str.length >= min || message || `Minimum length is ${min} characters`
+    validator: (value: string) => {
+      if (!value) return true
+      return value.length >= min || message || `Minimum length is ${min} characters`
     },
     message
   }),
 
   maxLength: (max: number, message?: string): ValidationRule => ({
-    validator: (value: unknown) => {
-      if (value === null || value === undefined || value === '') return true
-      const str = String(value)
-      return str.length <= max || message || `Maximum length is ${max} characters`
+    validator: (value: string) => {
+      if (!value) return true
+      return value.length <= max || message || `Maximum length is ${max} characters`
     },
     message
   }),
@@ -170,18 +146,18 @@ export const validators = {
   }),
 
   pattern: (regex: RegExp, message = 'Invalid format'): ValidationRule => ({
-    validator: (value: unknown) => {
-      if (value === null || value === undefined || value === '') return true
-      return regex.test(String(value)) || message
+    validator: (value: string) => {
+      if (!value) return true
+      return regex.test(value) || message
     },
     message
   }),
 
   url: (message = 'Please enter a valid URL'): ValidationRule => ({
-    validator: (value: unknown) => {
-      if (value === null || value === undefined || value === '') return true
+    validator: (value: string) => {
+      if (!value) return true
       try {
-        new URL(String(value))
+        new URL(value)
         return true
       } catch {
         return message

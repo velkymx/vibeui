@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { shallowRef, computed, watch, ref, inject, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import type { Tag, ComponentError } from '../types'
-import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
+import { computed, watch, ref, inject, onMounted, onBeforeUnmount } from 'vue'
+import type { Tag } from '../types'
 import { useId } from '../composables/useId'
 
 interface BootstrapCollapse {
@@ -11,39 +10,23 @@ interface BootstrapCollapse {
   dispose: () => void
 }
 
-// Hoisted to setup so the id is owned by this instance and stable (useId() in a
-// defineProps default factory runs during prop normalization — fragile across Vue versions).
-const _generatedId = useId('collapse')
-
 const props = defineProps({
-  id: { type: String, default: undefined },
+  id: { type: String, default: () => useId('collapse') },
   modelValue: { type: Boolean, default: false },
   tag: { type: String as () => Tag, default: 'div' },
   horizontal: { type: Boolean, default: false },
   isNav: { type: Boolean, default: false }
 })
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
-  (e: 'show'): void
-  (e: 'shown'): void
-  (e: 'hide'): void
-  (e: 'hidden'): void
-  (e: 'component-error', error: ComponentError): void
-}>()
+const emit = defineEmits(['update:modelValue', 'show', 'shown', 'hide', 'hidden', 'component-error'])
 
-const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
-
-const computedId = computed(() => props.id || _generatedId)
+const navbar = inject<{
+  collapseStates: Record<string, boolean>
+} | null>('vibeNavbarCollapse', null)
 
 const collapseRef = ref<HTMLElement | null>(null)
-const bsCollapse = shallowRef<BootstrapCollapse | null>(null)
+const bsCollapse = ref<BootstrapCollapse | null>(null)
 const isVisible = ref(false)
-const bsInitialized = ref(false)
-// Stores the last desired state requested before Bootstrap finishes initializing.
-// Only the last state is preserved (last-wins); intermediate open/close calls
-// before bsInitialized are intentionally discarded. Applied once bsInitialized = true.
-let pendingState: boolean | null = null
 
 const onShow = () => {
   isVisible.value = true
@@ -72,9 +55,6 @@ onMounted(async () => {
     const bootstrap = await import('bootstrap')
     const Collapse = bootstrap.Collapse
 
-    // Guard: component may have unmounted while awaiting the import
-    if (!collapseRef.value) return
-
     bsCollapse.value = new Collapse(collapseRef.value, {
       toggle: false
     }) as BootstrapCollapse
@@ -84,28 +64,14 @@ onMounted(async () => {
     collapseRef.value.addEventListener('hide.bs.collapse', onHide)
     collapseRef.value.addEventListener('hidden.bs.collapse', onHidden)
 
-    // Determine desired initial state (navbar state takes precedence).
-    // Also honour any state change queued by the watcher during the async gap.
-    const initialState = pendingState !== null
-      ? pendingState
-      : (navbar && computedId.value in navbar.collapseStates
-          ? navbar.collapseStates[computedId.value]
-          : props.modelValue)
-    pendingState = null
-
-    // Signal pre-boot fallback to stop; let Vue flush before calling show()
-    // so Bootstrap doesn't see our fallback 'show' class and short-circuit.
-    bsInitialized.value = true
-    await nextTick()
-
-    // Guard: component may have unmounted during nextTick
-    if (!bsCollapse.value) return
+    const initialState = navbar && props.id in navbar.collapseStates 
+      ? navbar.collapseStates[props.id] 
+      : props.modelValue
 
     if (initialState) {
       bsCollapse.value.show()
     }
   } catch (error) {
-    bsInitialized.value = true
     emit('component-error', {
       message: 'Bootstrap JS not loaded. Collapse will use CSS classes only.',
       componentName: 'VibeCollapse',
@@ -130,19 +96,13 @@ onBeforeUnmount(() => {
 
 // Combined state from navbar or local modelValue
 const targetState = computed(() => {
-  if (navbar && computedId.value in navbar.collapseStates) {
-    return navbar.collapseStates[computedId.value]
+  if (navbar && props.id in navbar.collapseStates) {
+    return navbar.collapseStates[props.id]
   }
   return props.modelValue
 })
 
 watch(targetState, (newValue) => {
-  if (!bsInitialized.value) {
-    // Bootstrap not ready yet — queue the desired state for application after init
-    pendingState = newValue
-    return
-  }
-
   if (!bsCollapse.value) return
 
   if (newValue && !isVisible.value) {
@@ -152,27 +112,19 @@ watch(targetState, (newValue) => {
   }
 })
 
-// When modelValue changes from outside (programmatic control), sync collapseStates
-// so targetState doesn't remain stale after the first toggle.
-watch(() => props.modelValue, (val) => {
-  if (navbar && computedId.value in navbar.collapseStates && navbar.collapseStates[computedId.value] !== val) {
-    navbar.collapseStates[computedId.value] = val
-  }
-})
-
 const collapseClass = computed(() => {
   const classes = ['collapse']
   if (props.isNav) classes.push('navbar-collapse')
   if (props.horizontal) classes.push('collapse-horizontal')
-  // Pre-Bootstrap fallback: add 'show' so content is visible on initial render.
-  // Once bsInitialized, Bootstrap owns the class; Vue stops touching it.
-  if (!bsInitialized.value && targetState.value) classes.push('show')
+  // We don't add 'show' manually here if we use Bootstrap JS, 
+  // as it will manage the classes. But for initial state or fallback:
+  if (!bsCollapse.value && targetState.value) classes.push('show')
   return classes.join(' ')
 })
 </script>
 
 <template>
-  <component :is="tag" ref="collapseRef" :id="computedId" :class="collapseClass">
+  <component :is="tag" ref="collapseRef" :id="id" :class="collapseClass">
     <slot />
   </component>
 </template>

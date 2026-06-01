@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue'
-import type { PropType } from 'vue'
+import type { PropType, ComputedRef } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
-// v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
-const modelValue = defineModel<string | number | boolean>({ default: '' })
-
 const props = defineProps({
+  modelValue: {
+    type: [String, Number, Boolean],
+    default: ''
+  },
   value: { type: [String, Number, Boolean], required: true },
   name: { type: String, required: true },
   id: { type: String, default: undefined },
@@ -24,20 +24,17 @@ const props = defineProps({
   reverse: { type: Boolean, default: false }
 })
 
-const emit = defineEmits<{
-  (e: 'validate'): void
-  (e: 'blur', event: FocusEvent): void
-  (e: 'focus', event: FocusEvent): void
-  (e: 'change', event: Event): void
-}>()
+const emit = defineEmits(['update:modelValue', 'validate', 'blur', 'focus', 'change'])
 
-const formGroup = inject(FORM_GROUP_KEY, null)
+const formGroup = inject<{
+  id: ComputedRef<string>
+  consumeId: () => string | null
+  hasLabel: ComputedRef<boolean>
+  hasValidation: ComputedRef<boolean>
+  hasHelp: ComputedRef<boolean>
+} | null>('vibeFormGroup', null)
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('radio')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const helpId = computed(() => `${computedId.value}-help`)
-const feedbackId = computed(() => `${computedId.value}-feedback`)
+const computedId = computed(() => props.id || formGroup?.consumeId() || useId('radio'))
 const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
 const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
 const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
@@ -56,10 +53,10 @@ const inputClass = computed(() => {
   return classes.join(' ')
 })
 
-const isChecked = computed(() => modelValue.value === props.value)
+const isChecked = computed(() => props.modelValue === props.value)
 
 const handleChange = (event: Event) => {
-  modelValue.value = props.value
+  emit('update:modelValue', props.value)
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
@@ -86,7 +83,7 @@ const handleFocus = (event: FocusEvent) => {
       :disabled="disabled"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="helpText && validationMessage ? `${computedId}-help ${computedId}-feedback` : helpText ? `${computedId}-help` : validationMessage ? `${computedId}-feedback` : undefined"
+      :aria-describedby="validationMessage || helpText ? `${computedId}-feedback` : undefined"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
@@ -95,11 +92,11 @@ const handleFocus = (event: FocusEvent) => {
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
     </label>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="`${computedId}-feedback`" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">

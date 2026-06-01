@@ -20,7 +20,7 @@ Button component with variants, sizes, and support for links and router-links.
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `click` | `MouseEvent` | Emitted when button is clicked (unless disabled) |
+| `click` | `Event` | Emitted when button is clicked (unless disabled) |
 | `component-error` | `Object` | Emitted when an error occurs |
 
 ## Slots

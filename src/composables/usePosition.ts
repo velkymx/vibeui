@@ -6,7 +6,7 @@ import {
   offset as offsetMiddleware,
   type Placement
 } from '@floating-ui/dom'
-import { ref, watchEffect, onBeforeUnmount, type Ref, type ComputedRef } from 'vue'
+import { ref, watch, onBeforeUnmount, type Ref, type ComputedRef } from 'vue'
 
 type AnchorPoint =
   | 'top start' | 'top center' | 'top end'
@@ -106,12 +106,11 @@ export function usePosition(
     }
   }
 
-  const restoreStyle = (el?: HTMLElement) => {
-    const target = el ?? savedFor
-    if (target && savedStyle && savedFor === target) {
-      target.style.position = savedStyle.position
-      target.style.left = savedStyle.left
-      target.style.top = savedStyle.top
+  const restoreStyle = () => {
+    if (savedFor && savedStyle) {
+      savedFor.style.position = savedStyle.position
+      savedFor.style.left = savedStyle.left
+      savedFor.style.top = savedStyle.top
     }
     savedStyle = null
     savedFor = null
@@ -148,31 +147,26 @@ export function usePosition(
     restoreStyle()
   }
 
-  watchEffect(
-    (onCleanup) => {
+  watch(
+    [target, anchor, () => readOptions()],
+    () => {
+      if (cleanup) {
+        cleanup()
+        cleanup = null
+      }
       const t = target.value
       const a = anchor.value
-      const opts = readOptions()
       if (!t || !a) return
-      // Restore styles on the previously tracked element before switching to a new one
-      if (savedFor !== null && savedFor !== t) {
-        restoreStyle(savedFor)
-      }
-      let localCleanup: (() => void) | null = null
+      const opts = readOptions()
       if (opts.autoUpdate !== false) {
-        localCleanup = autoUpdate(a, t, () => {
+        cleanup = autoUpdate(a, t, () => {
           void update()
         })
       } else {
         void update()
       }
-      onCleanup(() => {
-        localCleanup?.()
-        localCleanup = null
-        cleanup = null
-      })
     },
-    { flush: 'post' }
+    { immediate: true, flush: 'post', deep: true }
   )
 
   onBeforeUnmount(() => {

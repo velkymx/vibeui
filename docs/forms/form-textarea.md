@@ -1,82 +1,51 @@
 # VibeFormTextarea
 
-Multi-line text input with optional character counting, built-in validation, and accessibility.
+Multi-line text input component.
+
+## Basic Usage
+
+```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+const text = ref('')
+</script>
+
+<template>
+  <VibeFormTextarea
+    v-model="text"
+    label="Comments"
+    placeholder="Enter your comments here..."
+  />
+</template>
+```
 
 ## Props
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `modelValue` | `string` | `''` | The textarea value (v-model). |
-| `id` | `string` | auto-generated | Element id. Auto-generated, or inherited from a parent `VibeFormGroup`. |
-| `label` | `string` | `undefined` | Standalone label text. |
-| `placeholder` | `string` | `undefined` | Placeholder text. |
-| `rows` | `number \| string` | `3` | Number of visible text rows. |
-| `maxlength` | `number \| string` | `undefined` | Maximum character count (also shown in the counter when `showCharCount` is set). |
-| `disabled` | `boolean` | `false` | Disable the textarea. |
-| `readonly` | `boolean` | `false` | Make the textarea read-only. |
-| `required` | `boolean` | `false` | Mark as required. |
-| `size` | `'sm' \| 'lg'` | `undefined` | Control size. |
-| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Visual validation state. |
-| `validationMessage` | `string` | `undefined` | Feedback message for the current state. |
-| `validationRules` | `ValidationRule[] \| ValidatorFunction` | `undefined` | Rules carried for use with a validation composable. |
-| `validateOn` | `'input' \| 'blur' \| 'change'` | `'blur'` | When the `validate` event fires. |
-| `helpText` | `string` | `undefined` | Help text below the textarea. |
-| `noResize` | `boolean` | `false` | Disable manual resizing (`resize: none`). |
-| `showCharCount` | `boolean` | `false` | Show a character counter (`count` or `count / maxlength`). |
-
-## Events
-
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `update:modelValue` | `string` | Emitted on input. |
-| `input` | `Event` | Native input event. |
-| `change` | `Event` | Native change event. |
-| `blur` | `FocusEvent` | Emitted on blur. |
-| `focus` | `FocusEvent` | Emitted on focus. |
-| `validate` | — | Emitted when the `validateOn` trigger occurs. |
-
-## Slots
-
-None.
-
-## Usage
-
-### Recommended: inside a VibeFormGroup
-
-```vue
-<script setup lang="ts">
-import { ref } from 'vue'
-const bio = ref('')
-</script>
-
-<template>
-  <VibeFormGroup label="Bio">
-    <VibeFormTextarea v-model="bio" :rows="5" :maxlength="280" show-char-count />
-  </VibeFormGroup>
-</template>
-```
-
-### Standalone
-
-```vue
-<script setup lang="ts">
-import { ref } from 'vue'
-const notes = ref('')
-</script>
-
-<template>
-  <VibeFormTextarea v-model="notes" label="Notes" no-resize />
-</template>
-```
+| `modelValue` | `String` | `''` | The textarea value (v-model) |
+| `id` | `String` | `Auto-generated` | Unique identifier |
+| `label` | `String` | `undefined` | Label text |
+| `placeholder` | `String` | `undefined` | Placeholder text |
+| `rows` | `Number \| String` | `3` | Number of visible rows |
+| `disabled` | `Boolean` | `false` | Disable the textarea |
+| `readonly` | `Boolean` | `false` | Make readonly |
+| `required` | `Boolean` | `false` | Mark as required |
+| `size` | `'sm' \| 'lg'` | `undefined` | Textarea size |
+| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Validation state |
+| `validationMessage` | `String` | `undefined` | Validation message |
+| `validateOn` | `'input' \| 'blur' \| 'change'` | `'blur'` | When to validate |
+| `helpText` | `String` | `undefined` | Help text |
+| `noResize` | `Boolean` | `false` | Disable resizing |
 
 ## Important Notes
 
-- **Character counter:** `showCharCount` renders inside the help-text row. When inside a `VibeFormGroup` that provides its own help text, the counter is suppressed (the group owns help rendering).
-- **Group linking:** wrapped in a `VibeFormGroup`, the textarea consumes the group id so the label and feedback link automatically.
+**Automatic ID Generation:** This component automatically generates a unique ID if one is not provided.
+
+**Automatic ID Injection:** When used inside a `VibeFormGroup`, this component will automatically inherit the group's ID to ensure proper label association and accessibility.
 
 ## Bootstrap CSS Classes
 
 - `.form-control`
-- `.form-control-{sm|lg}`
+- `.form-control-{size}`
 - `.is-valid`, `.is-invalid`
-- `.form-text`

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import { getActiveDrag } from './dndStore'
 
 const props = defineProps({
@@ -18,13 +18,6 @@ const emit = defineEmits<{
 const isOver = ref(false)
 let dragCounter = 0
 
-watch(() => props.disabled, (disabled) => {
-  if (disabled) {
-    dragCounter = 0
-    isOver.value = false
-  }
-})
-
 const groupAccepted = (group: string): boolean => {
   if (props.acceptGroups && props.acceptGroups.length > 0) {
     return props.acceptGroups.includes(group)
@@ -36,9 +29,6 @@ const readActiveDrag = (): { payload: unknown; group: string } | null => getActi
 
 const onDragEnter = (event: DragEvent) => {
   if (props.disabled) return
-  const active = readActiveDrag()
-  if (!active) return  // not from a VibeDraggable — ignore external/OS drags
-  if (!groupAccepted(active.group)) return
   dragCounter += 1
   isOver.value = true
   emit('dragenter', event)
@@ -51,19 +41,14 @@ const onDragOver = (event: DragEvent) => {
 }
 
 const onDragLeave = (event: DragEvent) => {
-  if (props.disabled || dragCounter === 0) return
+  if (props.disabled) return
   dragCounter -= 1
   if (dragCounter <= 0) {
     isOver.value = false
     dragCounter = 0
-    emit('dragleave', event)
   }
+  emit('dragleave', event)
 }
-
-onBeforeUnmount(() => {
-  dragCounter = 0
-  isOver.value = false
-})
 
 const onDrop = (event: DragEvent) => {
   if (props.disabled) return
@@ -72,10 +57,10 @@ const onDrop = (event: DragEvent) => {
   dragCounter = 0
 
   const active = readActiveDrag()
-  if (!active) return  // not from a VibeDraggable — ignore external/OS drags
-  if (!groupAccepted(active.group)) return
+  const incomingGroup = active?.group ?? props.group
+  if (!groupAccepted(incomingGroup)) return
 
-  emit('drop', { payload: active.payload, group: active.group, event })
+  emit('drop', { payload: active?.payload, group: incomingGroup, event })
 }
 </script>
 

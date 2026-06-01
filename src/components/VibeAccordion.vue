@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import type { AccordionItem, ComponentError } from '../types'
+import type { AccordionItem } from '../types'
 import { useId } from '../composables/useId'
 
 interface BootstrapCollapse {
@@ -10,86 +10,25 @@ interface BootstrapCollapse {
   dispose: () => void
 }
 
-const _generatedId = useId('accordion')
-
 const props = defineProps({
-  id: { type: String, default: undefined },
+  id: { type: String, default: () => useId('accordion') },
   flush: { type: Boolean, default: false },
   items: { type: Array as () => AccordionItem[], required: true },
   alwaysOpen: { type: Boolean, default: false }
 })
 
-const computedId = computed(() => props.id || _generatedId)
-
-// CSS-special characters break Bootstrap's internal querySelector (e.g. #my.id).
-const CSS_SPECIAL_CHARS = /[ .:#[\](){}+~>,|^$*?=]/
-
-// DEV-only: warn for ids that will break Bootstrap's querySelector. Covers both the
-// accordion container id and every item.id (used in data-bs-target / data-bs-parent).
-const warnUnsafeIds = () => {
-  if (!import.meta.env.DEV) return
-  if (props.id && CSS_SPECIAL_CHARS.test(props.id)) {
-    console.warn(`[VibeAccordion] id "${props.id}" contains CSS-special characters. Bootstrap's querySelector will fail. Use only alphanumeric characters, hyphens, and underscores.`)
-  }
-  for (const item of props.items) {
-    if (item.id && CSS_SPECIAL_CHARS.test(item.id)) {
-      console.warn(`[VibeAccordion] item.id "${item.id}" contains CSS-special characters. Bootstrap's querySelector will fail for this panel. Use only alphanumeric characters, hyphens, and underscores.`)
-    }
-  }
-}
-warnUnsafeIds()
-
-const emit = defineEmits<{
-  (e: 'item-click', payload: { item: AccordionItem; index: number }): void
-  (e: 'show', id: string): void
-  (e: 'shown', id: string): void
-  (e: 'hide', id: string): void
-  (e: 'hidden', id: string): void
-  (e: 'component-error', error: ComponentError): void
-}>()
+const emit = defineEmits(['item-click', 'show', 'shown', 'hide', 'hidden', 'component-error'])
 
 const accordionRef = ref<HTMLElement | null>(null)
 const bsCollapses = new Map<string, BootstrapCollapse>()
-const collapseElements = new Map<string, HTMLElement>()
-let initInFlight = false
-let pendingReinit = false
-
-interface CollapseHandlers {
-  show: EventListener
-  shown: EventListener
-  hide: EventListener
-  hidden: EventListener
-}
-const collapseHandlers = new Map<string, CollapseHandlers>()
 
 const onShow = (id: string) => emit('show', id)
 const onShown = (id: string) => emit('shown', id)
 const onHide = (id: string) => emit('hide', id)
 const onHidden = (id: string) => emit('hidden', id)
 
-const disposeItem = (id: string) => {
-  const el = collapseElements.get(id)
-  const h = collapseHandlers.get(id)
-  if (el && h) {
-    el.removeEventListener('show.bs.collapse', h.show)
-    el.removeEventListener('shown.bs.collapse', h.shown)
-    el.removeEventListener('hide.bs.collapse', h.hide)
-    el.removeEventListener('hidden.bs.collapse', h.hidden)
-  }
-  collapseElements.delete(id)
-  collapseHandlers.delete(id)
-  bsCollapses.get(id)?.dispose()
-  bsCollapses.delete(id)
-}
-
 const initItems = async () => {
   if (!accordionRef.value) return
-  if (initInFlight) {
-    pendingReinit = true
-    return
-  }
-  initInFlight = true
-  pendingReinit = false
 
   try {
     const bootstrap = await import('bootstrap')
@@ -100,27 +39,17 @@ const initItems = async () => {
       const id = el.id
       // Only initialize if not already tracked
       if (!bsCollapses.has(id)) {
-        const htmlEl = el as HTMLElement
-        collapseElements.set(id, htmlEl)
-        const bsCollapse = new Collapse(htmlEl, {
+        const bsCollapse = new Collapse(el as HTMLElement, {
           toggle: false,
-          parent: props.alwaysOpen ? undefined : `#${computedId.value}`
+          parent: props.alwaysOpen ? undefined : `#${props.id}`
         }) as BootstrapCollapse
 
         bsCollapses.set(id, bsCollapse)
 
-        const handlers: CollapseHandlers = {
-          show: () => onShow(id),
-          shown: () => onShown(id),
-          hide: () => onHide(id),
-          hidden: () => onHidden(id)
-        }
-        collapseHandlers.set(id, handlers)
-
-        el.addEventListener('show.bs.collapse', handlers.show)
-        el.addEventListener('shown.bs.collapse', handlers.shown)
-        el.addEventListener('hide.bs.collapse', handlers.hide)
-        el.addEventListener('hidden.bs.collapse', handlers.hidden)
+        el.addEventListener('show.bs.collapse', () => onShow(id))
+        el.addEventListener('shown.bs.collapse', () => onShown(id))
+        el.addEventListener('hide.bs.collapse', () => onHide(id))
+        el.addEventListener('hidden.bs.collapse', () => onHidden(id))
 
         // Check initial state from props
         const item = props.items.find(i => i.id === id)
@@ -135,52 +64,56 @@ const initItems = async () => {
       componentName: 'VibeAccordion',
       originalError: error
     })
-  } finally {
-    initInFlight = false
-    if (pendingReinit) {
-      pendingReinit = false
-      void initItems()
-    }
   }
 }
 
 onMounted(initItems)
 
 onBeforeUnmount(() => {
-  bsCollapses.forEach((_, id) => disposeItem(id))
+  bsCollapses.forEach((bsCollapse, id) => {
+    const el = document.getElementById(id)
+    if (el) {
+      el.removeEventListener('show.bs.collapse', () => onShow(id))
+      el.removeEventListener('shown.bs.collapse', () => onShown(id))
+      el.removeEventListener('hide.bs.collapse', () => onHide(id))
+      el.removeEventListener('hidden.bs.collapse', () => onHidden(id))
+    }
+    bsCollapse.dispose()
+  })
+  bsCollapses.clear()
 })
 
-watch([() => props.items, () => props.alwaysOpen], async () => {
-  warnUnsafeIds()
-  // Snapshot keys first — disposeItem mutates bsCollapses/collapseElements/collapseHandlers
-  // internally via .delete(). Iterating the live Map during mutation is safe per spec but
-  // produces confusing dead .clear() calls after; snapshot makes the intent explicit.
-  const ids = [...bsCollapses.keys()]
-  for (const id of ids) {
-    disposeItem(id)
+// Watch for changes in items array length or individual items
+watch(() => props.items, async (newItems, oldItems) => {
+  // If items were added, we need to initialize them
+  if (newItems.length !== oldItems?.length) {
+    await nextTick()
+    await initItems()
   }
-  // All Maps are empty after the loop (disposeItem calls .delete() on each).
-  // These clears are retained as defensive guards against any future partial dispose paths.
-  bsCollapses.clear()
-  collapseElements.clear()
 
-  // Await both nextTick and initItems so errors surface instead of being silently dropped.
-  // The previous nextTick(() => initItems()) discarded the inner Promise.
-  await nextTick()
-  await initItems()
-}, { deep: false })
+  // Handle programmatic show/hide changes
+  newItems.forEach(item => {
+    const bsCollapse = bsCollapses.get(item.id)
+    if (bsCollapse) {
+      if (item.show) {
+        bsCollapse.show()
+      } else if (!props.alwaysOpen) {
+        // Only hide programmatically if not always-open (or handle as needed)
+        bsCollapse.hide()
+      }
+    }
+  })
+}, { deep: true })
 
 const handleItemClick = (item: AccordionItem, index: number) => {
   emit('item-click', { item, index })
 }
 
-// _unsafe_bsInstances is an escape hatch, NOT part of the stable API.
-// Calling dispose()/other lifecycle methods on these directly WILL break this component.
-defineExpose({ refresh: initItems, _unsafe_bsInstances: bsCollapses })
+defineExpose({ bsInstances: bsCollapses, refresh: initItems })
 </script>
 
 <template>
-  <div ref="accordionRef" :id="computedId" :class="['accordion', { 'accordion-flush': flush }]">
+  <div ref="accordionRef" :id="id" :class="['accordion', { 'accordion-flush': flush }]">
     <div
       v-for="(item, index) in items"
       :key="item.id"
@@ -203,8 +136,8 @@ defineExpose({ refresh: initItems, _unsafe_bsInstances: bsCollapses })
       </h2>
       <div
         :id="item.id"
-        :class="['accordion-collapse', 'collapse']"
-        :data-bs-parent="alwaysOpen ? undefined : `#${computedId}`"
+        :class="['accordion-collapse', 'collapse', { show: item.show }]"
+        :data-bs-parent="alwaysOpen ? undefined : `#${id}`"
       >
         <div class="accordion-body">
           <slot name="content" :item="item" :index="index">

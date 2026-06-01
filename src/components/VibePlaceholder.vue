@@ -10,6 +10,8 @@ const props = defineProps({
   tag: { type: String as () => Tag, default: 'span' }
 })
 
+const emit = defineEmits(['component-error'])
+
 const placeholderClass = computed(() => {
   const classes = ['placeholder']
   if (props.variant) classes.push(`bg-${props.variant}`)
