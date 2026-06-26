@@ -53,6 +53,9 @@ const bsCollapses = new Map<string, BootstrapCollapse>()
 const collapseElements = new Map<string, HTMLElement>()
 let initInFlight = false
 let pendingReinit = false
+// Explicit unmount flag — set synchronously in onBeforeUnmount so the async
+// initItems continuation bails out even in the window before Vue nulls the ref.
+let isUnmounted = false
 
 interface CollapseHandlers {
   show: EventListener
@@ -94,6 +97,11 @@ const initItems = async () => {
   try {
     const bootstrap = await import('bootstrap')
     const Collapse = bootstrap.Collapse
+
+    // Guard: component may have unmounted while the import was in flight.
+    // isUnmounted is set in onBeforeUnmount — checked before dereferencing
+    // accordionRef.value to prevent a TypeError if Vue has already nulled the ref.
+    if (isUnmounted || !accordionRef.value) return
 
     const collapseEls = accordionRef.value.querySelectorAll('.accordion-collapse')
     collapseEls.forEach((el) => {
@@ -137,7 +145,8 @@ const initItems = async () => {
     })
   } finally {
     initInFlight = false
-    if (pendingReinit) {
+    // Don't schedule a reinit if the component has already unmounted.
+    if (!isUnmounted && pendingReinit) {
       pendingReinit = false
       void initItems()
     }
@@ -147,6 +156,7 @@ const initItems = async () => {
 onMounted(initItems)
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   bsCollapses.forEach((_, id) => disposeItem(id))
 })
 

@@ -110,6 +110,30 @@ describe('VibeAccordion', () => {
     expect(callCount).toBeGreaterThanOrEqual(4)
   })
 
+  // CR8-3: isUnmounted guard — Bootstrap.Collapse must not be constructed if the
+  // accordion unmounts while the async `import('bootstrap')` is in flight.
+  // Without any post-import guard, accordionRef.value.querySelectorAll() throws
+  // a TypeError when the ref is null (Vue nulls it after onBeforeUnmount).
+  it('does not construct Bootstrap.Collapse when the component unmounts during async init', async () => {
+    vi.clearAllMocks()
+
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+
+    const wrapper = mount(VibeAccordion, {
+      props: { id: 'unmount-race', items: mockItems },
+      attachTo: el
+    })
+    wrapper.unmount()
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // With isUnmounted guard: Collapse constructor never fires
+    expect(bootstrap.Collapse).not.toHaveBeenCalled()
+
+    document.body.removeChild(el)
+  })
+
   // DEV warning for item.id values that break Bootstrap's querySelector.
   describe('item.id CSS-special-character warning', () => {
     it('warns when an item.id contains CSS-special characters', () => {
