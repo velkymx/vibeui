@@ -180,4 +180,103 @@ describe('VibeModal', () => {
     wrapper.unmount()
     document.body.removeChild(outside)
   })
+
+  // Issue 2 — WCAG 2.1.2: focus trap within open modal
+  it('Tab from last focusable element wraps to first (focus trap)', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false, hideHeader: true, hideFooter: true },
+      slots: { default: '<button id="trap-btn-a">A</button><button id="trap-btn-b">B</button>' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    const btnB = wrapper.find('#trap-btn-b').element as HTMLElement
+    btnB.focus()
+
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    btnB.dispatchEvent(tabEvent)
+
+    expect(document.activeElement).toBe(wrapper.find('#trap-btn-a').element)
+    expect(tabEvent.defaultPrevented).toBe(true)
+
+    wrapper.unmount()
+  })
+
+  it('Shift+Tab from first focusable element wraps to last (focus trap)', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false, hideHeader: true, hideFooter: true },
+      slots: { default: '<button id="trap-btn-c">C</button><button id="trap-btn-d">D</button>' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    const btnC = wrapper.find('#trap-btn-c').element as HTMLElement
+    btnC.focus()
+
+    const shiftTabEvent = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })
+    btnC.dispatchEvent(shiftTabEvent)
+
+    expect(document.activeElement).toBe(wrapper.find('#trap-btn-d').element)
+    expect(shiftTabEvent.defaultPrevented).toBe(true)
+
+    wrapper.unmount()
+  })
+
+  it('applies inert to sibling elements of the modal when open', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Add a sibling to the modal's DOM parent so we can verify inert is applied
+    const modalEl = wrapper.find('.modal').element
+    const container = modalEl.parentElement!
+    const sibling = document.createElement('div')
+    container.appendChild(sibling)
+
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    expect((sibling as HTMLElement).inert).toBe(true)
+
+    modalEl.dispatchEvent(new Event('hidden.bs.modal'))
+
+    expect((sibling as HTMLElement).inert).toBe(false)
+
+    sibling.remove()
+    wrapper.unmount()
+  })
+
+  it('clears inert from siblings on unmount while modal is open', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    const container = modalEl.parentElement!
+    const sibling = document.createElement('div')
+    container.appendChild(sibling)
+
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    expect((sibling as HTMLElement).inert).toBe(true)
+
+    // Unmount without closing — inert must still be cleared
+    wrapper.unmount()
+
+    expect((sibling as HTMLElement).inert).toBe(false)
+    sibling.remove()
+  })
 })
