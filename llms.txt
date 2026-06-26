@@ -402,15 +402,34 @@ Components like `VibeBreadcrumb`, `VibeListGroup`, `VibeDropdown`, `VibeAccordio
 ]" />
 ```
 
-### VibeFormGroup — automatic label linking
+### VibeFormGroup — automatic label linking and accessibility
 
-`VibeFormGroup` uses Vue's `provide`/`inject` to share a generated ID with child inputs. This means `id` and `label-for` are optional — the group handles accessibility automatically:
+`VibeFormGroup` uses Vue's `provide`/`inject` to share a generated ID with child inputs. `id`, `for`, and `aria-describedby` are all wired automatically — no manual ids needed:
 
 ```vue
-<VibeFormGroup label="Email Address">
+<!-- required prop renders red * + visually-hidden "required" for screen readers -->
+<!-- invalid-feedback has role="alert" — errors announced without focus -->
+<VibeFormGroup label="Email Address" required :validation-state="err ? 'invalid' : null" :validation-message="err">
   <VibeFormInput v-model="email" type="email" />
-  <!-- label is automatically linked to input, no id needed -->
 </VibeFormGroup>
+```
+
+For multi-field forms, place `<VibeFormErrorSummary :errors="errors" @focus="focusField" />` at the top of the form. It renders a `role="alert"` block listing all non-empty errors with focus links (WCAG 3.3.1).
+
+### VibeFormInput — password, autocomplete, and mobile keyboard
+
+```vue
+<!-- show-toggle: eye button to reveal password -->
+<!-- show-password-strength: 4-segment strength bar with aria-live -->
+<!-- autocomplete: typed enum — "current-password", "new-password", "email", etc. -->
+<!-- inputmode: auto-detected (number→decimal, email→email, tel→tel, url→url, search→search) -->
+<VibeFormInput
+  v-model="password"
+  type="password"
+  autocomplete="new-password"
+  show-toggle
+  show-password-strength
+/>
 ```
 
 ### Programmatic control (template ref)
@@ -773,7 +792,7 @@ Per-component and per-API reference. **Read the relevant page before building wi
 
 **Progress:** [VibeProgress](docs/components/progress/progress.md)
 
-**Forms:** [overview](docs/forms/README.md) · [VibeAutocomplete](docs/forms/autocomplete.md) · [VibeFileInput](docs/forms/file-input.md) · [VibeFormCheckbox](docs/forms/form-checkbox.md) · [VibeFormDatepicker](docs/forms/form-datepicker.md) · [VibeFormGroup](docs/forms/form-group.md) · [VibeFormInput](docs/forms/form-input.md) · [VibeFormRadio](docs/forms/form-radio.md) · [VibeFormSelect](docs/forms/form-select.md) · [VibeFormSpinbutton](docs/forms/form-spinbutton.md) · [VibeFormSwitch](docs/forms/form-switch.md) · [VibeFormTextarea](docs/forms/form-textarea.md) · [VibeFormWysiwyg](docs/forms/form-wysiwyg.md) · [VibeInputGroup](docs/forms/input-group.md) · [Validation & useForm](docs/forms/validation.md)
+**Forms:** [overview](docs/forms/README.md) · [VibeAutocomplete](docs/forms/autocomplete.md) · [VibeFileInput](docs/forms/file-input.md) · [VibeFormCheckbox](docs/forms/form-checkbox.md) · [VibeFormDatepicker](docs/forms/form-datepicker.md) · [VibeFormErrorSummary](docs/forms/form-error-summary.md) · [VibeFormGroup](docs/forms/form-group.md) · [VibeFormInput](docs/forms/form-input.md) · [VibeFormRadio](docs/forms/form-radio.md) · [VibeFormSelect](docs/forms/form-select.md) · [VibeFormSpinbutton](docs/forms/form-spinbutton.md) · [VibeFormSwitch](docs/forms/form-switch.md) · [VibeFormTextarea](docs/forms/form-textarea.md) · [VibeFormWysiwyg](docs/forms/form-wysiwyg.md) · [VibeInputGroup](docs/forms/input-group.md) · [Validation & useForm](docs/forms/validation.md)
 
 **Composables:** [useBackButton](docs/composables/back-button.md) · [useBreakpoints](docs/composables/breakpoints.md) · [useColorMode](docs/composables/color-mode.md) · [useForm](docs/composables/use-form.md) · [usePosition](docs/composables/use-position.md) · [useToast](docs/composables/use-toast.md)
 

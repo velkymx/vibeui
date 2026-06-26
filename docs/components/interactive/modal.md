@@ -17,6 +17,8 @@ Modal dialogs for lightboxes, user notifications, or custom content.
 | `hideHeader` | `Boolean` | `false` | Hide header section |
 | `hideFooter` | `Boolean` | `false` | Hide footer section |
 | `teleport` | `Boolean\|String` | `'body'` | Destination for Vue Teleport |
+| `autoFocus` | `Boolean` | `true` | Focus the first focusable descendant when the modal opens (WCAG 2.4.3). |
+| `submitOnMetaEnter` | `Boolean` | `true` | Submit the first `<form>` inside the modal on `Cmd+Enter` / `Ctrl+Enter` (WCAG 2.1.1). |
 
 ## Events
 
@@ -116,7 +118,13 @@ function save() {
 
 **Teleportation:** By default, this component teleports its DOM elements to the `<body>` to avoid stacking context issues. You can customize this with the `teleport` prop.
 
+**Auto-focus (WCAG 2.4.3):** On open, focus moves to the first focusable descendant (input, select, button, etc.). Repeated opens re-focus. Disable with `:auto-focus="false"` when you need to control focus yourself.
+
+**Focus trap (WCAG 2.1.2):** While the modal is open, `Tab` and `Shift+Tab` cycle within the modal only. All sibling elements receive the `inert` attribute so screen readers cannot reach the page behind the modal. `inert` is cleared on close and on unmount.
+
 **Focus Return (WCAG 2.4.3):** When the modal closes, focus is automatically returned to the element that opened it, including for programmatically opened modals.
+
+**Cmd/Ctrl+Enter submit (WCAG 2.1.1):** Pressing `Cmd+Enter` (macOS) or `Ctrl+Enter` (Windows/Linux) inside the modal submits the first `<form>` descendant via `requestSubmit()`. Disable with `:submit-on-meta-enter="false"` for non-form modals.
 
 **Escape Hatch:** The exposed `_unsafe_bsInstance` template ref gives raw access to the underlying Bootstrap Modal instance. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly **will** break the component. Prefer `v-model` and the exposed `show()` / `hide()` methods.
 

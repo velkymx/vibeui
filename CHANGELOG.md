@@ -1,6 +1,52 @@
 # Changelog
 
-> Aggregated from Code Review findings (CR5 + CR6) and the 2026-05-29 performance audit. Completed fixes with commit references.
+> Aggregated from Code Review findings (CR5 + CR6 + CR7) and the 2026-05-29 performance audit. Completed fixes with commit references.
+
+---
+
+## Code Review 7 — a11y Sprint (2026-06-25)
+
+15 WCAG accessibility issues across `VibeModal`, `VibeFormGroup`, `VibeButton`, and `VibeFormInput`. All shipped with Vitest coverage; two acceptance criteria (Playwright screenshot + axe-core manual) remain as follow-ups.
+
+### VibeModal
+
+- **Auto-focus first focusable field on open (WCAG 2.4.3)** — `shown.bs.modal` now queries the first focusable descendant and calls `.focus()`. `autoFocus` prop (default `true`) allows opt-out. Re-opening after close re-focuses. (d253a83)
+
+- **Focus trap + `inert` background (WCAG 2.1.2)** — On `shown.bs.modal`, sibling elements of the modal container are marked `inert`; Tab/Shift+Tab cycle is intercepted to wrap within modal focusables. `inert` is cleared on `hidden.bs.modal` and `onBeforeUnmount`. (7f43312)
+
+- **`Cmd/Ctrl+Enter` submits form (WCAG 2.1.1)** — `keydown` handler inside the modal calls `form.requestSubmit()` on the first `<form>` descendant when `metaKey`/`ctrlKey` + `Enter` is detected. `submitOnMetaEnter` prop (default `true`) allows opt-out. (d6113ef)
+
+### VibeFormGroup
+
+- **`id`/`for` linkage between label and input (WCAG 1.3.1, 4.1.2)** — `VibeFormGroup` generates a unique ID via `useId()`, passes it to `<label for>`, and injects it for child `VibeFormInput` to consume via `provide`/`inject`. Multiple instances on the same page get unique IDs. (d31e350)
+
+- **`aria-describedby` wires help text and error to input (WCAG 1.3.1, 3.3.1)** — `VibeFormGroup` provides `helpId` and `feedbackId` computeds; `VibeFormInput` builds a deduplicated `aria-describedby` attribute pointing at both. Works standalone (own `helpText`/`validationMessage`) and inside a group (group-level IDs). (64bd32e)
+
+- **Required / optional label indicator (WCAG 3.3.2)** — `required: true` on `VibeFormGroup` renders a red `*` (`aria-hidden`) plus a visually-hidden "required" span. `required: false` (default) renders gray "(optional)" (`aria-hidden`). Both label branches (standard and floating) updated. (11e1beb)
+
+- **`role="alert"` on invalid-feedback (WCAG 4.1.3)** — The `.invalid-feedback` div gains `role="alert"` when `validationState === 'invalid'`, so new errors are announced by screen readers without requiring focus. (f0ecea9)
+
+### VibeFormErrorSummary (new component)
+
+- **Top-of-form error summary (WCAG 3.3.1)** — New `VibeFormErrorSummary` component renders a `role="alert" aria-live="polite"` block listing all non-empty errors with anchor links. Clicking a link emits `focus(key)` for the consumer to focus the field. Auto-appears on first error, disappears when all errors clear. Registered globally via the plugin. (ef16be6)
+
+### VibeButton
+
+- **Disabled state contrast ≥ 4.5:1 (WCAG 1.4.3)** — Scoped CSS override targets `.btn:disabled, .btn.disabled` with `--bs-body-color` / `--bs-tertiary-bg` / `--bs-border-color` at `opacity: 1`, replacing Bootstrap's 0.65 fade that drops contrast to ~2.8:1. Tokens flip automatically in dark mode. (852e514)
+
+- **DEV warning for icon-only buttons missing `aria-label` (WCAG 4.1.2)** — In `import.meta.env.DEV`, slot VNodes are inspected; if the slot contains content but no text string and neither `aria-label` nor `aria-labelledby` is present on `$attrs`, `console.warn('[VibeButton] …')` fires. (ecfd8eb)
+
+### VibeFormInput
+
+- **Placeholder contrast ≥ 4.5:1 (WCAG 1.4.3)** — Scoped `input::placeholder` rule forces `color: var(--bs-secondary-color); opacity: 1`, replacing browser-default ~0.6 alpha (~2.6:1). Bootstrap's `--bs-secondary-color` token resolves to `#6c757d` (light) / `#adb5bd` (dark) — both ≥ 4.5:1 on their respective body backgrounds. (70438ee)
+
+- **Show-password toggle (UX / a11y-adjacent)** — `showToggle` prop (default `false`) wraps the password input in `.input-group` and appends a `<button>` that toggles `type` between `password` and `text`. Button carries `aria-label` ("Show/Hide password") and `aria-pressed` state. (2e3b9bd)
+
+- **Password-strength meter (UX)** — `showPasswordStrength` prop (default `false`) renders a 4-segment Bootstrap-styled bar and an `aria-live="polite"` region announcing "Password strength: Weak/Fair/Good/Strong". Strength is computed from length tiers, case diversity, digits, and special characters. Updates reactively on every input event. (84af6e1)
+
+- **Typed `autocomplete` enum + auto-detect (WCAG 1.3.5)** — New `AutocompleteType` union type covers all WHATWG autocomplete tokens. `autocomplete` prop defaults to auto-detection: `type="email"` → `"email"`. Consumers override with any token or opt out with `"off"`. All three input render paths bind `:autocomplete`. (2e8dca7)
+
+- **`inputmode` prop with auto-detect (WCAG 2.1.1 / mobile UX)** — New `InputMode` union type. `inputmode` prop defaults to type-based auto-detection: `number` → `decimal`, `email` → `email`, `tel` → `tel`, `url` → `url`, `search` → `search`. Consumers override explicitly. (2e8dca7)
 
 ---
 
