@@ -95,7 +95,6 @@ let mobileReinitTimer: ReturnType<typeof setTimeout> | null = null
 let blurHandler: (() => void) | null = null
 let focusHandler: (() => void) | null = null
 let textChangeHandler: ((...args: unknown[]) => void) | null = null
-let selectionChangeHandler: ((...args: unknown[]) => void) | null = null
 
 const containerClass = computed(() => {
   const classes = ['vibe-wysiwyg-container']
@@ -269,9 +268,6 @@ const initQuill = async () => {
       }
       quillInstance.value.root.addEventListener('focus', focusHandler)
 
-      selectionChangeHandler = () => {}
-      quillInstance.value.on('selection-change', selectionChangeHandler)
-
       isQuillLoaded.value = true
       emit('ready', quillInstance.value)
     }
@@ -312,10 +308,6 @@ onBeforeUnmount(() => {
      if (textChangeHandler) {
        quillInstance.value.off('text-change', textChangeHandler)
        textChangeHandler = null
-     }
-     if (selectionChangeHandler) {
-       quillInstance.value.off('selection-change', selectionChangeHandler)
-       selectionChangeHandler = null
      }
      if (blurHandler) {
        quillInstance.value.root.removeEventListener('blur', blurHandler)
@@ -388,10 +380,6 @@ watch(isMobile, () => {
     if (textChangeHandler) {
       quillInstance.value.off('text-change', textChangeHandler)
       textChangeHandler = null
-    }
-    if (selectionChangeHandler) {
-      quillInstance.value.off('selection-change', selectionChangeHandler)
-      selectionChangeHandler = null
     }
     if (blurHandler) {
       quillInstance.value.root.removeEventListener('blur', blurHandler)
