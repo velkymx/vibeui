@@ -30,9 +30,10 @@ const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
         :aria-current="item.active ? 'page' : undefined"
       >
         <component
-          :is="item.active ? 'span' : safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'span'"
+          :is="item.active ? 'span' : safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
           :href="item.active ? undefined : safeHref(item.href)"
           :to="item.active ? undefined : item.to"
+          :type="!item.active && !item.href && !item.to ? 'button' : undefined"
           @click="handleItemClick(item, index, $event)"
         >
           <!-- Scoped slot for custom item rendering -->

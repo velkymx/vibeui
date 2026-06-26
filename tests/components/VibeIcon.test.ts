@@ -41,4 +41,25 @@ describe('VibeIcon', () => {
     expect(style).not.toContain('evil.com')
     expect(style).not.toContain('url(')
   })
+
+  // P0: icons inside links/buttons show text cursor over the glyph character.
+  // cursor:inherit defers to the parent element's cursor (pointer inside <a>/<button>).
+  it('always sets cursor: inherit so icon glyph never overrides parent cursor (P0)', () => {
+    const wrapper = mount(VibeIcon, { props: { icon: 'house' } })
+    expect(wrapper.attributes('style')).toContain('cursor: inherit')
+  })
+
+  it('always sets user-select: none to prevent glyph being treated as selectable text (P0)', () => {
+    const wrapper = mount(VibeIcon, { props: { icon: 'house' } })
+    expect(wrapper.attributes('style')).toContain('user-select: none')
+  })
+
+  it('retains cursor: inherit even when fontSize and color are set (P0)', () => {
+    const wrapper = mount(VibeIcon, { props: { icon: 'house', fontSize: '2rem', color: '#f00' } })
+    const style = wrapper.attributes('style') ?? ''
+    expect(style).toContain('cursor: inherit')
+    expect(style).toContain('user-select: none')
+    expect(style).toContain('font-size: 2rem')
+    expect(style).toContain('color: #f00')
+  })
 })

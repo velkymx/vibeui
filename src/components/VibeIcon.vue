@@ -46,14 +46,17 @@ const iconClass = computed(() => {
 })
 
 const iconStyle = computed(() => {
-  const style: Record<string, string> = {}
+  // cursor:inherit prevents icon glyph from showing text cursor inside links/buttons.
+  // user-select:none prevents the glyph character from being treated as selectable text.
+  const style: Record<string, string> = {
+    cursor: 'inherit',
+    userSelect: 'none'
+  }
 
-  // Font size handling — validate against safe length pattern before applying
   if (props.fontSize) {
     const safe = safeLength(props.fontSize)
     if (safe) style.fontSize = safe
   } else if (props.size) {
-    // Map size prop to font-size
     const sizeMap: Record<string, string> = {
       'sm': '0.875rem',
       'lg': '1.25rem',
@@ -63,18 +66,14 @@ const iconStyle = computed(() => {
       '4x': '4rem',
       '5x': '5rem'
     }
-    if (sizeMap[props.size]) {
-      style.fontSize = sizeMap[props.size]
-    }
+    if (sizeMap[props.size]) style.fontSize = sizeMap[props.size]
   }
 
-  // Color — validate against safe color pattern before applying
   if (props.color) {
     const safe = safeColor(props.color)
     if (safe) style.color = safe
   }
 
-  // Transforms
   const transforms: string[] = []
   if (props.flipH) transforms.push('scaleX(-1)')
   if (props.flipV) transforms.push('scaleY(-1)')
@@ -82,10 +81,10 @@ const iconStyle = computed(() => {
 
   if (transforms.length > 0) {
     style.transform = transforms.join(' ')
-    style.display = 'inline-block' // Required for transform
+    style.display = 'inline-block'
   }
 
-  return Object.keys(style).length > 0 ? style : undefined
+  return style
 })
 
 const handleClick = (event: MouseEvent) => {
