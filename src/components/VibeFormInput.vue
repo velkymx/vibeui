@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 import type { PropType } from 'vue'
-import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
+import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size, AutocompleteType, InputMode } from '../types'
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 
@@ -26,7 +26,9 @@ const props = defineProps({
   noWrapper: { type: Boolean, default: false },
   focusRing: { type: Boolean, default: false },
   showToggle: { type: Boolean, default: false },
-  showPasswordStrength: { type: Boolean, default: false }
+  showPasswordStrength: { type: Boolean, default: false },
+  autocomplete: { type: String as PropType<AutocompleteType>, default: undefined },
+  inputmode: { type: String as PropType<InputMode>, default: undefined }
 })
 
 const emit = defineEmits<{
@@ -60,6 +62,24 @@ function passwordStrength(pw: string): { level: number; label: string } {
 
 const strength = computed(() => passwordStrength(String(modelValue.value ?? '')))
 const strengthColors = ['', '#dc3545', '#fd7e14', '#0d6efd', '#198754']
+
+const inputmodeAutoMap: Partial<Record<InputType, InputMode>> = {
+  number: 'decimal',
+  email: 'email',
+  tel: 'tel',
+  url: 'url',
+  search: 'search',
+}
+const computedInputmode = computed(() =>
+  props.inputmode ?? inputmodeAutoMap[props.type as InputType]
+)
+
+const autocompleteAutoMap: Partial<Record<InputType, AutocompleteType>> = {
+  email: 'email',
+}
+const computedAutocomplete = computed(() =>
+  props.autocomplete ?? autocompleteAutoMap[props.type as InputType]
+)
 
 const _groupId = formGroup?.consumeId()
 const _generatedId = useId('input')
@@ -137,6 +157,8 @@ const handleFocus = (event: FocusEvent) => {
         :disabled="disabled"
         :readonly="readonly || plaintext"
         :required="required"
+        :autocomplete="computedAutocomplete"
+        :inputmode="computedInputmode"
         :aria-invalid="validationState === 'invalid'"
         :aria-describedby="ariaDescribedBy"
         @input="handleInput"
@@ -164,6 +186,8 @@ const handleFocus = (event: FocusEvent) => {
       :disabled="disabled"
       :readonly="readonly || plaintext"
       :required="required"
+      :autocomplete="computedAutocomplete"
+      :inputmode="computedInputmode"
       :aria-invalid="validationState === 'invalid'"
       :aria-describedby="ariaDescribedBy"
       @input="handleInput"
@@ -206,6 +230,8 @@ const handleFocus = (event: FocusEvent) => {
     :disabled="disabled"
     :readonly="readonly || plaintext"
     :required="required"
+    :autocomplete="computedAutocomplete"
+    :inputmode="computedInputmode"
     :aria-invalid="validationState === 'invalid'"
     :aria-describedby="ariaDescribedBy"
     @input="handleInput"

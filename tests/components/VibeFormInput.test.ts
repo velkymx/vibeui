@@ -200,6 +200,72 @@ describe('VibeFormInput', () => {
     expect(wrapper.emitted('focus')).toBeTruthy()
   })
 
+  // Issue 14 — autocomplete typed enum (WCAG 1.3.5)
+  describe('autocomplete', () => {
+    it('does not set autocomplete attribute by default for text type', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'txt' } })
+      expect(wrapper.find('input').attributes('autocomplete')).toBeUndefined()
+    })
+
+    it('auto-detects autocomplete="email" for type=email', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'em', type: 'email' } })
+      expect(wrapper.find('input').attributes('autocomplete')).toBe('email')
+    })
+
+    it('explicit autocomplete prop overrides auto-detect', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'em', type: 'email', autocomplete: 'off' } })
+      expect(wrapper.find('input').attributes('autocomplete')).toBe('off')
+    })
+
+    it('explicit autocomplete prop is forwarded verbatim', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', autocomplete: 'new-password' } })
+      expect(wrapper.find('input').attributes('autocomplete')).toBe('new-password')
+    })
+
+    it('autocomplete="off" opt-out is honoured', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'text', autocomplete: 'off' } })
+      expect(wrapper.find('input').attributes('autocomplete')).toBe('off')
+    })
+  })
+
+  // Issue 15 — inputmode prop with auto-detect (WCAG 2.1.1 / mobile UX)
+  describe('inputmode', () => {
+    it('auto-detects inputmode="decimal" for type=number', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'n', type: 'number' } })
+      expect(wrapper.find('input').attributes('inputmode')).toBe('decimal')
+    })
+
+    it('auto-detects inputmode="email" for type=email', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'em', type: 'email' } })
+      expect(wrapper.find('input').attributes('inputmode')).toBe('email')
+    })
+
+    it('auto-detects inputmode="tel" for type=tel', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 't', type: 'tel' } })
+      expect(wrapper.find('input').attributes('inputmode')).toBe('tel')
+    })
+
+    it('auto-detects inputmode="url" for type=url', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'u', type: 'url' } })
+      expect(wrapper.find('input').attributes('inputmode')).toBe('url')
+    })
+
+    it('auto-detects inputmode="search" for type=search', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 's', type: 'search' } })
+      expect(wrapper.find('input').attributes('inputmode')).toBe('search')
+    })
+
+    it('no inputmode for type=text by default', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'txt' } })
+      expect(wrapper.find('input').attributes('inputmode')).toBeUndefined()
+    })
+
+    it('explicit inputmode prop overrides auto-detect', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'n', type: 'number', inputmode: 'numeric' } })
+      expect(wrapper.find('input').attributes('inputmode')).toBe('numeric')
+    })
+  })
+
   // Issue 13 — password-strength meter
   describe('showPasswordStrength', () => {
     it('does not render meter by default', () => {
