@@ -86,6 +86,34 @@ describe('VibeAutocomplete', () => {
       expect(source).toHaveBeenCalledTimes(1)
       expect(source).toHaveBeenCalledWith('abc')
     })
+
+    // CR9-2: async source rejections were unhandled — results stayed stale,
+    // component was left open, and an unhandledrejection event fired.
+    // We populate results with a first successful call, then trigger a failure;
+    // the stale results must be cleared and the dropdown must close.
+    it('clears stale results and closes dropdown when async source rejects', async () => {
+      let callCount = 0
+      const source = vi.fn(async (_q: string): Promise<string[]> => {
+        callCount++
+        if (callCount >= 2) throw new Error('network error')
+        return ['result-1', 'result-2']
+      })
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source, minChars: 1, debounce: 0 }
+      })
+      const input = wrapper.find('input')
+
+      // First query: succeeds — populate results
+      await input.setValue('a')
+      await flush(0)
+      expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(2)
+
+      // Second query: source throws — results must be cleared, dropdown closed
+      await input.setValue('ab')
+      await flush(0)
+      expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
+      expect(wrapper.find('[role="listbox"]').exists()).toBe(false)
+    })
   })
 
   describe('keyboard navigation', () => {
