@@ -86,6 +86,29 @@ describe('VibeToast', () => {
     expect(mockInstance.hide).toHaveBeenCalled()
   })
 
+  // CR9-17: noContainer mode should render the .toast directly (no .toast-container wrapper).
+  // Structural regression guard: verifies both rendering modes produce the same inner DOM.
+  it('noContainer=true renders .toast without .toast-container (CR9-17)', () => {
+    const wrapper = mount(VibeToast, {
+      props: { title: 'Bare Toast', noContainer: true },
+      slots: { default: 'Body' }
+    })
+    expect(wrapper.find('.toast').exists()).toBe(true)
+    expect(wrapper.find('.toast-container').exists()).toBe(false)
+    expect(wrapper.find('.toast-header').text()).toContain('Bare Toast')
+    expect(wrapper.find('.toast-body').text()).toBe('Body')
+  })
+
+  it('default mode renders .toast inside .toast-container (CR9-17)', () => {
+    const wrapper = mount(VibeToast, {
+      props: { title: 'Contained', teleport: false },
+      slots: { default: 'Body' }
+    })
+    expect(wrapper.find('.toast-container').exists()).toBe(true)
+    expect(wrapper.find('.toast-container .toast').exists()).toBe(true)
+    expect(wrapper.find('.toast-header').text()).toContain('Contained')
+  })
+
   // Regression: watcher called bsToast.hide() even when isVisible was already false.
   // When autohide fires: hidden.bs.toast → isVisible=false → emit update:modelValue=false
   // → watcher fires → hide() called again → another hidden event → event storm.
