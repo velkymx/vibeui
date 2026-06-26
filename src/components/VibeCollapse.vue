@@ -40,6 +40,10 @@ const collapseRef = ref<HTMLElement | null>(null)
 const bsCollapse = shallowRef<BootstrapCollapse | null>(null)
 const isVisible = ref(false)
 const bsInitialized = ref(false)
+// Explicit unmount flag — set in onBeforeUnmount so the async initCollapse
+// continuation can bail out even if Vue hasn't yet nulled the template ref
+// (refs are cleared after onBeforeUnmount runs, not before).
+let isUnmounted = false
 // Stores the last desired state requested before Bootstrap finishes initializing.
 // Only the last state is preserved (last-wins); intermediate open/close calls
 // before bsInitialized are intentionally discarded. Applied once bsInitialized = true.
@@ -72,8 +76,10 @@ onMounted(async () => {
     const bootstrap = await import('bootstrap')
     const Collapse = bootstrap.Collapse
 
-    // Guard: component may have unmounted while awaiting the import
-    if (!collapseRef.value) return
+    // Guard: component may have unmounted while the import was in flight.
+    // isUnmounted is set synchronously in onBeforeUnmount — a more reliable
+    // check than collapseRef.value, which Vue nulls *after* onBeforeUnmount.
+    if (isUnmounted || !collapseRef.value) return
 
     bsCollapse.value = new Collapse(collapseRef.value, {
       toggle: false
@@ -115,6 +121,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
+
   if (collapseRef.value) {
     collapseRef.value.removeEventListener('show.bs.collapse', onShow)
     collapseRef.value.removeEventListener('shown.bs.collapse', onShown)
