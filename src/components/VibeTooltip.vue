@@ -31,12 +31,10 @@ const bsTooltip = shallowRef<BootstrapTooltip | null>(null)
 // so a plain !tooltipRef.value check post-await is insufficient in all environments.
 let isUnmounted = false
 
-const isTouchDevice = () => {
-  return typeof window !== 'undefined' && ('ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0))
-}
+const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0))
 
 const computedTrigger = computed(() => {
-  if (isTouchDevice() && props.trigger === 'hover focus') {
+  if (isTouch && props.trigger === 'hover focus') {
     return 'click'
   }
   return props.trigger
