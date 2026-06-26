@@ -139,6 +139,42 @@ describe('VibeTabs', () => {
       expect(wrapper.find('.b-body').exists()).toBe(false)
     })
 
+    // CR9-11: visited Set was never cleaned in unregister. A remounted tab with
+    // lazy:true would render immediately (hasBeenActive = true from stale visited)
+    // instead of waiting for its first activation.
+    it('remounted tab does not render lazily until activated when previously removed (CR9-11)', async () => {
+      const showB = { value: true }
+      const Harness = defineComponent({
+        components: { VibeTabs, VibeTab },
+        data: () => ({ showB: true, active: 'a' }),
+        template: `
+          <VibeTabs v-model="active" :lazy="true">
+            <VibeTab name="a" label="A"><span class="a-body">A</span></VibeTab>
+            <VibeTab v-if="showB" name="b" label="B"><span class="b-body">B</span></VibeTab>
+          </VibeTabs>
+        `
+      })
+      const wrapper = mount(Harness)
+      await nextTick()
+      void showB
+
+      // Activate tab b → visited.has('b') = true → b renders
+      await wrapper.findAll('.nav-link')[1].trigger('click')
+      expect(wrapper.find('.b-body').exists()).toBe(true)
+
+      // Unmount tab b → unregister('b') should also call visited.delete('b')
+      await wrapper.setData({ showB: false })
+      await nextTick()
+
+      // Remount tab b → registers again → isActive=false → lazy rendering
+      await wrapper.setData({ showB: true })
+      await nextTick()
+
+      // Without fix: visited.has('b')=true → b-body renders immediately (wrong)
+      // With fix: visited cleared on unregister → b-body not shown until re-activated
+      expect(wrapper.find('.b-body').exists()).toBe(false)
+    })
+
     it('keeps tab mounted after first activation (lazy retains)', async () => {
       const wrapper = mount(VibeTabs, {
         props: { lazy: true },

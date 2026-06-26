@@ -80,6 +80,9 @@ provide(TABS_CONTEXT_KEY, {
     // Filter by reference instead of splice-by-index to be safe for concurrent unmounts
     const newRegistry = registry.filter(r => r.name !== name)
     registry.splice(0, registry.length, ...newRegistry)
+    // Clear visited so a remounted tab with lazy:true doesn't render immediately —
+    // it must be re-activated first. Without this, hasBeenActive stays true forever.
+    visited.delete(name)
     if (wasActive) {
       const next = registry.find(t => !t.disabled)
       const nextName = next?.name
