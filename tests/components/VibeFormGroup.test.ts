@@ -191,6 +191,31 @@ describe('VibeFormGroup', () => {
     expect(wrapper.find('.visually-hidden').exists()).toBe(false)
   })
 
+  // Issue 7 — WCAG 4.1.3: error region must be a live region (role="alert")
+  it('invalid-feedback element has role="alert" for live announcements', () => {
+    const wrapper = mount(VibeFormGroup, {
+      props: {
+        validationState: 'invalid',
+        validationMessage: 'This field is required'
+      }
+    })
+
+    const feedback = wrapper.find('.invalid-feedback')
+    expect(feedback.attributes('role')).toBe('alert')
+  })
+
+  it('valid-feedback element does not have role="alert" (no success chatter)', () => {
+    const wrapper = mount(VibeFormGroup, {
+      props: {
+        validationState: 'valid',
+        validationMessage: 'Looks good!'
+      }
+    })
+
+    const feedback = wrapper.find('.valid-feedback')
+    expect(feedback.attributes('role')).toBeUndefined()
+  })
+
   // Issue 5 — WCAG 1.3.1 / 3.3.1: aria-describedby must point to group's help/error elements
   it('nested VibeFormInput aria-describedby includes group help text id', () => {
     const wrapper = mount({
