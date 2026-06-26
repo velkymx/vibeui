@@ -1,7 +1,7 @@
 <!-- NOTE: VibeSortable manages its own drag state (draggingIndex). It is NOT compatible
      with dndStore / VibeDraggable / VibeDroppable — mixing them causes undefined behavior.
      Use VibeDraggable + VibeDroppable for cross-list or free-form drag-drop scenarios. -->
-<script setup lang="ts" generic="T">
+<script setup lang="ts" generic="T extends Record<string, unknown>">
 import { ref, onMounted, onBeforeUnmount, onActivated, type PropType } from 'vue'
 
 const props = defineProps({
@@ -75,7 +75,7 @@ onActivated(() => { draggingIndex.value = null })
     <component
       :is="itemTag"
       v-for="(item, index) in modelValue"
-      :key="itemKey ? (item as any)[itemKey] : index"
+      :key="itemKey ? (item[itemKey] as string | number) : index"
       class="vibe-sortable-item"
       :class="{ 'vibe-sortable-dragging': draggingIndex === index }"
       :draggable="!disabled"
