@@ -203,12 +203,45 @@ describe('VibeDataTable', () => {
   })
 
   describe('sorting functionality', () => {
-    it('renders sort icons on sortable columns', () => {
+    // CR9-10: sort icons changed from Unicode (⇅ ↓ ↑) to CSS class-based approach
+    // with aria-sort on the th element. Unicode glyphs may render as tofu/emoji on
+    // some OS/font combinations; CSS class-based approach has no such risk.
+    it('renders .vibe-sort-icon span on sortable columns (CR9-10)', () => {
       const wrapper = mount(VibeDataTable, {
         props: { columns, items, sortable: true }
       })
 
-      expect(wrapper.text()).toContain('⇅')
+      expect(wrapper.find('.vibe-sort-icon').exists()).toBe(true)
+    })
+
+    it('unsorted sortable column has aria-sort="none" (CR9-10)', () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, sortable: true }
+      })
+
+      const nameTh = wrapper.findAll('thead th')[1]
+      expect(nameTh.attributes('aria-sort')).toBe('none')
+    })
+
+    it('sorted ascending column has aria-sort="ascending" (CR9-10)', async () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, sortable: true }
+      })
+
+      await wrapper.findAll('thead th')[1].trigger('click')
+
+      expect(wrapper.findAll('thead th')[1].attributes('aria-sort')).toBe('ascending')
+    })
+
+    it('sorted descending column has aria-sort="descending" (CR9-10)', async () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, sortable: true }
+      })
+
+      await wrapper.findAll('thead th')[1].trigger('click')
+      await wrapper.findAll('thead th')[1].trigger('click')
+
+      expect(wrapper.findAll('thead th')[1].attributes('aria-sort')).toBe('descending')
     })
 
     it('sorts column ascending on first click', async () => {
@@ -251,7 +284,7 @@ describe('VibeDataTable', () => {
         props: { columns, items, sortable: false }
       })
 
-      expect(wrapper.text()).not.toContain('⇅')
+      expect(wrapper.find('.vibe-sort-icon').exists()).toBe(false)
     })
 
     it('supports two-way binding for sortBy and sortDesc', async () => {
@@ -259,7 +292,8 @@ describe('VibeDataTable', () => {
         props: { columns, items, sortable: true, sortBy: 'name', sortDesc: false }
       })
 
-      expect(wrapper.text()).toContain('↑')
+      // With sortBy='name' and sortDesc=false → name column is sorted ascending
+      expect(wrapper.findAll('thead th')[1].attributes('aria-sort')).toBe('ascending')
     })
   })
 

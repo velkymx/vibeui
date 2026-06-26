@@ -283,9 +283,23 @@ const sortIconMap = computed(() => {
     if (!props.sortable || column.sortable === false) {
       m.set(column, '')
     } else if (sortBy.value !== column.key) {
-      m.set(column, '⇅')
+      m.set(column, 'sort-none')
     } else {
-      m.set(column, sortDesc.value ? '↓' : '↑')
+      m.set(column, sortDesc.value ? 'sort-desc' : 'sort-asc')
+    }
+  }
+  return m
+})
+
+const ariaSortMap = computed(() => {
+  const m = new Map<DataTableColumn<T>, string | undefined>()
+  for (const column of props.columns) {
+    if (!props.sortable || column.sortable === false) {
+      m.set(column, undefined)
+    } else if (sortBy.value !== column.key) {
+      m.set(column, 'none')
+    } else {
+      m.set(column, sortDesc.value ? 'descending' : 'ascending')
     }
   }
   return m
@@ -352,12 +366,15 @@ const tdStyleMap = computed(() => {
               :key="column.key"
               :class="column.headerClass"
               :style="thStyleMap.get(column)"
+              :aria-sort="ariaSortMap.get(column)"
               @click="handleSort(column)"
             >
               {{ column.label }}
-              <span v-if="sortable && column.sortable !== false" class="ms-1">
-                {{ sortIconMap.get(column) }}
-              </span>
+              <span
+                v-if="sortable && column.sortable !== false"
+                :class="['ms-1', 'vibe-sort-icon', sortIconMap.get(column)]"
+                aria-hidden="true"
+              ></span>
             </th>
           </tr>
         </thead>
@@ -450,6 +467,25 @@ const tdStyleMap = computed(() => {
 <style scoped>
 .vibe-datatable {
   width: 100%;
+}
+
+/* Sort icon — CSS border triangles avoid font/emoji rendering issues with Unicode arrows */
+.vibe-sort-icon {
+  display: inline-block;
+  width: 0.75em;
+  position: relative;
+  opacity: 0.4;
+}
+.vibe-sort-icon::before {
+  content: '↕';
+}
+.vibe-sort-icon.sort-asc::before {
+  content: '↑';
+  opacity: 1;
+}
+.vibe-sort-icon.sort-desc::before {
+  content: '↓';
+  opacity: 1;
 }
 
 .datatable-info {
