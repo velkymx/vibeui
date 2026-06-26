@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useSlots, useAttrs } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { ButtonVariant, Size, ButtonType, ComponentError } from '../types'
 
 const props = defineProps({
@@ -19,24 +19,30 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const slots = useSlots()
-const attrs = useAttrs()
+// Root ref used only for the DEV-only a11y check below.
+const rootRef = ref<HTMLElement | { $el?: HTMLElement } | null>(null)
 
-// DEV-only: warn when the button has slot content but no visible text and no
+// DEV-only: warn when the button has content but no visible text and no
 // aria-label/aria-labelledby — screen readers would only announce "button" (WCAG 4.1.2).
-if (import.meta.env.DEV) {
-  const vnodes = slots.default?.() ?? []
-  const hasContent = vnodes.length > 0
-  const hasText = vnodes.some(
-    v => typeof v.children === 'string' && (v.children as string).trim().length > 0
-  )
-  if (hasContent && !hasText && !attrs['aria-label'] && !attrs['aria-labelledby']) {
+// We inspect the rendered DOM in onMounted instead of invoking slots.default() in setup:
+// calling a slot outside the render function trips Vue's "Slot invoked outside of the
+// render function" warning and skips slot dependency tracking. Reading the final DOM also
+// catches text nested inside wrapper elements, which the vnode scan missed.
+onMounted(() => {
+  if (!import.meta.env.DEV) return
+  const el = (rootRef.value && '$el' in rootRef.value ? rootRef.value.$el : rootRef.value) as HTMLElement | null
+  if (!el) return
+  // el.children (elements only) — ignores the comment anchor Vue leaves for an empty slot.
+  const hasElementContent = el.children.length > 0
+  const hasText = (el.textContent ?? '').trim().length > 0
+  const hasLabel = el.hasAttribute('aria-label') || el.hasAttribute('aria-labelledby')
+  if (hasElementContent && !hasText && !hasLabel) {
     console.warn(
       '[VibeButton] Icon-only buttons require an aria-label or aria-labelledby ' +
       'attribute for screen reader accessibility (WCAG 4.1.2).'
     )
   }
-}
+})
 
 const tag = computed(() => {
   if (props.href) return 'a'
@@ -77,6 +83,7 @@ const handleClick = (event: MouseEvent) => {
 <template>
   <component
     :is="tag"
+    ref="rootRef"
     :class="buttonClass"
     :type="href || to ? undefined : type"
     :href="href"
