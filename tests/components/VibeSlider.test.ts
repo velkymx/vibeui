@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeSlider from '../../src/components/VibeSlider.vue'
 
@@ -219,6 +219,18 @@ describe('VibeSlider', () => {
   })
 
   describe('H11 divide-by-zero guard', () => {
+    // min === max is an invalid config the component renders inert with a DEV warning.
+    // Spy console.warn so the expected warning is asserted, not leaked to test output.
+    let warnSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      warnSpy.mockRestore()
+    })
+
     it('does not produce NaN styles when min === max', async () => {
       const wrapper = mount(VibeSlider, {
         props: { modelValue: 5, min: 5, max: 5 }
@@ -226,6 +238,7 @@ describe('VibeSlider', () => {
       const handle = wrapper.find('[role="slider"]').element as HTMLElement
       expect(handle.style.left).not.toContain('NaN')
       expect(handle.style.left).not.toBe('')
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('must be greater than min'))
     })
 
     it('keyboard arrow does nothing when range is zero', async () => {

@@ -54,11 +54,19 @@ describe('useBreakpoints', () => {
       removeEventListener: removeSpy,
     })))
 
+    // Calling outside a component setup is exactly the case cleanup() exists for;
+    // the composable warns to remind the caller to invoke cleanup() manually.
+    // Spy so that expected warning is asserted instead of leaking to test output.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
     const { cleanup } = useBreakpoints()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Called outside component context'))
+
     const addCalls = addSpy.mock.calls.length // should be 5 (one per breakpoint)
     cleanup()
 
     // removeEventListener called once per listener registered
     expect(removeSpy.mock.calls.length).toBe(addCalls)
+    warnSpy.mockRestore()
   })
 })
