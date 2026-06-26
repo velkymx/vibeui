@@ -53,6 +53,7 @@ const bsCollapses = new Map<string, BootstrapCollapse>()
 const collapseElements = new Map<string, HTMLElement>()
 let initInFlight = false
 let pendingReinit = false
+let reinitGuard = false
 // Explicit unmount flag — set synchronously in onBeforeUnmount so the async
 // initItems continuation bails out even in the window before Vue nulls the ref.
 let isUnmounted = false
@@ -167,6 +168,8 @@ onBeforeUnmount(() => {
 })
 
 watch([() => props.items, () => props.alwaysOpen], async () => {
+  if (reinitGuard) return
+  reinitGuard = true
   try {
     warnUnsafeIds()
     // Snapshot keys first — disposeItem mutates bsCollapses/collapseElements/collapseHandlers
@@ -191,6 +194,8 @@ watch([() => props.items, () => props.alwaysOpen], async () => {
       componentName: 'VibeAccordion',
       originalError: error
     })
+  } finally {
+    reinitGuard = false
   }
 }, { deep: false })
 

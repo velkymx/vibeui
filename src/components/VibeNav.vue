@@ -34,6 +34,7 @@ const bsTabs = new Map<HTMLElement, BootstrapTab>()
 
 // Guards concurrent initTabs calls and post-unmount Bootstrap construction.
 let initInFlight = false
+let reinitGuard = false
 let isUnmounted = false
 
 const navClass = computed(() => {
@@ -105,16 +106,22 @@ onBeforeUnmount(() => {
 
 // Watch for items changes to re-initialize tabs
 watch(() => props.items, async () => {
-  bsTabs.forEach((bsTab, el) => {
-    el.removeEventListener('show.bs.tab', onShow)
-    el.removeEventListener('shown.bs.tab', onShown)
-    el.removeEventListener('hide.bs.tab', onHide)
-    el.removeEventListener('hidden.bs.tab', onHidden)
-    bsTab.dispose()
-  })
-  bsTabs.clear()
-  await nextTick()
-  await initTabs()
+  if (reinitGuard) return
+  reinitGuard = true
+  try {
+    bsTabs.forEach((bsTab, el) => {
+      el.removeEventListener('show.bs.tab', onShow)
+      el.removeEventListener('shown.bs.tab', onShown)
+      el.removeEventListener('hide.bs.tab', onHide)
+      el.removeEventListener('hidden.bs.tab', onHidden)
+      bsTab.dispose()
+    })
+    bsTabs.clear()
+    await nextTick()
+    await initTabs()
+  } finally {
+    reinitGuard = false
+  }
 }, { deep: false })
 
 const getTabTarget = (item: NavItem): string | undefined => {

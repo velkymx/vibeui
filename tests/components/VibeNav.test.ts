@@ -178,6 +178,31 @@ describe('VibeNav', () => {
     expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
   })
 
+  // CR9-5: concurrent dispose+reinit race guard. Two rapid items changes fire two
+  // async watcher calls. Without reinitGuard the second watcher's synchronous disposal
+  // can clear bsTabs while the first watcher's async initTabs is in flight, producing
+  // a window where Tab instances vanish mid-init. reinitGuard prevents the second
+  // watcher body from running while the first is suspended between nextTick and initTabs.
+  it('reinitialises cleanly on rapid successive items changes without error (CR9-5)', async () => {
+    const wrapper = mount(VibeNav, {
+      props: { items: mockItems, tabs: true }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    vi.clearAllMocks()
+
+    // Two rapid setProps — each triggers an async watcher call.
+    // Without reinitGuard both bodies run: disposal race window exists between
+    // first watcher's nextTick and initTabs. With reinitGuard second body exits immediately.
+    await wrapper.setProps({ items: [{ text: 'Mid', href: '#mid' }] })
+    await wrapper.setProps({ items: mockItems })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // No errors — disposal race must not surface as component-error
+    expect(wrapper.emitted('component-error')).toBeFalsy()
+    // Component ends in valid state with Tab instances for the final items (mockItems = 2 items)
+    expect(vi.mocked(bootstrap.Tab).mock.calls.length).toBeGreaterThanOrEqual(2)
+  })
+
   // CR9-1: String(object) → '[object Object]' for every object-typed `to`,
   // causing duplicate Vue keys and silent DOM corruption. routeKey fixes this.
   it('renders distinct li elements for items with distinct object `to` values', () => {

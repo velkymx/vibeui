@@ -160,6 +160,39 @@ describe('VibeAccordion', () => {
     expect(wrapper.emitted('component-error')).toBeTruthy()
   })
 
+  // CR9-5: concurrent dispose+reinit race guard. Two rapid items changes fire two
+  // async watcher calls — without reinitGuard the second watcher body may dispose
+  // instances that the first watcher's init just created, leaving the accordion broken.
+  // With reinitGuard the second watcher body exits immediately, first watcher runs cleanly.
+  // Observable proxy: rapid double-change produces no component-error and leaves the
+  // component in a valid state with the correct number of Collapse instances.
+  it('reinitialises cleanly on rapid successive items changes without error (CR9-5)', async () => {
+    // Reset mock to default factory — CR8-6 test may have left a throwing-dispose impl
+    vi.mocked(bootstrap.Collapse).mockReset()
+    vi.mocked(bootstrap.Collapse).mockImplementation(function() {
+      return { show: vi.fn(), hide: vi.fn(), toggle: vi.fn(), dispose: vi.fn() }
+    })
+
+    const wrapper = mount(VibeAccordion, {
+      props: { id: 'race-test', items: mockItems }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    vi.clearAllMocks()
+
+    // Two rapid setProps — each triggers an async watcher call.
+    // Both bodies dispose (first clears Map; second finds it empty) then reinit.
+    // Without reinitGuard the second watcher's disposal can interleave with the
+    // first's init; with reinitGuard the second body is blocked entirely.
+    await wrapper.setProps({ items: [mockItems[0]] })
+    await wrapper.setProps({ items: mockItems })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // No errors — disposal race must not surface as component-error
+    expect(wrapper.emitted('component-error')).toBeFalsy()
+    // Component ends in valid state: 2 items → at least 2 Collapse instances created
+    expect(vi.mocked(bootstrap.Collapse).mock.calls.length).toBeGreaterThanOrEqual(2)
+  })
+
   // CR9-4: duplicate item.id silently overwrites Map entry, orphaning first element's
   // Collapse instance. Fix: seenIds Set guard in initItems + DEV warning on collision.
   it('warns about duplicate item.id and initialises only the first occurrence', async () => {
