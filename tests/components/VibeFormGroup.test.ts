@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeFormGroup from '../../src/components/VibeFormGroup.vue'
+import VibeFormInput from '../../src/components/VibeFormInput.vue'
 
 describe('VibeFormGroup', () => {
   it('renders form group with correct structure', () => {
@@ -127,6 +128,38 @@ describe('VibeFormGroup', () => {
     const label = wrapper.find('label')
     expect(label.classes()).toContain('col-form-label')
     expect(label.classes()).toContain('col-sm-3')
+  })
+
+  // Issue 4 — WCAG 1.3.1 / 4.1.2: label for must equal input id (auto-linked via provide/inject)
+  it('label for matches nested VibeFormInput id when no labelFor prop is given', () => {
+    const wrapper = mount({
+      components: { VibeFormGroup, VibeFormInput },
+      template: '<VibeFormGroup label="Email"><VibeFormInput v-model="v" /></VibeFormGroup>',
+      data() { return { v: '' } }
+    })
+
+    const labelFor = wrapper.find('label').attributes('for')
+    const inputId = wrapper.find('input').attributes('id')
+
+    expect(labelFor).toBeTruthy()
+    expect(inputId).toBeTruthy()
+    expect(labelFor).toBe(inputId)
+  })
+
+  it('multiple VibeFormGroup instances have unique ids', () => {
+    const wrapper = mount({
+      components: { VibeFormGroup, VibeFormInput },
+      template: `
+        <div>
+          <VibeFormGroup label="Email"><VibeFormInput v-model="a" /></VibeFormGroup>
+          <VibeFormGroup label="Name"><VibeFormInput v-model="b" /></VibeFormGroup>
+        </div>
+      `,
+      data() { return { a: '', b: '' } }
+    })
+
+    const [label1, label2] = wrapper.findAll('label')
+    expect(label1.attributes('for')).not.toBe(label2.attributes('for'))
   })
 
   it('applies label alignment in row mode', () => {
