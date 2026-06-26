@@ -69,3 +69,18 @@ const handleClick = (event: MouseEvent) => {
     <slot />
   </component>
 </template>
+
+<style scoped>
+/*
+ * WCAG 1.4.3: Bootstrap's default disabled opacity (0.65) drops contrast below 3:1.
+ * Override with full-opacity body colors so the label stays readable at ≥ 4.5:1
+ * in both light and dark mode (Bootstrap's body / tertiary-bg tokens flip automatically).
+ */
+.btn:disabled,
+.btn.disabled {
+  color: var(--bs-body-color) !important;
+  background-color: var(--bs-tertiary-bg) !important;
+  border-color: var(--bs-border-color) !important;
+  opacity: 1 !important;
+}
+</style>

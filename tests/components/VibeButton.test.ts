@@ -129,6 +129,23 @@ describe('VibeButton', () => {
     expect(wrapper.emitted('click')).toBeFalsy()
   })
 
+  // Issue 9 — WCAG 1.4.3: disabled button contrast ≥ 4.5:1
+  // Native <button disabled> is targeted by the scoped CSS override (.btn:disabled { opacity: 1 })
+  it('disabled native button uses the disabled attribute, not the .disabled class', () => {
+    const wrapper = mount(VibeButton, { props: { disabled: true } })
+    const btn = wrapper.find('button')
+    // Native attribute is present
+    expect(btn.attributes('disabled')).toBeDefined()
+    // Bootstrap's class-based disabled (for non-button elements) must NOT be added to native buttons
+    // because it bypasses the contrast CSS override that targets the :disabled pseudo-class
+    expect(btn.classes()).not.toContain('disabled')
+  })
+
+  it('aria-disabled is set when button is disabled', () => {
+    const wrapper = mount(VibeButton, { props: { disabled: true } })
+    expect(wrapper.find('button').attributes('aria-disabled')).toBe('true')
+  })
+
   describe('variant="link"', () => {
     it('renders .btn-link class', () => {
       const wrapper = mount(VibeButton, {
