@@ -442,6 +442,19 @@ describe('VibeDataTable', () => {
       expect(emitted[0][0]).toEqual({ id: 1, name: 'Alice', email: 'alice@test.com', status: 'active' })
       expect(emitted[0][1]).toBe(0)
     })
+
+    // CR8-4: clickable prop replaces getCurrentInstance() anti-pattern.
+    // Rows have no pointer cursor by default; opt-in via :clickable="true".
+    it('rows have no cursor pointer style by default', () => {
+      const wrapper = mount(VibeDataTable, { props: { columns, items } })
+      const style = wrapper.find('tbody tr').attributes('style')
+      expect(style ?? '').not.toContain('cursor')
+    })
+
+    it('rows have cursor pointer style when clickable prop is true', () => {
+      const wrapper = mount(VibeDataTable, { props: { columns, items, clickable: true } })
+      expect(wrapper.find('tbody tr').attributes('style')).toContain('cursor: pointer')
+    })
   })
 
   describe('slots', () => {

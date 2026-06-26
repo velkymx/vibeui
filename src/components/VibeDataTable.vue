@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import { ref, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import type { DataTableColumn, ComponentError } from '../types'
 import { safeCssObject } from '../utils/safeCss'
 
@@ -35,7 +35,8 @@ const props = defineProps({
   showInfo: { type: Boolean, default: true },
   infoText: { type: String, default: 'Showing {start} to {end} of {total} entries' },
   filteredInfoText: { type: String, default: 'Showing {start} to {end} of {total} entries (filtered from {totalRows} total entries)' },
-  perPageOptions: { type: Array as () => number[], default: () => [5, 10, 25, 50, 100] }
+  perPageOptions: { type: Array as () => number[], default: () => [5, 10, 25, 50, 100] },
+  clickable: { type: Boolean, default: false }
 })
 
 // Use defineModel for two-way binding (Vue 3.4+)
@@ -48,12 +49,6 @@ const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
   (e: 'component-error', error: ComponentError): void
 }>()
-
-const _instance = getCurrentInstance()
-const isRowClickable = computed(() => {
-  const p = _instance?.vnode.props
-  return typeof p?.onRowClicked === 'function' || typeof p?.['onRow-clicked'] === 'function'
-})
 
 // Local state for search
 const searchQuery = ref('')
@@ -370,7 +365,7 @@ const tdStyleMap = computed(() => {
           <tr
             v-for="(item, index) in paginatedItems"
             :key="getRowKey(item, index)"
-            :style="isRowClickable ? { cursor: 'pointer' } : undefined"
+            :style="clickable ? { cursor: 'pointer' } : undefined"
             @click="handleRowClick(item, index)"
           >
             <td
