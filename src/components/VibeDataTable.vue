@@ -6,7 +6,10 @@ import { safeCssObject } from '../utils/safeCss'
 const props = defineProps({
   // Data
   items: { type: Array as () => T[], default: () => [] },
-  columns: { type: Array as () => DataTableColumn<T>[], required: true },
+  // Defaults to [] rather than required: undefined/missing columns is a supported
+  // transient state (e.g. async data not yet loaded). A default keeps every
+  // `for (… of props.columns)` safe and avoids a Vue "Invalid prop" warning.
+  columns: { type: Array as () => DataTableColumn<T>[], default: () => [] },
   rowKey: { type: String, default: 'id' }, // Key to use for unique row identification
 
   // Table styling
