@@ -200,6 +200,66 @@ describe('VibeFormInput', () => {
     expect(wrapper.emitted('focus')).toBeTruthy()
   })
 
+  // Issue 13 — password-strength meter
+  describe('showPasswordStrength', () => {
+    it('does not render meter by default', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password' } })
+      expect(wrapper.find('[aria-live="polite"]').exists()).toBe(false)
+    })
+
+    it('renders meter when showPasswordStrength=true and type=password', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showPasswordStrength: true } })
+      expect(wrapper.find('[aria-live="polite"]').exists()).toBe(true)
+    })
+
+    it('does not render meter when type is not password', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'em', type: 'email', showPasswordStrength: true } })
+      expect(wrapper.find('[aria-live="polite"]').exists()).toBe(false)
+    })
+
+    it('shows "Weak" for empty password', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showPasswordStrength: true } })
+      expect(wrapper.find('[aria-live="polite"]').text()).toContain('Weak')
+    })
+
+    it('shows "Weak" for short lowercase-only password', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'pw', type: 'password', showPasswordStrength: true, modelValue: 'abc' }
+      })
+      expect(wrapper.find('[aria-live="polite"]').text()).toContain('Weak')
+    })
+
+    it('shows "Fair" for 8-char lowercase password', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'pw', type: 'password', showPasswordStrength: true, modelValue: 'abcdefgh' }
+      })
+      expect(wrapper.find('[aria-live="polite"]').text()).toContain('Fair')
+    })
+
+    it('shows "Good" for mixed case + number ≥8 chars', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'pw', type: 'password', showPasswordStrength: true, modelValue: 'Abcdefgh1' }
+      })
+      expect(wrapper.find('[aria-live="polite"]').text()).toContain('Good')
+    })
+
+    it('shows "Strong" for mixed case + number + special ≥8 chars', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'pw', type: 'password', showPasswordStrength: true, modelValue: 'Abcdefgh1!' }
+      })
+      expect(wrapper.find('[aria-live="polite"]').text()).toContain('Strong')
+    })
+
+    it('meter updates reactively on input', async () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'pw', type: 'password', showPasswordStrength: true, modelValue: 'abc' }
+      })
+      expect(wrapper.find('[aria-live="polite"]').text()).toContain('Weak')
+      await wrapper.setProps({ modelValue: 'Abcdefgh1!' })
+      expect(wrapper.find('[aria-live="polite"]').text()).toContain('Strong')
+    })
+  })
+
   // Issue 12 — show password toggle (WCAG a11y-adjacent UX)
   describe('showToggle', () => {
     it('does not render toggle by default', () => {

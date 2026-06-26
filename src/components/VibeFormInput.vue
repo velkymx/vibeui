@@ -25,7 +25,8 @@ const props = defineProps({
   plaintext: { type: Boolean, default: false },
   noWrapper: { type: Boolean, default: false },
   focusRing: { type: Boolean, default: false },
-  showToggle: { type: Boolean, default: false }
+  showToggle: { type: Boolean, default: false },
+  showPasswordStrength: { type: Boolean, default: false }
 })
 
 const emit = defineEmits<{
@@ -42,6 +43,23 @@ const showPassword = ref(false)
 const effectiveType = computed(() =>
   props.type === 'password' && props.showToggle && showPassword.value ? 'text' : props.type
 )
+
+function passwordStrength(pw: string): { level: number; label: string } {
+  let score = 0
+  if (pw.length >= 8) score++
+  if (pw.length >= 12) score++
+  if (/[a-z]/.test(pw)) score++
+  if (/[A-Z]/.test(pw)) score++
+  if (/\d/.test(pw)) score++
+  if (/[^a-zA-Z0-9]/.test(pw)) score++
+  if (score <= 1) return { level: 1, label: 'Weak' }
+  if (score <= 2) return { level: 2, label: 'Fair' }
+  if (score <= 4) return { level: 3, label: 'Good' }
+  return { level: 4, label: 'Strong' }
+}
+
+const strength = computed(() => passwordStrength(String(modelValue.value ?? '')))
+const strengthColors = ['', '#dc3545', '#fd7e14', '#0d6efd', '#198754']
 
 const _groupId = formGroup?.consumeId()
 const _generatedId = useId('input')
@@ -153,6 +171,18 @@ const handleFocus = (event: FocusEvent) => {
       @blur="handleBlur"
       @focus="handleFocus"
     />
+    <div v-if="showPasswordStrength && type === 'password'" aria-live="polite" class="mt-1">
+      <div class="d-flex gap-1 mb-1" aria-hidden="true">
+        <div
+          v-for="i in 4"
+          :key="i"
+          class="flex-fill rounded"
+          style="height: 4px"
+          :style="{ backgroundColor: i <= strength.level ? strengthColors[strength.level] : 'var(--bs-border-color)' }"
+        />
+      </div>
+      <small class="text-muted">Password strength: {{ strength.label }}</small>
+    </div>
     <div v-if="shouldRenderHelp" :id="helpId" class="form-text">
       {{ helpText }}
     </div>
