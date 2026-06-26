@@ -24,7 +24,8 @@ describe('VibeFormGroup', () => {
 
     const label = wrapper.find('label')
     expect(label.exists()).toBe(true)
-    expect(label.text()).toBe('Email')
+    // label now also renders the (optional) indicator — check text includes label copy
+    expect(label.text()).toContain('Email')
     expect(label.attributes('for')).toBe('email-input')
   })
 
@@ -160,6 +161,34 @@ describe('VibeFormGroup', () => {
 
     const [label1, label2] = wrapper.findAll('label')
     expect(label1.attributes('for')).not.toBe(label2.attributes('for'))
+  })
+
+  // Issue 6 — WCAG 3.3.2: required/optional indicator visible to sighted and SR users
+  it('renders (optional) indicator when label is present and required is false (default)', () => {
+    const wrapper = mount(VibeFormGroup, {
+      props: { label: 'Comment' }
+    })
+
+    const optional = wrapper.find('.text-muted')
+    expect(optional.exists()).toBe(true)
+    expect(optional.text()).toBe('(optional)')
+    expect(optional.attributes('aria-hidden')).toBe('true')
+  })
+
+  it('renders visually-hidden "required" text for screen readers when required is true', () => {
+    const wrapper = mount(VibeFormGroup, {
+      props: { label: 'Email', required: true }
+    })
+
+    expect(wrapper.find('.visually-hidden').text()).toBe('required')
+    expect(wrapper.find('.text-danger').attributes('aria-hidden')).toBe('true')
+  })
+
+  it('does not render indicator when there is no label', () => {
+    const wrapper = mount(VibeFormGroup)
+
+    expect(wrapper.find('.text-muted').exists()).toBe(false)
+    expect(wrapper.find('.visually-hidden').exists()).toBe(false)
   })
 
   // Issue 5 — WCAG 1.3.1 / 3.3.1: aria-describedby must point to group's help/error elements

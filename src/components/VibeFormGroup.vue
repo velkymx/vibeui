@@ -90,7 +90,11 @@ const helpId = computed(() => `${computedId.value}-help`)
       :class="labelClass"
     >
       {{ label }}
-      <span v-if="required" class="text-danger">*</span>
+      <!-- WCAG 3.3.2: visible required/optional signal (aria-hidden so SR uses the span below) -->
+      <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
+      <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+      <!-- Screen-reader-only equivalent of the visual asterisk -->
+      <span v-if="required" class="visually-hidden">required</span>
     </label>
 
     <div v-if="row && labelCols" :class="contentClass">
@@ -116,7 +120,9 @@ const helpId = computed(() => `${computedId.value}-help`)
         :class="labelClass"
       >
         {{ label }}
-        <span v-if="required" class="text-danger">*</span>
+        <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
+        <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+        <span v-if="required" class="visually-hidden">required</span>
       </label>
 
       <div v-if="helpText" :id="helpId" class="form-text">
