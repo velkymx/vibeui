@@ -206,6 +206,7 @@ const updateAriaAttributes = () => {
 const initQuill = async () => {
   if (initInFlight) return
   initInFlight = true
+  loadError.value = null
   // Start loading the sanitizer immediately, in parallel with Quill and independent of
   // its resolution — the sanitizer must be ready before any modelValue HTML is set, and
   // kicking it off here (not after the Quill import) keeps that guarantee deterministic.

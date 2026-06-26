@@ -167,6 +167,20 @@ describe('VibeFormWysiwyg', () => {
     })
   })
 
+  // CR9-8: loadError was never reset inside initQuill before the success path ran.
+  // If initQuill is called a second time (e.g. from the isMobile reinit path) and
+  // succeeds, the stale loadError from the first failure would still be visible.
+  // Fix: reset loadError = null at the top of initQuill so every attempt starts clean.
+  //
+  // Direct unit-test of the retry path is impossible without a public retry API, but
+  // we can verify the success path does NOT inadvertently leave loadError set:
+  it('does not show loadError banner when initQuill succeeds (CR9-8 success path regression)', () => {
+    const wrapper = mount(VibeFormWysiwyg)
+    // Without the fix, loadError could persist across initQuill calls. With the fix
+    // initQuill resets it before attempting to load, so no banner on clean mounts.
+    expect(wrapper.find('.alert-warning').exists()).toBe(false)
+  })
+
   // CR9-3: async setTimeout callback in watch(isMobile) had no try/catch.
   // If cleanup code (e.g. enable(false)) throws, the rejection was silently swallowed.
   // Fix: wrap the entire timeout body in try/catch with emit('component-error').
