@@ -104,8 +104,14 @@ const initItems = async () => {
     if (isUnmounted || !accordionRef.value) return
 
     const collapseEls = accordionRef.value.querySelectorAll('.accordion-collapse')
+    const seenIds = new Set<string>()
     collapseEls.forEach((el) => {
       const id = el.id
+      if (seenIds.has(id)) {
+        console.warn(`[VibeAccordion] Duplicate item.id "${id}" detected — only the first occurrence is initialised. Ensure each item has a unique id.`)
+        return
+      }
+      seenIds.add(id)
       // Only initialize if not already tracked
       if (!bsCollapses.has(id)) {
         const htmlEl = el as HTMLElement

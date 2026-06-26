@@ -160,6 +160,25 @@ describe('VibeAccordion', () => {
     expect(wrapper.emitted('component-error')).toBeTruthy()
   })
 
+  // CR9-4: duplicate item.id silently overwrites Map entry, orphaning first element's
+  // Collapse instance. Fix: seenIds Set guard in initItems + DEV warning on collision.
+  it('warns about duplicate item.id and initialises only the first occurrence', async () => {
+    vi.clearAllMocks()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const dupItems = [
+      { id: 'dup-id', title: 'First', content: 'Content A' },
+      { id: 'dup-id', title: 'Second', content: 'Content B' }
+    ]
+    mount(VibeAccordion, { props: { id: 'dup-test', items: dupItems } })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Only one Collapse instance created — second duplicate id is skipped
+    expect(vi.mocked(bootstrap.Collapse)).toHaveBeenCalledTimes(1)
+    // DEV warning names the duplicate id so developer can fix their data
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('dup-id'))
+    warnSpy.mockRestore()
+  })
+
   // DEV warning for item.id values that break Bootstrap's querySelector.
   describe('item.id CSS-special-character warning', () => {
     it('warns when an item.id contains CSS-special characters', () => {
