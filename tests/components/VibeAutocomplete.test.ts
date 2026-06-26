@@ -179,6 +179,26 @@ describe('VibeAutocomplete', () => {
       expect(highlighted.text()).toBe('Alpha')
     })
 
+    // CR9-15: WAI-ARIA combobox — ArrowUp at first item must NOT wrap to last.
+    // Non-standard wrap confuses keyboard users. Fix: Math.max(0, index - 1).
+    it('ArrowUp from first item stays at first item — no wrap to last (CR9-15)', async () => {
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: items, minChars: 0, debounce: 0 }
+      })
+      const input = wrapper.find('input')
+      await input.setValue('')
+      await flush(20)  // debounce:0 → results loaded synchronously, isOpen = true
+
+      // First ArrowDown moves highlight from -1 to 0 (Alpha) — dropdown already open
+      await input.trigger('keydown', { key: 'ArrowDown' })
+
+      // Now at index 0. ArrowUp must stay at index 0, not wrap to Gamma (index 2).
+      await input.trigger('keydown', { key: 'ArrowUp' })
+
+      const highlighted = wrapper.find('.vibe-autocomplete-item-highlighted')
+      expect(highlighted.text()).toBe('Alpha')
+    })
+
     it('Escape closes the menu', async () => {
       const wrapper = mount(VibeAutocomplete, {
         props: { source: items, minChars: 0, debounce: 0 }
