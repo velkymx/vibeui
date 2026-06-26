@@ -40,6 +40,31 @@ describe('VibeFormInput', () => {
     expect(wrapper.find('.text-danger').text()).toBe('*')
   })
 
+  // CR7 follow-up: standalone label must show (optional) for non-required fields,
+  // matching VibeFormGroup's WCAG 3.3.2 pattern (both signals, not just required).
+  it('shows (optional) indicator when label is present and field is not required', () => {
+    const wrapper = mount(VibeFormInput, {
+      props: { id: 'email', label: 'Email' }
+    })
+    expect(wrapper.find('.text-muted').text()).toContain('(optional)')
+  })
+
+  it('required asterisk is aria-hidden and paired with visually-hidden "required" text', () => {
+    const wrapper = mount(VibeFormInput, {
+      props: { id: 'email', label: 'Email', required: true }
+    })
+    const asterisk = wrapper.find('.text-danger')
+    expect(asterisk.attributes('aria-hidden')).toBe('true')
+    const hidden = wrapper.find('.visually-hidden')
+    expect(hidden.exists()).toBe(true)
+    expect(hidden.text()).toBe('required')
+  })
+
+  it('does not show (optional) when field has no label', () => {
+    const wrapper = mount(VibeFormInput, { props: { id: 'bare' } })
+    expect(wrapper.find('.text-muted').exists()).toBe(false)
+  })
+
   it('sets input type', () => {
     const wrapper = mount(VibeFormInput, {
       props: {

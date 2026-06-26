@@ -143,9 +143,13 @@ const handleFocus = (event: FocusEvent) => {
 
 <template>
   <div v-if="!noWrapper" :class="{ 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }">
+    <!-- WCAG 3.3.2: visible required/optional signal, matching VibeFormGroup's pattern. -->
     <label v-if="shouldRenderLabel" :for="computedId" class="form-label">
       {{ label }}
-      <span v-if="required" class="text-danger">*</span>
+      <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
+      <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+      <!-- Screen-reader-only equivalent of the visual asterisk -->
+      <span v-if="required" class="visually-hidden">required</span>
     </label>
     <div v-if="showToggle && type === 'password'" class="input-group">
       <input
