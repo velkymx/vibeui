@@ -115,6 +115,22 @@ describe('VibeSkeleton', () => {
       expect(first.attributes('data-testid')).toBe('sk')
     })
 
+    // CR9-19: v-bind="$attrs" was conditional on i === 1, so lines 2+ never
+    // received consumer class/data-* attrs. Applying $attrs to all lines means
+    // styling, accessibility attrs, and data attributes propagate uniformly.
+    it('forwards class and data-* to ALL lines of the text variant (CR9-19)', () => {
+      const wrapper = mount(VibeSkeleton, {
+        props: { variant: 'text', lines: 3 },
+        attrs: { class: 'my-skeleton', 'data-testid': 'sk' }
+      })
+      const lines = wrapper.findAll('.vibe-skeleton-text')
+      expect(lines).toHaveLength(3)
+      for (const line of lines) {
+        expect(line.classes()).toContain('my-skeleton')
+        expect(line.attributes('data-testid')).toBe('sk')
+      }
+    })
+
     it('forwards class and data-* to the rect variant root', () => {
       const wrapper = mount(VibeSkeleton, {
         props: { variant: 'rect' },
