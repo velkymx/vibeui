@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { h } from 'vue'
 import { mount } from '@vue/test-utils'
 import VibeButton from '../../src/components/VibeButton.vue'
 
@@ -144,6 +145,48 @@ describe('VibeButton', () => {
   it('aria-disabled is set when button is disabled', () => {
     const wrapper = mount(VibeButton, { props: { disabled: true } })
     expect(wrapper.find('button').attributes('aria-disabled')).toBe('true')
+  })
+
+  // Issue 10 — WCAG 4.1.2: icon-only buttons must have aria-label (dev warning)
+  it('warns in dev when slot has only icon content and aria-label is missing', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mount(VibeButton, {
+      slots: { default: () => [h('i', { class: 'bi bi-tags' })] }
+    })
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[VibeButton]'))
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn when aria-label is provided on icon-only button', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mount(VibeButton, {
+      attrs: { 'aria-label': 'Delete item' },
+      slots: { default: () => [h('i', { class: 'bi bi-trash' })] }
+    })
+
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('[VibeButton]'))
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn when button slot has visible text', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mount(VibeButton, { slots: { default: 'Save' } })
+
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('[VibeButton]'))
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn when no slot is provided (empty button)', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mount(VibeButton)
+
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('[VibeButton]'))
+    warnSpy.mockRestore()
   })
 
   describe('variant="link"', () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useSlots, useAttrs } from 'vue'
 import type { ButtonVariant, Size, ButtonType, ComponentError } from '../types'
 
 const props = defineProps({
@@ -18,6 +18,25 @@ const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
   (e: 'component-error', error: ComponentError): void
 }>()
+
+const slots = useSlots()
+const attrs = useAttrs()
+
+// DEV-only: warn when the button has slot content but no visible text and no
+// aria-label/aria-labelledby — screen readers would only announce "button" (WCAG 4.1.2).
+if (import.meta.env.DEV) {
+  const vnodes = slots.default?.() ?? []
+  const hasContent = vnodes.length > 0
+  const hasText = vnodes.some(
+    v => typeof v.children === 'string' && (v.children as string).trim().length > 0
+  )
+  if (hasContent && !hasText && !attrs['aria-label'] && !attrs['aria-labelledby']) {
+    console.warn(
+      '[VibeButton] Icon-only buttons require an aria-label or aria-labelledby ' +
+      'attribute for screen reader accessibility (WCAG 4.1.2).'
+    )
+  }
+}
 
 const tag = computed(() => {
   if (props.href) return 'a'
