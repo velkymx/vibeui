@@ -117,4 +117,67 @@ describe('VibeModal', () => {
     wrapper.unmount()
     document.body.removeChild(trigger)
   })
+
+  // Issue 1 — WCAG 2.4.3: auto-focus first form field on open
+  it('auto-focuses the first focusable field on open when autoFocus is true (default)', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false },
+      slots: { default: '<input id="auto-focus-input" />' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    expect(document.activeElement).toBe(wrapper.find('#auto-focus-input').element)
+
+    wrapper.unmount()
+  })
+
+  it('re-focuses the first field on repeated opens', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false },
+      slots: { default: '<input id="reopen-input" />' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    // First open
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+    expect(document.activeElement).toBe(wrapper.find('#reopen-input').element)
+
+    // Close then reopen
+    modalEl.dispatchEvent(new Event('hidden.bs.modal'))
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+    expect(document.activeElement).toBe(wrapper.find('#reopen-input').element)
+
+    wrapper.unmount()
+  })
+
+  it('does not auto-focus when autoFocus prop is false', async () => {
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false, autoFocus: false },
+      slots: { default: '<input id="no-focus-input" />' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    expect(document.activeElement).not.toBe(wrapper.find('#no-focus-input').element)
+
+    wrapper.unmount()
+    document.body.removeChild(outside)
+  })
 })

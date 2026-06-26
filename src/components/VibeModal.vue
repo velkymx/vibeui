@@ -26,7 +26,10 @@ const props = defineProps({
   staticBackdrop: { type: Boolean, default: false },
   hideHeader: { type: Boolean, default: false },
   hideFooter: { type: Boolean, default: false },
-  teleport: { type: [String, Boolean], default: 'body' }
+  teleport: { type: [String, Boolean], default: 'body' },
+  // WCAG 2.4.3: move focus to the first form control when the modal opens.
+  // Set false to opt out (e.g. modals with a long async transition).
+  autoFocus: { type: Boolean, default: true }
 })
 
 const emit = defineEmits<{
@@ -86,6 +89,14 @@ const onShown = () => {
   isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
+  // WCAG 2.4.3: move keyboard focus to the first form control so users don't
+  // have to tab from the trigger through the whole page to reach modal inputs.
+  if (props.autoFocus && modalRef.value) {
+    const first = modalRef.value.querySelector<HTMLElement>(
+      'input:not([type="hidden"]), select, textarea'
+    )
+    first?.focus()
+  }
 }
 
 const onHide = () => {
