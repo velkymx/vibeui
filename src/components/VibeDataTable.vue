@@ -82,20 +82,24 @@ const getRowKey = (item: T, index: number): string | number => {
   return `__row_${(startRow.value - 1) + index}`
 }
 
+let isUnmounted = false
+
 // Debounced search with proper cleanup
 watch(searchQuery, (newVal) => {
   if (searchDebounceTimer.value !== null) {
     clearTimeout(searchDebounceTimer.value)
   }
   searchDebounceTimer.value = setTimeout(() => {
+    if (isUnmounted) return
     debouncedSearchQuery.value = newVal
-    currentPage.value = 1 // Reset to first page on search
+    currentPage.value = 1
     searchDebounceTimer.value = null
   }, props.searchDebounce)
 })
 
 // Cleanup debounce timer on unmount
 onBeforeUnmount(() => {
+  isUnmounted = true
   if (searchDebounceTimer.value !== null) {
     clearTimeout(searchDebounceTimer.value)
     searchDebounceTimer.value = null
