@@ -267,6 +267,63 @@ describe('VibeAutocomplete', () => {
     })
   })
 
+  // CR9-6: when T is an object and itemText is not provided, labelOf falls through
+  // to String(item) → '[object Object]'. All results display identically. A DEV
+  // warning on first occurrence helps developers discover the required itemText prop.
+  describe('object-item labelOf DEV warning (CR9-6)', () => {
+    it('warns once when object items are used without itemText prop', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const objectSource = [
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' }
+      ]
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: objectSource, minChars: 0, debounce: 0 }
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+
+      // labelOf called on each object item — should warn about missing itemText
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('itemText')
+      )
+      warnSpy.mockRestore()
+      wrapper.unmount()
+    })
+
+    it('does not warn when itemText is provided for object items', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const objectSource = [{ id: 1, name: 'Alice' }]
+      const wrapper = mount(VibeAutocomplete, {
+        props: {
+          source: objectSource,
+          minChars: 0,
+          debounce: 0,
+          itemText: (item: { id: number; name: string }) => item.name
+        }
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+      wrapper.unmount()
+    })
+
+    it('does not warn for string items', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: ['Alice', 'Bob'], minChars: 0, debounce: 0 }
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+      wrapper.unmount()
+    })
+  })
+
   describe('async race protection (C1)', () => {
     type Resolver = (val: string[]) => void
 
