@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import VibeFormWysiwyg from '../../src/components/VibeFormWysiwyg.vue'
 import * as useBreakpointsModule from '../../src/composables/useBreakpoints'
 import * as sanitizeHtmlModule from '../../src/utils/sanitizeHtml'
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 
 // Mock useBreakpoints
 vi.mock('../../src/composables/useBreakpoints', () => ({
@@ -166,4 +166,60 @@ describe('VibeFormWysiwyg', () => {
       expect(typeof sanitizeHtmlModule.loadDOMPurify).toBe('function')
     })
   })
+
+  // CR9-3: async setTimeout callback in watch(isMobile) had no try/catch.
+  // If cleanup code (e.g. enable(false)) throws, the rejection was silently swallowed.
+  // Fix: wrap the entire timeout body in try/catch with emit('component-error').
+  //
+  // Strategy: inject a fake Quill via vi.doMock whose enable() throws, mount the
+  // component so quillInstance.value is populated, then trigger the isMobile watcher.
+  // The debounce callback runs cleanup → enable(false) → throws.
+  // Without the try/catch: unhandled rejection; with it: component-error is emitted.
+  it('emits component-error when isMobile reinit cleanup throws (CR9-3)', { timeout: 5000 }, async () => {
+    vi.resetModules()
+
+    vi.doMock('quill', () => {
+      function FakeQuill(this: Record<string, unknown>, container: HTMLElement) {
+        this.root = container
+        this.on = vi.fn()
+        this.off = vi.fn()
+        // enable() throws to simulate a broken Quill state during cleanup
+        this.enable = vi.fn().mockImplementation(() => { throw new Error('enable failed during reinit') })
+        this.destroy = vi.fn()
+        this.getSemanticHTML = vi.fn().mockReturnValue('')
+        this.scroll = { observer: { disconnect: vi.fn() } }
+        this.selection = null
+      }
+      return { default: FakeQuill }
+    })
+
+    // Import fresh useBreakpoints FIRST so we hold the new mock reference
+    const freshBreakpoints = await import('../../src/composables/useBreakpoints')
+    const isMobile = ref(false)
+    vi.mocked(freshBreakpoints.useBreakpoints).mockReturnValueOnce({
+      isMobile,
+      isXs: ref(false), isSm: ref(false), isMd: ref(false),
+      isLg: ref(false), isXl: ref(false), isXxl: ref(false), isTablet: ref(false)
+    })
+
+    const { default: FreshWysiwyg } = await import('../../src/components/VibeFormWysiwyg.vue')
+    const wrapper = mount(FreshWysiwyg)
+
+    // Allow quill dynamic import to resolve and initQuill to complete
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    // Trigger the isMobile watcher — schedules setTimeout(fn, 250)
+    isMobile.value = true
+    await nextTick()
+
+    // Wait past the 250ms debounce + async callback execution
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // Cleanup calls enable(false) which throws; with try/catch the error is
+    // caught and emitted as component-error instead of an unhandled rejection.
+    expect(wrapper.emitted('component-error')).toBeTruthy()
+
+    vi.doUnmock('quill')
+    vi.resetModules()
+  }, { timeout: 5000 })
 })
