@@ -3,6 +3,7 @@ import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vu
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { safeHref } from '../utils/safeHref'
+import { routeKey } from '../utils/routeKey'
 
 interface BootstrapDropdown {
   show: () => void
@@ -203,7 +204,7 @@ defineExpose({ show, hide, toggle })
     </template>
 
     <ul :class="menuClass" :aria-labelledby="computedId">
-      <template v-for="(item, index) in items" :key="item.text || item.href || String(item.to) || index">
+      <template v-for="(item, index) in items" :key="item.text || item.href || routeKey(item.to) || index">
         <li v-if="item.divider"><hr class="dropdown-divider"></li>
         <li v-else-if="item.header">
           <h6 class="dropdown-header">

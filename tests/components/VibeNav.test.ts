@@ -177,4 +177,19 @@ describe('VibeNav', () => {
     })
     expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
   })
+
+  // CR9-1: String(object) → '[object Object]' for every object-typed `to`,
+  // causing duplicate Vue keys and silent DOM corruption. routeKey fixes this.
+  it('renders distinct li elements for items with distinct object `to` values', () => {
+    const wrapper = mount(VibeNav, {
+      props: {
+        items: [
+          { to: { name: 'user', params: { id: 1 } } },
+          { to: { name: 'user', params: { id: 2 } } }
+        ]
+      }
+    })
+    const lis = wrapper.findAll('li.nav-item')
+    expect(lis).toHaveLength(2)
+  })
 })

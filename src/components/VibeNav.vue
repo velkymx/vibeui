@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { NavItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
+import { routeKey } from '../utils/routeKey'
 
 interface BootstrapTab {
   show: () => void
@@ -154,7 +155,7 @@ defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
   <component :is="tag" ref="navRef" :class="navClass">
     <li
       v-for="(item, index) in items"
-      :key="item.href || (item.to ? String(item.to) : undefined) || item.text || String(index)"
+      :key="item.href || routeKey(item.to) || item.text || String(index)"
       class="nav-item"
       :class="{ dropdown: item.children && item.children.length > 0 }"
     >

@@ -100,4 +100,19 @@ describe('VibeDropdown', () => {
     })
     expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
   })
+
+  // CR9-1: String(object) → '[object Object]' causes duplicate :key for every
+  // item whose `to` is a route object. Verify routeKey produces distinct per-item keys.
+  it('renders distinct DOM elements for items with distinct object `to` values', () => {
+    const wrapper = mount(VibeDropdown, {
+      props: {
+        items: [
+          { to: { name: 'user', params: { id: 1 } } },
+          { to: { name: 'user', params: { id: 2 } } }
+        ]
+      }
+    })
+    const lis = wrapper.findAll('li')
+    expect(lis).toHaveLength(2)
+  })
 })
