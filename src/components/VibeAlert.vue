@@ -63,7 +63,11 @@ const setupBootstrap = async () => {
   initInFlight = true
   detachAlertListeners()
   try {
-    if (!alertRef.value || bsAlert.value) return
+    if (!alertRef.value) return
+    if (bsAlert.value) {
+      bsAlert.value.dispose()
+      bsAlert.value = null
+    }
     const bootstrap = await import('bootstrap')
     if (!alertRef.value || isUnmounted) return
     bsAlert.value = new bootstrap.Alert(alertRef.value) as BootstrapAlert
