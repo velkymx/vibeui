@@ -3,6 +3,12 @@ import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick 
 import type { CarouselItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
+interface CarouselEvent {
+  from: number
+  to: number
+  direction: 'left' | 'right'
+}
+
 interface BootstrapCarousel {
   to: (index: number) => void
   next: () => void
@@ -58,11 +64,11 @@ const carouselClass = computed(() => {
   return classes.join(' ')
 })
 
-const onSlide = (event: any) => {
+const onSlide = (event: CarouselEvent) => {
   emit('slide', event)
 }
 
-const onSlid = (event: any) => {
+const onSlid = (event: CarouselEvent) => {
   activeIndex.value = event.to
   emit('update:modelValue', event.to)
   emit('slid', event)
