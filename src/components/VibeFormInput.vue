@@ -150,3 +150,15 @@ const handleFocus = (event: FocusEvent) => {
     @focus="handleFocus"
   />
 </template>
+
+<style scoped>
+/*
+ * WCAG 1.4.3: browser-default placeholder opacity (~0.6) yields ~2.6:1 contrast on white.
+ * Bootstrap's --bs-secondary-color (#6c757d / light, #adb5bd / dark) achieves ≥ 4.5:1
+ * on the respective body backgrounds when rendered at full opacity.
+ */
+input::placeholder {
+  color: var(--bs-secondary-color) !important;
+  opacity: 1 !important;
+}
+</style>
