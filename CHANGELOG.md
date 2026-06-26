@@ -1,6 +1,177 @@
 # Changelog
 
-> Aggregated from Code Review findings (CR5 + CR6 + CR7) and the 2026-05-29 performance audit. Completed fixes with commit references.
+All notable changes to `@velkymx/vibeui` are documented here. This project adheres to [Semantic Versioning](https://semver.org) and the [Keep a Changelog](https://keepachangelog.com) format.
+
+The **Detailed History** section below the releases preserves the per-commit Code Review (CR5–CR9) and audit notes for contributors.
+
+---
+
+## [1.1.0] — 2026-06-26
+
+A large stabilization release: the full Code Review 8 & 9 audits, the P0 cursor fix, accessibility improvements, and a clean type-checking build.
+
+### Added
+
+- **VibeHero `overlayOpacity` prop** — control the darkness of the default overlay scrim (`Number`, default `0.5`, clamped to `[0, 1]`).
+- **VibeDataTable `clickable` prop** — show a pointer cursor on rows to signal interactivity (pair with a `@row-clicked` listener).
+- **VibeButton icon-only a11y check** — DEV-only warning when an icon-only button lacks `aria-label`/`aria-labelledby` (WCAG 4.1.2).
+- **VibeAutocomplete DEV warning** — warns once when object items are used without an `itemText` prop (avoids silent `[object Object]` labels).
+- **VibeAccordion DEV warning** — warns on duplicate `item.id` values, which previously failed silently.
+
+### Changed
+
+- ⚠️ **Charts (Bar / Line / Pie) now require immutable data updates.** The `data` watch is shallow — it fires only when the `data` prop **reference** changes. In-place mutation (e.g. `data.datasets[0].data.push(x)`) no longer triggers a repaint. Update immutably instead: `data = { ...data, datasets: [...] }`. This removes N full canvas repaints for N nested mutations.
+- **VibeDataTable `columns` is now optional**, defaulting to `[]` (previously `required`). An unset/loading state renders an empty table instead of emitting a Vue prop warning.
+- **VibeAlert `variant`** is now typed as the `Variant` union (was plain `String`), matching the documented API.
+- **VibeAutocomplete** — `ArrowUp` at the first option is now a no-op instead of wrapping to the last (WAI-ARIA combobox behavior).
+- **VibeFormInput** — the standalone label now shows an `(optional)` indicator for non-required fields, matching `VibeFormGroup` (WCAG 3.3.2).
+- **VibeDataTable** — sort indicators are now CSS-based with an `aria-sort` attribute on sortable headers (replaces Unicode glyphs that rendered as tofu on some platforms).
+
+### Fixed
+
+- **Pointer cursor (P0)** — Bootstrap Icon glyphs no longer flip the cursor to a text caret inside links/buttons; non-link breadcrumb items render as `<button>`; list-group items get `list-group-item-action` + pointer affordance.
+- **Type-check regressions** — `aria-sort` (VibeDataTable) and `aria-atomic`/`aria-live` (VibeToast) no longer fail `vue-tsc`; the build emits zero TS errors.
+- **VibeButton** — the icon-only a11y check now inspects the mounted DOM instead of invoking the slot in `setup`, eliminating a "Slot invoked outside of the render function" Vue warning.
+- **Library no longer crashes when `quill` is not installed** — the optional peer dependency is imported lazily (CR8-1).
+- **VibeDropdown / VibeNav** — object-form `to` values no longer collapse to a duplicate `[object Object]` Vue key (uses a `routeKey()` helper).
+- **VibeAutocomplete** — async `source` rejections are caught; stale results are cleared and the listbox closes.
+- **VibeFormWysiwyg** — async init failures emit `component-error` instead of being silently swallowed; `loadError` resets so retries start clean.
+- **VibeAccordion / VibeNav** — added a `reinitGuard` to prop watchers to prevent concurrent dispose/init races.
+- **VibeFormCheckbox** — array uncheck now removes all occurrences of a value, not just the first.
+- **VibeTabs** — the `visited` set is cleared on tab unmount, so a remounted `lazy` tab renders lazily again.
+- **VibeAlert** — disposes a stale Bootstrap instance before re-init on rapid toggles.
+- **VibeCollapse / VibeAccordion** — added `isUnmounted` guards so Bootstrap constructors don't run on detached elements after async import.
+
+### Performance
+
+- **VibeTooltip / VibePopover** — touch detection is cached once at setup instead of re-running on every computed evaluation.
+- **VibeDropdown** — replaced the per-change `itemClassMap` computed Map with a plain `getItemClass()` function.
+
+### Internal / Types
+
+- **VibeScrollspy** — replaced an `as any` cast with an explicit `ScrollSpyOptions` interface.
+- **VibeToast / VibeToastHost** — consolidated to a single `Teleport` with a `toastAttrs` spread; removed an unnecessary class cache.
+- **VibeSkeleton** — `$attrs` now propagate to every text line, not just the first.
+
+---
+
+# Detailed History
+
+> Per-commit Code Review (CR5–CR9) and audit notes, grouped by review batch rather than release. The user-facing summary for the current release is under [1.1.0] above.
+
+---
+
+## CR7 Follow-Up (2026-06-26)
+
+- **VibeFormInput: `(optional)` indicator on standalone label** — VibeFormGroup already showed both `*` for required and `(optional)` for non-required (WCAG 3.3.2). VibeFormInput's standalone label (used outside VibeFormGroup) only showed `*`. Aligned: required gets `aria-hidden="true"` on `*` plus a `visually-hidden` "required" span for screen readers; non-required gets an `aria-hidden` `(optional)` span for sighted users. (ea0b555)
+
+---
+
+## P0 Bug Fixes (2026-06-26)
+
+### Mouse Pointer Issue — VibeIcon / VibeBreadcrumb / VibeListGroup (593858b)
+
+Hovering over Bootstrap Icon glyphs inside nav-links and breadcrumbs switched the cursor from pointer (hand) to the text cursor (I-beam), because `<i class="bi">` renders via a CSS font whose glyph characters are treated as selectable text by the browser.
+
+- **VibeIcon**: Added `cursor: inherit` and `user-select: none` to the element's computed style. `cursor: inherit` defers to the parent element's cursor (pointer inside `<a>`/`<button>`); `user-select: none` prevents the glyph character from being treated as selectable text.
+
+- **VibeBreadcrumb**: Items without `href` or `to` (non-active) previously rendered as `<span>`, which has no pointer cursor. Now renders as `<button type="button">`, which receives pointer cursor from the UA stylesheet and is keyboard-accessible.
+
+- **VibeListGroup**: Items without `href` or `to` rendered as `<li>` and missed Bootstrap's `list-group-item-action` class (hover background, focus styles). Now all interactive (non-disabled) items receive `list-group-item-action`; plain `<li>` items also receive `cursor: pointer` via inline style, since Bootstrap's class alone does not set it on non-anchor/non-button elements. Disabled items receive neither.
+
+---
+
+## Code Review 9 — Comprehensive Vue 3 / TypeScript Audit (2026-06-25)
+
+22 issues audited. CR9-7 (chart deep-watch) deferred per CR5; CR9-21 (FormSelect vi: prefix) deferred; CR9-23 confirmed not a bug.
+
+### HIGH
+
+- **CR9-7 — VibeChartBar / VibeChartLine / VibeChartPie: remove `{ deep: true }` from data watch** — With `{ deep: true }`, every nested mutation to a reactive dataset (e.g. `push()`) triggered a full canvas repaint synchronously. N sequential mutations produced N full repaints. Replaced with a shallow watch: `redraw()` fires only when the `data` prop reference is replaced. Consumers must use immutable updates (`data = { ...data, datasets: [...updated] }`). (45b6d21)
+
+### MEDIUM
+
+- **CR9-13 — VibeNavbarToggle: remove `getOrCreateInstance` when navbar context present** — Calling `Bootstrap.Collapse.getOrCreateInstance()` alongside `navbar.toggleCollapse()` created a parallel uncontrolled Bootstrap instance outside VibeCollapse's lifecycle. When navbar context is injected, delegate exclusively to `navbar.toggleCollapse()`; keep direct Bootstrap call only for standalone use. (c44dc61)
+
+- **CR9-14 — VibeDropdown: replace `itemClassMap` computed Map with `getItemClass` fn** — The computed Map allocated a new Map and re-evaluated all item class strings on every `props.items` change. An inline function lets Vue's per-item reactivity handle dirty-checking naturally. (08f2442)
+
+- **CR9-15 — VibeAutocomplete: ArrowUp at first item no longer wraps to last** — WAI-ARIA combobox requires ArrowUp at first option to be a no-op. The `<= 0` condition wrapped index 0 back to `results.length - 1`. Fixed: `Math.max(0, index - 1)`. (00dc514)
+
+- **CR9-16 — VibeTooltip / VibePopover: cache `isTouchDevice` once at setup** — `computedTrigger` called touch-detection DOM APIs on every re-evaluation. Touch capability doesn't change mid-session; replaced function with a setup-time `const`. (a8369f1)
+
+- **CR9-17 — VibeToast: consolidate to single Teleport with `toastAttrs` spread** — Replaced separate `v-if noContainer` / `Teleport v-else` branches with a single Teleport (disabled when appropriate). Extracted `.toast` div attributes into `toastAttrs` computed via `v-bind`. (e2dc92a)
+
+- **CR9-18 — VibeToastHost: remove `containerClassCache` Map** — The Map was unnecessary for 6 fixed placement values; replaced with a plain inline function. (e2861dd)
+
+- **CR9-19 — VibeSkeleton: apply `$attrs` to all text lines** — `v-bind` was conditional on `i === 1`; consumer `class`/`data-*`/listeners silently dropped from lines 2+. (f142d33)
+
+- **CR9-20 — VibeDataTable: `isUnmounted` guard in search debounce callback** — `clearTimeout` already prevents the callback from firing after unmount, but added `isUnmounted` flag as defense-in-depth against Vue DEV warnings. (a55eeaa)
+
+### LOW
+
+- **CR9-22 — VibeHero: `overlayOpacity` prop for customizable overlay** — `overlay: true` hardcoded `rgba(0,0,0,0.5)`. New `overlayOpacity: Number` prop (default 0.5, clamped to [0,1]) exposes control. (816e53c)
+
+### Docs Audit Fixes
+
+- **VibeAlert variant prop typed as `Variant` union** — Source used plain `String`; aligned with documented API. (6e3f02f)
+
+### CRITICAL
+
+- **CR9-1 — VibeDropdown / VibeNav: `routeKey()` for object `to` values** — `String(item.to)` produced `'[object Object]'` for every object-typed route, collapsing all into the same Vue key. Extracted `routeKey()` utility using `JSON.stringify` for objects. Regression tests added to both components. (commits via routeKey.ts + component patches)
+
+- **CR9-2 — VibeAutocomplete: try/catch around async source** — Unhandled rejection left `results` stale with the dropdown open. Catch clears results and closes the listbox; stale-token check applies on the catch path too.
+
+- **CR9-3 — VibeFormWysiwyg: try/catch in isMobile setTimeout callback** — Async setTimeout bodies swallow exceptions silently. Wrapped entire cleanup/reinit body in try/catch; failures emit `component-error`. (e502165)
+
+- **CR9-4 — VibeAccordion: `seenIds` Set guard for duplicate `item.id`** — `Map.set(id, ...)` silently overwrote the first entry on duplicate ids. Added per-`initItems` `seenIds` Set with `console.warn` naming the duplicate. (d3d3f2a)
+
+- **CR9-5 — VibeAccordion / VibeNav: `reinitGuard` in prop watchers** — Rapid prop changes fired concurrent async watcher bodies; both ran disposal then reinit, creating a window where the second disposal could clear instances the first init just created. Added `reinitGuard` with try/finally, mirroring VibeDropdown's existing pattern. (0b38653)
+
+### HIGH
+
+- **CR9-6 — VibeAutocomplete: DEV warning when object items used without `itemText`** — `labelOf` fell through to `String(item)` → `'[object Object]'` for object types without `itemText`. Added one-time `console.warn` per instance. (be99658)
+
+- **CR9-8 — VibeFormWysiwyg: reset `loadError` at start of `initQuill`** — `loadError` was set on failure but never cleared before the next attempt. Reset at the top of `initQuill` so any subsequent successful call removes the error banner. (fd5f9f3)
+
+- **CR9-9 — VibeScrollspy: `ScrollSpyOptions` interface replaces `as any`** — `smoothScroll` was not in Bootstrap's bundled `ScrollSpy.Options`. Defined explicit `ScrollSpyOptions` interface and cast the constructor cleanly. (a8debca)
+
+- **CR9-10 — VibeDataTable: CSS class sort icons + `aria-sort` on `<th>`** — Unicode `⇅`/`↑`/`↓` can render as tofu on some OS/font combinations and convey no information to screen readers. Replaced with CSS `::before` content on `.vibe-sort-icon` spans; added `aria-sort` attribute (`none`/`ascending`/`descending`) to sortable `<th>` elements. (9cca67e)
+
+- **CR9-11 — VibeTabs: `visited.delete(name)` in `unregister`** — The `visited` Set tracked tabs that had ever been active but was never cleaned. Remounted tabs with `lazy:true` rendered immediately because `hasBeenActive` returned true from stale state. (89f029b)
+
+- **CR9-12 — VibeFormCheckbox: `filter` instead of `indexOf+splice` for array uncheck** — `splice` only removed the first occurrence of `props.value`. Replaced with `.filter(v => v !== props.value)` to remove ALL occurrences. (c015a8a)
+
+---
+
+## Code Review 8 — Vue 3 / TypeScript Audit (2026-06-25)
+
+10 issues audited across VibeFormWysiwyg, VibeCollapse, VibeAccordion, VibeDataTable, VibeAlert, VibeCarousel, VibeSortable. CR8-9 (VibeToastHost private import) intentional coupling, no fix.
+
+### HIGH
+
+- **CR8-1 — VibeFormWysiwyg: remove static quill import** — Top-level `import Quill from 'quill'` caused build failures when quill is not installed. Deleted; all usage is via `await import('quill')` inside `initQuill`. (d54a7e7)
+
+- **CR8-2 — VibeCollapse: add `isUnmounted` guard after async import** — Bootstrap.Collapse was constructable on detached DOM if the component unmounted during the async import. Added `isUnmounted` flag + guard; consistent with every other Bootstrap component. (f4735d8)
+
+- **CR8-3 — VibeAccordion: add `isUnmounted` flag and post-import guard** — Same pattern as CR8-2; `initItems` had no unmount guard at all. (2ee048c)
+
+### MEDIUM
+
+- **CR8-4 — VibeDataTable: replace `getCurrentInstance()` with `clickable` prop** — `getCurrentInstance()` is an internal Vue API, SSR-incompatible, and captures at setup time. Replaced with an explicit `:clickable="true"` prop; rows still emit `row-clicked` unconditionally. (d95cddf)
+
+- **CR8-5 — VibeAlert: dispose stale instance before reinit on rapid toggle** — On rapid `modelValue` false→true, the old Bootstrap.Alert (close animation in flight) blocked new init. Dispose before guarding. (5f76235)
+
+- **CR8-6 — VibeAccordion: wrap async watcher body in try/catch** — Vue ignores the Promise returned by async watchers; any throw became an unhandled rejection. Wrapped in try/catch with `emit('component-error', ...)`. (8038cbf)
+
+### LOW
+
+- **CR8-7 — VibeCarousel: `CarouselEvent` interface for Bootstrap slide events** — Replaced `event: any` parameters on `onSlide`/`onSlid` with `CarouselEvent { from, to, direction }`. (0ccd863)
+
+- **CR8-8 — VibeSortable: add `Record<string,unknown>` constraint to generic** — Unconstrained `T` made `item[itemKey]` unresolvable without `as any`. Constraining T removes the cast. (bffca44)
+
+- **CR8-9 — VibeToastHost: imports private `__toastStore`** — Intentional coupling; `__toastStore` cannot be made public without breaking the module boundary. No fix.
+
+- **CR8-10 — VibeFormWysiwyg: remove empty selection-change handler** — Dead no-op registered on `quill.on('selection-change')`. Removed declaration, registration, and both cleanup blocks. (11a426b)
 
 ---
 
