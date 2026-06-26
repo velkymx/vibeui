@@ -29,7 +29,11 @@ const props = defineProps({
   teleport: { type: [String, Boolean], default: 'body' },
   // WCAG 2.4.3: move focus to the first form control when the modal opens.
   // Set false to opt out (e.g. modals with a long async transition).
-  autoFocus: { type: Boolean, default: true }
+  autoFocus: { type: Boolean, default: true },
+  // WCAG 2.1.1: Cmd+Enter / Ctrl+Enter submits the first <form> inside the modal,
+  // matching the UX convention from Apple Mail, Google Docs, and Slack.
+  // Set false to opt out.
+  submitOnMetaEnter: { type: Boolean, default: true }
 })
 
 const emit = defineEmits<{
@@ -65,9 +69,19 @@ function getFocusableEls(): HTMLElement[] {
   return Array.from(modalRef.value.querySelectorAll<HTMLElement>(FOCUSABLE))
 }
 
-// Keyboard trap: cycles focus within the modal while it is visible.
-function trapFocus(e: KeyboardEvent) {
-  if (!isVisible.value || e.key !== 'Tab') return
+// Single keydown handler for the modal — handles both focus trapping and form submission.
+function onModalKeydown(e: KeyboardEvent) {
+  if (!isVisible.value) return
+
+  // WCAG 2.1.1: Cmd/Ctrl+Enter submits the first <form> in the modal.
+  if (props.submitOnMetaEnter && (e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    const form = modalRef.value?.querySelector<HTMLFormElement>('form')
+    form?.requestSubmit()
+    return
+  }
+
+  // WCAG 2.1.2: Tab trap cycles focus within the modal.
+  if (e.key !== 'Tab') return
   const focusable = getFocusableEls()
   if (focusable.length === 0) return
   const first = focusable[0]
@@ -176,8 +190,8 @@ function attachListeners() {
   modalRef.value.addEventListener('shown.bs.modal', onShown)
   modalRef.value.addEventListener('hide.bs.modal', onHide)
   modalRef.value.addEventListener('hidden.bs.modal', onHidden)
-  // WCAG 2.1.2: keyboard events bubble up from children to the modal root.
-  modalRef.value.addEventListener('keydown', trapFocus)
+  // Keyboard events bubble up from children to the modal root.
+  modalRef.value.addEventListener('keydown', onModalKeydown)
   listenersAttached = true
 }
 
@@ -187,7 +201,7 @@ function detachListeners() {
   modalRef.value.removeEventListener('shown.bs.modal', onShown)
   modalRef.value.removeEventListener('hide.bs.modal', onHide)
   modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
-  modalRef.value.removeEventListener('keydown', trapFocus)
+  modalRef.value.removeEventListener('keydown', onModalKeydown)
   listenersAttached = false
 }
 

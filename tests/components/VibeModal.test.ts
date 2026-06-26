@@ -256,6 +256,88 @@ describe('VibeModal', () => {
     wrapper.unmount()
   })
 
+  // Issue 3 — WCAG 2.1.1: Cmd/Ctrl+Enter submits the first form inside the modal
+  it('Cmd+Enter submits the first form inside the modal', async () => {
+    const submitHandler = vi.fn((e: Event) => e.preventDefault())
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false },
+      slots: { default: '<form id="modal-form"><input id="form-input" /><button type="submit">Save</button></form>' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const formEl = wrapper.find('#modal-form').element
+    formEl.addEventListener('submit', submitHandler)
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    const input = wrapper.find('#form-input').element as HTMLElement
+    input.focus()
+
+    const metaEnter = new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true, cancelable: true })
+    input.dispatchEvent(metaEnter)
+
+    expect(submitHandler).toHaveBeenCalledOnce()
+
+    wrapper.unmount()
+  })
+
+  it('Ctrl+Enter submits the first form inside the modal', async () => {
+    const submitHandler = vi.fn((e: Event) => e.preventDefault())
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false },
+      slots: { default: '<form id="ctrl-form"><textarea id="ctrl-textarea"></textarea></form>' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const formEl = wrapper.find('#ctrl-form').element
+    formEl.addEventListener('submit', submitHandler)
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    const textarea = wrapper.find('#ctrl-textarea').element as HTMLElement
+    textarea.focus()
+
+    const ctrlEnter = new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true })
+    textarea.dispatchEvent(ctrlEnter)
+
+    expect(submitHandler).toHaveBeenCalledOnce()
+
+    wrapper.unmount()
+  })
+
+  it('does not submit when submitOnMetaEnter is false', async () => {
+    const submitHandler = vi.fn((e: Event) => e.preventDefault())
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false, submitOnMetaEnter: false },
+      slots: { default: '<form id="opt-out-form"><input id="opt-out-input" /></form>' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const formEl = wrapper.find('#opt-out-form').element
+    formEl.addEventListener('submit', submitHandler)
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    const input = wrapper.find('#opt-out-input').element as HTMLElement
+    input.focus()
+
+    const metaEnter = new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true, cancelable: true })
+    input.dispatchEvent(metaEnter)
+
+    expect(submitHandler).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
   it('clears inert from siblings on unmount while modal is open', async () => {
     const wrapper = mount(VibeModal, {
       props: { teleport: false },
