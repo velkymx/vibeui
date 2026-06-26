@@ -18,7 +18,7 @@ Provide either `text` or `content` (they are interchangeable). Content is always
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `component-error` | `{ message, componentName, originalError }` | Emitted if Bootstrap JS is unavailable at mount |
+| `component-error` | `ComponentError` | Emitted if Bootstrap JS is unavailable at mount |
 
 ## Slots
 

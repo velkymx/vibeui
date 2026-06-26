@@ -15,7 +15,7 @@ Generic close button for dismissing content like modals and alerts.
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `click` | `MouseEvent` | Emitted when button is clicked (unless disabled) |
-| `component-error` | `Object` | Emitted when an error occurs |
+| `component-error` | `ComponentError` | Emitted when an error occurs |
 
 ## Usage
 

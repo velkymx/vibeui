@@ -17,7 +17,7 @@ Content is always rendered as plain text — HTML is not supported (this is inte
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `component-error` | `{ message, componentName, originalError }` | Emitted if Bootstrap JS is unavailable at mount |
+| `component-error` | `ComponentError` | Emitted if Bootstrap JS is unavailable at mount |
 
 ## Slots
 
