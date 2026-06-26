@@ -161,6 +161,8 @@ const hide = () => bsToast.value?.hide()
 defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
 
 // Shared attrs for the .toast element — avoids repeating them in both template branches.
+// `as const` preserves the literal types ('assertive', 'true') so they stay assignable
+// to the native aria-live / aria-atomic attribute types instead of widening to `string`.
 const toastAttrs = computed(() => ({
   id: computedId.value,
   class: toastClass.value,
@@ -169,7 +171,7 @@ const toastAttrs = computed(() => ({
   'aria-atomic': 'true',
   'data-bs-autohide': props.autohide,
   'data-bs-delay': props.delay
-}))
+} as const))
 </script>
 
 <template>

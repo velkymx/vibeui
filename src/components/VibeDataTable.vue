@@ -296,7 +296,9 @@ const sortIconMap = computed(() => {
 })
 
 const ariaSortMap = computed(() => {
-  const m = new Map<DataTableColumn<T>, string | undefined>()
+  // Literal union (not plain string) so the value is assignable to the native
+  // aria-sort attribute type without a cast.
+  const m = new Map<DataTableColumn<T>, 'none' | 'ascending' | 'descending' | undefined>()
   for (const column of props.columns) {
     if (!props.sortable || column.sortable === false) {
       m.set(column, undefined)
