@@ -41,6 +41,19 @@ describe('VibeScrollspy', () => {
     expect(bootstrap.ScrollSpy).not.toHaveBeenCalled()
   })
 
+  // CR9-9: `as any` cast on ScrollSpy options bypassed TS checking for smoothScroll.
+  // Fix: define ScrollSpyOptions interface and remove the cast.
+  // Runtime test: verify smoothScroll option is forwarded to the constructor.
+  it('passes smoothScroll option to ScrollSpy constructor (CR9-9)', async () => {
+    mount(VibeScrollspy, { props: { target: '#nav', smoothScroll: true } })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const call = vi.mocked(bootstrap.ScrollSpy).mock.calls[0]
+    expect(call).toBeDefined()
+    // Second argument is the options object
+    expect((call[1] as Record<string, unknown>).smoothScroll).toBe(true)
+  })
+
   // Security: freeform height prop must be validated before binding to :style.
   it('applies a valid height value', () => {
     const wrapper = mount(VibeScrollspy, { props: { target: '#nav', height: '400px' } })
