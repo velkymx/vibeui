@@ -75,7 +75,11 @@ onMounted(() => {
   }
 })
 
-watch(() => props.data, redraw, { deep: true })
+// Shallow watch: only fires when the `data` reference itself is replaced.
+// Nested mutations (e.g. datasets[0].data.push()) will NOT trigger a repaint;
+// consumers must use immutable updates: data = { ...data, datasets: [...] }.
+// This prevents N canvas repaints for N synchronous array mutations (CR9-7).
+watch(() => props.data, redraw)
 
 onUnmounted(() => {
   cleanupTooltip?.()
