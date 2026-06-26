@@ -16,12 +16,30 @@ Button component with variants, sizes, and support for links and router-links.
 | `active` | `Boolean` | `false` | Apply active state styling |
 | `focusRing` | `Boolean` | `false` | Enable the Bootstrap 5.3 focus-ring helper |
 
+## Accessibility
+
+**Disabled contrast (WCAG 1.4.3):** The disabled state overrides Bootstrap's default `opacity: 0.65` fade with full-opacity body tokens (`--bs-body-color` / `--bs-tertiary-bg`), keeping label contrast ≥ 4.5:1 in both light and dark mode.
+
+**Icon-only buttons (WCAG 4.1.2):** A button whose slot contains only an icon (no visible text) must have an `aria-label` or `aria-labelledby` attribute so screen readers can announce its purpose. In development mode, VibeButton logs a `console.warn` when this is missing.
+
+```vue
+<!-- correct -->
+<VibeButton aria-label="Delete item">
+  <i class="bi bi-trash" aria-hidden="true" />
+</VibeButton>
+
+<!-- incorrect — no accessible name -->
+<VibeButton>
+  <i class="bi bi-trash" />
+</VibeButton>
+```
+
 ## Events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `click` | `MouseEvent` | Emitted when button is clicked (unless disabled) |
-| `component-error` | `Object` | Emitted when an error occurs |
+| `component-error` | `ComponentError` | Emitted when an error occurs |
 
 ## Slots
 

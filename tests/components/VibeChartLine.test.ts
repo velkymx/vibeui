@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 import VibeChartLine from '../../src/components/VibeChartLine.vue'
 import { mockCanvas, mockResizeObserver, mockAnimationFrame } from '../mocks/canvasMock'
 import type { ChartData } from '../../src/types'
@@ -88,5 +88,42 @@ describe('VibeChartLine', () => {
     await nextTick()
     const swatch = wrapper.find('.vibe-chart-legend-swatch')
     expect(swatch.attributes('style')).toContain('#abcdef')
+  })
+
+  // CR9-7: { deep: true } caused a full canvas repaint on EVERY nested mutation.
+  // Fix: shallow watch — only a new data reference triggers redraw.
+  it('does NOT repaint when datasets[0].data is mutated in place (CR9-7)', async () => {
+    const ctx = mockCanvas()
+    const ro = mockResizeObserver()
+    const data = reactive<ChartData>({
+      labels: ['A', 'B'],
+      datasets: [{ label: 'S', data: [1, 2] }],
+    })
+    mount(VibeChartLine, { props: { data } })
+    ro.trigger(400, 225)
+    ctx.clearRect.mockClear()
+
+    data.datasets[0].data.push(3)
+    await nextTick()
+
+    expect(ctx.clearRect).not.toHaveBeenCalled()
+  })
+
+  it('repaints once when the data reference is replaced with a new object (CR9-7)', async () => {
+    const ctx = mockCanvas()
+    const ro = mockResizeObserver()
+    const data: ChartData = {
+      labels: ['A', 'B'],
+      datasets: [{ label: 'S', data: [1, 2] }],
+    }
+    const wrapper = mount(VibeChartLine, { props: { data } })
+    ro.trigger(400, 225)
+    ctx.clearRect.mockClear()
+
+    await wrapper.setProps({
+      data: { labels: ['A', 'B', 'C'], datasets: [{ label: 'S', data: [1, 2, 3] }] }
+    })
+
+    expect(ctx.clearRect).toHaveBeenCalledTimes(1)
   })
 })

@@ -21,6 +21,7 @@ Data-driven pagination component with v-model support.
 |-------|---------|-------------|
 | `update:currentPage` | `page: number` | Emitted when page changes (v-model) |
 | `page-click` | `page: number` | Emitted when a page is clicked |
+| `component-error` | `ComponentError` | Emitted if an internal error occurs |
 
 ## Slots
 

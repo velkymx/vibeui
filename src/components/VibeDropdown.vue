@@ -3,6 +3,7 @@ import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vu
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { safeHref } from '../utils/safeHref'
+import { routeKey } from '../utils/routeKey'
 
 interface BootstrapDropdown {
   show: () => void
@@ -68,19 +69,12 @@ const menuClass = computed(() => {
   return classes.join(' ')
 })
 
-// Memoize item classes into a computed Map. The computed tracks each item's
-// active/disabled reads, so it recomputes when those change but otherwise reuses the
-// strings instead of rebuilding an array + join per item on every render.
-const itemClassMap = computed(() => {
-  const m = new Map<DropdownItem, string>()
-  for (const item of props.items) {
-    const classes = ['dropdown-item']
-    if (item.active) classes.push('active')
-    if (item.disabled) classes.push('disabled')
-    m.set(item, classes.join(' '))
-  }
-  return m
-})
+const getItemClass = (item: DropdownItem): string => {
+  const classes = ['dropdown-item']
+  if (item.active) classes.push('active')
+  if (item.disabled) classes.push('disabled')
+  return classes.join(' ')
+}
 
 const onShow = () => emit('show')
 const onShown = () => emit('shown')
@@ -203,7 +197,7 @@ defineExpose({ show, hide, toggle })
     </template>
 
     <ul :class="menuClass" :aria-labelledby="computedId">
-      <template v-for="(item, index) in items" :key="item.text || item.href || String(item.to) || index">
+      <template v-for="(item, index) in items" :key="item.text || item.href || routeKey(item.to) || index">
         <li v-if="item.divider"><hr class="dropdown-divider"></li>
         <li v-else-if="item.header">
           <h6 class="dropdown-header">
@@ -213,7 +207,7 @@ defineExpose({ show, hide, toggle })
         <li v-else>
           <component
             :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
-            :class="itemClassMap.get(item)"
+            :class="getItemClass(item)"
             :href="safeHref(item.href)"
             :to="item.to"
             :type="!item.href && !item.to ? 'button' : undefined"

@@ -110,6 +110,108 @@ describe('VibeAccordion', () => {
     expect(callCount).toBeGreaterThanOrEqual(4)
   })
 
+  // CR8-3: isUnmounted guard — Bootstrap.Collapse must not be constructed if the
+  // accordion unmounts while the async `import('bootstrap')` is in flight.
+  // Without any post-import guard, accordionRef.value.querySelectorAll() throws
+  // a TypeError when the ref is null (Vue nulls it after onBeforeUnmount).
+  it('does not construct Bootstrap.Collapse when the component unmounts during async init', async () => {
+    vi.clearAllMocks()
+
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+
+    const wrapper = mount(VibeAccordion, {
+      props: { id: 'unmount-race', items: mockItems },
+      attachTo: el
+    })
+    wrapper.unmount()
+
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // With isUnmounted guard: Collapse constructor never fires
+    expect(bootstrap.Collapse).not.toHaveBeenCalled()
+
+    document.body.removeChild(el)
+  })
+
+  // CR8-6: async watcher must catch errors and emit component-error instead of
+  // producing an unhandled rejection that Vue silently ignores.
+  // Scenario: dispose() throws during watcher-triggered disposal of old instances.
+  it('emits component-error instead of unhandled rejection when disposal throws during reinit', async () => {
+    // Must use a regular function (not arrow) so `new Collapse(...)` works as a constructor.
+    vi.mocked(bootstrap.Collapse).mockImplementation(function() {
+      return {
+        show: vi.fn(),
+        hide: vi.fn(),
+        toggle: vi.fn(),
+        dispose: vi.fn().mockImplementation(() => { throw new Error('dispose failed') })
+      }
+    })
+
+    const wrapper = mount(VibeAccordion, { props: { id: 'err-test', items: mockItems } })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Change items — watcher disposes old Collapse instances, dispose() throws
+    await wrapper.setProps({ items: [mockItems[0]] })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Without try/catch in the watcher the error is an unhandled rejection and
+    // component-error is never emitted. With the fix it is caught and emitted.
+    expect(wrapper.emitted('component-error')).toBeTruthy()
+  })
+
+  // CR9-5: concurrent dispose+reinit race guard. Two rapid items changes fire two
+  // async watcher calls — without reinitGuard the second watcher body may dispose
+  // instances that the first watcher's init just created, leaving the accordion broken.
+  // With reinitGuard the second watcher body exits immediately, first watcher runs cleanly.
+  // Observable proxy: rapid double-change produces no component-error and leaves the
+  // component in a valid state with the correct number of Collapse instances.
+  it('reinitialises cleanly on rapid successive items changes without error (CR9-5)', async () => {
+    // Reset mock to default factory — CR8-6 test may have left a throwing-dispose impl
+    vi.mocked(bootstrap.Collapse).mockReset()
+    vi.mocked(bootstrap.Collapse).mockImplementation(function() {
+      return { show: vi.fn(), hide: vi.fn(), toggle: vi.fn(), dispose: vi.fn() }
+    })
+
+    const wrapper = mount(VibeAccordion, {
+      props: { id: 'race-test', items: mockItems }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    vi.clearAllMocks()
+
+    // Two rapid setProps — each triggers an async watcher call.
+    // Both bodies dispose (first clears Map; second finds it empty) then reinit.
+    // Without reinitGuard the second watcher's disposal can interleave with the
+    // first's init; with reinitGuard the second body is blocked entirely.
+    await wrapper.setProps({ items: [mockItems[0]] })
+    await wrapper.setProps({ items: mockItems })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // No errors — disposal race must not surface as component-error
+    expect(wrapper.emitted('component-error')).toBeFalsy()
+    // Component ends in valid state: 2 items → at least 2 Collapse instances created
+    expect(vi.mocked(bootstrap.Collapse).mock.calls.length).toBeGreaterThanOrEqual(2)
+  })
+
+  // CR9-4: duplicate item.id silently overwrites Map entry, orphaning first element's
+  // Collapse instance. Fix: seenIds Set guard in initItems + DEV warning on collision.
+  it('warns about duplicate item.id and initialises only the first occurrence', async () => {
+    vi.clearAllMocks()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const dupItems = [
+      { id: 'dup-id', title: 'First', content: 'Content A' },
+      { id: 'dup-id', title: 'Second', content: 'Content B' }
+    ]
+    mount(VibeAccordion, { props: { id: 'dup-test', items: dupItems } })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Only one Collapse instance created — second duplicate id is skipped
+    expect(vi.mocked(bootstrap.Collapse)).toHaveBeenCalledTimes(1)
+    // DEV warning names the duplicate id so developer can fix their data
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('dup-id'))
+    warnSpy.mockRestore()
+  })
+
   // DEV warning for item.id values that break Bootstrap's querySelector.
   describe('item.id CSS-special-character warning', () => {
     it('warns when an item.id contains CSS-special characters', () => {

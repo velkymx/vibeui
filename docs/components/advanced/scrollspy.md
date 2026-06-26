@@ -9,7 +9,7 @@ Automatically update navigation based on scroll position.
 | `target` | `String` | Required | CSS selector of navigation element to update |
 | `rootMargin` | `String` | `'0px 0px -25%'` | Intersection margin for triggering activation. Format: `'top right bottom left'` in CSS units |
 | `offset` | `Number` | `undefined` | **Deprecated.** Use `rootMargin` instead. Ignored in Bootstrap 5.2+. |
-| `method` | `String` | `'auto'` | Scroll detection method: `'auto'`, `'offset'`, or `'position'` |
+| `method` | `String` | `'auto'` | Scroll detection method: `'auto'`, `'offset'`, or `'position'`. Note: `'offset'` is deprecated in Bootstrap 5.2+ (IntersectionObserver-based detection supersedes it); prefer `'auto'` or `'position'`. |
 | `smoothScroll` | `Boolean` | `false` | Enable smooth scrolling |
 | `tag` | `String` | `'div'` | HTML tag to render |
 | `height` | `String` | `'100%'` | CSS height of the scrollable container. Validated as a CSS length; invalid values fall back to `'100%'` |
@@ -19,7 +19,7 @@ Automatically update navigation based on scroll position.
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `activate` | `event` | Emitted when a new nav item is activated |
-| `component-error` | `{ message, componentName, originalError }` | Emitted if Bootstrap JS is unavailable |
+| `component-error` | `ComponentError` | Emitted if Bootstrap JS is unavailable |
 
 ## Slots
 

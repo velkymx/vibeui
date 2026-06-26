@@ -19,6 +19,7 @@ const props = defineProps({
   minHeight: { type: String, default: undefined },
   bgImage: { type: String, default: undefined },
   overlay: { type: [Boolean, String], default: false },
+  overlayOpacity: { type: Number, default: 0.5 },
   gradient: { type: String, default: undefined },
   tag: { type: String as () => Tag, default: 'section' }
 })
@@ -57,9 +58,10 @@ const heroStyle = computed(() => {
   if (grad) {
     layers.push(grad)
   } else if (img && props.overlay) {
+    const opacity = Math.min(1, Math.max(0, props.overlayOpacity))
     const o = typeof props.overlay === 'string'
-      ? (safeColor(props.overlay) ?? 'rgba(0, 0, 0, 0.5)')
-      : 'rgba(0, 0, 0, 0.5)'
+      ? (safeColor(props.overlay) ?? `rgba(0, 0, 0, ${opacity})`)
+      : `rgba(0, 0, 0, ${opacity})`
     layers.push(`linear-gradient(${o}, ${o})`)
   }
   if (img) layers.push(`url("${img}")`)

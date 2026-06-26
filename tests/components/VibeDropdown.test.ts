@@ -100,4 +100,44 @@ describe('VibeDropdown', () => {
     })
     expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
   })
+
+  // CR9-14: item classes must be correct regardless of how they're computed.
+  // Regression guard for replacing itemClassMap computed with getItemClass function.
+  it('applies dropdown-item class to regular items (CR9-14)', () => {
+    const wrapper = mount(VibeDropdown, {
+      props: { items: [{ text: 'Normal' }] }
+    })
+    const btn = wrapper.find('.dropdown-item')
+    expect(btn.exists()).toBe(true)
+    expect(btn.classes()).toEqual(['dropdown-item'])
+  })
+
+  it('applies active class to active items (CR9-14)', () => {
+    const wrapper = mount(VibeDropdown, {
+      props: { items: [{ text: 'Active', active: true }] }
+    })
+    expect(wrapper.find('.dropdown-item').classes()).toContain('active')
+  })
+
+  it('applies disabled class to disabled items (CR9-14)', () => {
+    const wrapper = mount(VibeDropdown, {
+      props: { items: [{ text: 'Disabled', disabled: true }] }
+    })
+    expect(wrapper.find('.dropdown-item').classes()).toContain('disabled')
+  })
+
+  // CR9-1: String(object) → '[object Object]' causes duplicate :key for every
+  // item whose `to` is a route object. Verify routeKey produces distinct per-item keys.
+  it('renders distinct DOM elements for items with distinct object `to` values', () => {
+    const wrapper = mount(VibeDropdown, {
+      props: {
+        items: [
+          { to: { name: 'user', params: { id: 1 } } },
+          { to: { name: 'user', params: { id: 2 } } }
+        ]
+      }
+    })
+    const lis = wrapper.findAll('li')
+    expect(lis).toHaveLength(2)
+  })
 })

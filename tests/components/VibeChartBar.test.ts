@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 import VibeChartBar from '../../src/components/VibeChartBar.vue'
 import { mockCanvas, mockResizeObserver, mockAnimationFrame } from '../mocks/canvasMock'
 import type { ChartData } from '../../src/types'
@@ -78,5 +78,45 @@ describe('VibeChartBar', () => {
     await nextTick()
     const swatch = wrapper.find('.vibe-chart-legend-swatch')
     expect(swatch.attributes('style')).toContain('#abcdef')
+  })
+
+  // CR9-7: { deep: true } caused a full canvas repaint on EVERY nested mutation
+  // (e.g. each push() to a dataset array). Fix: shallow watch — only a new data
+  // reference triggers redraw. Consumers must use immutable updates.
+  it('does NOT repaint when datasets[0].data is mutated in place (CR9-7)', async () => {
+    const ctx = mockCanvas()
+    const ro = mockResizeObserver()
+    // reactive() makes nested arrays trackable by Vue's dep system — plain objects are not.
+    // Without reactive(), { deep: true } would never collect deps and both paths look identical.
+    const data = reactive<ChartData>({
+      labels: ['A', 'B'],
+      datasets: [{ label: 'S', data: [1, 2] }],
+    })
+    mount(VibeChartBar, { props: { data } })
+    ro.trigger(400, 225) // prime currentW/currentH so redraw() passes the size guard
+    ctx.clearRect.mockClear() // discard the initial repaint
+
+    data.datasets[0].data.push(3) // in-place mutation — must NOT trigger watch
+    await nextTick()
+
+    expect(ctx.clearRect).not.toHaveBeenCalled()
+  })
+
+  it('repaints once when the data reference is replaced with a new object (CR9-7)', async () => {
+    const ctx = mockCanvas()
+    const ro = mockResizeObserver()
+    const data: ChartData = {
+      labels: ['A', 'B'],
+      datasets: [{ label: 'S', data: [1, 2] }],
+    }
+    const wrapper = mount(VibeChartBar, { props: { data } })
+    ro.trigger(400, 225)
+    ctx.clearRect.mockClear()
+
+    await wrapper.setProps({
+      data: { labels: ['A', 'B', 'C'], datasets: [{ label: 'S', data: [1, 2, 3] }] }
+    })
+
+    expect(ctx.clearRect).toHaveBeenCalledTimes(1)
   })
 })

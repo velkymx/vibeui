@@ -24,8 +24,14 @@ const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
 const isExpanded = computed(() => navbar?.collapseStates[props.target] ?? false)
 
 const handleClick = async () => {
-  if (navbar) navbar.toggleCollapse(props.target)
+  if (navbar) {
+    // VibeCollapse (inside the same VibeNavbar) owns the Bootstrap lifecycle.
+    // Going through navbar.toggleCollapse keeps Vue collapseStates and Bootstrap DOM in sync.
+    navbar.toggleCollapse(props.target)
+    return
+  }
 
+  // Standalone (no VibeNavbar parent): drive Bootstrap directly.
   try {
     const targetEl = document.getElementById(props.target)
     if (targetEl) {
@@ -34,7 +40,6 @@ const handleClick = async () => {
       bsCollapse.toggle()
     }
   } catch (error) {
-    if (navbar) navbar.toggleCollapse(props.target)
     emit('component-error', { message: 'Bootstrap JS toggle failed.', componentName: 'VibeNavbarToggle', originalError: error })
   }
 }

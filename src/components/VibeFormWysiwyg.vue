@@ -5,7 +5,6 @@ import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 import { useBreakpoints } from '../composables/useBreakpoints'
-import Quill from 'quill'
 import { loadDOMPurify, sanitizeHtml } from '../utils/sanitizeHtml'
 import { safeLength } from '../utils/safeCss'
 
@@ -96,7 +95,6 @@ let mobileReinitTimer: ReturnType<typeof setTimeout> | null = null
 let blurHandler: (() => void) | null = null
 let focusHandler: (() => void) | null = null
 let textChangeHandler: ((...args: unknown[]) => void) | null = null
-let selectionChangeHandler: ((...args: unknown[]) => void) | null = null
 
 const containerClass = computed(() => {
   const classes = ['vibe-wysiwyg-container']
@@ -208,6 +206,7 @@ const updateAriaAttributes = () => {
 const initQuill = async () => {
   if (initInFlight) return
   initInFlight = true
+  loadError.value = null
   // Start loading the sanitizer immediately, in parallel with Quill and independent of
   // its resolution — the sanitizer must be ready before any modelValue HTML is set, and
   // kicking it off here (not after the Quill import) keeps that guarantee deterministic.
@@ -270,9 +269,6 @@ const initQuill = async () => {
       }
       quillInstance.value.root.addEventListener('focus', focusHandler)
 
-      selectionChangeHandler = () => {}
-      quillInstance.value.on('selection-change', selectionChangeHandler)
-
       isQuillLoaded.value = true
       emit('ready', quillInstance.value)
     }
@@ -313,10 +309,6 @@ onBeforeUnmount(() => {
      if (textChangeHandler) {
        quillInstance.value.off('text-change', textChangeHandler)
        textChangeHandler = null
-     }
-     if (selectionChangeHandler) {
-       quillInstance.value.off('selection-change', selectionChangeHandler)
-       selectionChangeHandler = null
      }
      if (blurHandler) {
        quillInstance.value.root.removeEventListener('blur', blurHandler)
@@ -375,54 +367,63 @@ watch(isMobile, () => {
     // Re-check: the component may have unmounted, or Quill may have been torn down,
     // during the debounce window.
     if (isUnmounted || !quillInstance.value) return
-    const content = getQuillContent()
+    try {
+      const content = getQuillContent()
 
-    // Disconnect Quill's scroll MutationObserver before tearing down — clearing the
-    // editor DOM below would otherwise fire it against removed nodes and read
-    // selection.lastRange after we null `selection`, throwing.
-    quillInstance.value.scroll?.observer?.disconnect()
+      // Disconnect Quill's scroll MutationObserver before tearing down — clearing the
+      // editor DOM below would otherwise fire it against removed nodes and read
+      // selection.lastRange after we null `selection`, throwing.
+      quillInstance.value.scroll?.observer?.disconnect()
 
-    // Disable the editor first to prevent selection updates on detached DOM
-    quillInstance.value.enable(false)
+      // Disable the editor first to prevent selection updates on detached DOM
+      quillInstance.value.enable(false)
 
-    // Cleanup all event listeners before touching the DOM
-    if (textChangeHandler) {
-      quillInstance.value.off('text-change', textChangeHandler)
-      textChangeHandler = null
+      // Cleanup all event listeners before touching the DOM
+      if (textChangeHandler) {
+        quillInstance.value.off('text-change', textChangeHandler)
+        textChangeHandler = null
+      }
+      if (blurHandler) {
+        quillInstance.value.root.removeEventListener('blur', blurHandler)
+        blurHandler = null
+      }
+      if (focusHandler) {
+        quillInstance.value.root.removeEventListener('focus', focusHandler)
+        focusHandler = null
+      }
+
+      // Null out the selection module to prevent Quill from accessing removed DOM
+      quillInstance.value.selection = null
+      // Destroy Quill instance to properly clean up all references
+      if (quillInstance.value && typeof quillInstance.value.destroy === 'function') {
+        quillInstance.value.destroy()
+      }
+      // Null instance BEFORE clearing innerHTML — prevents Quill's internal observers
+      // from firing against removed DOM nodes between innerHTML='' and quillInstance=null.
+      quillInstance.value = null
+      isQuillLoaded.value = false
+
+      const toolbar = editorContainer.value?.parentElement?.querySelector('.ql-toolbar')
+      if (toolbar) toolbar.remove()
+
+      // innerHTML cleared after nulling instance — safe, no live Quill observers remain
+      if (editorContainer.value) editorContainer.value.innerHTML = ''
+
+      await nextTick()
+      await initQuill()
+      if (content) setQuillContent(content)
+    } catch (error) {
+      // Cleanup or reinit failed — surface via component-error so the consumer
+      // can react (e.g. show fallback). Without this try/catch the rejection
+      // from the async setTimeout callback is silently swallowed by the runtime.
+      quillInstance.value = null
+      isQuillLoaded.value = false
+      emit('component-error', {
+        message: 'Editor failed to reinitialise on mobile breakpoint change.',
+        componentName: 'VibeFormWysiwyg',
+        originalError: error
+      })
     }
-    if (selectionChangeHandler) {
-      quillInstance.value.off('selection-change', selectionChangeHandler)
-      selectionChangeHandler = null
-    }
-    if (blurHandler) {
-      quillInstance.value.root.removeEventListener('blur', blurHandler)
-      blurHandler = null
-    }
-    if (focusHandler) {
-      quillInstance.value.root.removeEventListener('focus', focusHandler)
-      focusHandler = null
-    }
-
-    // Null out the selection module to prevent Quill from accessing removed DOM
-    quillInstance.value.selection = null
-    // Destroy Quill instance to properly clean up all references
-    if (quillInstance.value && typeof quillInstance.value.destroy === 'function') {
-      quillInstance.value.destroy()
-    }
-    // Null instance BEFORE clearing innerHTML — prevents Quill's internal observers
-    // from firing against removed DOM nodes between innerHTML='' and quillInstance=null.
-    quillInstance.value = null
-    isQuillLoaded.value = false
-
-    const toolbar = editorContainer.value?.parentElement?.querySelector('.ql-toolbar')
-    if (toolbar) toolbar.remove()
-
-    // innerHTML cleared after nulling instance — safe, no live Quill observers remain
-    if (editorContainer.value) editorContainer.value.innerHTML = ''
-
-    await nextTick()
-    await initQuill()
-    if (content) setQuillContent(content)
   }, 250)
 })
 </script>

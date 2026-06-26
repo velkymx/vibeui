@@ -39,6 +39,12 @@ Mobile collapse toggle button.
 | `target` | `String` | Required | The `id` of the `VibeCollapse` to toggle |
 | `ariaLabel` | `String` | `'Toggle navigation'` | Accessible label for the button |
 
+#### Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `component-error` | `ComponentError` | Emitted if the Bootstrap collapse toggle fails (e.g. Bootstrap JS unavailable) |
+
 ### VibeNavbarNav
 Navigation links container. Supports regular links and dropdown items.
 

@@ -159,57 +159,47 @@ const hide = () => bsToast.value?.hide()
 // _unsafe_bsInstance is an escape hatch, NOT part of the stable API.
 // Calling dispose()/other lifecycle methods on it directly WILL break this component.
 defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
+
+// Shared attrs for the .toast element — avoids repeating them in both template branches.
+// `as const` preserves the literal types ('assertive', 'true') so they stay assignable
+// to the native aria-live / aria-atomic attribute types instead of widening to `string`.
+const toastAttrs = computed(() => ({
+  id: computedId.value,
+  class: toastClass.value,
+  role: 'alert',
+  'aria-live': 'assertive',
+  'aria-atomic': 'true',
+  'data-bs-autohide': props.autohide,
+  'data-bs-delay': props.delay
+} as const))
 </script>
 
 <template>
-  <div
-    v-if="noContainer"
-    ref="toastRef"
-    :id="computedId"
-    :class="toastClass"
-    role="alert"
-    aria-live="assertive"
-    aria-atomic="true"
-    :data-bs-autohide="autohide"
-    :data-bs-delay="delay"
-  >
-    <div v-if="title || $slots.header" class="toast-header">
-      <slot name="header">
-        <strong class="me-auto">{{ title }}</strong>
-      </slot>
-      <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
-    </div>
-    <div class="toast-body">
-      <slot />
-    </div>
-  </div>
-
+  <!-- Single Teleport: disabled when noContainer (VibeToastHost owns the wrapper)
+       or when the teleport prop is falsy (caller wants inline rendering). -->
   <Teleport
-    v-else
     :to="teleport === true ? 'body' : (teleport || undefined)"
-    :disabled="!teleport"
+    :disabled="noContainer || !teleport"
   >
-    <div :class="containerClass" style="z-index: 1090">
-      <div
-        ref="toastRef"
-        :id="computedId"
-        :class="toastClass"
-        role="alert"
-        aria-live="assertive"
-        aria-atomic="true"
-        :data-bs-autohide="autohide"
-        :data-bs-delay="delay"
-      >
+    <div v-if="!noContainer" :class="containerClass" style="z-index: 1090">
+      <div ref="toastRef" v-bind="toastAttrs">
         <div v-if="title || $slots.header" class="toast-header">
           <slot name="header">
             <strong class="me-auto">{{ title }}</strong>
           </slot>
           <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
         </div>
-        <div class="toast-body">
-          <slot />
-        </div>
+        <div class="toast-body"><slot /></div>
       </div>
+    </div>
+    <div v-else ref="toastRef" v-bind="toastAttrs">
+      <div v-if="title || $slots.header" class="toast-header">
+        <slot name="header">
+          <strong class="me-auto">{{ title }}</strong>
+        </slot>
+        <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
+      </div>
+      <div class="toast-body"><slot /></div>
     </div>
   </Teleport>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { ButtonVariant, Size, ButtonType, ComponentError } from '../types'
 
 const props = defineProps({
@@ -18,6 +18,31 @@ const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
   (e: 'component-error', error: ComponentError): void
 }>()
+
+// Root ref used only for the DEV-only a11y check below.
+const rootRef = ref<HTMLElement | { $el?: HTMLElement } | null>(null)
+
+// DEV-only: warn when the button has content but no visible text and no
+// aria-label/aria-labelledby — screen readers would only announce "button" (WCAG 4.1.2).
+// We inspect the rendered DOM in onMounted instead of invoking slots.default() in setup:
+// calling a slot outside the render function trips Vue's "Slot invoked outside of the
+// render function" warning and skips slot dependency tracking. Reading the final DOM also
+// catches text nested inside wrapper elements, which the vnode scan missed.
+onMounted(() => {
+  if (!import.meta.env.DEV) return
+  const el = (rootRef.value && '$el' in rootRef.value ? rootRef.value.$el : rootRef.value) as HTMLElement | null
+  if (!el) return
+  // el.children (elements only) — ignores the comment anchor Vue leaves for an empty slot.
+  const hasElementContent = el.children.length > 0
+  const hasText = (el.textContent ?? '').trim().length > 0
+  const hasLabel = el.hasAttribute('aria-label') || el.hasAttribute('aria-labelledby')
+  if (hasElementContent && !hasText && !hasLabel) {
+    console.warn(
+      '[VibeButton] Icon-only buttons require an aria-label or aria-labelledby ' +
+      'attribute for screen reader accessibility (WCAG 4.1.2).'
+    )
+  }
+})
 
 const tag = computed(() => {
   if (props.href) return 'a'
@@ -58,6 +83,7 @@ const handleClick = (event: MouseEvent) => {
 <template>
   <component
     :is="tag"
+    ref="rootRef"
     :class="buttonClass"
     :type="href || to ? undefined : type"
     :href="href"
@@ -69,3 +95,18 @@ const handleClick = (event: MouseEvent) => {
     <slot />
   </component>
 </template>
+
+<style scoped>
+/*
+ * WCAG 1.4.3: Bootstrap's default disabled opacity (0.65) drops contrast below 3:1.
+ * Override with full-opacity body colors so the label stays readable at ≥ 4.5:1
+ * in both light and dark mode (Bootstrap's body / tertiary-bg tokens flip automatically).
+ */
+.btn:disabled,
+.btn.disabled {
+  color: var(--bs-body-color) !important;
+  background-color: var(--bs-tertiary-bg) !important;
+  border-color: var(--bs-border-color) !important;
+  opacity: 1 !important;
+}
+</style>

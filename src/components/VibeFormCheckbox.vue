@@ -73,8 +73,7 @@ const handleChange = (event: Event) => {
     if (target.checked) {
       newValue.push(props.value)
     } else {
-      const index = newValue.indexOf(props.value)
-      if (index > -1) newValue.splice(index, 1)
+      newValue = newValue.filter((v: unknown) => v !== props.value)
     }
   } else {
     newValue = target.checked ? props.value : props.uncheckedValue

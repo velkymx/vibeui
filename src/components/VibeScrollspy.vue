@@ -8,6 +8,16 @@ interface BootstrapScrollSpy {
   dispose: () => void
 }
 
+interface ScrollSpyOptions {
+  target: string
+  rootMargin?: string
+  method?: string
+  smoothScroll?: boolean
+  threshold?: number[]
+  /** @deprecated Bootstrap 5.2+. Use rootMargin instead. */
+  offset?: number
+}
+
 const props = defineProps({
   target: { type: String, required: true },
   /** @deprecated Bootstrap 5.2+ uses rootMargin. Use rootMargin instead. */
@@ -51,12 +61,16 @@ const initScrollspy = async () => {
       console.warn('[VibeScrollspy] The `offset` prop is deprecated (Bootstrap 5.2+). Use `rootMargin` instead.')
     }
 
-    bsScrollspy.value = new ScrollSpy(scrollspyRef.value, {
+    const scrollSpyOpts: ScrollSpyOptions = {
       target: props.target,
       rootMargin: props.rootMargin,
       method: props.method,
       smoothScroll: props.smoothScroll
-    } as any) as BootstrapScrollSpy
+    }
+    bsScrollspy.value = new (ScrollSpy as unknown as new (el: HTMLElement, opts: ScrollSpyOptions) => BootstrapScrollSpy)(
+      scrollspyRef.value,
+      scrollSpyOpts
+    )
 
     scrollspyRef.value.addEventListener('activate.bs.scrollspy', onActivate)
   } catch (error) {

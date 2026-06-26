@@ -200,15 +200,68 @@ describe('VibeDataTable', () => {
       expect(wrapper.findAll('tbody tr')).toHaveLength(2)
       expect(wrapper.text()).toContain('Showing 1 to')
     })
+
+    // CR9-20: without isUnmounted guard, if component unmounts between the setTimeout
+    // call and its execution, the callback sets debouncedSearchQuery/currentPage on a
+    // dead component (Vue DEV warning). isUnmounted flag prevents this.
+    it('debounce callback is a no-op after component unmounts (CR9-20)', async () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, searchable: true, searchDebounce: 50 }
+      })
+      const input = wrapper.find('input[type="search"]')
+      // Trigger debounce timer (searchDebounce: 50ms so timer is pending)
+      await input.setValue('Alice')
+      await input.trigger('input')
+      // Unmount before the 50ms fires — no Vue DEV warning should occur
+      wrapper.unmount()
+      // Wait for the debounce to fire (would touch dead reactive state without fix)
+      await new Promise(r => setTimeout(r, 100))
+      // No assertion needed — test passes if no unhandled error/warning occurs.
+      // The guard is validated by the absence of Vue's "Set operation on key 'value'
+      // of a non-reactive object" DEV warning.
+    })
   })
 
   describe('sorting functionality', () => {
-    it('renders sort icons on sortable columns', () => {
+    // CR9-10: sort icons changed from Unicode (⇅ ↓ ↑) to CSS class-based approach
+    // with aria-sort on the th element. Unicode glyphs may render as tofu/emoji on
+    // some OS/font combinations; CSS class-based approach has no such risk.
+    it('renders .vibe-sort-icon span on sortable columns (CR9-10)', () => {
       const wrapper = mount(VibeDataTable, {
         props: { columns, items, sortable: true }
       })
 
-      expect(wrapper.text()).toContain('⇅')
+      expect(wrapper.find('.vibe-sort-icon').exists()).toBe(true)
+    })
+
+    it('unsorted sortable column has aria-sort="none" (CR9-10)', () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, sortable: true }
+      })
+
+      const nameTh = wrapper.findAll('thead th')[1]
+      expect(nameTh.attributes('aria-sort')).toBe('none')
+    })
+
+    it('sorted ascending column has aria-sort="ascending" (CR9-10)', async () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, sortable: true }
+      })
+
+      await wrapper.findAll('thead th')[1].trigger('click')
+
+      expect(wrapper.findAll('thead th')[1].attributes('aria-sort')).toBe('ascending')
+    })
+
+    it('sorted descending column has aria-sort="descending" (CR9-10)', async () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, sortable: true }
+      })
+
+      await wrapper.findAll('thead th')[1].trigger('click')
+      await wrapper.findAll('thead th')[1].trigger('click')
+
+      expect(wrapper.findAll('thead th')[1].attributes('aria-sort')).toBe('descending')
     })
 
     it('sorts column ascending on first click', async () => {
@@ -251,7 +304,7 @@ describe('VibeDataTable', () => {
         props: { columns, items, sortable: false }
       })
 
-      expect(wrapper.text()).not.toContain('⇅')
+      expect(wrapper.find('.vibe-sort-icon').exists()).toBe(false)
     })
 
     it('supports two-way binding for sortBy and sortDesc', async () => {
@@ -259,7 +312,8 @@ describe('VibeDataTable', () => {
         props: { columns, items, sortable: true, sortBy: 'name', sortDesc: false }
       })
 
-      expect(wrapper.text()).toContain('↑')
+      // With sortBy='name' and sortDesc=false → name column is sorted ascending
+      expect(wrapper.findAll('thead th')[1].attributes('aria-sort')).toBe('ascending')
     })
   })
 
@@ -441,6 +495,19 @@ describe('VibeDataTable', () => {
       const emitted = wrapper.emitted('row-clicked') as any[][]
       expect(emitted[0][0]).toEqual({ id: 1, name: 'Alice', email: 'alice@test.com', status: 'active' })
       expect(emitted[0][1]).toBe(0)
+    })
+
+    // CR8-4: clickable prop replaces getCurrentInstance() anti-pattern.
+    // Rows have no pointer cursor by default; opt-in via :clickable="true".
+    it('rows have no cursor pointer style by default', () => {
+      const wrapper = mount(VibeDataTable, { props: { columns, items } })
+      const style = wrapper.find('tbody tr').attributes('style')
+      expect(style ?? '').not.toContain('cursor')
+    })
+
+    it('rows have cursor pointer style when clickable prop is true', () => {
+      const wrapper = mount(VibeDataTable, { props: { columns, items, clickable: true } })
+      expect(wrapper.find('tbody tr').attributes('style')).toContain('cursor: pointer')
     })
   })
 

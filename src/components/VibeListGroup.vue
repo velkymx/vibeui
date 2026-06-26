@@ -33,6 +33,7 @@ const listGroupClass = computed(() => {
 
 const getItemClass = (item: ListGroupItem) => {
   const classes = ['list-group-item']
+  if (safeHref(item.href) || item.to || !item.disabled) classes.push('list-group-item-action')
   if (item.active) classes.push('active')
   if (item.disabled) classes.push('disabled')
   if (item.variant) classes.push(`list-group-item-${item.variant}`)
@@ -53,6 +54,7 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
       v-memo="[item.href, item.to, item.active, item.disabled, item.variant, item.text]"
       :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'li'"
       :class="getItemClass(item)"
+      :style="!safeHref(item.href) && !item.to && !item.disabled ? { cursor: 'pointer' } : undefined"
       :href="safeHref(item.href)"
       :to="item.to"
       :aria-disabled="item.disabled || undefined"

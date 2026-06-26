@@ -20,7 +20,7 @@ Powerful data table component with search, sorting, and pagination - similar to 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `items` | `T[]` | `[]` | Array of data objects to display |
-| `columns` | `DataTableColumn<T>[]` | Required | Column definitions |
+| `columns` | `DataTableColumn<T>[]` | `[]` | Column definitions. Defaults to an empty array, so an unset/loading state renders an empty table rather than erroring. |
 | `rowKey` | `String` | `'id'` | Property name used as the unique key for each row. **Recommended** — set it to a unique field in your data (e.g. `'id'`, `'uuid'`) so Vue tracks rows correctly across sorting, filtering, and pagination. Falls back to a positional key (with a DEV warning) when missing. |
 
 > **Typing tip**: `DataTableColumn` is generic over your row type. For full slot-prop / formatter typing, annotate the column array:
@@ -56,6 +56,7 @@ Powerful data table component with search, sorting, and pagination - similar to 
 | `searchable` | `Boolean` | `true` | Enable search functionality |
 | `sortable` | `Boolean` | `true` | Enable column sorting |
 | `paginated` | `Boolean` | `true` | Enable pagination |
+| `clickable` | `Boolean` | `false` | Show a pointer cursor on rows to signal they are interactive (pair with a `@row-clicked` listener) |
 
 ### Search Props
 
@@ -119,6 +120,7 @@ interface DataTableColumn {
 | `update:sortBy` | `String` | Emitted when sort column changes |
 | `update:sortDesc` | `Boolean` | Emitted when sort direction changes |
 | `row-clicked` | `(item, globalIndex)` | Emitted when a row is clicked. `globalIndex` is the index within the full filtered/sorted dataset, not the current page. Only emitted when a `@row-clicked` listener is attached (rows show a pointer cursor in that case). |
+| `component-error` | `ComponentError` | Emitted if an internal error occurs |
 
 ## Slots
 

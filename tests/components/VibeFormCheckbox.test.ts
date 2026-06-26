@@ -181,6 +181,26 @@ describe('VibeFormCheckbox', () => {
     expect(emitted[0][0]).toEqual(['option2'])
   })
 
+  // CR9-12: indexOf + splice only removed the first occurrence of value in the array.
+  // Consumer-side duplication (two entries with same value) would only remove one.
+  // Fix: use .filter(v => v !== props.value) to remove ALL occurrences.
+  it('removes ALL occurrences when array modelValue has duplicates (CR9-12)', async () => {
+    const wrapper = mount(VibeFormCheckbox, {
+      props: {
+        id: 'checkbox',
+        modelValue: ['option1', 'option2', 'option1'],
+        value: 'option1'
+      }
+    })
+
+    await wrapper.find('input').setValue(false)
+
+    const emitted = wrapper.emitted('update:modelValue') as any[][]
+    // With fix: all 'option1' entries removed → ['option2']
+    // Without fix: only first 'option1' removed → ['option2', 'option1']
+    expect(emitted[0][0]).toEqual(['option2'])
+  })
+
   it('emits change event', async () => {
     const wrapper = mount(VibeFormCheckbox, {
       props: {

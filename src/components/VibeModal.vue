@@ -26,7 +26,14 @@ const props = defineProps({
   staticBackdrop: { type: Boolean, default: false },
   hideHeader: { type: Boolean, default: false },
   hideFooter: { type: Boolean, default: false },
-  teleport: { type: [String, Boolean], default: 'body' }
+  teleport: { type: [String, Boolean], default: 'body' },
+  // WCAG 2.4.3: move focus to the first form control when the modal opens.
+  // Set false to opt out (e.g. modals with a long async transition).
+  autoFocus: { type: Boolean, default: true },
+  // WCAG 2.1.1: Cmd+Enter / Ctrl+Enter submits the first <form> inside the modal,
+  // matching the UX convention from Apple Mail, Google Docs, and Slack.
+  // Set false to opt out.
+  submitOnMetaEnter: { type: Boolean, default: true }
 })
 
 const emit = defineEmits<{
@@ -48,6 +55,67 @@ const isVisible = ref(false)
 // own restore is unreliable when the modal is shown programmatically (no trigger
 // element), so capture the pre-open focus ourselves and restore it on close.
 let preFocusEl: HTMLElement | null = null
+
+// WCAG 2.1.2: track elements we've made inert so we can restore them precisely.
+const inertedEls: HTMLElement[] = []
+
+// All natively focusable elements (excluding elements inside inert subtrees).
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]),' +
+  'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+function getFocusableEls(): HTMLElement[] {
+  if (!modalRef.value) return []
+  return Array.from(modalRef.value.querySelectorAll<HTMLElement>(FOCUSABLE))
+}
+
+// Single keydown handler for the modal — handles both focus trapping and form submission.
+function onModalKeydown(e: KeyboardEvent) {
+  if (!isVisible.value) return
+
+  // WCAG 2.1.1: Cmd/Ctrl+Enter submits the first <form> in the modal.
+  if (props.submitOnMetaEnter && (e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    const form = modalRef.value?.querySelector<HTMLFormElement>('form')
+    form?.requestSubmit()
+    return
+  }
+
+  // WCAG 2.1.2: Tab trap cycles focus within the modal.
+  if (e.key !== 'Tab') return
+  const focusable = getFocusableEls()
+  if (focusable.length === 0) return
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  if (e.shiftKey) {
+    if (document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    }
+  } else {
+    if (document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+}
+
+// Mark all siblings of the modal element as inert so keyboard and screen-reader
+// users cannot reach page content behind the open modal (WCAG 2.1.2).
+function applyInert() {
+  const parent = modalRef.value?.parentElement
+  if (!parent) return
+  Array.from(parent.children).forEach(child => {
+    const el = child as HTMLElement
+    if (el === modalRef.value || el.inert) return
+    el.inert = true
+    inertedEls.push(el)
+  })
+}
+
+function removeInert() {
+  inertedEls.forEach(el => { el.inert = false })
+  inertedEls.length = 0
+}
 
 // Bug 1: in-flight guard to prevent concurrent async init races
 let initInFlight = false
@@ -86,6 +154,16 @@ const onShown = () => {
   isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
+  // WCAG 2.1.2: lock out the page behind the modal from keyboard / SR navigation.
+  applyInert()
+  // WCAG 2.4.3: move keyboard focus to the first form control so users don't
+  // have to tab from the trigger through the whole page to reach modal inputs.
+  if (props.autoFocus && modalRef.value) {
+    const first = modalRef.value.querySelector<HTMLElement>(
+      'input:not([type="hidden"]), select, textarea'
+    )
+    first?.focus()
+  }
 }
 
 const onHide = () => {
@@ -96,6 +174,8 @@ const onHidden = () => {
   isVisible.value = false
   emit('hidden')
   emit('update:modelValue', false)
+  // WCAG 2.1.2: restore inert on any previously locked-out siblings.
+  removeInert()
   // WCAG 2.4.3: return focus to the element that opened the modal.
   if (preFocusEl && typeof preFocusEl.focus === 'function') {
     preFocusEl.focus()
@@ -110,6 +190,8 @@ function attachListeners() {
   modalRef.value.addEventListener('shown.bs.modal', onShown)
   modalRef.value.addEventListener('hide.bs.modal', onHide)
   modalRef.value.addEventListener('hidden.bs.modal', onHidden)
+  // Keyboard events bubble up from children to the modal root.
+  modalRef.value.addEventListener('keydown', onModalKeydown)
   listenersAttached = true
 }
 
@@ -119,6 +201,7 @@ function detachListeners() {
   modalRef.value.removeEventListener('shown.bs.modal', onShown)
   modalRef.value.removeEventListener('hide.bs.modal', onHide)
   modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
+  modalRef.value.removeEventListener('keydown', onModalKeydown)
   listenersAttached = false
 }
 
@@ -174,6 +257,8 @@ onMounted(initModal)
 // Bug 4: detach listeners before dispose
 onBeforeUnmount(() => {
   isUnmounted = true
+  // WCAG 2.1.2: must clear inert even if the modal was never formally closed.
+  removeInert()
   detachListeners()
   bsModal.value?.dispose()
   bsModal.value = null

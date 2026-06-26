@@ -57,6 +57,28 @@ describe('VibeHero', () => {
     expect(style).toContain('url("https://example.com/a.jpg")')
   })
 
+  // CR9-22: overlay:true hardcoded rgba(0,0,0,0.5). overlayOpacity prop exposes control.
+  it('uses overlayOpacity to control overlay transparency (CR9-22)', () => {
+    const wrapper = mount(VibeHero, {
+      props: { bgImage: 'https://example.com/a.jpg', overlay: true, overlayOpacity: 0.8 }
+    })
+    const style = wrapper.attributes('style') || ''
+    expect(style).toContain('0.8')
+    expect(style).not.toContain('0.5')
+  })
+
+  it('clamps overlayOpacity to [0, 1] range (CR9-22)', () => {
+    const wrapperOver = mount(VibeHero, {
+      props: { bgImage: 'https://example.com/a.jpg', overlay: true, overlayOpacity: 2 }
+    })
+    expect(wrapperOver.attributes('style') || '').toContain('rgba(0, 0, 0, 1)')
+
+    const wrapperUnder = mount(VibeHero, {
+      props: { bgImage: 'https://example.com/a.jpg', overlay: true, overlayOpacity: -1 }
+    })
+    expect(wrapperUnder.attributes('style') || '').toContain('rgba(0, 0, 0, 0)')
+  })
+
   it('applies a validated CSS gradient background', () => {
     const wrapper = mount(VibeHero, { props: { gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' } })
     const style = wrapper.attributes('style') || ''

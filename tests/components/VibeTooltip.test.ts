@@ -11,7 +11,7 @@ describe('VibeTooltip', () => {
   it('renders correctly', () => {
     const wrapper = mount(VibeTooltip, {
       props: {
-        content: 'Tooltip Content'
+        text: 'Tooltip Content'
       },
       slots: {
         default: '<button>Hover me</button>'
@@ -23,7 +23,7 @@ describe('VibeTooltip', () => {
     expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-title')).toBe('Tooltip Content')
   })
 
-  it('supports text prop as an alias for content', () => {
+  it('uses the text prop for the tooltip title', () => {
     const wrapper = mount(VibeTooltip, {
       props: {
         text: 'Tooltip Text'
@@ -36,10 +36,37 @@ describe('VibeTooltip', () => {
     expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-title')).toBe('Tooltip Text')
   })
 
+  // Back-compat: the deprecated `content` prop still feeds the title and warns once.
+  // console.warn is spied so the deprecated path stays covered without leaking noise.
+  it('still honours the deprecated content prop and warns', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const wrapper = mount(VibeTooltip, {
+      props: { content: 'Legacy Content' },
+      slots: { default: '<button>Hover me</button>' }
+    })
+
+    expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-title')).toBe('Legacy Content')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('`content` prop is deprecated'))
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn when text is provided instead of content', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    mount(VibeTooltip, {
+      props: { text: 'Modern Text' },
+      slots: { default: '<button>Hover me</button>' }
+    })
+
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('`content` prop is deprecated'))
+    warnSpy.mockRestore()
+  })
+
   it('initializes bootstrap tooltip on mount', async () => {
     mount(VibeTooltip, {
       props: {
-        content: 'Tooltip Content'
+        text: 'Tooltip Content'
       },
       slots: {
         default: '<button>Hover me</button>'
@@ -55,7 +82,7 @@ describe('VibeTooltip', () => {
   it('updates tooltip content when prop changes', async () => {
     const wrapper = mount(VibeTooltip, {
       props: {
-        content: 'Initial Content'
+        text: 'Initial Content'
       },
       slots: {
         default: '<button>Hover me</button>'
@@ -66,14 +93,14 @@ describe('VibeTooltip', () => {
     await new Promise(resolve => setTimeout(resolve, 0))
     const mockInstance = vi.mocked(bootstrap.Tooltip).mock.results[0].value
 
-    await wrapper.setProps({ content: 'Updated Content' })
+    await wrapper.setProps({ text: 'Updated Content' })
     expect(mockInstance.setContent).toHaveBeenCalledWith({ '.tooltip-inner': 'Updated Content' })
   })
 
   it('cleans up bootstrap tooltip on unmount', async () => {
     const wrapper = mount(VibeTooltip, {
       props: {
-        content: 'Tooltip Content'
+        text: 'Tooltip Content'
       },
       slots: {
         default: '<button>Hover me</button>'
@@ -90,7 +117,7 @@ describe('VibeTooltip', () => {
 
   it('never passes html:true to Bootstrap regardless of content', async () => {
     mount(VibeTooltip, {
-      props: { content: '<b>bold</b>' },
+      props: { text: '<b>bold</b>' },
       slots: { default: '<button>x</button>' }
     })
     await new Promise(resolve => setTimeout(resolve, 0))
@@ -102,7 +129,7 @@ describe('VibeTooltip', () => {
 
   it('does not set data-bs-html attribute on element', () => {
     const wrapper = mount(VibeTooltip, {
-      props: { content: 'Safe content' },
+      props: { text: 'Safe content' },
       slots: { default: '<button>x</button>' }
     })
     expect(wrapper.find('span[data-bs-placement]').attributes('data-bs-html')).toBeUndefined()
@@ -114,7 +141,7 @@ describe('VibeTooltip', () => {
 
     const wrapper = mount(VibeTooltip, {
       props: {
-        content: 'Tooltip Content'
+        text: 'Tooltip Content'
       },
       slots: {
         default: '<button>Hover me</button>'
@@ -137,7 +164,7 @@ describe('VibeTooltip', () => {
   // so unmounting synchronously after mount() leaves isUnmounted=true before the constructor call.
   it('does not construct Tooltip after component unmounts during async init', async () => {
     const wrapper = mount(VibeTooltip, {
-      props: { content: 'Test' },
+      props: { text: 'Test' },
       slots: { default: '<button>x</button>' }
     })
 
@@ -153,7 +180,7 @@ describe('VibeTooltip', () => {
 
   it('sets bsInstance to null after unmount', async () => {
     const wrapper = mount(VibeTooltip, {
-      props: { content: 'Test' },
+      props: { text: 'Test' },
       slots: { default: '<button>x</button>' }
     })
     await new Promise(resolve => setTimeout(resolve, 0))

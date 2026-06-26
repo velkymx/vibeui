@@ -130,4 +130,39 @@ describe('VibeBreadcrumb', () => {
     })
     expect(wrapper.find('a').attributes('href')).toBe('/home')
   })
+
+  // P0: non-active items without href/to rendered as <span>, no pointer cursor.
+  // Fix: render as <button type="button"> so UA stylesheet provides pointer cursor.
+  it('renders <button> for non-active item without href or to (P0 cursor fix)', () => {
+    const wrapper = mount(VibeBreadcrumb, {
+      props: {
+        items: [
+          { text: 'No Link' },
+          { text: 'Current', active: true }
+        ]
+      }
+    })
+    const firstItem = wrapper.findAll('.breadcrumb-item')[0]
+    expect(firstItem.find('button').exists()).toBe(true)
+    expect(firstItem.find('button').attributes('type')).toBe('button')
+  })
+
+  it('emits item-click when <button> breadcrumb item is clicked (P0)', async () => {
+    const wrapper = mount(VibeBreadcrumb, {
+      props: { items: [{ text: 'No Link' }] }
+    })
+    await wrapper.find('button').trigger('click')
+    const emitted = wrapper.emitted('item-click') as any[][]
+    expect(emitted).toBeTruthy()
+    expect(emitted[0][0].item).toMatchObject({ text: 'No Link' })
+    expect(emitted[0][0].index).toBe(0)
+  })
+
+  it('active items still render as <span>, not <button> (P0)', () => {
+    const wrapper = mount(VibeBreadcrumb, {
+      props: { items: [{ text: 'Current', active: true }] }
+    })
+    expect(wrapper.find('span').exists()).toBe(true)
+    expect(wrapper.find('button').exists()).toBe(false)
+  })
 })

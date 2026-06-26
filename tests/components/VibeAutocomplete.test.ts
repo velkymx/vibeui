@@ -86,6 +86,34 @@ describe('VibeAutocomplete', () => {
       expect(source).toHaveBeenCalledTimes(1)
       expect(source).toHaveBeenCalledWith('abc')
     })
+
+    // CR9-2: async source rejections were unhandled — results stayed stale,
+    // component was left open, and an unhandledrejection event fired.
+    // We populate results with a first successful call, then trigger a failure;
+    // the stale results must be cleared and the dropdown must close.
+    it('clears stale results and closes dropdown when async source rejects', async () => {
+      let callCount = 0
+      const source = vi.fn(async (_q: string): Promise<string[]> => {
+        callCount++
+        if (callCount >= 2) throw new Error('network error')
+        return ['result-1', 'result-2']
+      })
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source, minChars: 1, debounce: 0 }
+      })
+      const input = wrapper.find('input')
+
+      // First query: succeeds — populate results
+      await input.setValue('a')
+      await flush(0)
+      expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(2)
+
+      // Second query: source throws — results must be cleared, dropdown closed
+      await input.setValue('ab')
+      await flush(0)
+      expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
+      expect(wrapper.find('[role="listbox"]').exists()).toBe(false)
+    })
   })
 
   describe('keyboard navigation', () => {
@@ -147,6 +175,26 @@ describe('VibeAutocomplete', () => {
       await flush(20)
       await input.trigger('keydown', { key: 'ArrowDown' }) // highlights index 0
       // First item must be highlighted (index 0), not last (index 2) that ArrowUp would have set
+      const highlighted = wrapper.find('.vibe-autocomplete-item-highlighted')
+      expect(highlighted.text()).toBe('Alpha')
+    })
+
+    // CR9-15: WAI-ARIA combobox — ArrowUp at first item must NOT wrap to last.
+    // Non-standard wrap confuses keyboard users. Fix: Math.max(0, index - 1).
+    it('ArrowUp from first item stays at first item — no wrap to last (CR9-15)', async () => {
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: items, minChars: 0, debounce: 0 }
+      })
+      const input = wrapper.find('input')
+      await input.setValue('')
+      await flush(20)  // debounce:0 → results loaded synchronously, isOpen = true
+
+      // First ArrowDown moves highlight from -1 to 0 (Alpha) — dropdown already open
+      await input.trigger('keydown', { key: 'ArrowDown' })
+
+      // Now at index 0. ArrowUp must stay at index 0, not wrap to Gamma (index 2).
+      await input.trigger('keydown', { key: 'ArrowUp' })
+
       const highlighted = wrapper.find('.vibe-autocomplete-item-highlighted')
       expect(highlighted.text()).toBe('Alpha')
     })
@@ -236,6 +284,63 @@ describe('VibeAutocomplete', () => {
       highlighted = wrapper.find('.vibe-autocomplete-item-highlighted')
       expect(highlighted.exists()).toBe(true)
       expect(highlighted.text()).toBe('apricot')
+    })
+  })
+
+  // CR9-6: when T is an object and itemText is not provided, labelOf falls through
+  // to String(item) → '[object Object]'. All results display identically. A DEV
+  // warning on first occurrence helps developers discover the required itemText prop.
+  describe('object-item labelOf DEV warning (CR9-6)', () => {
+    it('warns once when object items are used without itemText prop', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const objectSource = [
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' }
+      ]
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: objectSource, minChars: 0, debounce: 0 }
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+
+      // labelOf called on each object item — should warn about missing itemText
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('itemText')
+      )
+      warnSpy.mockRestore()
+      wrapper.unmount()
+    })
+
+    it('does not warn when itemText is provided for object items', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const objectSource = [{ id: 1, name: 'Alice' }]
+      const wrapper = mount(VibeAutocomplete, {
+        props: {
+          source: objectSource,
+          minChars: 0,
+          debounce: 0,
+          itemText: (item: { id: number; name: string }) => item.name
+        }
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+      wrapper.unmount()
+    })
+
+    it('does not warn for string items', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const wrapper = mount(VibeAutocomplete, {
+        props: { source: ['Alice', 'Bob'], minChars: 0, debounce: 0 }
+      })
+      await wrapper.find('input').setValue('a')
+      await flush(20)
+
+      expect(warnSpy).not.toHaveBeenCalled()
+      warnSpy.mockRestore()
+      wrapper.unmount()
     })
   })
 

@@ -12,7 +12,7 @@ Wrapper that owns a form control's label, help text, validation feedback, and id
 |------|------|---------|-------------|
 | `label` | `string` | `undefined` | Label text rendered for the first child control. |
 | `labelFor` | `string` | `undefined` | Explicit id to use instead of the auto-generated one. |
-| `required` | `boolean` | `false` | Append a `*` to the label. |
+| `required` | `boolean` | `false` | `true` appends a red `*` (aria-hidden) and a visually-hidden "required" span to the label. `false` (default) appends a gray "(optional)" label (aria-hidden). Omit on the child control — the group renders the indicator. |
 | `validationState` | `'valid' \| 'invalid' \| null` | `null` | Render valid/invalid feedback. |
 | `validationMessage` | `string` | `undefined` | Feedback message text. |
 | `helpText` | `string` | `undefined` | Help text rendered below the control. |
@@ -105,6 +105,9 @@ const city = ref('')
 - **Single-consumer rule:** only the first child control consumes the group id. With multiple controls (e.g. a checkbox or radio group), subsequent controls generate their own ids — the group's label still describes the set.
 - **Don't double up:** when the group provides `label`, `helpText`, or validation, omit those same props on the child control; the child suppresses its own copies to avoid duplicates.
 - **Floating labels** require the label to render after the control, which the group handles automatically; pair it with a `placeholder` on the input.
+- **Required/optional indicator (WCAG 3.3.2):** the `required` prop renders both a visual indicator (`*` / "(optional)") and a visually-hidden text node for screen readers. The visual spans carry `aria-hidden="true"` so the screen-reader announcement comes from the hidden span, not the symbol.
+- **`aria-describedby` (WCAG 1.3.1):** `helpText` and `validationMessage` elements are assigned stable ids; the child control's `aria-describedby` is wired automatically — no manual id plumbing needed.
+- **Live error region (WCAG 4.1.3):** the invalid-feedback div carries `role="alert"` so new errors are announced by screen readers without requiring the user to re-focus the field.
 
 ## Bootstrap CSS Classes
 

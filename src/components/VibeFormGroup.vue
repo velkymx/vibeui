@@ -37,7 +37,11 @@ provide(FORM_GROUP_KEY, {
   consumeId,
   hasLabel: computed(() => !!props.label),
   hasValidation: computed(() => !!props.validationState),
-  hasHelp: computed(() => !!props.helpText)
+  hasHelp: computed(() => !!props.helpText),
+  // WCAG 1.3.1: expose ids of help / feedback elements so nested controls can
+  // include them in aria-describedby without re-computing the same id formula.
+  helpId: computed(() => props.helpText ? helpId.value : null),
+  feedbackId: computed(() => props.validationState ? feedbackId.value : null)
 })
 
 const formGroupClass = computed(() => {
@@ -86,7 +90,11 @@ const helpId = computed(() => `${computedId.value}-help`)
       :class="labelClass"
     >
       {{ label }}
-      <span v-if="required" class="text-danger">*</span>
+      <!-- WCAG 3.3.2: visible required/optional signal (aria-hidden so SR uses the span below) -->
+      <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
+      <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+      <!-- Screen-reader-only equivalent of the visual asterisk -->
+      <span v-if="required" class="visually-hidden">required</span>
     </label>
 
     <div v-if="row && labelCols" :class="contentClass">
@@ -98,7 +106,8 @@ const helpId = computed(() => `${computedId.value}-help`)
       <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
-      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
+      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
+      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide a valid value.' }}
       </div>
     </div>
@@ -112,7 +121,9 @@ const helpId = computed(() => `${computedId.value}-help`)
         :class="labelClass"
       >
         {{ label }}
-        <span v-if="required" class="text-danger">*</span>
+        <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
+        <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+        <span v-if="required" class="visually-hidden">required</span>
       </label>
 
       <div v-if="helpText" :id="helpId" class="form-text">
@@ -121,7 +132,8 @@ const helpId = computed(() => `${computedId.value}-help`)
       <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
-      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" :style="{ display: 'block' }">
+      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
+      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide a valid value.' }}
       </div>
     </template>

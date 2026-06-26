@@ -80,6 +80,7 @@ import VibeFormCheckbox from './VibeFormCheckbox.vue'
 import VibeFormRadio from './VibeFormRadio.vue'
 import VibeFormSwitch from './VibeFormSwitch.vue'
 import VibeFormGroup from './VibeFormGroup.vue'
+import VibeFormErrorSummary from './VibeFormErrorSummary.vue'
 import VibeFormWysiwyg from './VibeFormWysiwyg.vue'
 import VibeInputGroup from './VibeInputGroup.vue'
 import VibeLink from './VibeLink.vue'
@@ -168,6 +169,7 @@ export {
   VibeFormRadio,
   VibeFormSwitch,
   VibeFormGroup,
+  VibeFormErrorSummary,
   VibeFormWysiwyg,
   VibeInputGroup,
   VibeLink
@@ -261,6 +263,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibeFormRadio', VibeFormRadio)
     app.component('VibeFormSwitch', VibeFormSwitch)
     app.component('VibeFormGroup', VibeFormGroup)
+    app.component('VibeFormErrorSummary', VibeFormErrorSummary)
     app.component('VibeFormWysiwyg', VibeFormWysiwyg)
     app.component('VibeInputGroup', VibeInputGroup)
     app.component('VibeLink', VibeLink)

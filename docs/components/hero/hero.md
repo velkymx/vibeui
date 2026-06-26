@@ -22,6 +22,7 @@ A hero / banner section. Renders a `<section>` with consistent padding, an inner
 | `minHeight` | `String` | `undefined` | Sanitized via `safeLength`; when set, content is vertically centered |
 | `bgImage` | `String` | `undefined` | Full-bleed background image URL; sanitized via `safeHref` (blocks `javascript:`/`data:`), rendered `cover`/`center` |
 | `overlay` | `Boolean \| String` | `false` | Darkening layer over `bgImage` for legibility — `true` for a default dark scrim, or a CSS color (sanitized via `safeColor`) |
+| `overlayOpacity` | `Number` | `0.5` | Opacity of the default dark scrim when `overlay` is `true`; clamped to `[0, 1]`. Ignored when `overlay` is a CSS color string |
 | `gradient` | `String` | `undefined` | CSS gradient background (e.g. `linear-gradient(135deg, #667eea, #764ba2)`); validated to `*-gradient(...)` only — no `url()`/`expression()` |
 | `tag` | `Tag` | `'section'` | Root element tag |
 

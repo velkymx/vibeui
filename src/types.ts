@@ -149,6 +149,23 @@ export interface TabPane {
 // Form types
 export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'date' | 'time' | 'datetime-local' | 'month' | 'week' | 'color'
 
+export type AutocompleteType =
+  | 'off' | 'on'
+  | 'name' | 'honorific-prefix' | 'given-name' | 'additional-name' | 'family-name' | 'honorific-suffix'
+  | 'nickname' | 'username' | 'email' | 'new-password' | 'current-password' | 'one-time-code'
+  | 'organization-title' | 'organization' | 'street-address'
+  | 'address-line1' | 'address-line2' | 'address-line3'
+  | 'address-level4' | 'address-level3' | 'address-level2' | 'address-level1'
+  | 'country' | 'country-name' | 'postal-code'
+  | 'cc-name' | 'cc-given-name' | 'cc-additional-name' | 'cc-family-name'
+  | 'cc-number' | 'cc-exp' | 'cc-exp-month' | 'cc-exp-year' | 'cc-csc' | 'cc-type'
+  | 'transaction-currency' | 'transaction-amount'
+  | 'language' | 'bday' | 'bday-day' | 'bday-month' | 'bday-year'
+  | 'sex' | 'tel' | 'tel-country-code' | 'tel-national' | 'tel-area-code'
+  | 'tel-local' | 'tel-extension' | 'impp' | 'url' | 'photo'
+
+export type InputMode = 'none' | 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url'
+
 export type ValidationState = 'valid' | 'invalid' | null
 
 /** Return true for valid, false for invalid (uses rule.message), or a non-empty string as the error message (also invalid). */

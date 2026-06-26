@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { NavItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
+import { routeKey } from '../utils/routeKey'
 
 interface BootstrapTab {
   show: () => void
@@ -33,6 +34,7 @@ const bsTabs = new Map<HTMLElement, BootstrapTab>()
 
 // Guards concurrent initTabs calls and post-unmount Bootstrap construction.
 let initInFlight = false
+let reinitGuard = false
 let isUnmounted = false
 
 const navClass = computed(() => {
@@ -104,16 +106,22 @@ onBeforeUnmount(() => {
 
 // Watch for items changes to re-initialize tabs
 watch(() => props.items, async () => {
-  bsTabs.forEach((bsTab, el) => {
-    el.removeEventListener('show.bs.tab', onShow)
-    el.removeEventListener('shown.bs.tab', onShown)
-    el.removeEventListener('hide.bs.tab', onHide)
-    el.removeEventListener('hidden.bs.tab', onHidden)
-    bsTab.dispose()
-  })
-  bsTabs.clear()
-  await nextTick()
-  await initTabs()
+  if (reinitGuard) return
+  reinitGuard = true
+  try {
+    bsTabs.forEach((bsTab, el) => {
+      el.removeEventListener('show.bs.tab', onShow)
+      el.removeEventListener('shown.bs.tab', onShown)
+      el.removeEventListener('hide.bs.tab', onHide)
+      el.removeEventListener('hidden.bs.tab', onHidden)
+      bsTab.dispose()
+    })
+    bsTabs.clear()
+    await nextTick()
+    await initTabs()
+  } finally {
+    reinitGuard = false
+  }
 }, { deep: false })
 
 const getTabTarget = (item: NavItem): string | undefined => {
@@ -154,7 +162,7 @@ defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
   <component :is="tag" ref="navRef" :class="navClass">
     <li
       v-for="(item, index) in items"
-      :key="item.href || (item.to ? String(item.to) : undefined) || item.text || String(index)"
+      :key="item.href || routeKey(item.to) || item.text || String(index)"
       class="nav-item"
       :class="{ dropdown: item.children && item.children.length > 0 }"
     >

@@ -143,6 +143,33 @@ describe('VibeAlert', () => {
     expect(mockInstance.close).toHaveBeenCalled()
   })
 
+  // CR8-5: On rapid false→true toggle, the old Bootstrap.Alert instance may still
+  // be alive (close animation in flight). setupBootstrap used to bail out when
+  // bsAlert.value was non-null, leaving the stale instance in charge.
+  // Fix: dispose the old instance before the early-return guard.
+  it('disposes stale Bootstrap instance and reinitialises on rapid false→true toggle', async () => {
+    const wrapper = mount(VibeAlert, {
+      props: { message: 'Test', modelValue: true }
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // First instance is live; close() is called but closed.bs.alert never fires in mock
+    const firstInstance = vi.mocked(bootstrap.Alert).mock.results[0].value
+
+    // Toggle off — triggers bsAlert.close() but animation doesn't complete (mock)
+    await wrapper.setProps({ modelValue: false })
+    // bsAlert.value is still non-null here; old guard would return early on next init
+
+    // Toggle back on before animation completes
+    await wrapper.setProps({ modelValue: true })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // A fresh Alert instance must be constructed, not the stale one reused
+    expect(vi.mocked(bootstrap.Alert)).toHaveBeenCalledTimes(2)
+    // Old instance was disposed
+    expect(firstInstance.dispose).toHaveBeenCalled()
+  })
+
   describe('dismissible', () => {
     it('shows close button when dismissible=true', () => {
       const wrapper = mount(VibeAlert, {

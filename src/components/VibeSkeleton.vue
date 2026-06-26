@@ -41,9 +41,9 @@ const sharedAttrs = {
 } as const
 
 // The `text` variant renders a multi-root fragment, so Vue cannot auto-inherit
-// consumer attrs (class, data-*, listeners) — it would silently drop them with a
-// dev warning. Disable automatic inheritance and bind $attrs explicitly on each
-// variant's root (the first line for the text fragment).
+// consumer attrs — it would silently drop them with a dev warning. Disable automatic
+// inheritance and bind $attrs explicitly on every line so class/data-*/listeners
+// propagate uniformly across all skeleton lines.
 defineOptions({ inheritAttrs: false })
 </script>
 
@@ -62,7 +62,7 @@ defineOptions({ inheritAttrs: false })
         width: i === lineCount && lineCount > 1 ? '60%' : toCss(width),
         height: toCss(height)
       }"
-      v-bind="i === 1 ? $attrs : undefined"
+      v-bind="$attrs"
       role="status"
       aria-busy="true"
     />

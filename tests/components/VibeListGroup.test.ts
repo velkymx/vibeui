@@ -168,4 +168,42 @@ describe('VibeListGroup', () => {
     })
     expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
   })
+
+  // P0: items without href/to render as <li> without hover affordance or pointer cursor.
+  // Fix: add list-group-item-action to all interactive items; cursor:pointer on <li> elements.
+  it('adds list-group-item-action to items with href (P0)', () => {
+    const wrapper = mount(VibeListGroup, {
+      props: { items: [{ text: 'Link', href: '/path' }] }
+    })
+    expect(wrapper.find('.list-group-item').classes()).toContain('list-group-item-action')
+  })
+
+  it('adds list-group-item-action to non-disabled items without href or to (P0)', () => {
+    const wrapper = mount(VibeListGroup, {
+      props: { items: [{ text: 'Plain Item' }] }
+    })
+    expect(wrapper.find('.list-group-item').classes()).toContain('list-group-item-action')
+  })
+
+  it('does not add list-group-item-action to disabled items (P0)', () => {
+    const wrapper = mount(VibeListGroup, {
+      props: { items: [{ text: 'Disabled', disabled: true }] }
+    })
+    expect(wrapper.find('.list-group-item').classes()).not.toContain('list-group-item-action')
+  })
+
+  it('sets cursor:pointer on li items without href for pointer affordance (P0)', () => {
+    const wrapper = mount(VibeListGroup, {
+      props: { items: [{ text: 'Plain Item' }] }
+    })
+    expect(wrapper.find('li').attributes('style')).toContain('cursor: pointer')
+  })
+
+  it('does not set cursor:pointer on disabled li items (P0)', () => {
+    const wrapper = mount(VibeListGroup, {
+      props: { items: [{ text: 'Disabled', disabled: true }] }
+    })
+    const style = wrapper.find('li').attributes('style') ?? ''
+    expect(style).not.toContain('cursor: pointer')
+  })
 })

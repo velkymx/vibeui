@@ -1,12 +1,15 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import { ref, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import type { DataTableColumn, ComponentError } from '../types'
 import { safeCssObject } from '../utils/safeCss'
 
 const props = defineProps({
   // Data
   items: { type: Array as () => T[], default: () => [] },
-  columns: { type: Array as () => DataTableColumn<T>[], required: true },
+  // Defaults to [] rather than required: undefined/missing columns is a supported
+  // transient state (e.g. async data not yet loaded). A default keeps every
+  // `for (… of props.columns)` safe and avoids a Vue "Invalid prop" warning.
+  columns: { type: Array as () => DataTableColumn<T>[], default: () => [] },
   rowKey: { type: String, default: 'id' }, // Key to use for unique row identification
 
   // Table styling
@@ -35,7 +38,8 @@ const props = defineProps({
   showInfo: { type: Boolean, default: true },
   infoText: { type: String, default: 'Showing {start} to {end} of {total} entries' },
   filteredInfoText: { type: String, default: 'Showing {start} to {end} of {total} entries (filtered from {totalRows} total entries)' },
-  perPageOptions: { type: Array as () => number[], default: () => [5, 10, 25, 50, 100] }
+  perPageOptions: { type: Array as () => number[], default: () => [5, 10, 25, 50, 100] },
+  clickable: { type: Boolean, default: false }
 })
 
 // Use defineModel for two-way binding (Vue 3.4+)
@@ -48,12 +52,6 @@ const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
   (e: 'component-error', error: ComponentError): void
 }>()
-
-const _instance = getCurrentInstance()
-const isRowClickable = computed(() => {
-  const p = _instance?.vnode.props
-  return typeof p?.onRowClicked === 'function' || typeof p?.['onRow-clicked'] === 'function'
-})
 
 // Local state for search
 const searchQuery = ref('')
@@ -87,20 +85,24 @@ const getRowKey = (item: T, index: number): string | number => {
   return `__row_${(startRow.value - 1) + index}`
 }
 
+let isUnmounted = false
+
 // Debounced search with proper cleanup
 watch(searchQuery, (newVal) => {
   if (searchDebounceTimer.value !== null) {
     clearTimeout(searchDebounceTimer.value)
   }
   searchDebounceTimer.value = setTimeout(() => {
+    if (isUnmounted) return
     debouncedSearchQuery.value = newVal
-    currentPage.value = 1 // Reset to first page on search
+    currentPage.value = 1
     searchDebounceTimer.value = null
   }, props.searchDebounce)
 })
 
 // Cleanup debounce timer on unmount
 onBeforeUnmount(() => {
+  isUnmounted = true
   if (searchDebounceTimer.value !== null) {
     clearTimeout(searchDebounceTimer.value)
     searchDebounceTimer.value = null
@@ -288,9 +290,25 @@ const sortIconMap = computed(() => {
     if (!props.sortable || column.sortable === false) {
       m.set(column, '')
     } else if (sortBy.value !== column.key) {
-      m.set(column, '⇅')
+      m.set(column, 'sort-none')
     } else {
-      m.set(column, sortDesc.value ? '↓' : '↑')
+      m.set(column, sortDesc.value ? 'sort-desc' : 'sort-asc')
+    }
+  }
+  return m
+})
+
+const ariaSortMap = computed(() => {
+  // Literal union (not plain string) so the value is assignable to the native
+  // aria-sort attribute type without a cast.
+  const m = new Map<DataTableColumn<T>, 'none' | 'ascending' | 'descending' | undefined>()
+  for (const column of props.columns) {
+    if (!props.sortable || column.sortable === false) {
+      m.set(column, undefined)
+    } else if (sortBy.value !== column.key) {
+      m.set(column, 'none')
+    } else {
+      m.set(column, sortDesc.value ? 'descending' : 'ascending')
     }
   }
   return m
@@ -357,12 +375,15 @@ const tdStyleMap = computed(() => {
               :key="column.key"
               :class="column.headerClass"
               :style="thStyleMap.get(column)"
+              :aria-sort="ariaSortMap.get(column)"
               @click="handleSort(column)"
             >
               {{ column.label }}
-              <span v-if="sortable && column.sortable !== false" class="ms-1">
-                {{ sortIconMap.get(column) }}
-              </span>
+              <span
+                v-if="sortable && column.sortable !== false"
+                :class="['ms-1', 'vibe-sort-icon', sortIconMap.get(column)]"
+                aria-hidden="true"
+              ></span>
             </th>
           </tr>
         </thead>
@@ -370,7 +391,7 @@ const tdStyleMap = computed(() => {
           <tr
             v-for="(item, index) in paginatedItems"
             :key="getRowKey(item, index)"
-            :style="isRowClickable ? { cursor: 'pointer' } : undefined"
+            :style="clickable ? { cursor: 'pointer' } : undefined"
             @click="handleRowClick(item, index)"
           >
             <td
@@ -455,6 +476,25 @@ const tdStyleMap = computed(() => {
 <style scoped>
 .vibe-datatable {
   width: 100%;
+}
+
+/* Sort icon — CSS border triangles avoid font/emoji rendering issues with Unicode arrows */
+.vibe-sort-icon {
+  display: inline-block;
+  width: 0.75em;
+  position: relative;
+  opacity: 0.4;
+}
+.vibe-sort-icon::before {
+  content: '↕';
+}
+.vibe-sort-icon.sort-asc::before {
+  content: '↑';
+  opacity: 1;
+}
+.vibe-sort-icon.sort-desc::before {
+  content: '↓';
+  opacity: 1;
 }
 
 .datatable-info {
