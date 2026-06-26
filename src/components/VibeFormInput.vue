@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { FORM_GROUP_KEY } from '../injectionKeys'
@@ -24,7 +24,8 @@ const props = defineProps({
   helpText: { type: String, default: undefined },
   plaintext: { type: Boolean, default: false },
   noWrapper: { type: Boolean, default: false },
-  focusRing: { type: Boolean, default: false }
+  focusRing: { type: Boolean, default: false },
+  showToggle: { type: Boolean, default: false }
 })
 
 const emit = defineEmits<{
@@ -36,6 +37,11 @@ const emit = defineEmits<{
 }>()
 
 const formGroup = inject(FORM_GROUP_KEY, null)
+
+const showPassword = ref(false)
+const effectiveType = computed(() =>
+  props.type === 'password' && props.showToggle && showPassword.value ? 'text' : props.type
+)
 
 const _groupId = formGroup?.consumeId()
 const _generatedId = useId('input')
@@ -103,7 +109,35 @@ const handleFocus = (event: FocusEvent) => {
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
     </label>
+    <div v-if="showToggle && type === 'password'" class="input-group">
+      <input
+        :id="computedId"
+        :type="effectiveType"
+        :class="inputClass"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :readonly="readonly || plaintext"
+        :required="required"
+        :aria-invalid="validationState === 'invalid'"
+        :aria-describedby="ariaDescribedBy"
+        @input="handleInput"
+        @change="handleChange"
+        @blur="handleBlur"
+        @focus="handleFocus"
+      />
+      <button
+        type="button"
+        class="btn btn-outline-secondary"
+        :aria-label="showPassword ? 'Hide password' : 'Show password'"
+        :aria-pressed="showPassword"
+        @click="showPassword = !showPassword"
+      >
+        <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'" aria-hidden="true" />
+      </button>
+    </div>
     <input
+      v-else
       :id="computedId"
       :type="type"
       :class="inputClass"

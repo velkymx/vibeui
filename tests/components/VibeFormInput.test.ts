@@ -199,4 +199,57 @@ describe('VibeFormInput', () => {
 
     expect(wrapper.emitted('focus')).toBeTruthy()
   })
+
+  // Issue 12 — show password toggle (WCAG a11y-adjacent UX)
+  describe('showToggle', () => {
+    it('does not render toggle by default', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password' } })
+      expect(wrapper.find('button[aria-label]').exists()).toBe(false)
+    })
+
+    it('renders toggle when showToggle=true and type=password', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showToggle: true } })
+      expect(wrapper.find('button').exists()).toBe(true)
+    })
+
+    it('does not render toggle when showToggle=true but type is not password', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'em', type: 'email', showToggle: true } })
+      expect(wrapper.find('button').exists()).toBe(false)
+    })
+
+    it('toggle has aria-label "Show password" initially', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showToggle: true } })
+      expect(wrapper.find('button').attributes('aria-label')).toBe('Show password')
+    })
+
+    it('toggle has aria-pressed="false" initially', () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showToggle: true } })
+      expect(wrapper.find('button').attributes('aria-pressed')).toBe('false')
+    })
+
+    it('clicking toggle changes input type to text', async () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showToggle: true } })
+      await wrapper.find('button').trigger('click')
+      expect(wrapper.find('input').attributes('type')).toBe('text')
+    })
+
+    it('clicking toggle again restores type to password', async () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showToggle: true } })
+      await wrapper.find('button').trigger('click')
+      await wrapper.find('button').trigger('click')
+      expect(wrapper.find('input').attributes('type')).toBe('password')
+    })
+
+    it('aria-label becomes "Hide password" when visible', async () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showToggle: true } })
+      await wrapper.find('button').trigger('click')
+      expect(wrapper.find('button').attributes('aria-label')).toBe('Hide password')
+    })
+
+    it('aria-pressed becomes "true" when visible', async () => {
+      const wrapper = mount(VibeFormInput, { props: { id: 'pw', type: 'password', showToggle: true } })
+      await wrapper.find('button').trigger('click')
+      expect(wrapper.find('button').attributes('aria-pressed')).toBe('true')
+    })
+  })
 })
