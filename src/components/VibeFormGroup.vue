@@ -37,7 +37,11 @@ provide(FORM_GROUP_KEY, {
   consumeId,
   hasLabel: computed(() => !!props.label),
   hasValidation: computed(() => !!props.validationState),
-  hasHelp: computed(() => !!props.helpText)
+  hasHelp: computed(() => !!props.helpText),
+  // WCAG 1.3.1: expose ids of help / feedback elements so nested controls can
+  // include them in aria-describedby without re-computing the same id formula.
+  helpId: computed(() => props.helpText ? helpId.value : null),
+  feedbackId: computed(() => props.validationState ? feedbackId.value : null)
 })
 
 const formGroupClass = computed(() => {

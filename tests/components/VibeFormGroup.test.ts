@@ -162,6 +162,53 @@ describe('VibeFormGroup', () => {
     expect(label1.attributes('for')).not.toBe(label2.attributes('for'))
   })
 
+  // Issue 5 — WCAG 1.3.1 / 3.3.1: aria-describedby must point to group's help/error elements
+  it('nested VibeFormInput aria-describedby includes group help text id', () => {
+    const wrapper = mount({
+      components: { VibeFormGroup, VibeFormInput },
+      template: '<VibeFormGroup label="Email" help-text="Never shared"><VibeFormInput v-model="v" /></VibeFormGroup>',
+      data() { return { v: '' } }
+    })
+
+    const input = wrapper.find('input')
+    const helpEl = wrapper.find('.form-text')
+
+    expect(helpEl.exists()).toBe(true)
+    expect(helpEl.attributes('id')).toBeTruthy()
+    expect(input.attributes('aria-describedby')).toContain(helpEl.attributes('id'))
+  })
+
+  it('nested VibeFormInput aria-describedby includes group feedback id when invalid', () => {
+    const wrapper = mount({
+      components: { VibeFormGroup, VibeFormInput },
+      template: '<VibeFormGroup label="Email" validation-state="invalid" validation-message="Required"><VibeFormInput v-model="v" /></VibeFormGroup>',
+      data() { return { v: '' } }
+    })
+
+    const input = wrapper.find('input')
+    const feedbackEl = wrapper.find('.invalid-feedback')
+
+    expect(feedbackEl.exists()).toBe(true)
+    expect(feedbackEl.attributes('id')).toBeTruthy()
+    expect(input.attributes('aria-describedby')).toContain(feedbackEl.attributes('id'))
+  })
+
+  it('nested VibeFormInput aria-describedby includes both help and feedback ids', () => {
+    const wrapper = mount({
+      components: { VibeFormGroup, VibeFormInput },
+      template: '<VibeFormGroup label="Email" help-text="Hint" validation-state="invalid" validation-message="Bad"><VibeFormInput v-model="v" /></VibeFormGroup>',
+      data() { return { v: '' } }
+    })
+
+    const input = wrapper.find('input')
+    const describedBy = input.attributes('aria-describedby') ?? ''
+    const helpId = wrapper.find('.form-text').attributes('id')
+    const feedbackId = wrapper.find('.invalid-feedback').attributes('id')
+
+    expect(describedBy).toContain(helpId)
+    expect(describedBy).toContain(feedbackId)
+  })
+
   it('applies label alignment in row mode', () => {
     const wrapper = mount(VibeFormGroup, {
       props: {

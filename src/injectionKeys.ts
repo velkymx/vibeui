@@ -15,6 +15,12 @@ export interface FormGroupContext {
   hasLabel: ComputedRef<boolean>
   hasValidation: ComputedRef<boolean>
   hasHelp: ComputedRef<boolean>
+  /**
+   * WCAG 1.3.1 / 3.3.1: ids of the help text and feedback elements rendered by
+   * this group so nested controls can reference them in aria-describedby.
+   */
+  helpId: ComputedRef<string | null>
+  feedbackId: ComputedRef<string | null>
 }
 
 export const FORM_GROUP_KEY: InjectionKey<FormGroupContext | null> = Symbol('vibeFormGroup')
