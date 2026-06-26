@@ -1,5 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { defineComponent } from 'vue'
+import { mount } from '@vue/test-utils'
 import { useBreakpoints } from '../../src/composables/useBreakpoints'
+
+// Run a composable inside a real component setup so getCurrentInstance() is truthy —
+// this mirrors normal usage (no "outside component context" warning) and wires the
+// composable's onUnmounted cleanup to the returned unmount().
+function withSetup<T>(composable: () => T): { result: T; unmount: () => void } {
+  let result!: T
+  const wrapper = mount(
+    defineComponent({
+      setup() {
+        result = composable()
+        return () => null
+      }
+    })
+  )
+  return { result, unmount: () => wrapper.unmount() }
+}
 
 describe('useBreakpoints', () => {
   // Store mutable mock MQL objects so tests can flip .matches and fire listeners
@@ -27,13 +45,24 @@ describe('useBreakpoints', () => {
   })
 
   it('initializes with default values', () => {
-    const { isXs, isSm } = useBreakpoints()
+    // Assert no "outside component context" warning when used correctly (in setup).
+    // A negative assertion is deterministic — it fails on regression without relying
+    // on reading stderr.
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { result: { isXs, isSm }, unmount } = withSetup(() => useBreakpoints())
     expect(isXs.value).toBe(true)
     expect(isSm.value).toBe(false)
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('Called outside component context'))
+
+    unmount()
+    warnSpy.mockRestore()
   })
 
   it('updates reactively when matchMedia changes', () => {
-    const { isSm } = useBreakpoints()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { result: { isSm }, unmount } = withSetup(() => useBreakpoints())
 
     // Flip the cached MQL object's matches and fire its listeners
     const smQuery = '(min-width: 576px)'
@@ -43,6 +72,10 @@ describe('useBreakpoints', () => {
     }
 
     expect(isSm.value).toBe(true)
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('Called outside component context'))
+
+    unmount()
+    warnSpy.mockRestore()
   })
 
   it('cleanup() removes all matchMedia listeners', () => {

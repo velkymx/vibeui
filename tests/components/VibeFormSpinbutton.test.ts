@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeFormSpinbutton from '../../src/components/VibeFormSpinbutton.vue'
 
@@ -252,6 +252,18 @@ describe('VibeFormSpinbutton', () => {
   })
 
   describe('invalid step handling', () => {
+    // Each test feeds an invalid step (NaN / 0) the component coerces to 1 with a
+    // DEV warning. Spy console.warn so the expected warning is asserted, not leaked.
+    let warnSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      warnSpy.mockRestore()
+    })
+
     it('coerces step=NaN to 1 so increment does not emit NaN', async () => {
       const wrapper = mount(VibeFormSpinbutton, {
         props: { id: 'sb', modelValue: 5, step: NaN }
@@ -264,6 +276,7 @@ describe('VibeFormSpinbutton', () => {
       const value = emitted[emitted.length - 1][0]
       expect(Number.isNaN(value)).toBe(false)
       expect(value).toBe(6) // 5 + safeStep(1)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('step must be a positive number'))
     })
 
     it('coerces step=0 to 1 so increment advances by 1', async () => {
@@ -275,6 +288,7 @@ describe('VibeFormSpinbutton', () => {
 
       const emitted = wrapper.emitted('update:modelValue') as number[][]
       expect(emitted[emitted.length - 1][0]).toBe(3)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('step must be a positive number'))
     })
 
     it('coerces step=0 to 1 on decrement', async () => {
@@ -286,6 +300,7 @@ describe('VibeFormSpinbutton', () => {
 
       const emitted = wrapper.emitted('update:modelValue') as number[][]
       expect(emitted[emitted.length - 1][0]).toBe(1)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('step must be a positive number'))
     })
   })
 })
