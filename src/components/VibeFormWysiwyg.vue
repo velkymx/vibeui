@@ -5,7 +5,6 @@ import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError
 import { FORM_GROUP_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
 import { useBreakpoints } from '../composables/useBreakpoints'
-import Quill from 'quill'
 import { loadDOMPurify, sanitizeHtml } from '../utils/sanitizeHtml'
 import { safeLength } from '../utils/safeCss'
 

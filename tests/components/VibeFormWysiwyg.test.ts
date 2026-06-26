@@ -120,6 +120,29 @@ describe('VibeFormWysiwyg', () => {
     expect(() => wrapper.unmount()).not.toThrow()
   })
 
+  // CR8-1: VibeFormWysiwyg must NOT have a static `import Quill from 'quill'` at the
+  // module top level. quill is an optional peer dep — a static import causes a
+  // ModuleNotFoundError at component-evaluation time for consumers who haven't installed it.
+  // All quill usage must be lazy (inside initQuill via `await import('quill')`).
+  //
+  // Strategy: use vi.doMock (non-hoisted) + vi.resetModules() to force a fresh module
+  // evaluation with quill throwing on import. If the static import exists, the component
+  // module evaluation itself throws and the dynamic import below rejects.
+  it('evaluates the module without importing quill at the top level', async () => {
+    vi.resetModules()
+    // Register a mock that throws to simulate quill not being installed.
+    vi.doMock('quill', () => { throw new Error('quill not installed') })
+
+    // Dynamic re-import forces a fresh module evaluation with the mock active.
+    // A static `import Quill from 'quill'` would cause this to reject; lazy-only
+    // access means the component module loads fine and quill is only touched inside initQuill.
+    const mod = await import('../../src/components/VibeFormWysiwyg.vue')
+    expect(mod.default).toBeDefined()
+
+    vi.doUnmock('quill')
+    vi.resetModules()
+  })
+
   // Security: loadDOMPurify() must be awaited during initQuill so sanitizeHtml is
   // active before any modelValue HTML reaches Quill's clipboard.convert.
   // Quill fails to initialize in happy-dom so we spy on the utility module directly.
