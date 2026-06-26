@@ -134,6 +134,32 @@ describe('VibeAccordion', () => {
     document.body.removeChild(el)
   })
 
+  // CR8-6: async watcher must catch errors and emit component-error instead of
+  // producing an unhandled rejection that Vue silently ignores.
+  // Scenario: dispose() throws during watcher-triggered disposal of old instances.
+  it('emits component-error instead of unhandled rejection when disposal throws during reinit', async () => {
+    // Must use a regular function (not arrow) so `new Collapse(...)` works as a constructor.
+    vi.mocked(bootstrap.Collapse).mockImplementation(function() {
+      return {
+        show: vi.fn(),
+        hide: vi.fn(),
+        toggle: vi.fn(),
+        dispose: vi.fn().mockImplementation(() => { throw new Error('dispose failed') })
+      }
+    })
+
+    const wrapper = mount(VibeAccordion, { props: { id: 'err-test', items: mockItems } })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Change items — watcher disposes old Collapse instances, dispose() throws
+    await wrapper.setProps({ items: [mockItems[0]] })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Without try/catch in the watcher the error is an unhandled rejection and
+    // component-error is never emitted. With the fix it is caught and emitted.
+    expect(wrapper.emitted('component-error')).toBeTruthy()
+  })
+
   // DEV warning for item.id values that break Bootstrap's querySelector.
   describe('item.id CSS-special-character warning', () => {
     it('warns when an item.id contains CSS-special characters', () => {

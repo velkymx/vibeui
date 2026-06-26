@@ -161,23 +161,31 @@ onBeforeUnmount(() => {
 })
 
 watch([() => props.items, () => props.alwaysOpen], async () => {
-  warnUnsafeIds()
-  // Snapshot keys first — disposeItem mutates bsCollapses/collapseElements/collapseHandlers
-  // internally via .delete(). Iterating the live Map during mutation is safe per spec but
-  // produces confusing dead .clear() calls after; snapshot makes the intent explicit.
-  const ids = [...bsCollapses.keys()]
-  for (const id of ids) {
-    disposeItem(id)
-  }
-  // All Maps are empty after the loop (disposeItem calls .delete() on each).
-  // These clears are retained as defensive guards against any future partial dispose paths.
-  bsCollapses.clear()
-  collapseElements.clear()
+  try {
+    warnUnsafeIds()
+    // Snapshot keys first — disposeItem mutates bsCollapses/collapseElements/collapseHandlers
+    // internally via .delete(). Iterating the live Map during mutation is safe per spec but
+    // produces confusing dead .clear() calls after; snapshot makes the intent explicit.
+    const ids = [...bsCollapses.keys()]
+    for (const id of ids) {
+      disposeItem(id)
+    }
+    // All Maps are empty after the loop (disposeItem calls .delete() on each).
+    // These clears are retained as defensive guards against any future partial dispose paths.
+    bsCollapses.clear()
+    collapseElements.clear()
 
-  // Await both nextTick and initItems so errors surface instead of being silently dropped.
-  // The previous nextTick(() => initItems()) discarded the inner Promise.
-  await nextTick()
-  await initItems()
+    // Await both nextTick and initItems so errors surface instead of being silently dropped.
+    // The previous nextTick(() => initItems()) discarded the inner Promise.
+    await nextTick()
+    await initItems()
+  } catch (error) {
+    emit('component-error', {
+      message: 'Error reinitialising accordion items.',
+      componentName: 'VibeAccordion',
+      originalError: error
+    })
+  }
 }, { deep: false })
 
 const handleItemClick = (item: AccordionItem, index: number) => {
