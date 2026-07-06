@@ -1,369 +1,88 @@
 # Testing Guide for VibeUI
 
-This document provides guidance on testing VibeUI components, especially after the data-driven refactoring.
+How VibeUI itself is tested, and how to write tests when contributing. For setup basics (Node version, `npm ci`, Playwright install) see [CONTRIBUTING.md](./CONTRIBUTING.md). If you're a **consumer** testing an app that uses VibeUI, you don't need this file — mount the components with your own test runner and see [`docs/`](./docs/README.md) for component APIs.
 
-## Testing Philosophy
+## Two Vitest projects, one Vite pipeline
 
-VibeUI components are designed to be:
-- **Data-driven**: Test by passing different data arrays
-- **Predictable**: Same input always produces same output
-- **Accessible**: Test ARIA attributes and semantic HTML
+Both projects are defined in `vite.config.ts` and share the same plugins and resolution.
 
-## Recommended Testing Setup
+| Project | Environment | Bootstrap JS | What it covers |
+|---------|-------------|--------------|----------------|
+| `unit` | happy-dom | **mocked** (`tests/mocks/bootstrap.ts` via a project-scoped alias) | Component logic, props → classes, events/`v-model`, a11y attributes, composables, validators. Fast inner loop. |
+| `browser` | real headless Chromium (Playwright, via `vitest-browser-vue`) | **real** | Everything happy-dom can't run: Modal/Offcanvas/Toast lifecycle + focus return, Tooltip/Popover/Dropdown Popper positioning, Collapse/Accordion/Carousel/Scrollspy transitions, Quill init + DOMPurify sanitize. |
 
-### Install Testing Dependencies
+## Commands
 
 ```bash
-npm install --save-dev vitest @vue/test-utils happy-dom
+npm test              # unit suite, watch mode (fast inner loop)
+npm run test:run      # unit suite, single run (what CI's unit job runs)
+npm run test:coverage # unit suite with coverage
+npm run test:browser  # browser suite, single run (real Chromium)
+npm run test:all      # both projects
+npm run test:examples # Playwright: load every examples/*.html, assert clean mount (needs network)
 ```
 
-### Vitest Configuration
+`test` / `test:run` / `test:coverage` are pinned to the `unit` project so the inner loop never pays browser-launch cost.
 
-Add to `vite.config.ts`:
+## Which project does my test belong in?
 
-```typescript
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+- **Unit** if the behavior is observable from the rendered DOM without real Bootstrap JS: prop-driven classes, emitted events, `v-model` round-trips, ARIA attributes, slot rendering, validation logic.
+- **Browser** if the behavior depends on real Bootstrap transitions, Popper positioning, focus movement across elements, or the real Quill editor. The mocked Bootstrap in the unit suite records constructor/`show`/`hide`/`dispose` calls but performs no DOM work — asserting "the modal is visible" there tests the mock, not the component.
 
-export default defineConfig({
-  plugins: [vue()],
-  test: {
-    globals: true,
-    environment: 'happy-dom'
-  }
-})
-```
+## Writing unit tests
 
-## Example Tests
+- One file per component: `tests/components/<Component>.test.ts`. Composables live in `tests/composables/`, shared utilities in `tests/utils/`.
+- Mount with `@vue/test-utils`' `mount` and assert against the rendered DOM:
 
-### Testing Data-Driven Components
-
-#### VibeAccordion
-
-```typescript
+```ts
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { VibeAccordion } from '@velkymx/vibeui'
+import VibeProgress from '../../src/components/VibeProgress.vue'
 
-describe('VibeAccordion', () => {
-  it('renders items from array', () => {
-    const items = [
-      { id: 'item1', title: 'Item 1', content: 'Content 1', show: true },
-      { id: 'item2', title: 'Item 2', content: 'Content 2' }
-    ]
-
-    const wrapper = mount(VibeAccordion, {
-      props: {
-        id: 'test-accordion',
-        items
-      }
-    })
-
-    expect(wrapper.findAll('.accordion-item')).toHaveLength(2)
-    expect(wrapper.text()).toContain('Item 1')
-    expect(wrapper.text()).toContain('Item 2')
+it('renders one bar per entry with its variant class', () => {
+  const wrapper = mount(VibeProgress, {
+    props: { bars: [{ value: 30, variant: 'success' }, { value: 20, variant: 'warning' }] }
   })
 
-  it('sets initial active state', () => {
-    const items = [
-      { id: 'item1', title: 'Item 1', content: 'Content 1', show: true }
-    ]
-
-    const wrapper = mount(VibeAccordion, {
-      props: {
-        id: 'test-accordion',
-        items
-      }
-    })
-
-    const firstItem = wrapper.find('.accordion-collapse')
-    expect(firstItem.classes()).toContain('show')
-  })
-
-  it('emits item-click event', async () => {
-    const items = [
-      { id: 'item1', title: 'Item 1', content: 'Content 1' }
-    ]
-
-    const wrapper = mount(VibeAccordion, {
-      props: {
-        id: 'test-accordion',
-        items
-      }
-    })
-
-    await wrapper.find('.accordion-button').trigger('click')
-
-    expect(wrapper.emitted('item-click')).toBeTruthy()
-    expect(wrapper.emitted('item-click')?.[0]).toEqual([{
-      item: items[0],
-      index: 0
-    }])
-  })
-
-  it('renders custom title slot', () => {
-    const items = [
-      { id: 'item1', title: 'Item 1', content: 'Content 1' }
-    ]
-
-    const wrapper = mount(VibeAccordion, {
-      props: {
-        id: 'test-accordion',
-        items
-      },
-      slots: {
-        title: '<template #title="{ item }"><strong>{{ item.title }}</strong></template>'
-      }
-    })
-
-    expect(wrapper.find('strong').exists()).toBe(true)
-  })
+  const bars = wrapper.findAll('.progress-bar')
+  expect(bars).toHaveLength(2)
+  expect(bars[0].classes()).toContain('bg-success')
 })
 ```
 
-#### VibePagination
+- Test real behavior, never the mock: pass data, interact (`trigger`, `setValue`), assert DOM and emitted payloads.
+- **Keep output pristine.** Expected DEV warnings (e.g. VibeButton's icon-only `aria-label` check) must be asserted *and* suppressed with a `vi.spyOn(console, 'warn')` — a test run that passes but prints warnings hides regressions.
+- Canvas components (charts) use `tests/mocks/canvasMock.ts` — happy-dom has no 2D context.
 
-```typescript
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { VibePagination } from '@velkymx/vibeui'
+## Writing browser tests
 
-describe('VibePagination', () => {
-  it('renders correct number of pages', () => {
-    const wrapper = mount(VibePagination, {
-      props: {
-        totalPages: 5,
-        currentPage: 1
-      }
-    })
+- Live in `tests/browser/*.browser.test.ts`; mount with `vitest-browser-vue`'s `render`.
+- Tests run **inside** the browser, so `document` is real. Assert teleported/global nodes with `document.querySelector` via the helpers in `tests/browser/helpers.ts`:
+  - `waitForSelector(sel)` — poll until a node exists (backdrops, teleported content).
+  - `waitForGone(sel)` — poll until a node is removed (after hide animations).
+  - `onceEvent(el, 'shown.bs.modal')` — await a Bootstrap transition event; **attach before triggering**.
+- Use **event-based** waiting, never fixed `setTimeout`. Acting mid-transition is the classic false failure: Bootstrap's `hide()` silently no-ops while `_isTransitioning`.
+- Screenshot assertions store baselines in `tests/browser/__screenshots__/`.
 
-    expect(wrapper.findAll('.page-item')).toHaveLength(7) // 5 pages + prev + next
-  })
+## Conventions
 
-  it('emits update:currentPage on page click', async () => {
-    const wrapper = mount(VibePagination, {
-      props: {
-        totalPages: 5,
-        currentPage: 1
-      }
-    })
+- **TDD**: bug fixes and features land with a failing test first (see CONTRIBUTING.md). The browser suite is the regression guard for integration bugs the unit suite can't reach.
+- Test names describe behavior ("emits update:currentPage on page click"), not implementation.
+- Cover edge cases the component guards against: empty `items` arrays, duplicate ids, invalid values, unmount races.
 
-    const pageButtons = wrapper.findAll('.page-link')
-    await pageButtons[2].trigger('click') // Click page 2
+## CI
 
-    expect(wrapper.emitted('update:currentPage')).toBeTruthy()
-    expect(wrapper.emitted('update:currentPage')?.[0]).toEqual([2])
-  })
+`.github/workflows/ci.yml` runs two required jobs on every push/PR to `main` / `1.0-main`, both on Node 24:
 
-  it('disables prev button on first page', () => {
-    const wrapper = mount(VibePagination, {
-      props: {
-        totalPages: 5,
-        currentPage: 1
-      }
-    })
+1. **test** — `npm run build` + `npm run test:run` (unit suite).
+2. **e2e** — `npx playwright install --with-deps chromium` + `npm run test:browser`.
 
-    const prevButton = wrapper.find('.page-item')
-    expect(prevButton.classes()).toContain('disabled')
-  })
+`test:examples` is an opt-in local gate only — it loads CDN assets (jsDelivr / esm.sh) and would make CI depend on external uptime.
 
-  it('hides prev/next buttons when showPrevNext is false', () => {
-    const wrapper = mount(VibePagination, {
-      props: {
-        totalPages: 5,
-        currentPage: 1,
-        showPrevNext: false
-      }
-    })
-
-    expect(wrapper.findAll('.page-item')).toHaveLength(5) // Only page numbers
-  })
-})
-```
-
-#### VibeProgress
-
-```typescript
-import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { VibeProgress } from '@velkymx/vibeui'
-
-describe('VibeProgress', () => {
-  it('renders single progress bar', () => {
-    const bars = [{ value: 50 }]
-
-    const wrapper = mount(VibeProgress, {
-      props: { bars }
-    })
-
-    expect(wrapper.findAll('.progress-bar')).toHaveLength(1)
-    expect(wrapper.find('.progress-bar').attributes('style')).toContain('width: 50%')
-  })
-
-  it('renders multiple progress bars', () => {
-    const bars = [
-      { value: 30, variant: 'success' },
-      { value: 20, variant: 'warning' },
-      { value: 15, variant: 'danger' }
-    ]
-
-    const wrapper = mount(VibeProgress, {
-      props: { bars }
-    })
-
-    expect(wrapper.findAll('.progress-bar')).toHaveLength(3)
-  })
-
-  it('applies variant classes correctly', () => {
-    const bars = [{ value: 50, variant: 'success' }]
-
-    const wrapper = mount(VibeProgress, {
-      props: { bars }
-    })
-
-    expect(wrapper.find('.progress-bar').classes()).toContain('bg-success')
-  })
-
-  it('shows striped and animated styles', () => {
-    const bars = [
-      { value: 50, striped: true, animated: true }
-    ]
-
-    const wrapper = mount(VibeProgress, {
-      props: { bars }
-    })
-
-    const bar = wrapper.find('.progress-bar')
-    expect(bar.classes()).toContain('progress-bar-striped')
-    expect(bar.classes()).toContain('progress-bar-animated')
-  })
-
-  it('displays labels correctly', () => {
-    const bars = [
-      { value: 75, showValue: true }
-    ]
-
-    const wrapper = mount(VibeProgress, {
-      props: { bars }
-    })
-
-    expect(wrapper.find('.progress-bar').text()).toBe('75%')
-  })
-})
-```
-
-### Testing Other Refactored Components
-
-#### VibeBreadcrumb
-
-```typescript
-it('renders breadcrumb items', () => {
-  const items = [
-    { text: 'Home', href: '/' },
-    { text: 'Products', href: '/products' },
-    { text: 'Details', active: true }
-  ]
-
-  const wrapper = mount(VibeBreadcrumb, {
-    props: { items }
-  })
-
-  expect(wrapper.findAll('.breadcrumb-item')).toHaveLength(3)
-  expect(wrapper.findAll('.breadcrumb-item')[2].classes()).toContain('active')
-})
-```
-
-#### VibeListGroup
-
-```typescript
-it('renders list items with variants', () => {
-  const items = [
-    { text: 'Item 1', variant: 'primary' },
-    { text: 'Item 2', variant: 'success', active: true }
-  ]
-
-  const wrapper = mount(VibeListGroup, {
-    props: { items }
-  })
-
-  expect(wrapper.findAll('.list-group-item')).toHaveLength(2)
-  expect(wrapper.findAll('.list-group-item')[0].classes()).toContain('list-group-item-primary')
-  expect(wrapper.findAll('.list-group-item')[1].classes()).toContain('active')
-})
-```
-
-#### VibeDropdown
-
-```typescript
-it('renders dropdown items including dividers', () => {
-  const items = [
-    { text: 'Action 1', href: '#' },
-    { divider: true },
-    { text: 'Action 2', href: '#' }
-  ]
-
-  const wrapper = mount(VibeDropdown, {
-    props: {
-      id: 'test-dropdown',
-      text: 'Menu',
-      items
-    }
-  })
-
-  expect(wrapper.findAll('.dropdown-item')).toHaveLength(2)
-  expect(wrapper.find('.dropdown-divider').exists()).toBe(true)
-})
-```
-
-## Running Tests
-
-Add to `package.json`:
-
-```json
-{
-  "scripts": {
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
-  }
-}
-```
-
-Run tests:
+## Before opening a PR
 
 ```bash
-npm test              # Run tests in watch mode
-npm run test:ui       # Run with UI
-npm run test:coverage # Generate coverage report
+npm run build && npm run test:all
 ```
 
-## Best Practices
-
-1. **Test data transformations**: Verify that prop data is correctly rendered
-2. **Test user interactions**: Simulate clicks, inputs, and other events
-3. **Test accessibility**: Check ARIA attributes and semantic HTML
-4. **Test edge cases**: Empty arrays, missing data, invalid values
-5. **Test scoped slots**: Verify custom rendering works correctly
-6. **Test events**: Ensure components emit correct events with proper payloads
-
-## CI/CD Integration
-
-Add to GitHub Actions (`.github/workflows/test.yml`):
-
-```yaml
-name: Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
-```
+Both must be green.

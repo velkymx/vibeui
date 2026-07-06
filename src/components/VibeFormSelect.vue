@@ -29,6 +29,11 @@ const findIndexForValue = (options: FormSelectOption[], value: FormSelectOptionV
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 const modelValue = defineModel<FormSelectOptionValue | FormSelectOptionValue[]>({ default: '' })
 
+// Consumer HTML attributes (name, …) belong on the native <select>, not the wrapper
+// <div> — native form submission needs `name` on the control. Auto-inheritance is
+// disabled and $attrs is bound explicitly (first, so prop-driven bindings win).
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps({
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
@@ -126,6 +131,7 @@ const handleFocus = (event: FocusEvent) => {
       <span v-if="required" class="text-danger">*</span>
     </label>
     <select
+      v-bind="$attrs"
       :id="computedId"
       :class="selectClass"
       :value="encodedModelValue"
@@ -159,7 +165,8 @@ const handleFocus = (event: FocusEvent) => {
       <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
+      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
         {{ validationMessage || 'Please select an option.' }}
       </div>
     </template>

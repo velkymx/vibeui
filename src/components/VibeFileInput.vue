@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
 import { useId } from '../composables/useId'
-import type { Size } from '../types'
+import { FORM_GROUP_KEY } from '../injectionKeys'
+import type { Size, ValidationState } from '../types'
 
 const props = defineProps({
   modelValue: { type: Array as PropType<File[]>, default: () => [] },
@@ -13,6 +14,8 @@ const props = defineProps({
   dragDrop: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
   size: { type: String as PropType<Size>, default: undefined },
+  validationState: { type: String as PropType<ValidationState>, default: null },
+  validationMessage: { type: String, default: undefined },
   helpText: { type: String, default: undefined },
   dropzoneText: { type: String, default: 'Drag files here or click to browse' }
 })
@@ -23,14 +26,43 @@ const emit = defineEmits<{
   (e: 'invalid', rejected: File[]): void
 }>()
 
+// Consumer HTML attributes (name, capture, …) belong on the native file input, not
+// the wrapper <div> — native multipart form submission needs `name` on the control.
+// Auto-inheritance is disabled and $attrs is bound explicitly (first, so prop-driven
+// bindings win any conflict).
+defineOptions({ inheritAttrs: false })
+
+// Same validation contract as the other form controls: consume the surrounding
+// VibeFormGroup's id when present, and defer label/help/feedback rendering to
+// the group so they aren't duplicated.
+const formGroup = inject(FORM_GROUP_KEY, null)
+const _groupId = formGroup?.consumeId()
 const _generatedId = useId('file-input')
-const computedId = computed(() => props.id || _generatedId)
+const computedId = computed(() => props.id || _groupId || _generatedId)
+const helpId = computed(() => `${computedId.value}-help`)
+const feedbackId = computed(() => `${computedId.value}-feedback`)
+const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
+const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
+const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
 const isDragging = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
+
+// WCAG 1.3.1 / 3.3.1: point aria-describedby at our own help/feedback and at the
+// surrounding VibeFormGroup's, deduplicated (mirrors VibeFormInput).
+const ariaDescribedBy = computed(() => {
+  const ids: string[] = []
+  if (props.helpText) ids.push(helpId.value)
+  if (props.validationMessage) ids.push(feedbackId.value)
+  if (formGroup?.helpId.value) ids.push(formGroup.helpId.value)
+  if (formGroup?.feedbackId.value) ids.push(formGroup.feedbackId.value)
+  return ids.length ? [...new Set(ids)].join(' ') : undefined
+})
 
 const inputClass = computed(() => {
   const c = ['form-control']
   if (props.size) c.push(`form-control-${props.size}`)
+  if (props.validationState === 'valid') c.push('is-valid')
+  if (props.validationState === 'invalid') c.push('is-invalid')
   return c.join(' ')
 })
 
@@ -134,6 +166,9 @@ const dropzoneClass = computed(() => {
   const c = ['vibe-file-input-dropzone']
   if (isDragging.value) c.push('vibe-file-input-dropzone-active')
   if (props.disabled) c.push('vibe-file-input-dropzone-disabled')
+  // The native input is hidden in dragDrop mode, so Bootstrap's is-invalid
+  // border would be invisible — surface the invalid state on the dropzone.
+  if (props.validationState === 'invalid') c.push('vibe-file-input-dropzone-invalid')
   return c.join(' ')
 })
 
@@ -159,7 +194,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="vibe-file-input">
-    <label v-if="label" :for="computedId" class="form-label">{{ label }}</label>
+    <label v-if="shouldRenderLabel" :for="computedId" class="form-label">{{ label }}</label>
 
     <div
       v-if="dragDrop"
@@ -179,6 +214,7 @@ onBeforeUnmount(() => {
          programmatic .click() it dispatches cannot bubble back into the
          dropzone's @click handler and re-trigger this method. -->
     <input
+      v-bind="$attrs"
       :id="computedId"
       ref="inputRef"
       type="file"
@@ -187,10 +223,21 @@ onBeforeUnmount(() => {
       :accept="accept"
       :disabled="disabled"
       :style="dragDrop ? 'display: none' : undefined"
+      :aria-invalid="validationState === 'invalid'"
+      :aria-describedby="ariaDescribedBy"
       @change="handleChange"
     />
 
-    <div v-if="helpText" class="form-text">{{ helpText }}</div>
+    <div v-if="shouldRenderHelp" :id="helpId" class="form-text">{{ helpText }}</div>
+    <template v-if="shouldRenderFeedback">
+      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
+        {{ validationMessage || 'Looks good!' }}
+      </div>
+      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
+      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
+        {{ validationMessage || 'Please provide a valid file.' }}
+      </div>
+    </template>
   </div>
 </template>
 
@@ -212,5 +259,9 @@ onBeforeUnmount(() => {
 .vibe-file-input-dropzone-disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.vibe-file-input-dropzone-invalid {
+  border-color: var(--bs-form-invalid-border-color, #dc3545);
 }
 </style>

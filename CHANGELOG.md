@@ -6,12 +6,36 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
+## [1.1.1] — 2026-07-05
+
+A patch release driven by a consumer accessibility audit: screen-reader announcement fixes across every form control, native form-submission repairs, and modal/toast a11y refinements.
+
+### Fixed
+
+- **VibeFileInput — now implements the shared validation contract.** It was the only form control with no validation surface: new `validationState`/`validationMessage` props render `is-valid`/`is-invalid` plus a feedback block with `role="alert"`, wire `aria-invalid`/`aria-describedby`, and defer to a surrounding `VibeFormGroup` like the other controls. In `dragDrop` mode the drop-zone border turns invalid-red, since the native input is hidden there.
+- **All form controls — standalone `invalid-feedback` is now a live region (WCAG 4.1.3).** `VibeFormGroup` already announced errors via `role="alert"`; the standalone feedback path in the 9 form controls (Input, Textarea, Select, Checkbox, Radio, Switch, Datepicker, Spinbutton, Wysiwyg) did not, leaving errors silent for screen-reader users after a failed submit.
+- **VibeFormInput / VibeFormTextarea / VibeFormSelect / VibeFileInput — consumer HTML attributes now reach the native control.** `name`, `min`, `max`, `maxlength`, `pattern`, `capture`, etc. previously landed on the wrapper `<div>`, so native form submission lost the field name and constraint-validation attributes never applied. The components now set `inheritAttrs: false` and bind `$attrs` on the control (bound first, so prop-driven bindings win conflicts). ⚠️ **Behavior note:** consumer `class`/`style` previously applied to the wrapper `<div>`; they now apply to the control itself and merge with the Bootstrap classes.
+- **VibeModal — `autoFocus` now works in button-only modals (WCAG 2.4.3).** Confirm-style modals with no form controls received no focus on open, and a disabled input could swallow the focus call. The first enabled form control is still preferred (the header close button must not steal focus from forms); modals without one fall back to their first focusable element.
+- **VibeToast — success/info toasts no longer interrupt screen readers (WCAG 4.1.3).** `danger`/`warning` variants keep `role="alert"`/`aria-live="assertive"`; every other variant (and variant-less toasts) is now a polite `role="status"` live region.
+
+### Internal / Tests
+
+- **Placeholder contrast regression suite** — real-Chromium tests assert computed `::placeholder` contrast ≥ 4.5:1 on VibeFormInput, VibeFormTextarea, VibeAutocomplete, and VibeDatePicker. (No component CSS was needed: Bootstrap 5.3's own `.form-control::placeholder` rule already provides ~6.8:1 in both color modes.)
+
+---
+
 ## [1.1.0] — 2026-06-26
 
-A large stabilization release: the full Code Review 8 & 9 audits, the P0 cursor fix, accessibility improvements, and a clean type-checking build.
+A large stabilization release: the full Code Review 8 & 9 audits, the P0 cursor fix, the Code Review 7 accessibility sprint, and a clean type-checking build.
 
 ### Added
 
+- **VibeModal focus management (WCAG 2.4.3 / 2.1.2 / 2.1.1)** — opening a modal auto-focuses its first form control (`autoFocus` prop, default `true`); the page behind the modal is made `inert` with a Tab/Shift+Tab focus trap, and focus returns to the trigger on close; `Cmd/Ctrl+Enter` submits the first `<form>` inside the modal (`submitOnMetaEnter` prop, default `true`).
+- **VibeFormErrorSummary (new component)** — top-of-form `role="alert"` error summary (WCAG 3.3.1) listing all non-empty errors with anchor links; clicking a link emits `focus(key)` so the consumer can focus the offending field.
+- **VibeFormGroup label wiring (WCAG 1.3.1 / 3.3.2 / 4.1.3)** — auto-generated `id`/`for` linkage via `provide`/`inject`, `aria-describedby` pointing at help text and validation feedback, a red `*` / gray "(optional)" required indicator, and `role="alert"` on the error region.
+- **VibeFormInput password UX** — `showToggle` prop renders an eye-icon show/hide-password button (`aria-pressed`, `aria-label`); `showPasswordStrength` prop renders a 4-segment strength meter with an `aria-live` announcement.
+- **VibeFormInput typed `autocomplete` + `inputmode` (WCAG 1.3.5 / 2.1.1)** — new `AutocompleteType` and `InputMode` union types with type-based auto-detection (`type="number"` → `inputmode="decimal"`, `type="email"` → `autocomplete="email"`, …); explicit props override.
+- **Contrast fixes (WCAG 1.4.3)** — disabled `VibeButton` labels and `VibeFormInput` placeholders render at ≥ 4.5:1 in light and dark mode (replacing Bootstrap's 0.65 disabled fade and the browser-default placeholder alpha).
 - **VibeHero `overlayOpacity` prop** — control the darkness of the default overlay scrim (`Number`, default `0.5`, clamped to `[0, 1]`).
 - **VibeDataTable `clickable` prop** — show a pointer cursor on rows to signal interactivity (pair with a `@row-clicked` listener).
 - **VibeButton icon-only a11y check** — DEV-only warning when an icon-only button lacks `aria-label`/`aria-labelledby` (WCAG 4.1.2).

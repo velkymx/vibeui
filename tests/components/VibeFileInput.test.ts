@@ -284,4 +284,82 @@ describe('VibeFileInput', () => {
       wrapper.unmount()
     })
   })
+
+  // V111-6: VibeFileInput must implement the same validation contract as the
+  // other form controls (validationState/validationMessage props, feedback
+  // block with role="alert", aria wiring, Bootstrap is-valid/is-invalid).
+  describe('validation contract', () => {
+    it('renders invalid-feedback with role="alert" when validationState is invalid', () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { id: 'doc', validationState: 'invalid', validationMessage: 'File too large' }
+      })
+
+      const feedback = wrapper.find('.invalid-feedback')
+      expect(feedback.exists()).toBe(true)
+      expect(feedback.text()).toContain('File too large')
+      expect(feedback.attributes('role')).toBe('alert')
+    })
+
+    it('renders valid-feedback without role="alert" when validationState is valid', () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { id: 'doc', validationState: 'valid', validationMessage: 'Looks good!' }
+      })
+
+      const feedback = wrapper.find('.valid-feedback')
+      expect(feedback.exists()).toBe(true)
+      expect(feedback.attributes('role')).toBeUndefined()
+    })
+
+    it('applies is-invalid, aria-invalid, and aria-describedby to the input', () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { id: 'doc', validationState: 'invalid', validationMessage: 'File too large' }
+      })
+
+      const input = wrapper.find('input[type="file"]')
+      expect(input.classes()).toContain('is-invalid')
+      expect(input.attributes('aria-invalid')).toBe('true')
+      expect(input.attributes('aria-describedby')).toBe('doc-feedback')
+    })
+
+    it('aria-describedby lists help and feedback ids when both present', () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { id: 'doc', helpText: 'PDF only', validationState: 'invalid', validationMessage: 'Nope' }
+      })
+
+      expect(wrapper.find('input[type="file"]').attributes('aria-describedby')).toBe('doc-help doc-feedback')
+      expect(wrapper.find('.form-text').attributes('id')).toBe('doc-help')
+    })
+
+    it('marks the dropzone invalid in dragDrop mode (native input is hidden there)', () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { id: 'doc', dragDrop: true, validationState: 'invalid', validationMessage: 'Nope' }
+      })
+
+      expect(wrapper.find('.vibe-file-input-dropzone').classes()).toContain('vibe-file-input-dropzone-invalid')
+    })
+
+    it('renders no feedback block when validationState is null', () => {
+      const wrapper = mount(VibeFileInput, { props: { id: 'doc' } })
+
+      expect(wrapper.find('.invalid-feedback').exists()).toBe(false)
+      expect(wrapper.find('.valid-feedback').exists()).toBe(false)
+      expect(wrapper.find('input[type="file"]').attributes('aria-invalid')).toBe('false')
+    })
+  })
+
+  // Consumer HTML attributes must land on the native file input, not the wrapper
+  // <div> — native multipart form submission needs `name` on the control.
+  describe('$attrs passthrough to the native input', () => {
+    it('forwards name to the file input, not the wrapper div', () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { id: 'doc' },
+        attrs: { name: 'attachment', capture: 'environment' }
+      })
+
+      const input = wrapper.find('input[type="file"]')
+      expect(input.attributes('name')).toBe('attachment')
+      expect(input.attributes('capture')).toBe('environment')
+      expect(wrapper.attributes('name')).toBeUndefined()
+    })
+  })
 })

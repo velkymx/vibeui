@@ -403,4 +403,63 @@ describe('VibeFormInput', () => {
       expect(wrapper.find('button').attributes('aria-pressed')).toBe('true')
     })
   })
+
+  // Consumer HTML attributes (name, min, maxlength, pattern, …) must land on the
+  // native <input>, not the wrapper <div> — otherwise native form submission loses
+  // the field name and constraint validation attributes never apply.
+  describe('$attrs passthrough to the native input', () => {
+    it('forwards name and maxlength to the input in wrapper mode', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'email' },
+        attrs: { name: 'email', maxlength: '64' }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('name')).toBe('email')
+      expect(input.attributes('maxlength')).toBe('64')
+      // The wrapper div must NOT carry the forwarded attrs.
+      expect(wrapper.attributes('name')).toBeUndefined()
+    })
+
+    it('forwards attrs to the input in password-toggle (input-group) mode', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'pw', type: 'password', showToggle: true },
+        attrs: { name: 'current_password' }
+      })
+
+      expect(wrapper.find('input').attributes('name')).toBe('current_password')
+    })
+
+    it('forwards attrs to the input in noWrapper mode', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'qty', noWrapper: true },
+        attrs: { name: 'quantity', min: '1', max: '10' }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.attributes('name')).toBe('quantity')
+      expect(input.attributes('min')).toBe('1')
+      expect(input.attributes('max')).toBe('10')
+    })
+
+    it('consumer class merges onto the input alongside form-control', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'styled' },
+        attrs: { class: 'text-uppercase' }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.classes()).toContain('form-control')
+      expect(input.classes()).toContain('text-uppercase')
+    })
+
+    it('explicit prop bindings win over conflicting attrs', () => {
+      const wrapper = mount(VibeFormInput, {
+        props: { id: 'explicit', placeholder: 'from prop' },
+        attrs: { placeholder: 'from attr' }
+      })
+
+      expect(wrapper.find('input').attributes('placeholder')).toBe('from prop')
+    })
+  })
 })

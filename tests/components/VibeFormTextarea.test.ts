@@ -253,4 +253,31 @@ describe('VibeFormTextarea', () => {
       expect(describedBy).not.toContain('undefined')
     })
   })
+
+  // Consumer HTML attributes must land on the native <textarea>, not the wrapper
+  // <div> — native form submission needs `name` on the control.
+  describe('$attrs passthrough to the native textarea', () => {
+    it('forwards name to the textarea, not the wrapper div', () => {
+      const wrapper = mount(VibeFormTextarea, {
+        props: { id: 'bio' },
+        attrs: { name: 'bio', wrap: 'hard' }
+      })
+
+      const textarea = wrapper.find('textarea')
+      expect(textarea.attributes('name')).toBe('bio')
+      expect(textarea.attributes('wrap')).toBe('hard')
+      expect(wrapper.attributes('name')).toBeUndefined()
+    })
+
+    it('consumer class merges onto the textarea alongside form-control', () => {
+      const wrapper = mount(VibeFormTextarea, {
+        props: { id: 'styled' },
+        attrs: { class: 'font-monospace' }
+      })
+
+      const textarea = wrapper.find('textarea')
+      expect(textarea.classes()).toContain('form-control')
+      expect(textarea.classes()).toContain('font-monospace')
+    })
+  })
 })

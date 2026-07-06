@@ -469,4 +469,29 @@ describe('VibeFormSelect', () => {
       expect(describedBy).not.toContain('undefined')
     })
   })
+
+  // Consumer HTML attributes must land on the native <select>, not the wrapper
+  // <div> — native form submission needs `name` on the control.
+  describe('$attrs passthrough to the native select', () => {
+    it('forwards name to the select, not the wrapper div', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: { id: 'country', options: [] },
+        attrs: { name: 'country' }
+      })
+
+      expect(wrapper.find('select').attributes('name')).toBe('country')
+      expect(wrapper.attributes('name')).toBeUndefined()
+    })
+
+    it('consumer class merges onto the select alongside form-select', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: { id: 'styled', options: [] },
+        attrs: { class: 'w-auto' }
+      })
+
+      const select = wrapper.find('select')
+      expect(select.classes()).toContain('form-select')
+      expect(select.classes()).toContain('w-auto')
+    })
+  })
 })

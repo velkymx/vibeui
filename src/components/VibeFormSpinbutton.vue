@@ -231,7 +231,8 @@ const decrement = () => {
       <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" :style="{ display: 'block' }">
+      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
+      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide a valid value.' }}
       </div>
     </template>
