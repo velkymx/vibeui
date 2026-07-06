@@ -8,6 +8,40 @@ describe('VibeToast', () => {
     vi.clearAllMocks()
   })
 
+  // V111-10 — WCAG 4.1.3: only error/warning toasts may interrupt screen-reader
+  // speech. Success/info/neutral toasts must be polite status messages.
+  describe('aria-live severity by variant', () => {
+    it.each(['danger', 'warning'] as const)('%s toasts are assertive alerts', (variant) => {
+      const wrapper = mount(VibeToast, { props: { variant, teleport: false } })
+
+      const toast = wrapper.find('.toast')
+      expect(toast.attributes('role')).toBe('alert')
+      expect(toast.attributes('aria-live')).toBe('assertive')
+    })
+
+    it.each(['success', 'info', 'primary'] as const)('%s toasts are polite status messages', (variant) => {
+      const wrapper = mount(VibeToast, { props: { variant, teleport: false } })
+
+      const toast = wrapper.find('.toast')
+      expect(toast.attributes('role')).toBe('status')
+      expect(toast.attributes('aria-live')).toBe('polite')
+    })
+
+    it('variant-less toasts default to polite', () => {
+      const wrapper = mount(VibeToast, { props: { teleport: false } })
+
+      const toast = wrapper.find('.toast')
+      expect(toast.attributes('role')).toBe('status')
+      expect(toast.attributes('aria-live')).toBe('polite')
+    })
+
+    it('aria-atomic stays true regardless of severity', () => {
+      const wrapper = mount(VibeToast, { props: { variant: 'success', teleport: false } })
+
+      expect(wrapper.find('.toast').attributes('aria-atomic')).toBe('true')
+    })
+  })
+
   it('renders correctly', () => {
     const wrapper = mount(VibeToast, {
       props: {

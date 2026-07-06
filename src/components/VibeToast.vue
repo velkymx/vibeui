@@ -160,14 +160,19 @@ const hide = () => bsToast.value?.hide()
 // Calling dispose()/other lifecycle methods on it directly WILL break this component.
 defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
 
+// WCAG 4.1.3: only error/warning toasts may interrupt screen-reader speech
+// (role="alert" / assertive); success/info/neutral toasts are polite status
+// messages, per the ARIA convention Bootstrap documents for toasts.
+const isUrgent = computed(() => props.variant === 'danger' || props.variant === 'warning')
+
 // Shared attrs for the .toast element — avoids repeating them in both template branches.
-// `as const` preserves the literal types ('assertive', 'true') so they stay assignable
-// to the native aria-live / aria-atomic attribute types instead of widening to `string`.
+// `as const` preserves the literal types ('true', role/aria-live unions) so they stay
+// assignable to the native attribute types instead of widening to `string`.
 const toastAttrs = computed(() => ({
   id: computedId.value,
   class: toastClass.value,
-  role: 'alert',
-  'aria-live': 'assertive',
+  role: isUrgent.value ? 'alert' : 'status',
+  'aria-live': isUrgent.value ? 'assertive' : 'polite',
   'aria-atomic': 'true',
   'data-bs-autohide': props.autohide,
   'data-bs-delay': props.delay
