@@ -6,7 +6,9 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
-## [Unreleased] — 1.1.1
+## [1.1.1] — 2026-07-05
+
+A patch release driven by a consumer accessibility audit: screen-reader announcement fixes across every form control, native form-submission repairs, and modal/toast a11y refinements.
 
 ### Fixed
 
