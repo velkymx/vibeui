@@ -136,6 +136,43 @@ describe('VibeModal', () => {
     wrapper.unmount()
   })
 
+  // V111-8 — button-only modals (delete confirms etc.) must still receive focus:
+  // fall back to the first focusable element when there is no form control.
+  it('auto-focuses the first focusable element when the modal has no form controls', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false, hideHeader: true, hideFooter: true },
+      slots: { default: '<button id="confirm-btn">Delete</button>' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    expect(document.activeElement).toBe(wrapper.find('#confirm-btn').element)
+
+    wrapper.unmount()
+  })
+
+  // V111-8 — a disabled input must not swallow autofocus (focus() would no-op).
+  it('skips disabled form controls when auto-focusing', async () => {
+    const wrapper = mount(VibeModal, {
+      props: { teleport: false },
+      slots: { default: '<input id="dead-input" disabled /><input id="live-input" />' },
+      attachTo: document.body
+    })
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    const modalEl = wrapper.find('.modal').element
+    modalEl.dispatchEvent(new Event('show.bs.modal'))
+    modalEl.dispatchEvent(new Event('shown.bs.modal'))
+
+    expect(document.activeElement).toBe(wrapper.find('#live-input').element)
+
+    wrapper.unmount()
+  })
+
   it('re-focuses the first field on repeated opens', async () => {
     const wrapper = mount(VibeModal, {
       props: { teleport: false },

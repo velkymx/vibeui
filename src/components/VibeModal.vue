@@ -158,11 +158,14 @@ const onShown = () => {
   applyInert()
   // WCAG 2.4.3: move keyboard focus to the first form control so users don't
   // have to tab from the trigger through the whole page to reach modal inputs.
+  // Form controls are preferred over buttons (the header close button comes first
+  // in DOM order and must not steal focus from a form); button-only modals
+  // (e.g. delete confirms) fall back to the first focusable element.
   if (props.autoFocus && modalRef.value) {
-    const first = modalRef.value.querySelector<HTMLElement>(
-      'input:not([type="hidden"]), select, textarea'
+    const firstControl = modalRef.value.querySelector<HTMLElement>(
+      'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])'
     )
-    first?.focus()
+    ;(firstControl ?? getFocusableEls()[0])?.focus()
   }
 }
 
