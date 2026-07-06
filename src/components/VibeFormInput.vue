@@ -8,6 +8,12 @@ import { useId } from '../composables/useId'
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 const modelValue = defineModel<string | number>({ default: '' })
 
+// Consumer HTML attributes (name, min, maxlength, pattern, …) belong on the native
+// <input>, not the wrapper <div> — native form submission needs `name` on the control
+// and constraint-validation attrs are inert on a div. Auto-inheritance is disabled and
+// $attrs is bound explicitly (first, so prop-driven bindings win any conflict).
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps({
   type: { type: String as PropType<InputType>, default: 'text' },
   id: { type: String, default: undefined },
@@ -153,6 +159,7 @@ const handleFocus = (event: FocusEvent) => {
     </label>
     <div v-if="showToggle && type === 'password'" class="input-group">
       <input
+        v-bind="$attrs"
         :id="computedId"
         :type="effectiveType"
         :class="inputClass"
@@ -182,6 +189,7 @@ const handleFocus = (event: FocusEvent) => {
     </div>
     <input
       v-else
+      v-bind="$attrs"
       :id="computedId"
       :type="type"
       :class="inputClass"
@@ -227,6 +235,7 @@ const handleFocus = (event: FocusEvent) => {
 
   <input
     v-else
+    v-bind="$attrs"
     :id="computedId"
     :type="type"
     :class="inputClass"
