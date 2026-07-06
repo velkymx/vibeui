@@ -346,4 +346,20 @@ describe('VibeFileInput', () => {
       expect(wrapper.find('input[type="file"]').attributes('aria-invalid')).toBe('false')
     })
   })
+
+  // Consumer HTML attributes must land on the native file input, not the wrapper
+  // <div> — native multipart form submission needs `name` on the control.
+  describe('$attrs passthrough to the native input', () => {
+    it('forwards name to the file input, not the wrapper div', () => {
+      const wrapper = mount(VibeFileInput, {
+        props: { id: 'doc' },
+        attrs: { name: 'attachment', capture: 'environment' }
+      })
+
+      const input = wrapper.find('input[type="file"]')
+      expect(input.attributes('name')).toBe('attachment')
+      expect(input.attributes('capture')).toBe('environment')
+      expect(wrapper.attributes('name')).toBeUndefined()
+    })
+  })
 })

@@ -26,6 +26,12 @@ const emit = defineEmits<{
   (e: 'invalid', rejected: File[]): void
 }>()
 
+// Consumer HTML attributes (name, capture, …) belong on the native file input, not
+// the wrapper <div> — native multipart form submission needs `name` on the control.
+// Auto-inheritance is disabled and $attrs is bound explicitly (first, so prop-driven
+// bindings win any conflict).
+defineOptions({ inheritAttrs: false })
+
 // Same validation contract as the other form controls: consume the surrounding
 // VibeFormGroup's id when present, and defer label/help/feedback rendering to
 // the group so they aren't duplicated.
@@ -208,6 +214,7 @@ onBeforeUnmount(() => {
          programmatic .click() it dispatches cannot bubble back into the
          dropzone's @click handler and re-trigger this method. -->
     <input
+      v-bind="$attrs"
       :id="computedId"
       ref="inputRef"
       type="file"
