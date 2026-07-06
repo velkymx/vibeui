@@ -10,6 +10,7 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ### Fixed
 
+- **VibeFileInput — now implements the shared validation contract.** It was the only form control with no validation surface: new `validationState`/`validationMessage` props render `is-valid`/`is-invalid` plus a feedback block with `role="alert"`, wire `aria-invalid`/`aria-describedby`, and defer to a surrounding `VibeFormGroup` like the other controls. In `dragDrop` mode the drop-zone border turns invalid-red, since the native input is hidden there.
 - **All form controls — standalone `invalid-feedback` is now a live region (WCAG 4.1.3).** `VibeFormGroup` already announced errors via `role="alert"`; the standalone feedback path in the 9 form controls (Input, Textarea, Select, Checkbox, Radio, Switch, Datepicker, Spinbutton, Wysiwyg) did not, leaving errors silent for screen-reader users after a failed submit.
 - **VibeFormInput / VibeFormTextarea / VibeFormSelect — consumer HTML attributes now reach the native control.** `name`, `min`, `max`, `maxlength`, `pattern`, etc. previously landed on the wrapper `<div>`, so native form submission lost the field name and constraint-validation attributes never applied. The components now set `inheritAttrs: false` and bind `$attrs` on the `<input>`/`<textarea>`/`<select>` (bound first, so prop-driven bindings win conflicts). ⚠️ **Behavior note:** consumer `class`/`style` previously applied to the wrapper `<div>`; they now apply to the control itself and merge with the Bootstrap classes.
 

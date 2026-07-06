@@ -11,6 +11,7 @@ import VibeFormSwitch from '../../src/components/VibeFormSwitch.vue'
 import VibeFormDatepicker from '../../src/components/VibeFormDatepicker.vue'
 import VibeFormSpinbutton from '../../src/components/VibeFormSpinbutton.vue'
 import VibeFormWysiwyg from '../../src/components/VibeFormWysiwyg.vue'
+import VibeFileInput from '../../src/components/VibeFileInput.vue'
 
 // VibeFormWysiwyg reads breakpoints at setup; mock so it mounts in happy-dom
 // (same mock as VibeFormWysiwyg.test.ts).
@@ -40,7 +41,8 @@ const cases: Array<[string, Component, Record<string, unknown>]> = [
   ['VibeFormSwitch', VibeFormSwitch, {}],
   ['VibeFormDatepicker', VibeFormDatepicker, {}],
   ['VibeFormSpinbutton', VibeFormSpinbutton, {}],
-  ['VibeFormWysiwyg', VibeFormWysiwyg, {}]
+  ['VibeFormWysiwyg', VibeFormWysiwyg, {}],
+  ['VibeFileInput', VibeFileInput, {}]
 ]
 
 describe('standalone invalid-feedback is a live region (WCAG 4.1.3)', () => {

@@ -15,6 +15,8 @@ File attachment input with optional drag-and-drop zone. `v-model` exposes the se
 | `dragDrop` | `boolean` | `false` | Render a drag-and-drop zone instead of the native control. |
 | `disabled` | `boolean` | `false` | Disable the input. |
 | `size` | `'sm' \| 'lg'` | `undefined` | Control size (native control only). |
+| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Validation state; adds `is-valid`/`is-invalid` and renders the feedback text. In `dragDrop` mode, `'invalid'` also colors the drop-zone border. |
+| `validationMessage` | `string` | `undefined` | Feedback text shown for the current validation state. Errors render with `role="alert"` so screen readers announce them (WCAG 4.1.3). |
 | `helpText` | `string` | `undefined` | Help text below the input. |
 | `dropzoneText` | `string` | `'Drag files here or click to browse'` | Text shown inside the drop zone. |
 
@@ -65,9 +67,10 @@ const files = ref<File[]>([])
 <script setup lang="ts">
 import { ref } from 'vue'
 const files = ref<File[]>([])
+const error = ref<string | null>(null)
 
 const onInvalid = (rejected: File[]) => {
-  console.warn('Rejected:', rejected.map((f) => f.name))
+  error.value = `Rejected: ${rejected.map((f) => f.name).join(', ')}`
 }
 </script>
 
@@ -78,7 +81,10 @@ const onInvalid = (rejected: File[]) => {
     drag-drop
     accept="image/*"
     :max-size="2 * 1024 * 1024"
+    :validation-state="error ? 'invalid' : null"
+    :validation-message="error ?? undefined"
     @invalid="onInvalid"
+    @change="error = null"
   />
 </template>
 ```
@@ -91,7 +97,7 @@ const onInvalid = (rejected: File[]) => {
 
 ## Bootstrap CSS Classes
 
-- `.form-control`, `.form-control-{sm|lg}`
-- `.form-label`, `.form-text`
+- `.form-control`, `.form-control-{sm|lg}`, `.is-valid`, `.is-invalid`
+- `.form-label`, `.form-text`, `.valid-feedback`, `.invalid-feedback`
 
 The drop zone uses VibeUI's own `.vibe-file-input-dropzone*` classes.
