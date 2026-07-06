@@ -8,6 +8,11 @@ import { useId } from '../composables/useId'
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 const modelValue = defineModel<string>({ default: '' })
 
+// Consumer HTML attributes (name, wrap, …) belong on the native <textarea>, not the
+// wrapper <div> — native form submission needs `name` on the control. Auto-inheritance
+// is disabled and $attrs is bound explicitly (first, so prop-driven bindings win).
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps({
   id: { type: String, default: undefined },
   label: { type: String, default: undefined },
@@ -90,6 +95,7 @@ const handleFocus = (event: FocusEvent) => {
       <span v-if="required" class="text-danger">*</span>
     </label>
     <textarea
+      v-bind="$attrs"
       :id="computedId"
       :class="textareaClass"
       :style="textareaStyle"
