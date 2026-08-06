@@ -627,7 +627,7 @@ All charts are responsive via `ResizeObserver`, render at device pixel ratio for
 - Does not bundle Bootstrap CSS or JS
 - Does not require Bootstrap Icons (optional peer dep for `VibeIcon`)
 - Does not require Vue Router — but the `to` prop renders a `router-link`, so it only resolves in an app that has installed the router. `href` never needs it.
-- Does not require QuillJS (optional peer dep for `VibeFormWysiwyg`)
+- Does not require QuillJS or DOMPurify — both are optional peers used only by `VibeFormWysiwyg`, imported lazily on mount and never bundled. Without `quill` the editor renders a warning alert and emits `component-error`; without `dompurify` it works but skips VibeUI's sanitizing pass. Every other component is unaffected.
 - Does not provide a theme system beyond Bootstrap's `data-bs-theme` color modes
 
 ## Documentation Index

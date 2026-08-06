@@ -10,7 +10,14 @@ This component requires two optional peers — install both:
 npm install quill dompurify
 ```
 
-Quill and DOMPurify are loaded lazily on mount. If `quill` is missing, the component shows a warning alert and emits a `component-error` event instead of crashing.
+Both are optional peers of the package as a whole — nothing outside this component needs them, and neither is bundled. They are imported lazily on mount, so a project that never renders `VibeFormWysiwyg` never loads them.
+
+What happens if one is missing:
+
+| Missing | Result |
+|---------|--------|
+| `quill` | The editor does not load. A warning alert renders in its place and a `component-error` event is emitted — no crash, and no `console.error` in production (DEV logs a `console.warn`). |
+| `dompurify` | The editor works, but VibeUI's own sanitizing layer is skipped and `modelValue` HTML reaches Quill unsanitized. Quill's Delta conversion still applies its own allowlist, but you lose the defence-in-depth pass. DEV logs a `console.warn`. |
 
 ## Props
 
@@ -85,7 +92,7 @@ const onError = (err: ComponentError) => console.error(err.message)
 ## Important Notes
 
 - **Sanitization:** incoming `modelValue` HTML is sanitized before it is rendered, and the emitted HTML is sanitized too. Unsafe tags and attributes (e.g. `<script>`, inline event handlers) are stripped. Do not rely on the editor to preserve dangerous markup.
-- **Both peers required:** `dompurify` is needed for sanitization and `quill` for the editor; install them together.
+- **Install both peers:** `quill` provides the editor and `dompurify` the sanitizing pass. Neither is required by the rest of VibeUI, and each degrades on its own terms — see [Peer dependencies](#peer-dependencies) for exactly what you lose.
 - **`height` is validated:** only CSS length values are accepted; anything else falls back to `200px`.
 - **Responsive toolbar:** at mobile breakpoints `mobileToolbar` (or a compact default) is used, and the editor re-initializes while preserving content.
 - **Group linking:** wrapped in a `VibeFormGroup`, the editor consumes the group id so the label and feedback link automatically.

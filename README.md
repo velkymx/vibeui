@@ -63,7 +63,7 @@ Optional peers (only if you use the features that need them):
 
 ```bash
 npm install bootstrap-icons         # VibeIcon
-npm install quill dompurify         # VibeFormWysiwyg (dompurify sanitizes editor HTML)
+npm install quill dompurify         # VibeFormWysiwyg (quill = the editor, dompurify = HTML sanitizing)
 ```
 
 In your app entry (`main.ts`):
