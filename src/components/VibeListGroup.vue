@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Tag, ListGroupItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
+import { linkBindings } from '../utils/linkBindings'
 
 const props = defineProps({
   flush: { type: Boolean, default: false },
@@ -55,8 +56,7 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
       :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'li'"
       :class="getItemClass(item)"
       :style="!safeHref(item.href) && !item.to && !item.disabled ? { cursor: 'pointer' } : undefined"
-      :href="safeHref(item.href)"
-      :to="item.to"
+      v-bind="linkBindings(safeHref(item.href), item.to)"
       :aria-disabled="item.disabled || undefined"
       :aria-current="item.active"
       @click="handleItemClick(item, index, $event)"

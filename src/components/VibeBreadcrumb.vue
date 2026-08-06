@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { BreadcrumbItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
+import { linkBindings } from '../utils/linkBindings'
 
 const props = defineProps({
   ariaLabel: { type: String, default: 'breadcrumb' },
@@ -31,8 +32,7 @@ const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
       >
         <component
           :is="item.active ? 'span' : safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
-          :href="item.active ? undefined : safeHref(item.href)"
-          :to="item.active ? undefined : item.to"
+          v-bind="item.active ? {} : linkBindings(safeHref(item.href), item.to)"
           :type="!item.active && !item.href && !item.to ? 'button' : undefined"
           @click="handleItemClick(item, index, $event)"
         >

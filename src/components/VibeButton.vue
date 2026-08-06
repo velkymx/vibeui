@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { ButtonVariant, Size, ButtonType, ComponentError } from '../types'
+import { linkBindings } from '../utils/linkBindings'
 
 const props = defineProps({
   variant: { type: String as () => ButtonVariant, default: 'primary' },
@@ -51,6 +52,10 @@ const tag = computed(() => {
   return 'button'
 })
 
+// `to` is only meaningful on the router-link tag — a disabled button renders a
+// span, which must not receive a stray `to` attribute.
+const rootBindings = computed(() => linkBindings(props.href, tag.value === 'router-link' ? props.to : undefined))
+
 const buttonClass = computed(() => {
   const classes = ['btn']
 
@@ -86,8 +91,7 @@ const handleClick = (event: MouseEvent) => {
     ref="rootRef"
     :class="buttonClass"
     :type="href || to ? undefined : type"
-    :href="href"
-    :to="to || undefined"
+    v-bind="rootBindings"
     :disabled="tag === 'button' ? disabled : undefined"
     :aria-disabled="disabled || undefined"
     @click="handleClick"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { NavItem, DropdownItem, ComponentError } from '../types'
+import { linkBindings } from '../utils/linkBindings'
 
 interface BootstrapDropdown {
   dispose: () => void
@@ -128,8 +129,7 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
                 <component
                   :is="child.href ? 'a' : child.to ? 'router-link' : 'button'"
                   :class="getDropdownItemClass(child)"
-                  :href="child.href"
-                  :to="child.to"
+                  v-bind="linkBindings(child.href, child.to)"
                   :type="!child.href && !child.to ? 'button' : undefined"
                   @click="handleDropdownItemClick(item, index, child, childIndex, $event)"
                 >
@@ -147,8 +147,7 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
           v-else
           :is="getItemTag(item)"
           :class="getLinkClass(item)"
-          :href="item.href || undefined"
-          :to="item.to"
+          v-bind="linkBindings(item.href, item.to)"
           :type="!item.href && !item.to ? 'button' : undefined"
           :aria-current="item.active ? 'page' : undefined"
           :aria-disabled="item.disabled"

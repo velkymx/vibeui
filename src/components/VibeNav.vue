@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { NavItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
+import { linkBindings } from '../utils/linkBindings'
 import { routeKey } from '../utils/routeKey'
 
 interface BootstrapTab {
@@ -189,8 +190,7 @@ defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
                 :is="safeHref(child.href) ? 'a' : child.to ? 'router-link' : 'button'"
                 class="dropdown-item"
                 :class="{ active: child.active, disabled: child.disabled }"
-                :href="safeHref(child.href)"
-                :to="child.to"
+                v-bind="linkBindings(safeHref(child.href), child.to)"
                 :type="!child.href && !child.to ? 'button' : undefined"
               >
                 {{ child.text }}
@@ -204,8 +204,7 @@ defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
           :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
           class="nav-link"
           :class="{ active: item.active, disabled: item.disabled }"
-          :href="safeHref(item.href)"
-          :to="item.to"
+          v-bind="linkBindings(safeHref(item.href), item.to)"
           :type="!item.href && !item.to ? 'button' : undefined"
           :disabled="(!item.href && !item.to && item.disabled) || undefined"
           :aria-current="item.active ? 'page' : undefined"

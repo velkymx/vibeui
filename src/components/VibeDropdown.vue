@@ -3,6 +3,7 @@ import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vu
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { safeHref } from '../utils/safeHref'
+import { linkBindings } from '../utils/linkBindings'
 import { routeKey } from '../utils/routeKey'
 
 interface BootstrapDropdown {
@@ -208,8 +209,7 @@ defineExpose({ show, hide, toggle })
           <component
             :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'button'"
             :class="getItemClass(item)"
-            :href="safeHref(item.href)"
-            :to="item.to"
+            v-bind="linkBindings(safeHref(item.href), item.to)"
             :type="!item.href && !item.to ? 'button' : undefined"
             :disabled="item.disabled"
             @click="handleItemClick(item, index, $event)"
