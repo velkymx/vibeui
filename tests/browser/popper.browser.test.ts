@@ -18,7 +18,23 @@ describe('VibeTooltip', () => {
     // behaviour. A mouseenter sent during that window is dropped and never replayed.
     await waitForBsInstance(await waitForSelector('span[data-bs-placement]'), 'Tooltip')
 
+    // TEMPORARY diagnostic
+    const ev: string[] = []
+    const btnEl = document.querySelector('button') as HTMLElement
+    for (const t of ['mouseover', 'mouseenter', 'mouseout', 'mouseleave']) {
+      btnEl.addEventListener(t, () => ev.push(t))
+    }
+    let added = 0, removed = 0
+    new MutationObserver(muts => {
+      for (const m of muts) {
+        m.addedNodes.forEach(n => { if ((n as HTMLElement).classList?.contains('tooltip')) added++ })
+        m.removedNodes.forEach(n => { if ((n as HTMLElement).classList?.contains('tooltip')) removed++ })
+      }
+    }).observe(document.body, { childList: true, subtree: true })
+
     await userEvent.hover(screen.getByRole('button', { name: 'Hover me' }))
+    await new Promise(r => setTimeout(r, 1200))
+    expect(JSON.stringify({ ev, added, removed, now: document.querySelectorAll('.tooltip').length })).toBe('DIAGNOSTIC')
     const tip = await waitForSelector('.tooltip')
     // Real Popper applies an inline transform for positioning — absent in happy-dom.
     expect((tip as HTMLElement).style.transform).not.toBe('')
