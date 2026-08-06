@@ -13,7 +13,7 @@
 
 **The Vue 3 component library for people who already love Bootstrap.**
 
-> **🤖 Building with an AI assistant?** Point it at [`llms.txt`](./llms.txt) (quick-start guardrails + a link to every doc) and [`docs/`](https://github.com/velkymx/vibeui/blob/main/docs/README.md). Every component's props, events, and slots are documented — **don't let it guess props or reverse-engineer from `dist/`.** Quick reminders: data-driven components use `:items` / `:bars` / `:options`, visibility uses `v-model`, outline buttons use the `outline` prop, and granular tags like `<vibe-card-body>` / `<vibe-nav-item>` do **not** exist (use slots). `llms.txt` ships inside the npm package; the `docs/` pages are hosted here on GitHub.
+> **🤖 Building with an AI assistant?** Point it at [`llms.txt`](./llms.txt) (quick-start guardrails + a link to every doc) and [`docs/`](https://github.com/velkymx/vibeui/blob/main/docs/README.md). Every component's props, events, and slots are documented — **don't let it guess props or reverse-engineer from `dist/`.** Quick reminders: data-driven components use `:items` / `:bars` / `:options`, visibility uses `v-model`, outline buttons use the `outline` prop, and granular tags like `<vibe-card-body>` / `<vibe-nav-item>` do **not** exist (use slots). Both `llms.txt` and the `docs/` pages ship inside the npm package — the links are absolute so they also resolve from npmjs.com.
 
 
 

@@ -634,7 +634,7 @@ All charts are responsive via `ResizeObserver`, render at device pixel ratio for
 
 Per-component and per-API reference. **Read the relevant page before building with a component.**
 
-These pages are hosted on GitHub and are **not** part of the npm tarball — fetch the URL rather than looking for a local `docs/` directory. This file is the reference that ships with the package.
+These pages ship inside the npm package under `docs/`, so you can read them straight from `node_modules/@velkymx/vibeui/docs/`. The links below are absolute so they also resolve on npmjs.com and GitHub, where relative paths do not.
 
 **Start here:** [docs/README.md](https://github.com/velkymx/vibeui/blob/main/docs/README.md) · [Getting started / starter template](https://github.com/velkymx/vibeui/blob/main/docs/getting-started/starter-template.md) · [Versioning & stability policy](https://github.com/velkymx/vibeui/blob/main/docs/versioning.md)
 
