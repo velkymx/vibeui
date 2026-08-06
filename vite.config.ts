@@ -83,6 +83,14 @@ export default defineConfig({
           name: 'browser',
           include: ['tests/browser/**/*.browser.test.ts'],
           setupFiles: ['tests/browser/setup.ts'],
+          // Browser mode runs each test file in its own iframe, but every file shares
+          // one page and one real mouse. Concurrently, pointer-driven tests are
+          // unreliable — on CI, userEvent.hover() delivered no mouse events at all to
+          // a tiled iframe (verified: zero mouseover/mouseenter reached the element),
+          // so hover-triggered components never opened. Clicks were unaffected, which
+          // is why only the tooltip test failed. One file at a time; the whole browser
+          // suite is only a few seconds.
+          fileParallelism: false,
           browser: {
             enabled: true,
             provider: playwright(),
