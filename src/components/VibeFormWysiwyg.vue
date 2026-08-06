@@ -2,8 +2,7 @@
 import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
-import { useId } from '../composables/useId'
+import { useFormField } from '../composables/useFormField'
 import { useBreakpoints } from '../composables/useBreakpoints'
 import { loadDOMPurify, sanitizeHtml } from '../utils/sanitizeHtml'
 import { safeLength } from '../utils/safeCss'
@@ -28,7 +27,6 @@ interface QuillInstance {
   scroll?: { observer?: { disconnect: () => void } }
 }
 
-const _generatedId = useId('wysiwyg')
 
 const props = defineProps({
   modelValue: {
@@ -62,16 +60,20 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const formGroup = inject(FORM_GROUP_KEY, null)
-const _groupId = formGroup?.consumeId()
+const {
+  formGroup,
+  computedId,
+  helpId,
+  feedbackId,
+  ariaDescribedBy,
+  shouldRenderLabel,
+  shouldRenderFeedback,
+  shouldRenderHelp
+} = useFormField('wysiwyg', props)
 
-const computedId = computed(() => props.id || _groupId || _generatedId)
 const safeMinHeight = computed(() => safeLength(props.height) ?? '200px')
 const { isMobile } = useBreakpoints()
 
-const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
-const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
-const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
 
 const editorContainer = ref<HTMLElement | null>(null)
 const quillInstance = shallowRef<QuillInstance | null>(null)
@@ -453,15 +455,15 @@ watch(isMobile, () => {
       <div ref="editorContainer"></div>
     </div>
 
-    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="helpId" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
+      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide valid content.' }}
       </div>
     </template>

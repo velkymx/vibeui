@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
-import { useId } from '../composables/useId'
-import { FORM_GROUP_KEY } from '../injectionKeys'
+import { useFormField } from '../composables/useFormField'
 import type { Size, ValidationState } from '../types'
 
 const props = defineProps({
@@ -35,28 +34,19 @@ defineOptions({ inheritAttrs: false })
 // Same validation contract as the other form controls: consume the surrounding
 // VibeFormGroup's id when present, and defer label/help/feedback rendering to
 // the group so they aren't duplicated.
-const formGroup = inject(FORM_GROUP_KEY, null)
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('file-input')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const helpId = computed(() => `${computedId.value}-help`)
-const feedbackId = computed(() => `${computedId.value}-feedback`)
-const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
-const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
-const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
+const {
+  formGroup,
+  computedId,
+  helpId,
+  feedbackId,
+  ariaDescribedBy,
+  shouldRenderLabel,
+  shouldRenderFeedback,
+  shouldRenderHelp
+} = useFormField('file-input', props)
 const isDragging = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 
-// WCAG 1.3.1 / 3.3.1: point aria-describedby at our own help/feedback and at the
-// surrounding VibeFormGroup's, deduplicated (mirrors VibeFormInput).
-const ariaDescribedBy = computed(() => {
-  const ids: string[] = []
-  if (props.helpText) ids.push(helpId.value)
-  if (props.validationMessage) ids.push(feedbackId.value)
-  if (formGroup?.helpId.value) ids.push(formGroup.helpId.value)
-  if (formGroup?.feedbackId.value) ids.push(formGroup.feedbackId.value)
-  return ids.length ? [...new Set(ids)].join(' ') : undefined
-})
 
 const inputClass = computed(() => {
   const c = ['form-control']

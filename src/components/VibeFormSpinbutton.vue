@@ -2,8 +2,7 @@
 import { computed, inject, ref, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
-import { useId } from '../composables/useId'
+import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 // The validator option still forwards to the underlying prop.
@@ -51,14 +50,17 @@ const emit = defineEmits<{
   (e: 'decrement', value: number): void
 }>()
 
-const formGroup = inject(FORM_GROUP_KEY, null)
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('spinbutton')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
-const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
-const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
+const {
+  formGroup,
+  computedId,
+  helpId,
+  feedbackId,
+  ariaDescribedBy,
+  shouldRenderLabel,
+  shouldRenderFeedback,
+  shouldRenderHelp
+} = useFormField('spinbutton', props)
 
 const inputClass = computed(() => {
   const classes = ['form-control']
@@ -208,7 +210,7 @@ const decrement = () => {
         :max="max"
         :step="safeStep"
         :aria-invalid="validationState === 'invalid'"
-        :aria-describedby="helpText && validationMessage ? `${computedId}-help ${computedId}-feedback` : helpText ? `${computedId}-help` : validationMessage ? `${computedId}-feedback` : undefined"
+        :aria-describedby="ariaDescribedBy"
         @input="handleInput"
         @change="handleChange"
         @blur="handleBlur"
@@ -224,15 +226,15 @@ const decrement = () => {
         <span aria-hidden="true">+</span>
       </button>
     </div>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
+    <div v-if="shouldRenderHelp" :id="helpId" class="form-text">
       {{ helpText }}
     </div>
     <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
+      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
         {{ validationMessage || 'Looks good!' }}
       </div>
       <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
+      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
         {{ validationMessage || 'Please provide a valid value.' }}
       </div>
     </template>
