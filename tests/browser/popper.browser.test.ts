@@ -13,43 +13,24 @@ describe('VibeTooltip', () => {
       components: { VibeTooltip },
       template: `<div><VibeTooltip text="Helpful tip"><button type="button">Hover me</button></VibeTooltip></div>`
     })
-    const screen = render(Host)
+    render(Host)
     // Bootstrap is imported on demand, so the wrapper exists before it has any hover
-    // behaviour. A mouseenter sent during that window is dropped and never replayed.
-    await waitForBsInstance(await waitForSelector('span[data-bs-placement]'), 'Tooltip')
+    // behaviour. An event sent during that window is dropped and never replayed.
+    const wrapper = await waitForSelector('span[data-bs-placement]')
+    await waitForBsInstance(wrapper, 'Tooltip')
 
-    // TEMPORARY diagnostic — which input paths actually reach this element?
-    const locator = screen.getByRole('button', { name: 'Hover me' })
-    const target = locator.element() as HTMLElement
-    const log: string[] = []
-    for (const t of ['pointerover', 'mouseover', 'mouseenter', 'focusin']) {
-      target.addEventListener(t, () => log.push(t))
-    }
-    const snap = () => ({ log: [...log], tips: document.querySelectorAll('.tooltip').length })
-
-    let hoverErr = 'none'
-    try { await userEvent.hover(locator) } catch (e) { hoverErr = String((e as Error).message).slice(0, 80) }
-    await new Promise(r => setTimeout(r, 400))
-    const afterHover = snap()
-
-    let clickErr = 'none'
-    try { await userEvent.click(locator) } catch (e) { clickErr = String((e as Error).message).slice(0, 80) }
-    await new Promise(r => setTimeout(r, 400))
-    const afterClick = snap()
-
-    target.focus()
-    await new Promise(r => setTimeout(r, 400))
-    const afterFocus = snap()
-
-    target.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }))
-    await new Promise(r => setTimeout(r, 400))
-    const afterSynthetic = snap()
-
-    expect(JSON.stringify({ hoverErr, afterHover, clickErr, afterClick, afterFocus, afterSynthetic })).toBe('DIAGNOSTIC')
+    // Bootstrap's hover trigger listens for mouseover/mouseout on the wrapper, and those
+    // are dispatched directly instead of being driven through the harness's mouse.
+    // Headless CI does not deliver pointer *movement* into Vitest's test iframe at all:
+    // instrumenting the element there showed userEvent.hover() producing no events
+    // whatsoever, and even a real click arriving as focusin with no mouseover. What this
+    // test exists to prove — that real Bootstrap JS and real Popper build and position
+    // the tooltip — is unaffected, since both still run exactly as they do for a user.
+    wrapper.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }))
     const tip = await waitForSelector('.tooltip')
     // Real Popper applies an inline transform for positioning — absent in happy-dom.
     expect((tip as HTMLElement).style.transform).not.toBe('')
-    await userEvent.unhover(screen.getByRole('button', { name: 'Hover me' }))
+    wrapper.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body }))
     await waitForGone('.tooltip')
   })
 })
