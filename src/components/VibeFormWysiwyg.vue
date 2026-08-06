@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
@@ -455,18 +456,16 @@ watch(isMobile, () => {
       <div ref="editorContainer"></div>
     </div>
 
-    <div v-if="shouldRenderHelp" :id="helpId" class="form-text">
-      {{ helpText }}
-    </div>
-    <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
-        {{ validationMessage || 'Looks good!' }}
-      </div>
-      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
-        {{ validationMessage || 'Please provide valid content.' }}
-      </div>
-    </template>
+    <VibeFieldFeedback
+      :help-id="helpId"
+      :feedback-id="feedbackId"
+      :help-text="helpText"
+      :validation-state="validationState"
+      :validation-message="validationMessage"
+      invalid-message="Please provide valid content."
+      :show-help="shouldRenderHelp"
+      :show-feedback="shouldRenderFeedback"
+    />
   </div>
 </template>
 

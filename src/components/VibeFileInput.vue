@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed, inject, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
 import { useFormField } from '../composables/useFormField'
 import type { Size, ValidationState } from '../types'
@@ -218,16 +219,16 @@ onBeforeUnmount(() => {
       @change="handleChange"
     />
 
-    <div v-if="shouldRenderHelp" :id="helpId" class="form-text">{{ helpText }}</div>
-    <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
-        {{ validationMessage || 'Looks good!' }}
-      </div>
-      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
-        {{ validationMessage || 'Please provide a valid file.' }}
-      </div>
-    </template>
+    <VibeFieldFeedback
+      :help-id="helpId"
+      :feedback-id="feedbackId"
+      :help-text="helpText"
+      :validation-state="validationState"
+      :validation-message="validationMessage"
+      invalid-message="Please provide a valid file."
+      :show-help="shouldRenderHelp"
+      :show-feedback="shouldRenderFeedback"
+    />
   </div>
 </template>
 
