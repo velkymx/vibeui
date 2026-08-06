@@ -439,6 +439,105 @@ describe('VibeFormSelect', () => {
     })
   })
 
+  // The rendered value attribute is a public contract: native form submission posts it,
+  // E2E selectors and browser autofill read it, and non-Vue consumers see only the DOM.
+  // It must carry the real option value, never an internal encoding.
+  describe('DOM value attributes are the real option values', () => {
+    it('renders primitive option values verbatim', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { value: 'alpha', text: 'A' },
+            { value: 42, text: 'B' },
+            { value: 'plain-string', text: 'C' }
+          ]
+        }
+      })
+
+      const values = wrapper.findAll('option').map(o => o.attributes('value'))
+      expect(values).toEqual(['alpha', '42', 'plain-string'])
+    })
+
+    it('supports attribute selectors against the real value', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { value: 'alpha', text: 'A' },
+            { value: 'beta', text: 'B' }
+          ]
+        }
+      })
+
+      const el = wrapper.find('select').element.querySelector('option[value="alpha"]')
+      expect(el).not.toBeNull()
+      expect(el?.textContent?.trim()).toBe('A')
+    })
+
+    it('submits the real value natively', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { value: 'alpha', text: 'A' },
+            { value: 'beta', text: 'B' }
+          ],
+          modelValue: 'beta'
+        },
+        attrs: { name: 'choice' }
+      })
+
+      const select = wrapper.find('select').element as HTMLSelectElement
+      expect(select.value).toBe('beta')
+    })
+
+    it('omits the value attribute for null and undefined, matching Vue\'s own <option :value>', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { value: null, text: 'None' },
+            { value: undefined, text: 'Unset' },
+            { value: 'real', text: 'Real' }
+          ]
+        }
+      })
+
+      const values = wrapper.findAll('option').map(o => o.attributes('value'))
+      expect(values).toEqual([undefined, undefined, 'real'])
+    })
+
+    it('renders booleans verbatim rather than as an encoding', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          options: [
+            { value: true, text: 'Yes' },
+            { value: false, text: 'No' }
+          ]
+        }
+      })
+
+      expect(wrapper.findAll('option').map(o => o.attributes('value'))).toEqual(['true', 'false'])
+    })
+
+    it('never leaks an internal index encoding into the DOM', () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: {
+          id: 'select',
+          placeholder: 'Pick',
+          options: [
+            { value: 'alpha', text: 'A' },
+            { value: 7, text: 'B' }
+          ]
+        }
+      })
+
+      expect(wrapper.find('select').element.innerHTML).not.toContain('vi:')
+    })
+  })
+
   // Regression: computed refs auto-unwrap in templates — helpId.value / feedbackId.value
   // double-dereferences to undefined, producing aria-describedby="undefined undefined"
   describe('aria-describedby correctness', () => {
