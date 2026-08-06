@@ -18,39 +18,34 @@ describe('VibeTooltip', () => {
     // behaviour. A mouseenter sent during that window is dropped and never replayed.
     await waitForBsInstance(await waitForSelector('span[data-bs-placement]'), 'Tooltip')
 
-    // TEMPORARY diagnostic — instrument the EXACT element the locator resolves to,
-    // and record the document state, so the measurement cannot target a stale node.
+    // TEMPORARY diagnostic — which input paths actually reach this element?
     const locator = screen.getByRole('button', { name: 'Hover me' })
     const target = locator.element() as HTMLElement
-    const firstButton = document.querySelector('button') as HTMLElement
-    const seen: string[] = []
-    for (const t of ['mouseover', 'mouseenter', 'mouseout', 'mouseleave', 'pointerover']) {
-      target.addEventListener(t, () => seen.push(t))
+    const log: string[] = []
+    for (const t of ['pointerover', 'mouseover', 'mouseenter', 'focusin']) {
+      target.addEventListener(t, () => log.push(t))
     }
-    const before = {
-      sameAsFirstButton: target === firstButton,
-      buttonsInDoc: document.querySelectorAll('button').length,
-      spansInDoc: document.querySelectorAll('span[data-bs-placement]').length,
-      connected: target.isConnected,
-      rect: JSON.stringify(target.getBoundingClientRect().toJSON()),
-      scroll: `${window.scrollX},${window.scrollY}`,
-      inIframe: window.self !== window.top,
-      frameRect: window.frameElement ? JSON.stringify((window.frameElement as HTMLElement).getBoundingClientRect().toJSON()) : 'none'
-    }
-    let hoverError = 'none'
-    try {
-      await userEvent.hover(locator)
-    } catch (e) {
-      hoverError = String((e as Error).message).slice(0, 120)
-    }
-    await new Promise(r => setTimeout(r, 800))
-    const after = {
-      seen,
-      hoverError,
-      tooltips: document.querySelectorAll('.tooltip').length,
-      describedBy: target.closest('span[data-bs-placement]')?.getAttribute('aria-describedby') ?? 'none'
-    }
-    expect(JSON.stringify({ ...before, ...after })).toBe('DIAGNOSTIC')
+    const snap = () => ({ log: [...log], tips: document.querySelectorAll('.tooltip').length })
+
+    let hoverErr = 'none'
+    try { await userEvent.hover(locator) } catch (e) { hoverErr = String((e as Error).message).slice(0, 80) }
+    await new Promise(r => setTimeout(r, 400))
+    const afterHover = snap()
+
+    let clickErr = 'none'
+    try { await userEvent.click(locator) } catch (e) { clickErr = String((e as Error).message).slice(0, 80) }
+    await new Promise(r => setTimeout(r, 400))
+    const afterClick = snap()
+
+    target.focus()
+    await new Promise(r => setTimeout(r, 400))
+    const afterFocus = snap()
+
+    target.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }))
+    await new Promise(r => setTimeout(r, 400))
+    const afterSynthetic = snap()
+
+    expect(JSON.stringify({ hoverErr, afterHover, clickErr, afterClick, afterFocus, afterSynthetic })).toBe('DIAGNOSTIC')
     const tip = await waitForSelector('.tooltip')
     // Real Popper applies an inline transform for positioning — absent in happy-dom.
     expect((tip as HTMLElement).style.transform).not.toBe('')
