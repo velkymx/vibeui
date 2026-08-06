@@ -1,18 +1,37 @@
+import { defineComponent } from 'vue'
+import { render } from 'vitest-browser-vue'
+import { userEvent } from '@vitest/browser/context'
 import { test, expect } from 'vitest'
+import VibeTooltip from '../../src/components/VibeTooltip.vue'
 
 // TEMPORARY diagnostic — removed in the follow-up commit.
-// VibeTooltip swaps its trigger from hover to click when it thinks the device is
-// touch-capable. Establishing what that heuristic actually sees on CI.
-test('probe touch signals', () => {
-  const isTouchLegacy = 'ontouchstart' in window || navigator.maxTouchPoints > 0
-  const info = {
-    ontouchstart: 'ontouchstart' in window,
-    maxTouchPoints: navigator.maxTouchPoints,
-    isTouchLegacy,
-    hoverNone: window.matchMedia('(hover: none)').matches,
-    pointerCoarse: window.matchMedia('(pointer: coarse)').matches,
-    ua: navigator.userAgent.slice(0, 70)
+test('probe tooltip hover path', async () => {
+  const Host = defineComponent({
+    components: { VibeTooltip },
+    template: `<div><VibeTooltip text="Helpful tip"><button type="button">Hover me</button></VibeTooltip></div>`
+  })
+  const screen = render(Host)
+  await new Promise(r => setTimeout(r, 300))
+
+  const span = document.querySelector('span[data-bs-placement]') as HTMLElement
+  const btn = screen.getByRole('button', { name: 'Hover me' })
+
+  const before = {
+    spanFound: !!span,
+    trigger: span?.getAttribute('data-bs-trigger'),
+    title: span?.getAttribute('data-bs-title'),
+    rect: span ? JSON.stringify(span.getBoundingClientRect().toJSON()) : null,
+    viewport: `${window.innerWidth}x${window.innerHeight}`
   }
-  // Deliberate failure: surfaces the values in the CI log.
-  expect(JSON.stringify(info)).toBe('DIAGNOSTIC')
+
+  await userEvent.hover(btn)
+  await new Promise(r => setTimeout(r, 600))
+  const afterHover = document.querySelectorAll('.tooltip').length
+
+  // Does a manually dispatched mouseover produce the tooltip?
+  span?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body }))
+  await new Promise(r => setTimeout(r, 600))
+  const afterManual = document.querySelectorAll('.tooltip').length
+
+  expect(JSON.stringify({ ...before, afterHover, afterManual })).toBe('DIAGNOSTIC')
 })
