@@ -68,6 +68,10 @@ A flexible link component that supports Bootstrap 5.3's link color and underline
 
 **`href` sanitization:** The `href` prop is sanitized. Only `https://`/`http://` URLs, absolute paths (`/path`), relative paths (`./`, `../`), and anchors (`#section`) are allowed. Dangerous values such as `javascript:`, `data:`, `vbscript:`, and protocol-relative `//host` URLs are stripped — the `href` attribute is omitted entirely. Use `to` for in-app navigation via Vue Router.
 
+**`href` and `to` are mutually exclusive:** unlike the other components, `VibeLink` gives `to` precedence when both are set (matching its `tag` behaviour). Only the winning one is bound, so a router link never carries a stray `href` and a plain anchor never carries a stray `to`.
+
+**`to` requires Vue Router:** it renders a `router-link`, which resolves the `href` and handles navigation. Without `app.use(router)` the tag does not resolve.
+
 ## Bootstrap CSS Classes
 
 - `.link-{variant}`
