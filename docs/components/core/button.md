@@ -18,6 +18,8 @@ Button component with variants, sizes, and support for links and router-links.
 
 ## Important Notes
 
+**`href` sanitization:** The `href` prop is sanitized. Only `https://`/`http://` URLs, absolute paths (`/path`), relative paths (`./`, `../`), and anchors (`#section`) are allowed. Dangerous values such as `javascript:`, `data:`, `vbscript:`, and protocol-relative `//host` URLs are dropped — the button falls back to `to`, or to a plain `<button>`, rather than rendering an anchor with no href.
+
 **`href` and `to` are mutually exclusive:** `href` wins when both are given, and only the winning one reaches the DOM — a plain anchor never carries a stray `to` attribute.
 
 **`to` requires Vue Router:** it renders a `router-link`, which resolves the `href` and handles navigation. Without `app.use(router)` the tag does not resolve. See [Link Buttons](#link-buttons) below.

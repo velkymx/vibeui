@@ -308,7 +308,7 @@ Components like `VibeBreadcrumb`, `VibeListGroup`, `VibeDropdown`, `VibeAccordio
 
 Anywhere a component or an `items[]` entry accepts both, they are mutually exclusive and only the winning one is bound — a plain anchor never carries a stray `to`, and a router link never carries a stray `href`.
 
-- `href` → a native `<a href>`. Sanitized on every component except `VibeButton` and `VibeNavbarNav`: only `http(s)://`, `/path`, `./`, `../` and `#anchor` survive; `javascript:`, `data:`, `vbscript:` and protocol-relative `//host` are dropped and the attribute is omitted entirely.
+- `href` → a native `<a href>`. Sanitized on every component: only `http(s)://`, `/path`, `./`, `../` and `#anchor` survive. `javascript:`, `data:`, `vbscript:` and protocol-relative `//host` are dropped, and the element falls through to `to` or to a plain button rather than rendering a dead anchor.
 - `to` → a `router-link`, which resolves the `href` itself and handles navigation. **Requires Vue Router to be installed on the app** (`app.use(router)`); it is not a peer dependency and nothing else in the library needs it.
 - **Precedence:** `href` wins on `VibeButton`, `VibeNav`, `VibeNavbarNav`, `VibeNavbarBrand`, `VibeListGroup`, `VibeDropdown` and `VibeBreadcrumb`. `VibeLink` is the exception — `to` wins there, matching its `tag` behaviour.
 - A **disabled** `VibeButton` with `to` renders a `<span class="btn disabled">` instead of an anchor, so there is nothing navigable to click.
