@@ -273,7 +273,13 @@ const initQuill = async () => {
       emit('ready', quillInstance.value)
     }
   } catch (error) {
-    console.error('Failed to load Quill editor:', error)
+    // A missing `quill` is an expected state for an optional peer, not a fault: the
+    // visible alert below and the component-error emit already carry the signal, so
+    // this stays a DEV-only warning rather than console.error noise in production.
+    // Matches how loadDOMPurify() reports its own optional peer.
+    if (import.meta.env.DEV) {
+      console.warn('[VibeFormWysiwyg] Failed to load Quill editor:', error)
+    }
     loadError.value = 'Failed to load WYSIWYG editor. Please install quill: npm install quill'
     isQuillLoaded.value = false
     emit('component-error', {
