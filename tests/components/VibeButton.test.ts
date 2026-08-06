@@ -230,4 +230,44 @@ describe('VibeButton', () => {
       expect(wrapper.emitted('click')).toBeTruthy()
     })
   })
+
+  // Security: href is sanitized with the same rules as every other link-bearing
+  // component — an unsafe value must not reach the DOM, and must not leave a dead
+  // anchor behind either.
+  describe('href sanitization', () => {
+    it.each([
+      ['javascript:alert(1)'],
+      ['JavaScript:alert(1)'],
+      ['data:text/html,<script>alert(1)</script>'],
+      ['vbscript:msgbox(1)'],
+      ['//evil.example.com']
+    ])('does not render %s as an href', unsafe => {
+      const wrapper = mount(VibeButton, { props: { href: unsafe } })
+
+      expect(wrapper.find('a').exists()).toBe(false)
+      expect(wrapper.html()).not.toContain(unsafe)
+    })
+
+    it.each([
+      ['https://example.com'],
+      ['http://example.com'],
+      ['/absolute'],
+      ['./relative'],
+      ['../up'],
+      ['#anchor']
+    ])('preserves the safe href %s', safe => {
+      const wrapper = mount(VibeButton, { props: { href: safe } })
+
+      expect(wrapper.find('a').attributes('href')).toBe(safe)
+    })
+
+    it('falls back to the router link when href is unsafe but to is set', () => {
+      const wrapper = mount(VibeButton, {
+        props: { href: 'javascript:alert(1)', to: '/safe' },
+        global: { stubs: { 'router-link': true } }
+      })
+
+      expect(wrapper.find('router-link-stub').exists()).toBe(true)
+    })
+  })
 })

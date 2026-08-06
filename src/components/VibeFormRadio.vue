@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed, inject } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
-import { useId } from '../composables/useId'
+import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 const modelValue = defineModel<string | number | boolean>({ default: '' })
@@ -31,16 +31,17 @@ const emit = defineEmits<{
   (e: 'change', event: Event): void
 }>()
 
-const formGroup = inject(FORM_GROUP_KEY, null)
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('radio')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const helpId = computed(() => `${computedId.value}-help`)
-const feedbackId = computed(() => `${computedId.value}-feedback`)
-const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
-const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
-const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
+const {
+  formGroup,
+  computedId,
+  helpId,
+  feedbackId,
+  ariaDescribedBy,
+  shouldRenderLabel,
+  shouldRenderFeedback,
+  shouldRenderHelp
+} = useFormField('radio', props)
 
 const containerClass = computed(() => {
   const classes = ['form-check']
@@ -86,7 +87,7 @@ const handleFocus = (event: FocusEvent) => {
       :disabled="disabled"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="helpText && validationMessage ? `${computedId}-help ${computedId}-feedback` : helpText ? `${computedId}-help` : validationMessage ? `${computedId}-feedback` : undefined"
+      :aria-describedby="ariaDescribedBy"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
@@ -95,17 +96,15 @@ const handleFocus = (event: FocusEvent) => {
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
     </label>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
-      {{ helpText }}
-    </div>
-    <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
-        {{ validationMessage || 'Looks good!' }}
-      </div>
-      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
-        {{ validationMessage || 'Please select an option.' }}
-      </div>
-    </template>
+    <VibeFieldFeedback
+      :help-id="helpId"
+      :feedback-id="feedbackId"
+      :help-text="helpText"
+      :validation-state="validationState"
+      :validation-message="validationMessage"
+      invalid-message="Please select an option."
+      :show-help="shouldRenderHelp"
+      :show-feedback="shouldRenderFeedback"
+    />
   </div>
 </template>

@@ -59,4 +59,44 @@ describe('VibeNavbarNav', () => {
     expect(bootstrap.Dropdown).toHaveBeenCalled()
     expect(wrapper.find('[data-bs-toggle="dropdown"]').exists()).toBe(true)
   })
+
+  // Security: item and dropdown-child hrefs are sanitized with the same rules as
+  // every other link-bearing component.
+  describe('href sanitization', () => {
+    it('strips a javascript: URL from an item href', () => {
+      const wrapper = mount(VibeNavbarNav, {
+        props: { items: [{ text: 'XSS', href: 'javascript:alert(1)' }] }
+      })
+
+      expect(wrapper.find('a').exists()).toBe(false)
+      expect(wrapper.html()).not.toContain('javascript:alert(1)')
+    })
+
+    it('strips a protocol-relative URL from an item href', () => {
+      const wrapper = mount(VibeNavbarNav, {
+        props: { items: [{ text: 'XSS', href: '//evil.example.com' }] }
+      })
+
+      expect(wrapper.find('a').exists()).toBe(false)
+    })
+
+    it('preserves a safe item href', () => {
+      const wrapper = mount(VibeNavbarNav, {
+        props: { items: [{ text: 'Safe', href: 'https://example.com' }] }
+      })
+
+      expect(wrapper.find('a').attributes('href')).toBe('https://example.com')
+    })
+
+    it('strips a javascript: URL from a dropdown child href', () => {
+      const wrapper = mount(VibeNavbarNav, {
+        props: {
+          items: [{ text: 'Menu', children: [{ text: 'XSS', href: 'javascript:alert(1)' }] }]
+        }
+      })
+
+      expect(wrapper.find('.dropdown-item').element.tagName).not.toBe('A')
+      expect(wrapper.html()).not.toContain('javascript:alert(1)')
+    })
+  })
 })

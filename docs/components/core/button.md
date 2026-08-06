@@ -16,6 +16,16 @@ Button component with variants, sizes, and support for links and router-links.
 | `active` | `Boolean` | `false` | Apply active state styling |
 | `focusRing` | `Boolean` | `false` | Enable the Bootstrap 5.3 focus-ring helper |
 
+## Important Notes
+
+**`href` sanitization:** The `href` prop is sanitized. Only `https://`/`http://` URLs, absolute paths (`/path`), relative paths (`./`, `../`), and anchors (`#section`) are allowed. Dangerous values such as `javascript:`, `data:`, `vbscript:`, and protocol-relative `//host` URLs are dropped — the button falls back to `to`, or to a plain `<button>`, rather than rendering an anchor with no href.
+
+**`href` and `to` are mutually exclusive:** `href` wins when both are given, and only the winning one reaches the DOM — a plain anchor never carries a stray `to` attribute.
+
+**`to` requires Vue Router:** it renders a `router-link`, which resolves the `href` and handles navigation. Without `app.use(router)` the tag does not resolve. See [Link Buttons](#link-buttons) below.
+
+**Disabled + `to`:** a disabled router button renders a `<span class="btn disabled">` rather than an anchor, so there is nothing navigable to click.
+
 ## Accessibility
 
 **Disabled contrast (WCAG 1.4.3):** The disabled state overrides Bootstrap's default `opacity: 0.65` fade with full-opacity body tokens (`--bs-body-color` / `--bs-tertiary-bg`), keeping label contrast ≥ 4.5:1 in both light and dark mode.

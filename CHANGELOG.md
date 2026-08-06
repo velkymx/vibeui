@@ -6,6 +6,48 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
+## [1.1.2] — 2026-08-06
+
+A patch release driven by a consumer bug report. Two defects turned out to be wider than reported — the `to` prop was broken on every component that accepts it, and the same class of fault appeared in a second place — plus a security gap found while fixing them, a smaller published package, and the removal of duplication across the form and chart components.
+
+### Fixed
+
+- **`to` never rendered an `href` — on all 8 components that accept it (VibeButton, VibeLink, VibeNav, VibeNavbarNav, VibeNavbarBrand, VibeListGroup, VibeDropdown, VibeBreadcrumb).** Each bound `:href` *and* `:to` on `<component :is="'router-link'">`. When routing, `href` evaluates to `undefined`, but Vue keeps the key in RouterLink's fallthrough attrs and `mergeProps` copies `undefined` over the anchor RouterLink had already resolved — so `to` produced `<a>` with no href and clicks navigated nowhere. Bindings are now built by a `linkBindings()` helper that omits the unused key entirely. Confirmed against vue-router 4 and 5. Two side effects of the same fix: a native `<a>` no longer carries a stray `to` attribute, and a disabled `VibeButton to="…"` no longer puts one on its `<span>`.
+- **VibeFormSelect wrote synthetic `vi:N` values into the DOM.** Option values were index-encoded so typed primitives could survive a `<select>`'s string-only value. `v-model` round-tripped correctly, but native form submission posted `vi:1`, and E2E selectors, browser autofill and non-Vue consumers all read the marker instead of the value. Options now follow Vue's own `<option :value>` semantics — the attribute carries `String(value)` (absent for `null`/`undefined`) while the untouched value rides on the element's `_value` property. Selection is applied imperatively once the options are in the DOM, mirroring Vue's own `v-model` on `<select>`, because a select's value cannot address `0`, `false` or `null`. Matching uses `Object.is`, so those stay distinct; first match wins on duplicates.
+- **VibeButton and VibeNavbarNav did not sanitize `href` (security).** The other six link-bearing components ran it through `safeHref()`; these two passed `javascript:`, `data:`, `vbscript:` and protocol-relative URLs straight to the DOM — and VibeNavbarNav's own documentation already claimed otherwise. Both now sanitize, including VibeNavbarNav's dropdown children, and an unsafe value falls through to `to` or to a plain button rather than leaving a dead anchor. VibeButton's `type` binding keyed off the raw `href`, which would have left such a button with no `type` — defaulting it to `submit` inside a form; it now keys off the resolved tag.
+- **Form controls inside a VibeFormGroup ignored the group's help text (WCAG 1.3.1).** Only `VibeFormInput` pointed `aria-describedby` at the group's help and feedback elements; the other nine controls referenced only their own ids, despite the group contract exposing `helpId`/`feedbackId` for exactly this. `aria-describedby` is now derived from what actually renders, so a control can no longer reference an id whose element the group suppressed.
+- **VibeFormWysiwyg — the Quill editor now follows `data-bs-theme`.** Quill's snow theme hardcodes a light palette (`#444` icon strokes, `#fff` picker and tooltip surfaces), so in dark mode the editor stayed light and the toolbar icons rendered dark-on-dark. Those are remapped onto Bootstrap's own custom properties, which covers both modes and any custom theme without a dark-specific selector and without JS.
+- **VibeFormWysiwyg — a missing Quill no longer logs `console.error`.** Quill is an optional peer, so a consumer who never installs it hits that path by design; it was reported as an error on every mount, reading as a library fault in production logs. The visible alert and the `component-error` emit still carry the signal, and DEV keeps a `console.warn`.
+
+### Changed
+
+- **`dompurify` is no longer bundled.** It is declared an optional peer and the install instructions ask consumers to add it, but it was the one peer missing from the build's external list, so a 31.8 kB copy shipped alongside the one the consumer installs.
+- **`.npmignore` removed; `files` in package.json is now the only rule for what publishes.** The two disagreed — `.npmignore` listed `docs/`, which shipped anyway because the allowlist wins.
+- **Internal design documents no longer ship.** `docs/superpowers/` held four dated specs and plans for features that shipped long ago; nothing linked to them.
+- **Dependencies refreshed within their existing ranges**, including `@floating-ui/dom` 1.7.6 → 1.8.0, the one runtime dependency. Bootstrap (5.3.8) and Quill (2.0.3) were already current. TypeScript stays on 6.x — 7.0 is a major and belongs in its own release. ⚠️ Contributors: Playwright 1.62 needs a matching browser binary — run `npx playwright install chromium` if the browser suite reports "no tests".
+
+### Internal
+
+No public API change from any of the following.
+
+- **`useFormField`** replaces the id, description and self-rendering block that all ten form controls repeated. The duplication had already drifted: `VibeFormSwitch` and `VibeFormSpinbutton` never defined `helpId`/`feedbackId`, and `VibeFormTextarea` carried a fourth spelling of `aria-describedby`. That drift is what hid the WCAG gap above.
+- **`VibeFieldFeedback`** replaces the help and valid/invalid markup duplicated verbatim in ten control templates, including the `display: block` override and the `role="alert"` carrying WCAG 4.1.3.
+- **`VibeChartLegend`** replaces the legend markup and CSS copied across the three chart components — the stylesheet had been shipping three copies of every legend rule.
+- **Regression coverage for the `to` prop now mounts a real vue-router.** The previous tests stubbed `router-link`, and a stub renders whatever props it is handed, so it could never have caught the defect above.
+
+### Package size
+
+| | 1.1.1 | 1.1.2 |
+|---|---|---|
+| ESM | 278.9 kB | 243.6 kB |
+| UMD | 245.7 kB | 212.4 kB |
+| CSS | 13.7 kB | 15.1 kB |
+| tarball | 257.1 kB | 236.4 kB |
+
+CSS grows because of the Quill dark-mode rules; every other number falls.
+
+---
+
 ## [1.1.1] — 2026-07-05
 
 A patch release driven by a consumer accessibility audit: screen-reader announcement fixes across every form control, native form-submission repairs, and modal/toast a11y refinements.

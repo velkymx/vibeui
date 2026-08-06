@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import VibeFieldFeedback from './VibeFieldFeedback.vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { FormSelectOption, FormSelectOptionValue, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
-import { useId } from '../composables/useId'
+import { useFormField } from '../composables/useFormField'
 
-// Per-option DOM value is the option's array index ("vi:0", "vi:1", ...).
-// The `vi:` prefix prevents collision with the placeholder's empty-string value
-// and clearly distinguishes our encoded values from user-supplied strings.
-const PLACEHOLDER_VALUE = ''
-const VI_PREFIX = 'vi:'
+// Option values follow Vue's own `<option :value>` semantics: the DOM attribute carries
+// String(value) — or is dropped entirely for null/undefined — while the untouched value
+// rides along on the element's `_value` property. The rendered attribute is a public
+// contract (native form submission, E2E selectors, autofill, non-Vue consumers), so it
+// must never hold an internal encoding; `_value` is what preserves typed primitives.
+type ValueCarryingOption = HTMLOptionElement & { _value?: FormSelectOptionValue }
 
-const encodeIndex = (idx: number): string => `${VI_PREFIX}${idx}`
-
-const indexFromEncoded = (encoded: string): number => {
-  if (!encoded.startsWith(VI_PREFIX)) return -1
-  const n = Number(encoded.slice(VI_PREFIX.length))
-  return Number.isInteger(n) && n >= 0 ? n : -1
+const readOptionValue = (option: HTMLOptionElement): FormSelectOptionValue => {
+  const carrier = option as ValueCarryingOption
+  // Options rendered through the default slot have no `_value`; fall back to the attribute.
+  return '_value' in carrier ? (carrier._value as FormSelectOptionValue) : option.value
 }
 
 const findIndexForValue = (options: FormSelectOption[], value: FormSelectOptionValue): number => {
@@ -59,16 +58,17 @@ const emit = defineEmits<{
   (e: 'change', event: Event): void
 }>()
 
-const formGroup = inject(FORM_GROUP_KEY, null)
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('select')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const helpId = computed(() => `${computedId.value}-help`)
-const feedbackId = computed(() => `${computedId.value}-feedback`)
-const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
-const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
-const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
+const {
+  formGroup,
+  computedId,
+  helpId,
+  feedbackId,
+  ariaDescribedBy,
+  shouldRenderLabel,
+  shouldRenderFeedback,
+  shouldRenderHelp
+} = useFormField('select', props)
 
 const selectClass = computed(() => {
   const classes = ['form-select']
@@ -78,36 +78,69 @@ const selectClass = computed(() => {
   return classes.join(' ')
 })
 
-const decodeOption = (encoded: string): FormSelectOptionValue => {
-  const idx = indexFromEncoded(encoded)
-  if (idx >= 0 && idx < props.options.length) return props.options[idx].value
-  // Placeholder selected (or unknown encoded value) — surface as empty string for back-compat
-  return ''
-}
-
 const handleInput = (event: Event) => {
   const target = event.target as HTMLSelectElement
   let newValue: FormSelectOptionValue | FormSelectOptionValue[]
   if (props.multiple) {
-    newValue = Array.from(target.selectedOptions).map(option => decodeOption(option.value))
+    newValue = Array.from(target.selectedOptions).map(readOptionValue)
   } else {
-    newValue = decodeOption(target.value)
+    const selected = target.selectedOptions[0]
+    // Nothing selected (or the disabled placeholder) — surface '' for back-compat.
+    newValue = selected ? readOptionValue(selected) : ''
   }
   modelValue.value = newValue
 }
 
-const encodedModelValue = computed(() => {
-  if (Array.isArray(modelValue.value)) {
-    return modelValue.value
-      .map((v: FormSelectOptionValue) => {
-        const idx = findIndexForValue(props.options, v)
-        return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
-      })
-      .filter(v => v !== PLACEHOLDER_VALUE)
+// Selection cannot be expressed by binding `value` on the <select>: that value is a
+// string and so cannot address a typed primitive (null, false, 0). Nor can it be bound
+// per-option, because an option's selectedness is not reliably retained while its
+// siblings are still being inserted. Vue's own v-model on <select> resolves this by
+// applying selectedness imperatively once the options are in the DOM — mirror that.
+const selectEl = ref<HTMLSelectElement | null>(null)
+
+// Index into `props.options`; -1 when the model matches no option. First match wins,
+// so duplicate values resolve to the earliest option.
+const selectedIndex = computed(() =>
+  Array.isArray(modelValue.value)
+    ? -1
+    : findIndexForValue(props.options, modelValue.value as FormSelectOptionValue)
+)
+
+const syncSelection = () => {
+  const el = selectEl.value
+  if (!el) return
+  const domOptions = Array.from(el.options)
+
+  if (props.multiple) {
+    const selected = Array.isArray(modelValue.value) ? modelValue.value : [modelValue.value]
+    for (const option of domOptions) {
+      option.selected = selected.some((v: FormSelectOptionValue) => Object.is(v, readOptionValue(option)))
+    }
+    return
   }
-  const idx = findIndexForValue(props.options, modelValue.value as FormSelectOptionValue)
-  return idx >= 0 ? encodeIndex(idx) : PLACEHOLDER_VALUE
-})
+
+  // Options supplied through the default slot are not in `props.options`, so fall back
+  // to matching on the values the DOM itself carries.
+  if (props.options.length === 0) {
+    el.selectedIndex = domOptions.findIndex(o => Object.is(readOptionValue(o), modelValue.value))
+    return
+  }
+
+  // The placeholder occupies DOM index 0 and is not part of `props.options`. An
+  // unmatched model falls back to it, mirroring a native unselected select.
+  const placeholderOffset = props.placeholder ? 1 : 0
+  el.selectedIndex = selectedIndex.value < 0
+    ? (placeholderOffset ? 0 : -1)
+    : selectedIndex.value + placeholderOffset
+}
+
+onMounted(syncSelection)
+// `post` flush runs after the option elements have been patched into the DOM.
+watch(
+  [modelValue, () => props.options, () => props.multiple, () => props.placeholder],
+  syncSelection,
+  { flush: 'post', deep: true }
+)
 
 const handleChange = (event: Event) => {
   emit('change', event)
@@ -131,44 +164,42 @@ const handleFocus = (event: FocusEvent) => {
       <span v-if="required" class="text-danger">*</span>
     </label>
     <select
+      ref="selectEl"
       v-bind="$attrs"
       :id="computedId"
       :class="selectClass"
-      :value="encodedModelValue"
       :multiple="multiple"
       :size="htmlSize || selectSize"
       :disabled="disabled"
       :required="required"
       :aria-invalid="validationState === 'invalid'"
-      :aria-describedby="helpText && validationMessage ? `${helpId} ${feedbackId}` : helpText ? helpId : validationMessage ? feedbackId : undefined"
+      :aria-describedby="ariaDescribedBy"
       @input="handleInput"
       @change="handleChange"
       @blur="handleBlur"
       @focus="handleFocus"
     >
-      <option v-if="placeholder && !multiple" value="" disabled selected>{{ placeholder }}</option>
+      <option v-if="placeholder && !multiple" value="" disabled>{{ placeholder }}</option>
       <slot>
         <option
           v-for="(option, idx) in options"
-          :key="option.value !== undefined ? String(option.value) : option.text"
-          :value="encodeIndex(idx)"
+          :key="`${idx}-${option.value !== undefined ? String(option.value) : option.text}`"
+          :value="option.value"
           :disabled="option.disabled"
         >
           {{ option.text }}
         </option>
       </slot>
     </select>
-    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
-      {{ helpText }}
-    </div>
-    <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
-        {{ validationMessage || 'Looks good!' }}
-      </div>
-      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
-        {{ validationMessage || 'Please select an option.' }}
-      </div>
-    </template>
+    <VibeFieldFeedback
+      :help-id="helpId"
+      :feedback-id="feedbackId"
+      :help-text="helpText"
+      :validation-state="validationState"
+      :validation-message="validationMessage"
+      invalid-message="Please select an option."
+      :show-help="shouldRenderHelp"
+      :show-feedback="shouldRenderFeedback"
+    />
   </div>
 </template>

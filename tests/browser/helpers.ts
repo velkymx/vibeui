@@ -28,3 +28,23 @@ export function onceEvent(el: Element, type: string, timeout = 4000): Promise<vo
     el.addEventListener(type, () => { clearTimeout(timer); resolve() }, { once: true })
   })
 }
+
+// Poll until Bootstrap has attached an instance of `kind` to `el`.
+//
+// VibeUI loads Bootstrap JS on demand (`await import('bootstrap')` inside onMounted),
+// so for a few frames after render the element is in the DOM but has no Bootstrap
+// behaviour. Interacting during that window is silently lost — a mouseenter arrives
+// before any listener exists and is never replayed, so the tooltip simply never
+// appears. Await this before driving a component that depends on Bootstrap JS,
+// rather than sleeping for an arbitrary duration.
+export async function waitForBsInstance(
+  el: Element,
+  kind: 'Tooltip' | 'Popover' | 'Dropdown',
+  timeout = 4000
+): Promise<void> {
+  const bootstrap = await import('bootstrap')
+  const ctor = bootstrap[kind] as { getInstance: (e: Element) => unknown | null }
+  await vi.waitFor(() => {
+    expect(ctor.getInstance(el), `expected a Bootstrap ${kind} instance on the element`).not.toBeNull()
+  }, { timeout })
+}

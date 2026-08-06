@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
-import { useId } from '../composables/useId'
+import { useFormField } from '../composables/useFormField'
 import { useBreakpoints } from '../composables/useBreakpoints'
 import { loadDOMPurify, sanitizeHtml } from '../utils/sanitizeHtml'
 import { safeLength } from '../utils/safeCss'
@@ -28,7 +28,6 @@ interface QuillInstance {
   scroll?: { observer?: { disconnect: () => void } }
 }
 
-const _generatedId = useId('wysiwyg')
 
 const props = defineProps({
   modelValue: {
@@ -62,16 +61,20 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const formGroup = inject(FORM_GROUP_KEY, null)
-const _groupId = formGroup?.consumeId()
+const {
+  formGroup,
+  computedId,
+  helpId,
+  feedbackId,
+  ariaDescribedBy,
+  shouldRenderLabel,
+  shouldRenderFeedback,
+  shouldRenderHelp
+} = useFormField('wysiwyg', props)
 
-const computedId = computed(() => props.id || _groupId || _generatedId)
 const safeMinHeight = computed(() => safeLength(props.height) ?? '200px')
 const { isMobile } = useBreakpoints()
 
-const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
-const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
-const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
 
 const editorContainer = ref<HTMLElement | null>(null)
 const quillInstance = shallowRef<QuillInstance | null>(null)
@@ -273,7 +276,13 @@ const initQuill = async () => {
       emit('ready', quillInstance.value)
     }
   } catch (error) {
-    console.error('Failed to load Quill editor:', error)
+    // A missing `quill` is an expected state for an optional peer, not a fault: the
+    // visible alert below and the component-error emit already carry the signal, so
+    // this stays a DEV-only warning rather than console.error noise in production.
+    // Matches how loadDOMPurify() reports its own optional peer.
+    if (import.meta.env.DEV) {
+      console.warn('[VibeFormWysiwyg] Failed to load Quill editor:', error)
+    }
     loadError.value = 'Failed to load WYSIWYG editor. Please install quill: npm install quill'
     isQuillLoaded.value = false
     emit('component-error', {
@@ -447,18 +456,16 @@ watch(isMobile, () => {
       <div ref="editorContainer"></div>
     </div>
 
-    <div v-if="shouldRenderHelp" :id="`${computedId}-help`" class="form-text">
-      {{ helpText }}
-    </div>
-    <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="`${computedId}-feedback`" class="valid-feedback" :style="{ display: 'block' }">
-        {{ validationMessage || 'Looks good!' }}
-      </div>
-      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-      <div v-if="validationState === 'invalid'" :id="`${computedId}-feedback`" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
-        {{ validationMessage || 'Please provide valid content.' }}
-      </div>
-    </template>
+    <VibeFieldFeedback
+      :help-id="helpId"
+      :feedback-id="feedbackId"
+      :help-text="helpText"
+      :validation-state="validationState"
+      :validation-message="validationMessage"
+      invalid-message="Please provide valid content."
+      :show-help="shouldRenderHelp"
+      :show-feedback="shouldRenderFeedback"
+    />
   </div>
 </template>
 
@@ -490,5 +497,82 @@ watch(isMobile, () => {
 }
 .vibe-wysiwyg-container :deep(.ql-editor) {
   min-height: 150px;
+}
+
+/*
+ * Colour-mode awareness. Quill's snow theme hardcodes a light palette (#444 icon
+ * strokes, #fff picker/tooltip surfaces, near-black text), so inside a Bootstrap
+ * dark theme it renders dark-on-dark and the toolbar icons disappear.
+ *
+ * Remapping onto Bootstrap's own custom properties is enough for BOTH modes: the
+ * variables are what `data-bs-theme` swaps, so no dark-specific selector is needed
+ * and a consumer's custom theme is picked up for free.
+ */
+.vibe-wysiwyg-container {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+.vibe-wysiwyg-container :deep(.ql-editor) {
+  color: var(--bs-body-color);
+}
+/* Placeholder text */
+.vibe-wysiwyg-container :deep(.ql-editor.ql-blank::before) {
+  color: var(--bs-secondary-color);
+  font-style: normal;
+}
+/* Toolbar icons are SVG: stroke and fill, plus the dropdown labels beside them */
+.vibe-wysiwyg-container :deep(.ql-snow .ql-stroke) {
+  stroke: var(--bs-body-color);
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-fill),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-stroke.ql-fill) {
+  fill: var(--bs-body-color);
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker) {
+  color: var(--bs-body-color);
+}
+/* Hover / active states — Quill hardcodes #06c */
+.vibe-wysiwyg-container :deep(.ql-snow .ql-toolbar button:hover .ql-stroke),
+.vibe-wysiwyg-container :deep(.ql-snow button:hover .ql-stroke),
+.vibe-wysiwyg-container :deep(.ql-snow button.ql-active .ql-stroke),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-label:hover .ql-stroke) {
+  stroke: var(--bs-primary);
+}
+.vibe-wysiwyg-container :deep(.ql-snow button:hover .ql-fill),
+.vibe-wysiwyg-container :deep(.ql-snow button.ql-active .ql-fill) {
+  fill: var(--bs-primary);
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-label:hover),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-item:hover),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-item.ql-selected) {
+  color: var(--bs-primary);
+}
+/* Dropdown surfaces (header/colour pickers) and the link tooltip */
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-options),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-tooltip) {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+  box-shadow: var(--bs-box-shadow, 0 2px 8px rgb(0 0 0 / 20%));
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker.ql-expanded .ql-picker-label) {
+  border-color: var(--bs-border-color);
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-tooltip input[type='text']) {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+/* Editor content: links, quotes and code blocks */
+.vibe-wysiwyg-container :deep(.ql-snow a) {
+  color: var(--bs-link-color);
+}
+.vibe-wysiwyg-container :deep(.ql-editor blockquote) {
+  border-left-color: var(--bs-border-color);
+  color: var(--bs-secondary-color);
+}
+.vibe-wysiwyg-container :deep(.ql-editor pre.ql-syntax) {
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
 }
 </style>

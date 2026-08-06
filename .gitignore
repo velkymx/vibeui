@@ -34,3 +34,5 @@ tests/browser/__screenshots__/
 /test-results/
 /playwright-report/
 /e2e/.cache/
+AGENTS.md
+CLAUDE.md

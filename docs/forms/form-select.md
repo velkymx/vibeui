@@ -87,8 +87,10 @@ const options: FormSelectOption[] = [
 
 ## Important Notes
 
-- **Non-string values preserved:** option values keep their original type (`number`, `boolean`, etc.). The component encodes options by index internally, so `v-model` round-trips the exact value — you do not have to stringify.
-- **Placeholder:** only applies to single-select; it renders a disabled empty-value option.
+- **Non-string values preserved:** option values keep their original type (`number`, `boolean`, `null`, etc.), so `v-model` round-trips the exact value — you do not have to stringify.
+- **Rendered `value` attribute:** each `<option>` carries the real value, following Vue's own `<option :value>` semantics — `String(value)`, with the attribute omitted entirely for `null` and `undefined`. The untouched value travels on the element's `_value` property, which is what preserves the type. This means native form submission, `option[value="…"]` selectors, E2E tests and non-Vue consumers all see the value you supplied.
+- **Matching is by identity, first match wins:** the selected option is found with `Object.is` against `modelValue`, so `0`, `false`, `''` and `null` stay distinct. If two options share a value, the earlier one is selected.
+- **Placeholder:** only applies to single-select; it renders a disabled empty-value option. It is selected whenever `modelValue` matches no option — including when an option's own value is `''`, which stays distinct from the placeholder.
 - **Group linking:** wrapped in a `VibeFormGroup`, the select consumes the group id so the label and feedback link automatically.
 
 ## Bootstrap CSS Classes

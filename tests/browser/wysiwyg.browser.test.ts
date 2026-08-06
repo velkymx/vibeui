@@ -1,5 +1,5 @@
 import { render } from 'vitest-browser-vue'
-import { expect, test, describe } from 'vitest'
+import { expect, test, describe, vi } from 'vitest'
 import VibeFormWysiwyg from '../../src/components/VibeFormWysiwyg.vue'
 import { waitForSelector } from './helpers'
 

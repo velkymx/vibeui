@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed, inject, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size, AutocompleteType, InputMode } from '../types'
-import { FORM_GROUP_KEY } from '../injectionKeys'
-import { useId } from '../composables/useId'
+import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 const modelValue = defineModel<string | number>({ default: '' })
@@ -45,7 +45,6 @@ const emit = defineEmits<{
   (e: 'change', event: Event): void
 }>()
 
-const formGroup = inject(FORM_GROUP_KEY, null)
 
 const showPassword = ref(false)
 const effectiveType = computed(() =>
@@ -87,28 +86,18 @@ const computedAutocomplete = computed(() =>
   props.autocomplete ?? autocompleteAutoMap[props.type as InputType]
 )
 
-const _groupId = formGroup?.consumeId()
-const _generatedId = useId('input')
-const computedId = computed(() => props.id || _groupId || _generatedId)
-const helpId = computed(() => `${computedId.value}-help`)
-const feedbackId = computed(() => `${computedId.value}-feedback`)
+const {
+  formGroup,
+  computedId,
+  helpId,
+  feedbackId,
+  ariaDescribedBy,
+  shouldRenderLabel,
+  shouldRenderFeedback,
+  shouldRenderHelp
+} = useFormField('input', props)
 
-// WCAG 1.3.1 / 3.3.1: when this input lives inside a VibeFormGroup, point
-// aria-describedby at the group's help text and feedback elements too.
-const ariaDescribedBy = computed(() => {
-  const ids: string[] = []
-  // Own help / feedback (standalone usage or explicit props on the input)
-  if (props.helpText) ids.push(helpId.value)
-  if (props.validationMessage) ids.push(feedbackId.value)
-  // Group-level help / feedback (most common pattern — props on VibeFormGroup)
-  if (formGroup?.helpId.value) ids.push(formGroup.helpId.value)
-  if (formGroup?.feedbackId.value) ids.push(formGroup.feedbackId.value)
-  return ids.length ? [...new Set(ids)].join(' ') : undefined
-})
 
-const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
-const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
-const shouldRenderHelp = computed(() => !!props.helpText && !formGroup?.hasHelp.value)
 
 const inputClass = computed(() => {
   const classes: string[] = []
@@ -219,18 +208,16 @@ const handleFocus = (event: FocusEvent) => {
       </div>
       <small class="text-muted">Password strength: {{ strength.label }}</small>
     </div>
-    <div v-if="shouldRenderHelp" :id="helpId" class="form-text">
-      {{ helpText }}
-    </div>
-    <template v-if="shouldRenderFeedback">
-      <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
-        {{ validationMessage || 'Looks good!' }}
-      </div>
-      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-      <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
-        {{ validationMessage || 'Please provide a valid value.' }}
-      </div>
-    </template>
+    <VibeFieldFeedback
+      :help-id="helpId"
+      :feedback-id="feedbackId"
+      :help-text="helpText"
+      :validation-state="validationState"
+      :validation-message="validationMessage"
+      invalid-message="Please provide a valid value."
+      :show-help="shouldRenderHelp"
+      :show-feedback="shouldRenderFeedback"
+    />
   </div>
 
   <input

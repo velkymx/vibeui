@@ -2,6 +2,7 @@
 import { computed, type PropType } from 'vue'
 import type { Tag, Variant } from '../types'
 import { safeHref } from '../utils/safeHref'
+import { linkBindings } from '../utils/linkBindings'
 
 const props = defineProps({
   tag: { type: String as PropType<Tag | 'a'>, default: 'a' },
@@ -21,6 +22,11 @@ const componentTag = computed(() => {
   if (isRouterLink.value) return 'router-link'
   return props.tag
 })
+
+// `to` takes precedence here, matching componentTag above.
+const linkAttrs = computed(() =>
+  linkBindings(isRouterLink.value ? undefined : safeHref(props.href), props.to)
+)
 
 const linkClass = computed(() => {
   const classes: string[] = []
@@ -61,8 +67,7 @@ const linkClass = computed(() => {
   <component
     :is="componentTag"
     :class="linkClass"
-    :to="isRouterLink ? to : undefined"
-    :href="isRouterLink ? undefined : safeHref(href)"
+    v-bind="linkAttrs"
   >
     <slot />
   </component>

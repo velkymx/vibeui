@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { NavItem, DropdownItem, ComponentError } from '../types'
+import { linkBindings } from '../utils/linkBindings'
+import { safeHref } from '../utils/safeHref'
 
 interface BootstrapDropdown {
   dispose: () => void
@@ -72,8 +74,10 @@ const getLinkClass = (item: NavItem) => {
   return classes.join(' ')
 }
 
-const getItemTag = (item: NavItem) => {
-  if (item.href) return 'a'
+// An href that fails sanitizing is dropped entirely rather than rendered as a dead
+// anchor, so the item falls through to `to` or to a plain button.
+const getItemTag = (item: NavItem | DropdownItem) => {
+  if (safeHref(item.href)) return 'a'
   if (item.to) return 'router-link'
   return 'button'
 }
@@ -126,11 +130,10 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
               </li>
               <li v-else>
                 <component
-                  :is="child.href ? 'a' : child.to ? 'router-link' : 'button'"
+                  :is="getItemTag(child)"
                   :class="getDropdownItemClass(child)"
-                  :href="child.href"
-                  :to="child.to"
-                  :type="!child.href && !child.to ? 'button' : undefined"
+                  v-bind="linkBindings(safeHref(child.href), child.to)"
+                  :type="getItemTag(child) === 'button' ? 'button' : undefined"
                   @click="handleDropdownItemClick(item, index, child, childIndex, $event)"
                 >
                   <slot name="dropdown-item" :item="item" :child="child" :index="index" :child-index="childIndex">
@@ -147,9 +150,8 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
           v-else
           :is="getItemTag(item)"
           :class="getLinkClass(item)"
-          :href="item.href || undefined"
-          :to="item.to"
-          :type="!item.href && !item.to ? 'button' : undefined"
+          v-bind="linkBindings(safeHref(item.href), item.to)"
+          :type="getItemTag(item) === 'button' ? 'button' : undefined"
           :aria-current="item.active ? 'page' : undefined"
           :aria-disabled="item.disabled"
           @click="handleItemClick(item, index, $event)"

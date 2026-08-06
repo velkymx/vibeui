@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import VibeChartLegend from './chart/VibeChartLegend.vue'
 import { ref, computed, watch, onMounted, onUnmounted, type PropType } from 'vue'
 import type { ChartData, ChartLegendPosition } from '../types'
 import { resolveSliceColors } from './chart/chartColors'
@@ -84,49 +85,22 @@ watch(() => props.data, redraw)
 onUnmounted(() => {
   cleanupTooltip?.()
 })
+
+const legendItems = computed(() =>
+  props.data.labels.map((label, i) => ({ label, color: resolvedColors.value[i] }))
+)
 </script>
 
 <template>
   <div class="vibe-chart">
-    <div v-if="legend === 'top'" class="vibe-chart-legend vibe-chart-legend--top">
-      <span v-for="(label, i) in data.labels" :key="label ?? i" class="vibe-chart-legend-item">
-        <span class="vibe-chart-legend-swatch" :style="{ background: resolvedColors[i] }" />
-        {{ label }}
-      </span>
-    </div>
+    <VibeChartLegend v-if="legend === 'top'" position="top" :items="legendItems" />
     <div ref="containerEl" class="vibe-chart-canvas-container" :style="canvasContainerStyle">
       <canvas ref="canvasEl" role="img" aria-label="Chart" style="display: block; width: 100%; height: 100%;" />
     </div>
-    <div v-if="legend === 'bottom'" class="vibe-chart-legend vibe-chart-legend--bottom">
-      <span v-for="(label, i) in data.labels" :key="label ?? i" class="vibe-chart-legend-item">
-        <span class="vibe-chart-legend-swatch" :style="{ background: resolvedColors[i] }" />
-        {{ label }}
-      </span>
-    </div>
+    <VibeChartLegend v-if="legend === 'bottom'" position="bottom" :items="legendItems" />
   </div>
 </template>
 
 <style scoped>
 .vibe-chart { width: 100%; }
-.vibe-chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.25rem 0;
-}
-.vibe-chart-legend--top { margin-bottom: 0.25rem; }
-.vibe-chart-legend--bottom { margin-top: 0.25rem; }
-.vibe-chart-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-}
-.vibe-chart-legend-swatch {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
 </style>
