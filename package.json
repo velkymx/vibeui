@@ -19,8 +19,6 @@
   "files": [
     "dist",
     "llms.txt",
-    "AGENTS.md",
-    "CLAUDE.md",
     "docs",
     "examples"
   ],
