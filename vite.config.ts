@@ -24,7 +24,10 @@ export default defineConfig({
       fileName: (format) => `vibeui.${format}.js`
     },
     rollupOptions: {
-      external: ['vue', /^quill/, /^bootstrap/],
+      // Every optional peer stays external so consumers resolve their own copy.
+      // dompurify is dynamically imported by src/utils/sanitizeHtml.ts; bundling it
+      // would ship a second copy alongside the one the install instructions ask for.
+      external: ['vue', /^quill/, /^bootstrap/, /^dompurify/],
       output: {
         // The package intentionally ships a default export (the VibeUI plugin) alongside
         // named exports (components/composables). Declaring 'named' acknowledges the mix
@@ -34,7 +37,8 @@ export default defineConfig({
         globals: {
           vue: 'Vue',
           quill: 'Quill',
-          bootstrap: 'bootstrap'
+          bootstrap: 'bootstrap',
+          dompurify: 'DOMPurify'
         }
       }
     }
