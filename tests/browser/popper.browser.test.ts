@@ -5,7 +5,7 @@ import { expect, test, describe } from 'vitest'
 import VibeTooltip from '../../src/components/VibeTooltip.vue'
 import VibePopover from '../../src/components/VibePopover.vue'
 import VibeDropdown from '../../src/components/VibeDropdown.vue'
-import { waitForSelector, waitForGone } from './helpers'
+import { waitForSelector, waitForGone, waitForBsInstance } from './helpers'
 
 describe('VibeTooltip', () => {
   test('hover shows a Popper-positioned tooltip; leaving removes it', async () => {
@@ -14,6 +14,10 @@ describe('VibeTooltip', () => {
       template: `<div><VibeTooltip text="Helpful tip"><button type="button">Hover me</button></VibeTooltip></div>`
     })
     const screen = render(Host)
+    // Bootstrap is imported on demand, so the wrapper exists before it has any hover
+    // behaviour. A mouseenter sent during that window is dropped and never replayed.
+    await waitForBsInstance(await waitForSelector('span[data-bs-placement]'), 'Tooltip')
+
     await userEvent.hover(screen.getByRole('button', { name: 'Hover me' }))
     const tip = await waitForSelector('.tooltip')
     // Real Popper applies an inline transform for positioning — absent in happy-dom.
@@ -30,6 +34,8 @@ describe('VibePopover', () => {
       template: `<div><VibePopover title="More info" text="Popover body"><button type="button">Toggle</button></VibePopover></div>`
     })
     const screen = render(Host)
+    await waitForBsInstance(await waitForSelector('span[data-bs-placement]'), 'Popover')
+
     const toggle = screen.getByRole('button', { name: 'Toggle' })
     await userEvent.click(toggle)
     const popover = await waitForSelector('.popover')
@@ -45,6 +51,8 @@ describe('VibeDropdown', () => {
     const screen = render(VibeDropdown, {
       props: { text: 'Menu', items: [{ text: 'Alpha' }, { text: 'Beta' }] }
     })
+    await waitForBsInstance(await waitForSelector('.dropdown-toggle'), 'Dropdown')
+
     const toggle = screen.getByRole('button', { name: 'Menu' })
     await userEvent.click(toggle)
     await waitForSelector('.dropdown-menu.show')

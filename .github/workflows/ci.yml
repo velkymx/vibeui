@@ -48,3 +48,16 @@ jobs:
 
       - name: Browser tests
         run: npm run test:browser
+
+      # The browser suite writes a screenshot for every failed test. Without this the
+      # artifacts stay on the runner, so a CI-only failure has to be diagnosed blind.
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-screenshots
+          path: |
+            tests/browser/__screenshots__/
+            .vitest-attachments/
+          if-no-files-found: ignore
+          retention-days: 7
