@@ -499,4 +499,81 @@ watch(isMobile, () => {
 .vibe-wysiwyg-container :deep(.ql-editor) {
   min-height: 150px;
 }
+
+/*
+ * Colour-mode awareness. Quill's snow theme hardcodes a light palette (#444 icon
+ * strokes, #fff picker/tooltip surfaces, near-black text), so inside a Bootstrap
+ * dark theme it renders dark-on-dark and the toolbar icons disappear.
+ *
+ * Remapping onto Bootstrap's own custom properties is enough for BOTH modes: the
+ * variables are what `data-bs-theme` swaps, so no dark-specific selector is needed
+ * and a consumer's custom theme is picked up for free.
+ */
+.vibe-wysiwyg-container {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+.vibe-wysiwyg-container :deep(.ql-editor) {
+  color: var(--bs-body-color);
+}
+/* Placeholder text */
+.vibe-wysiwyg-container :deep(.ql-editor.ql-blank::before) {
+  color: var(--bs-secondary-color);
+  font-style: normal;
+}
+/* Toolbar icons are SVG: stroke and fill, plus the dropdown labels beside them */
+.vibe-wysiwyg-container :deep(.ql-snow .ql-stroke) {
+  stroke: var(--bs-body-color);
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-fill),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-stroke.ql-fill) {
+  fill: var(--bs-body-color);
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker) {
+  color: var(--bs-body-color);
+}
+/* Hover / active states — Quill hardcodes #06c */
+.vibe-wysiwyg-container :deep(.ql-snow .ql-toolbar button:hover .ql-stroke),
+.vibe-wysiwyg-container :deep(.ql-snow button:hover .ql-stroke),
+.vibe-wysiwyg-container :deep(.ql-snow button.ql-active .ql-stroke),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-label:hover .ql-stroke) {
+  stroke: var(--bs-primary);
+}
+.vibe-wysiwyg-container :deep(.ql-snow button:hover .ql-fill),
+.vibe-wysiwyg-container :deep(.ql-snow button.ql-active .ql-fill) {
+  fill: var(--bs-primary);
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-label:hover),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-item:hover),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-item.ql-selected) {
+  color: var(--bs-primary);
+}
+/* Dropdown surfaces (header/colour pickers) and the link tooltip */
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker-options),
+.vibe-wysiwyg-container :deep(.ql-snow .ql-tooltip) {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+  box-shadow: var(--bs-box-shadow, 0 2px 8px rgb(0 0 0 / 20%));
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-picker.ql-expanded .ql-picker-label) {
+  border-color: var(--bs-border-color);
+}
+.vibe-wysiwyg-container :deep(.ql-snow .ql-tooltip input[type='text']) {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+  color: var(--bs-body-color);
+}
+/* Editor content: links, quotes and code blocks */
+.vibe-wysiwyg-container :deep(.ql-snow a) {
+  color: var(--bs-link-color);
+}
+.vibe-wysiwyg-container :deep(.ql-editor blockquote) {
+  border-left-color: var(--bs-border-color);
+  color: var(--bs-secondary-color);
+}
+.vibe-wysiwyg-container :deep(.ql-editor pre.ql-syntax) {
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+}
 </style>
