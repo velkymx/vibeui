@@ -6,12 +6,12 @@ Instead, use these resources:
 
 ## Documentation
 
-- **Full docs:** `docs/` directory in this package (included in npm install)
-- **Start here:** `docs/README.md` for an overview
-- **Component docs:** `docs/components/` for per-component API reference
-- **Form docs:** `docs/forms/` for form components and validation
-- **Composable docs:** `docs/composables/` for hooks like `useColorMode`
-- **LLM-optimized reference:** `llms.txt` in this package root
+- **LLM-optimized reference:** `llms.txt` in this package root — the only reference that ships in the npm tarball. Start here.
+- **Full docs:** hosted on GitHub, **not** included in the npm package — fetch them rather than looking for a local `docs/` directory:
+  - **Start here:** https://github.com/velkymx/vibeui/blob/main/docs/README.md
+  - **Component docs:** https://github.com/velkymx/vibeui/tree/main/docs/components
+  - **Form docs:** https://github.com/velkymx/vibeui/tree/main/docs/forms
+  - **Composable docs:** https://github.com/velkymx/vibeui/tree/main/docs/composables
 
 ## Quick Reference
 
@@ -45,4 +45,4 @@ import { VibeButton, VibeModal, VibeCard } from '@velkymx/vibeui'
 
 ## For Complete API Details
 
-Read the `docs/` directory or `llms.txt` - do not reverse-engineer behavior from dist files.
+Read `llms.txt` or the GitHub-hosted docs linked above - do not reverse-engineer behavior from dist files.

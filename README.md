@@ -13,7 +13,7 @@
 
 **The Vue 3 component library for people who already love Bootstrap.**
 
-> **🤖 Building with an AI assistant?** Point it at [`llms.txt`](./llms.txt) (quick-start guardrails + a link to every doc) and [`docs/`](./docs/README.md). Every component's props, events, and slots are documented — **don't let it guess props or reverse-engineer from `dist/`.** Quick reminders: data-driven components use `:items` / `:bars` / `:options`, visibility uses `v-model`, outline buttons use the `outline` prop, and granular tags like `<vibe-card-body>` / `<vibe-nav-item>` do **not** exist (use slots). All of this ships inside the npm package — see also [`AGENTS.md`](./AGENTS.md).
+> **🤖 Building with an AI assistant?** Point it at [`llms.txt`](./llms.txt) (quick-start guardrails + a link to every doc) and [`docs/`](https://github.com/velkymx/vibeui/blob/main/docs/README.md). Every component's props, events, and slots are documented — **don't let it guess props or reverse-engineer from `dist/`.** Quick reminders: data-driven components use `:items` / `:bars` / `:options`, visibility uses `v-model`, outline buttons use the `outline` prop, and granular tags like `<vibe-card-body>` / `<vibe-nav-item>` do **not** exist (use slots). `llms.txt` and [`AGENTS.md`](./AGENTS.md) ship inside the npm package; the `docs/` pages are hosted here on GitHub.
 
 
 
@@ -143,85 +143,85 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeContainer` | Responsive fixed/fluid container | [docs](./docs/components/layout/container.md) |
-| `VibeRow` | Flexbox grid row | [docs](./docs/components/layout/row.md) |
-| `VibeCol` | Flexbox grid column with breakpoints | [docs](./docs/components/layout/col.md) |
+| `VibeContainer` | Responsive fixed/fluid container | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/container.md) |
+| `VibeRow` | Flexbox grid row | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/row.md) |
+| `VibeCol` | Flexbox grid column with breakpoints | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/col.md) |
 
 ### Core
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeAlert` | Contextual alert with dismiss and fade animation | [docs](./docs/components/core/alert.md) |
-| `VibeBadge` | Inline badge with variant and pill styles | [docs](./docs/components/core/badge.md) |
-| `VibeButton` | Button with variant, size, and outline styles | [docs](./docs/components/core/button.md) |
-| `VibeButtonGroup` | Horizontal or vertical button group | [docs](./docs/components/core/button-group.md) |
-| `VibeCloseButton` | Accessible dismiss button | [docs](./docs/components/core/close-button.md) |
+| `VibeAlert` | Contextual alert with dismiss and fade animation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/alert.md) |
+| `VibeBadge` | Inline badge with variant and pill styles | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/badge.md) |
+| `VibeButton` | Button with variant, size, and outline styles | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/button.md) |
+| `VibeButtonGroup` | Horizontal or vertical button group | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/button-group.md) |
+| `VibeCloseButton` | Accessible dismiss button | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/close-button.md) |
 | `VibeIcon` | Bootstrap Icons wrapper with sizing and color | - |
-| `VibeLink` | Styled anchor with href validation | [docs](./docs/components/core/link.md) |
-| `VibePlaceholder` | Animated loading placeholder | [docs](./docs/components/core/placeholder.md) |
-| `VibeSkeleton` | Multi-variant skeleton loading component | [docs](./docs/components/core/skeleton.md) |
-| `VibeSpinner` | Loading spinner with variant and size | [docs](./docs/components/core/spinner.md) |
+| `VibeLink` | Styled anchor with href validation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/link.md) |
+| `VibePlaceholder` | Animated loading placeholder | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/placeholder.md) |
+| `VibeSkeleton` | Multi-variant skeleton loading component | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/skeleton.md) |
+| `VibeSpinner` | Loading spinner with variant and size | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/spinner.md) |
 
 ### Navigation
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeBreadcrumb` | Breadcrumb trail from items array | [docs](./docs/components/navigation/breadcrumb.md) |
-| `VibeNav` | Tab/pill nav with router-link support | [docs](./docs/components/navigation/nav.md) |
-| `VibeNavbar` | Responsive navbar with collapse | [docs](./docs/components/navigation/navbar.md) |
-| `VibeNavbarBrand` | Navbar brand/logo link | [docs](./docs/components/navigation/navbar.md) |
-| `VibeNavbarToggle` | Navbar collapse toggle button | [docs](./docs/components/navigation/navbar.md) |
-| `VibeNavbarNav` | Navbar nav list from items array | [docs](./docs/components/navigation/navbar.md) |
-| `VibePagination` | Pagination with ellipsis and page window | [docs](./docs/components/navigation/pagination.md) |
-| `VibeScrollspy` | Scroll-aware nav highlighting | [docs](./docs/components/advanced/scrollspy.md) |
+| `VibeBreadcrumb` | Breadcrumb trail from items array | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/navigation/breadcrumb.md) |
+| `VibeNav` | Tab/pill nav with router-link support | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/navigation/nav.md) |
+| `VibeNavbar` | Responsive navbar with collapse | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/navigation/navbar.md) |
+| `VibeNavbarBrand` | Navbar brand/logo link | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/navigation/navbar.md) |
+| `VibeNavbarToggle` | Navbar collapse toggle button | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/navigation/navbar.md) |
+| `VibeNavbarNav` | Navbar nav list from items array | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/navigation/navbar.md) |
+| `VibePagination` | Pagination with ellipsis and page window | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/navigation/pagination.md) |
+| `VibeScrollspy` | Scroll-aware nav highlighting | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/scrollspy.md) |
 
 ### Containers
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeCard` | Card container with header/body/footer slots, section classes, and an image slot | [docs](./docs/components/card/card.md) |
-| `VibeHero` | Hero / banner section (variant, bordered, bgImage, gradient, overlay) | [docs](./docs/components/hero/hero.md) |
-| `VibeListGroup` | List group with router-link support | [docs](./docs/components/list/list-group.md) |
+| `VibeCard` | Card container with header/body/footer slots, section classes, and an image slot | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/card/card.md) |
+| `VibeHero` | Hero / banner section (variant, bordered, bgImage, gradient, overlay) | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/hero/hero.md) |
+| `VibeListGroup` | List group with router-link support | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/list/list-group.md) |
 
 ### Interactive
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeAccordion` | Accordion with always-open and flush options | [docs](./docs/components/interactive/accordion.md) |
-| `VibeCarousel` | Image carousel with indicators and captions | [docs](./docs/components/interactive/carousel.md) |
-| `VibeCollapse` | Toggle visibility with Bootstrap animation | [docs](./docs/components/interactive/collapse.md) |
-| `VibeDatePicker` | Calendar date picker with range and min/max | [docs](./docs/components/interactive/date-picker.md) |
-| `VibeDraggable` | Drag source wrapper | [docs](./docs/components/interactive/draggable.md) |
-| `VibeDroppable` | Drop target zone | [docs](./docs/components/interactive/draggable.md) |
-| `VibeDropdown` | Dropdown menu with items array | [docs](./docs/components/interactive/dropdown.md) |
-| `VibeModal` | Modal dialog with v-model, sizes, scrollable | [docs](./docs/components/interactive/modal.md) |
-| `VibeOffcanvas` | Offcanvas panel with placement options | [docs](./docs/components/interactive/offcanvas.md) |
-| `VibeResizable` | Resizable container with aspect-ratio lock | [docs](./docs/components/interactive/resizable.md) |
-| `VibeSlider` | Range slider with single or dual handles | [docs](./docs/components/interactive/slider.md) |
-| `VibeSortable` | Sortable list with drag reorder | [docs](./docs/components/interactive/sortable.md) |
-| `VibeStepper` | Multi-step wizard with validation | [docs](./docs/components/interactive/stepper.md) |
-| `VibeTabs` | Tabbed interface from items array | [docs](./docs/components/interactive/tabs.md) |
-| `VibeTab` | Individual tab panel | [docs](./docs/components/interactive/tabs.md) |
-| `VibeTabContent` | Standalone tab-pane content host | [docs](./docs/components/interactive/tabs.md) |
-| `VibeToast` | Toast notification component with v-model | [docs](./docs/components/interactive/toast.md) |
-| `VibeToastHost` | Toast container for `useToast()` service | [docs](./docs/composables/use-toast.md) |
+| `VibeAccordion` | Accordion with always-open and flush options | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/accordion.md) |
+| `VibeCarousel` | Image carousel with indicators and captions | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/carousel.md) |
+| `VibeCollapse` | Toggle visibility with Bootstrap animation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/collapse.md) |
+| `VibeDatePicker` | Calendar date picker with range and min/max | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/date-picker.md) |
+| `VibeDraggable` | Drag source wrapper | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/draggable.md) |
+| `VibeDroppable` | Drop target zone | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/draggable.md) |
+| `VibeDropdown` | Dropdown menu with items array | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/dropdown.md) |
+| `VibeModal` | Modal dialog with v-model, sizes, scrollable | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/modal.md) |
+| `VibeOffcanvas` | Offcanvas panel with placement options | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/offcanvas.md) |
+| `VibeResizable` | Resizable container with aspect-ratio lock | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/resizable.md) |
+| `VibeSlider` | Range slider with single or dual handles | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/slider.md) |
+| `VibeSortable` | Sortable list with drag reorder | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/sortable.md) |
+| `VibeStepper` | Multi-step wizard with validation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/stepper.md) |
+| `VibeTabs` | Tabbed interface from items array | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/tabs.md) |
+| `VibeTab` | Individual tab panel | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/tabs.md) |
+| `VibeTabContent` | Standalone tab-pane content host | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/tabs.md) |
+| `VibeToast` | Toast notification component with v-model | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/toast.md) |
+| `VibeToastHost` | Toast container for `useToast()` service | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-toast.md) |
 
 ### Tooltips & Popovers
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibePopover` | Popover with title and text content | [docs](./docs/components/advanced/popover.md) |
-| `VibeTooltip` | Tooltip with hover/tap detection | [docs](./docs/components/advanced/tooltip.md) |
+| `VibePopover` | Popover with title and text content | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/popover.md) |
+| `VibeTooltip` | Tooltip with hover/tap detection | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/tooltip.md) |
 
 ### Data & Charts
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeDataTable` | Sortable, searchable, paginated data table | [docs](./docs/components/data/datatable.md) |
-| `VibeProgress` | Progress bar with multi-bar and animated | [docs](./docs/components/progress/progress.md) |
-| `VibeChartBar` | Bar chart (stacked, grouped) | [docs](./docs/components/charts/chart-bar.md) |
-| `VibeChartLine` | Line chart with smooth curves and fill | [docs](./docs/components/charts/chart-line.md) |
-| `VibeChartPie` | Pie chart | [docs](./docs/components/charts/chart-pie.md) |
+| `VibeDataTable` | Sortable, searchable, paginated data table | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/data/datatable.md) |
+| `VibeProgress` | Progress bar with multi-bar and animated | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/progress/progress.md) |
+| `VibeChartBar` | Bar chart (stacked, grouped) | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/charts/chart-bar.md) |
+| `VibeChartLine` | Line chart with smooth curves and fill | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/charts/chart-line.md) |
+| `VibeChartPie` | Pie chart | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/charts/chart-pie.md) |
 
 > Charts are dependency-free, canvas-rendered, and lazy-loaded - no Chart.js or D3.
 
@@ -229,39 +229,39 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeAutocomplete` | Typeahead with keyboard nav and async search | [docs](./docs/forms/autocomplete.md) |
-| `VibeFileInput` | File picker with drag/drop and size validation | [docs](./docs/forms/file-input.md) |
-| `VibeFormCheckbox` | Checkbox with indeterminate and group support | [docs](./docs/forms/form-checkbox.md) |
-| `VibeFormDatepicker` | Native date input wrapper | [docs](./docs/forms/form-datepicker.md) |
-| `VibeFormGroup` | Auto-wires label, IDs, help text, and validation | [docs](./docs/forms/form-group.md) |
-| `VibeFormInput` | Text input with types, sizes, and states | [docs](./docs/forms/form-input.md) |
-| `VibeFormRadio` | Radio button with group and inline layout | [docs](./docs/forms/form-radio.md) |
-| `VibeFormSelect` | Select dropdown with single and multiple selection | [docs](./docs/forms/form-select.md) |
-| `VibeFormSpinbutton` | Numeric stepper with min/max/step | [docs](./docs/forms/form-spinbutton.md) |
-| `VibeFormSwitch` | Toggle switch with label | [docs](./docs/forms/form-switch.md) |
-| `VibeFormTextarea` | Multi-line text input with character count | [docs](./docs/forms/form-textarea.md) |
-| `VibeFormWysiwyg` | Rich-text editor (Quill) with DOMPurify sanitization | [docs](./docs/forms/form-wysiwyg.md) |
-| `VibeInputGroup` | Input with prepend/append slots | [docs](./docs/forms/input-group.md) |
+| `VibeAutocomplete` | Typeahead with keyboard nav and async search | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/autocomplete.md) |
+| `VibeFileInput` | File picker with drag/drop and size validation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/file-input.md) |
+| `VibeFormCheckbox` | Checkbox with indeterminate and group support | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-checkbox.md) |
+| `VibeFormDatepicker` | Native date input wrapper | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-datepicker.md) |
+| `VibeFormGroup` | Auto-wires label, IDs, help text, and validation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-group.md) |
+| `VibeFormInput` | Text input with types, sizes, and states | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-input.md) |
+| `VibeFormRadio` | Radio button with group and inline layout | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-radio.md) |
+| `VibeFormSelect` | Select dropdown with single and multiple selection | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-select.md) |
+| `VibeFormSpinbutton` | Numeric stepper with min/max/step | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-spinbutton.md) |
+| `VibeFormSwitch` | Toggle switch with label | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-switch.md) |
+| `VibeFormTextarea` | Multi-line text input with character count | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-textarea.md) |
+| `VibeFormWysiwyg` | Rich-text editor (Quill) with DOMPurify sanitization | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-wysiwyg.md) |
+| `VibeInputGroup` | Input with prepend/append slots | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/input-group.md) |
 
-Form validation rules and `useForm()` API: [docs](./docs/forms/validation.md)
+Form validation rules and `useForm()` API: [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/validation.md)
 
 ## Composables
 
 | Composable | Description | Docs |
 |------------|-------------|------|
-| `useBackButton` | Android back button handler | [docs](./docs/composables/back-button.md) |
-| `useBreakpoints` | Reactive Bootstrap breakpoint detection | [docs](./docs/composables/breakpoints.md) |
-| `useColorMode` | Light/dark/auto mode with system detection | [docs](./docs/composables/color-mode.md) |
-| `useForm` | Form state, dirty detection, and validation | [docs](./docs/composables/use-form.md) |
-| `useFormValidation` | Standalone validator runner with concurrency guard | [docs](./docs/forms/validation.md) |
-| `usePosition` | Popper-style positioning utility | [docs](./docs/composables/use-position.md) |
-| `useToast` | Programmatic toast dispatch (success, error, etc.) | [docs](./docs/composables/use-toast.md) |
+| `useBackButton` | Android back button handler | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/back-button.md) |
+| `useBreakpoints` | Reactive Bootstrap breakpoint detection | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/breakpoints.md) |
+| `useColorMode` | Light/dark/auto mode with system detection | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/color-mode.md) |
+| `useForm` | Form state, dirty detection, and validation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-form.md) |
+| `useFormValidation` | Standalone validator runner with concurrency guard | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/validation.md) |
+| `usePosition` | Popper-style positioning utility | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-position.md) |
+| `useToast` | Programmatic toast dispatch (success, error, etc.) | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-toast.md) |
 
 ## Directives
 
 | Directive | Description | Docs |
 |-----------|-------------|------|
-| `v-vibe-tooltip` | Directive-based tooltip on any element | [docs](./docs/directives/v-tooltip.md) |
+| `v-vibe-tooltip` | Directive-based tooltip on any element | [docs](https://github.com/velkymx/vibeui/blob/main/docs/directives/v-tooltip.md) |
 
 ## Examples
 
@@ -284,5 +284,5 @@ Full-page templates built entirely with VibeUI components — open [`examples/in
 
 ## Documentation
 
-Full API reference: [`docs/`](./docs/README.md)
+Full API reference: [`docs/`](https://github.com/velkymx/vibeui/blob/main/docs/README.md)
 LLM-optimized reference: [`llms.txt`](./llms.txt)

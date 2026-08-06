@@ -4,11 +4,9 @@ You are generating code that uses **`@velkymx/vibeui`** — a Vue 3 component li
 
 ## Read the docs before you build — do not guess
 
-These all ship inside the installed package:
-
-- **Start here:** [`llms.txt`](./llms.txt) (package root) — the load → use → leverage workflow, a "common mistakes" cheat sheet, and a link index to every doc page.
-- **Full API reference:** [`docs/`](./docs/README.md) — one page per component with its exact props, events, and slots.
-- **Working examples:** [`examples/`](./examples/index.html) — full-page templates to copy patterns from.
+- **Start here:** [`llms.txt`](./llms.txt) — ships in the installed package, at its root. The load → use → leverage workflow, a "common mistakes" cheat sheet, and a link index to every doc page.
+- **Full API reference:** [`docs/`](https://github.com/velkymx/vibeui/blob/main/docs/README.md) — one page per component with its exact props, events, and slots. Hosted on GitHub; it is **not** part of the npm tarball, so fetch it rather than looking for a local `docs/` directory.
+- **Working examples:** [`examples/`](./examples/index.html) — ships in the package. Full-page templates to copy patterns from.
 
 **Do NOT** infer the API from `dist/`, from the compiled `.d.ts` types alone, or from memory. The documented props, `:items` shapes, and slot names are the source of truth. When unsure about a component, open its doc page first.
 
