@@ -280,4 +280,30 @@ describe('VibeFormTextarea', () => {
       expect(textarea.classes()).toContain('font-monospace')
     })
   })
+
+  // The mandatory wrapper <div> breaks flex-child fill (e.g. an auto-grow
+  // composer). noWrapper renders only the bare <textarea>, mirroring
+  // VibeFormInput's escape-hatch.
+  describe('noWrapper mode', () => {
+    it('wraps the textarea in a div by default', () => {
+      const wrapper = mount(VibeFormTextarea, { props: { id: 'ta' } })
+      expect(wrapper.element.tagName).toBe('DIV')
+      expect(wrapper.find('textarea').exists()).toBe(true)
+    })
+
+    it('renders only the bare textarea as the root when noWrapper is set', () => {
+      const wrapper = mount(VibeFormTextarea, { props: { id: 'ta', noWrapper: true } })
+      expect(wrapper.element.tagName).toBe('TEXTAREA')
+    })
+
+    it('forwards attrs to the textarea in noWrapper mode', () => {
+      const wrapper = mount(VibeFormTextarea, {
+        props: { id: 'ta', noWrapper: true },
+        attrs: { name: 'note' }
+      })
+      const textarea = wrapper.find('textarea')
+      expect(textarea.attributes('name')).toBe('note')
+      expect(textarea.attributes('id')).toBe('ta')
+    })
+  })
 })

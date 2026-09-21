@@ -23,6 +23,7 @@ Multi-line text input with optional character counting, built-in validation, and
 | `helpText` | `string` | `undefined` | Help text below the textarea. |
 | `noResize` | `boolean` | `false` | Disable manual resizing (`resize: none`). |
 | `showCharCount` | `boolean` | `false` | Show a character counter (`count` or `count / maxlength`). |
+| `noWrapper` | `boolean` | `false` | Render only the bare `<textarea>` (no wrapper `<div>`, label, char count or feedback). Use when the textarea must be a direct flex/grid child, e.g. an auto-grow composer. |
 
 ## Events
 

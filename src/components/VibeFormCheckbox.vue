@@ -22,7 +22,10 @@ const props = defineProps({
   validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
   validateOn: { type: String as PropType<'change' | 'blur'>, default: 'change' },
   helpText: { type: String, default: undefined },
-  reverse: { type: Boolean, default: false }
+  reverse: { type: Boolean, default: false },
+  // Render only the bare checkbox <input> (no .form-check wrapper, label or
+  // feedback), so it can be a direct flex/grid child or an aria-only control.
+  noWrapper: { type: Boolean, default: false }
 })
 
 const emit = defineEmits<{
@@ -105,7 +108,7 @@ watch(() => props.indeterminate, (val) => {
 </script>
 
 <template>
-  <div :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
+  <div v-if="!noWrapper" :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
     <input
       ref="inputRef"
       :id="computedId"
@@ -135,4 +138,21 @@ watch(() => props.indeterminate, (val) => {
       :show-feedback="shouldRenderFeedback"
     />
   </div>
+
+  <input
+    v-else
+    ref="inputRef"
+    v-bind="$attrs"
+    :id="computedId"
+    type="checkbox"
+    :class="inputClass"
+    :checked="isChecked"
+    :disabled="disabled"
+    :required="required"
+    :aria-invalid="validationState === 'invalid'"
+    :aria-describedby="ariaDescribedBy"
+    @change="handleChange"
+    @blur="handleBlur"
+    @focus="handleFocus"
+  />
 </template>
