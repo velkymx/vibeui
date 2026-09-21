@@ -64,6 +64,7 @@ The library handles:
 - [VibeButton](./components/core/button.md)
 - [VibeButtonGroup](./components/core/button-group.md)
 - [VibeCloseButton](./components/core/close-button.md)
+- [VibeIcon](./components/core/icon.md)
 - [VibeLink](./components/core/link.md)
 - [VibePlaceholder](./components/core/placeholder.md)
 - [VibeSkeleton](./components/core/skeleton.md)
