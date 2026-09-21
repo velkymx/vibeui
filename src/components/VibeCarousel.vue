@@ -3,7 +3,10 @@ import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick 
 import type { CarouselItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
-interface CarouselEvent {
+// Bootstrap's slide/slid events are DOM Events carrying extra fields, so the type
+// extends Event — this lets the listeners be plain EventListeners while still
+// exposing `to`/`from`/`direction` after a narrowing cast.
+interface CarouselEvent extends Event {
   from: number
   to: number
   direction: 'left' | 'right'
@@ -64,13 +67,14 @@ const carouselClass = computed(() => {
   return classes.join(' ')
 })
 
-const onSlide = (event: CarouselEvent) => {
+const onSlide = (event: Event) => {
   emit('slide', event)
 }
 
-const onSlid = (event: CarouselEvent) => {
-  activeIndex.value = event.to
-  emit('update:modelValue', event.to)
+const onSlid = (event: Event) => {
+  const { to } = event as CarouselEvent
+  activeIndex.value = to
+  emit('update:modelValue', to)
   emit('slid', event)
 }
 
