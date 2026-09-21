@@ -6,10 +6,11 @@ Small count and labeling component with Bootstrap 5.3 styling.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `variant` | `Variant` | `'primary'` | Background color variant |
+| `variant` | `Variant` | `'primary'` | Color variant. Non-subtle badges use Bootstrap's `.text-bg-{variant}`, which pairs the background with a contrast-correct foreground (so `light`, `warning` and `info` stay readable). |
 | `subtle` | `Boolean` | `false` | Renders badge with subtle background and emphasis text |
 | `pill` | `Boolean` | `false` | Renders badge with rounded pill shape |
 | `tag` | `String` | `'span'` | HTML tag to render: `'span'`, `'a'`, or any valid tag |
+| `textColor` | `String` | `undefined` | Optional foreground override, applied as `text-{textColor}` (e.g. `'dark'`, `'body'`, `'white'`). Wins over the variant's default text color via Bootstrap's `!important` text utilities. |
 
 ## Slots
 
@@ -66,10 +67,20 @@ Small count and labeling component with Bootstrap 5.3 styling.
 </template>
 ```
 
+### Custom Text Color
+
+```vue
+<template>
+  <!-- Override the default foreground when you need a specific pairing -->
+  <VibeBadge variant="warning" text-color="dark">Warning</VibeBadge>
+</template>
+```
+
 ## Bootstrap CSS Classes
 
 - `.badge`
-- `.bg-{variant}`
+- `.text-bg-{variant}` (default, non-subtle — contrast-correct foreground + background)
 - `.bg-{variant}-subtle` (when `subtle` is true)
 - `.text-{variant}-emphasis` (when `subtle` is true)
+- `.text-{textColor}` (when `textColor` is set)
 - `.rounded-pill` (when `pill` is true)
