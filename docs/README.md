@@ -33,6 +33,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import VibeUI, { useColorMode } from '@velkymx/vibeui'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import '@velkymx/vibeui/style.css'   // VibeUI's own component styles
 
 // Restore saved color mode preference before mounting
 const { initColorMode } = useColorMode()
@@ -40,6 +41,10 @@ initColorMode()
 
 createApp(App).use(VibeUI).mount('#app')
 ```
+
+### Stylesheet
+
+The canonical import for VibeUI's own styles is **`@velkymx/vibeui/style.css`**. It maps to the shipped `dist/vibeui.css`. The full path `@velkymx/vibeui/dist/vibeui.css` also works, as does the legacy `@velkymx/vibeui/dist/style.css` alias (kept for back-compat). Bootstrap's CSS is separate and you import it yourself, as shown above.
 
 ### Bootstrap JavaScript
 

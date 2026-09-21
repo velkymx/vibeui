@@ -33,7 +33,8 @@ npm install @velkymx/vibeui bootstrap
 // main.ts
 import { createApp } from 'vue'
 import VibeUI, { useColorMode } from '@velkymx/vibeui'
-import 'bootstrap/dist/css/bootstrap.min.css'   // YOU import the CSS
+import 'bootstrap/dist/css/bootstrap.min.css'   // YOU import Bootstrap's CSS
+import '@velkymx/vibeui/style.css'              // …and VibeUI's own component styles
 import App from './App.vue'
 
 useColorMode().initColorMode()                   // restore saved light/dark/auto before first render
