@@ -8,6 +8,13 @@ import { useFormField } from '../composables/useFormField'
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 const modelValue = defineModel<boolean | string | number | (string | number | boolean)[]>({ default: false })
 
+// Consumer attributes (aria-label, name, data-*, class, …) belong on the native
+// checkbox <input>, not the .form-check wrapper <div> — otherwise a label
+// association or aria-label targets the wrapper, not the control (a11y regression).
+// Auto-inheritance is disabled and $attrs is bound explicitly on the input (first,
+// so prop-driven bindings like :id/:class win).
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps({
   value: { type: [String, Number, Boolean], default: true },
   uncheckedValue: { type: [String, Number, Boolean], default: false },
@@ -108,6 +115,7 @@ watch(() => props.indeterminate, (val) => {
   <div :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
     <input
       ref="inputRef"
+      v-bind="$attrs"
       :id="computedId"
       type="checkbox"
       :class="inputClass"
