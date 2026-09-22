@@ -288,6 +288,32 @@ describe('VibeFormCheckbox', () => {
     expect(describedBy).not.toContain('undefined')
   })
 
+  // The mandatory .form-check wrapper breaks flex-child layouts. noWrapper
+  // renders only the bare checkbox <input>, mirroring VibeFormInput.
+  describe('noWrapper mode', () => {
+    it('wraps the checkbox in .form-check by default', () => {
+      const wrapper = mount(VibeFormCheckbox, { props: { id: 'chk' } })
+      expect(wrapper.element.tagName).toBe('DIV')
+      expect(wrapper.find('.form-check').exists()).toBe(true)
+    })
+
+    it('renders only the bare input as the root when noWrapper is set', () => {
+      const wrapper = mount(VibeFormCheckbox, { props: { id: 'chk', noWrapper: true } })
+      expect(wrapper.element.tagName).toBe('INPUT')
+      expect(wrapper.find('.form-check').exists()).toBe(false)
+    })
+
+    it('forwards attrs to the input in noWrapper mode (aria-only checkbox)', () => {
+      const wrapper = mount(VibeFormCheckbox, {
+        props: { id: 'chk', noWrapper: true },
+        attrs: { 'aria-label': 'Select row' }
+      })
+      const input = wrapper.find('input')
+      expect(input.attributes('aria-label')).toBe('Select row')
+      expect(input.attributes('id')).toBe('chk')
+    })
+  })
+
   // Consumer attributes must target the control, not the .form-check wrapper —
   // otherwise an aria-label or a label association points at the <div>, not the
   // checkbox (an accessibility regression). Mirrors VibeFormInput/Select.
