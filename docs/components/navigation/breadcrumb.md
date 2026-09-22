@@ -25,6 +25,7 @@ interface BreadcrumbItem {
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `item-click` | `{ item, index, event }` | Emitted when an item is clicked (unless active) |
+| `component-error` | `ComponentError` | Emitted on an internal error. |
 
 ## Slots
 
