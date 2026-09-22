@@ -14,20 +14,32 @@ describe('VibeBadge', () => {
     expect(wrapper.text()).toBe('New')
   })
 
-  it('applies variant class', () => {
+  // Bootstrap's .text-bg-{variant} pairs a background with a contrast-correct
+  // foreground, so light/warning/info are readable — the bare .bg-{variant} on
+  // top of .badge's default color:#fff rendered white-on-light.
+  it('applies contrast-correct text-bg-{variant} for the variant', () => {
     const wrapper = mount(VibeBadge, {
       props: {
         variant: 'danger'
       }
     })
 
-    expect(wrapper.find('.badge').classes()).toContain('bg-danger')
+    const classes = wrapper.find('.badge').classes()
+    expect(classes).toContain('text-bg-danger')
+    expect(classes).not.toContain('bg-danger')
   })
 
   it('applies default primary variant', () => {
     const wrapper = mount(VibeBadge)
 
-    expect(wrapper.find('.badge').classes()).toContain('bg-primary')
+    expect(wrapper.find('.badge').classes()).toContain('text-bg-primary')
+  })
+
+  it('keeps light/warning/info readable via text-bg-{variant}', () => {
+    for (const variant of ['light', 'warning', 'info'] as const) {
+      const wrapper = mount(VibeBadge, { props: { variant } })
+      expect(wrapper.find('.badge').classes()).toContain(`text-bg-${variant}`)
+    }
   })
 
   it('applies pill class', () => {
@@ -74,8 +86,37 @@ describe('VibeBadge', () => {
 
     const classes = wrapper.find('.badge').classes()
     expect(classes).toContain('badge')
-    expect(classes).toContain('bg-success')
+    expect(classes).toContain('text-bg-success')
     expect(classes).toContain('rounded-pill')
+  })
+
+  it('keeps the subtle path (bg-{variant}-subtle + text-{variant}-emphasis)', () => {
+    const wrapper = mount(VibeBadge, {
+      props: { variant: 'info', subtle: true }
+    })
+
+    const classes = wrapper.find('.badge').classes()
+    expect(classes).toContain('bg-info-subtle')
+    expect(classes).toContain('text-info-emphasis')
+    expect(classes).not.toContain('text-bg-info')
+  })
+
+  it('textColor prop overrides the foreground (non-subtle)', () => {
+    const wrapper = mount(VibeBadge, {
+      props: { variant: 'warning', textColor: 'dark' }
+    })
+
+    const classes = wrapper.find('.badge').classes()
+    expect(classes).toContain('text-bg-warning')
+    expect(classes).toContain('text-dark')
+  })
+
+  it('textColor prop overrides the foreground (subtle)', () => {
+    const wrapper = mount(VibeBadge, {
+      props: { variant: 'primary', subtle: true, textColor: 'body' }
+    })
+
+    expect(wrapper.find('.badge').classes()).toContain('text-body')
   })
 
   it('renders slot content', () => {

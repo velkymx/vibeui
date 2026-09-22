@@ -22,6 +22,10 @@ const props = defineProps({
   helpText: { type: String, default: undefined }
 })
 
+// Consumer attributes (aria-label, name, data-*, class) belong on the native
+// control, not the wrapper <div>. Mirrors VibeFormInput/VibeFormSelect.
+defineOptions({ inheritAttrs: false })
+
 const emit = defineEmits<{
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
@@ -73,6 +77,7 @@ const handleFocus = (event: FocusEvent) => {
 <template>
   <div :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
     <input
+      v-bind="$attrs"
       :id="computedId"
       type="checkbox"
       role="switch"

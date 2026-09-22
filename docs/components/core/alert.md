@@ -20,6 +20,7 @@ Alert messages with Bootstrap styling, supporting variants, dismissible function
 | `update:modelValue` | `Boolean` | Emitted when alert is dismissed |
 | `close` | - | Emitted when dismissal starts |
 | `closed` | - | Emitted when dismissal completes |
+| `component-error` | `ComponentError` | Emitted if the Bootstrap Alert integration fails to initialize (e.g. Bootstrap JS unavailable). |
 
 ## Slots
 
