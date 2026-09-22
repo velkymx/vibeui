@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, inject, ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size, AutocompleteType, InputMode } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -87,7 +87,6 @@ const computedAutocomplete = computed(() =>
 )
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,

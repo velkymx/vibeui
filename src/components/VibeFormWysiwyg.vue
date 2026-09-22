@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
+import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -62,11 +62,9 @@ const emit = defineEmits<{
 }>()
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,
-  ariaDescribedBy,
   shouldRenderLabel,
   shouldRenderFeedback,
   shouldRenderHelp
