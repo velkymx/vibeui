@@ -1,23 +1,64 @@
 # VibeFormWysiwyg
 
-Rich-text editor powered by Quill. HTML is sanitized with DOMPurify on the way in and on the way out (XSS defense-in-depth).
+Rich-text editor powered by Quill. HTML is sanitized with a consumer-provided sanitizer (typically DOMPurify) on the way in and on the way out (XSS defense-in-depth).
 
-## Peer dependencies
+## Peer dependencies (consumer-injected)
 
-This component requires two optional peers — install both:
+> **Changed in 2.0.** VibeUI no longer imports `quill` or `dompurify` itself — so the library's build contains **no** reference to them, and a project that never uses `VibeFormWysiwyg` gets no bundler warnings/errors even under warnings-as-errors. You provide the peers.
+
+Install the peers and import Quill's theme CSS in your own app:
 
 ```bash
 npm install quill dompurify
 ```
 
-Both are optional peers of the package as a whole — nothing outside this component needs them, and neither is bundled. They are imported lazily on mount, so a project that never renders `VibeFormWysiwyg` never loads them.
+```ts
+// main.ts
+import 'quill/dist/quill.snow.css'   // YOU import the editor theme CSS
+```
 
-What happens if one is missing:
+Then provide a Quill **loader** and an optional **sanitizer** — app-wide via the plugin option (recommended):
 
-| Missing | Result |
+```ts
+import { createApp } from 'vue'
+import VibeUI, { makeDomPurifySanitizer } from '@velkymx/vibeui'
+import DOMPurify from 'dompurify'
+
+createApp(App).use(VibeUI, {
+  wysiwyg: {
+    quillLoader: () => import('quill'),                 // your bundler resolves 'quill' here
+    sanitizer: makeDomPurifySanitizer(DOMPurify),       // optional; see below
+  },
+}).mount('#app')
+```
+
+…or per instance via props (these override the app-level config):
+
+```vue
+<VibeFormWysiwyg
+  v-model="content"
+  :quill-loader="() => import('quill')"
+  :sanitizer="mySanitizer"
+/>
+```
+
+What happens if you skip one:
+
+| Skipped | Result |
 |---------|--------|
-| `quill` | The editor does not load. A warning alert renders in its place and a `component-error` event is emitted — no crash, and no `console.error` in production (DEV logs a `console.warn`). |
-| `dompurify` | The editor works, but VibeUI's own sanitizing layer is skipped and `modelValue` HTML reaches Quill unsanitized. Quill's Delta conversion still applies its own allowlist, but you lose the defence-in-depth pass. DEV logs a `console.warn`. |
+| `quillLoader` | The editor does not load. A warning alert renders in its place and a `component-error` event is emitted (no crash; DEV logs a `console.warn`). |
+| `sanitizer` | The editor works, but the sanitizing pass is the identity function and `modelValue` HTML reaches Quill unsanitized. Quill's Delta conversion still applies its own allowlist, but you lose the defence-in-depth pass. DEV logs a `console.warn`. |
+
+`makeDomPurifySanitizer(DOMPurify)` builds a sanitizer bound to DOMPurify and VibeUI's `WYSIWYG_PURIFY_CONFIG` allowlist (both exported from the package). You can also pass any `(html: string) => string`.
+
+## Migration from 1.x
+
+1.x auto-imported `quill`, its snow CSS, and `dompurify`. In 2.0 you must:
+
+1. `import 'quill/dist/quill.snow.css'` in your app.
+2. Provide `quillLoader` (and, for sanitization, `sanitizer`) via `app.use(VibeUI, { wysiwyg: { … } })` or the `:quill-loader` / `:sanitizer` props.
+
+No other props or events changed.
 
 ## Props
 
@@ -39,6 +80,8 @@ What happens if one is missing:
 | `validationRules` | `ValidationRule[] \| ValidatorFunction` | `undefined` | Rules carried for use with a validation composable. |
 | `validateOn` | `'change' \| 'blur'` | `'blur'` | When the `validate` event fires. |
 | `helpText` | `string` | `undefined` | Help text below the editor. |
+| `quillLoader` | `() => Promise<unknown>` | `undefined` | Loads the Quill constructor (e.g. `() => import('quill')`). Overrides the app-level `wysiwyg.quillLoader`. Required (here or app-level) for the editor to load. |
+| `sanitizer` | `(html: string) => string` | `undefined` | Sanitizes HTML in and out. Overrides the app-level `wysiwyg.sanitizer`. Omitted ⇒ identity (see the peer table). |
 
 ## Events
 
@@ -92,7 +135,7 @@ const onError = (err: ComponentError) => console.error(err.message)
 ## Important Notes
 
 - **Sanitization:** incoming `modelValue` HTML is sanitized before it is rendered, and the emitted HTML is sanitized too. Unsafe tags and attributes (e.g. `<script>`, inline event handlers) are stripped. Do not rely on the editor to preserve dangerous markup.
-- **Install both peers:** `quill` provides the editor and `dompurify` the sanitizing pass. Neither is required by the rest of VibeUI, and each degrades on its own terms — see [Peer dependencies](#peer-dependencies) for exactly what you lose.
+- **Inject the peers:** provide `quillLoader` (required) and `sanitizer` (recommended) via the plugin option or props — VibeUI never imports `quill`/`dompurify` itself. See [Peer dependencies (consumer-injected)](#peer-dependencies-consumer-injected).
 - **`height` is validated:** only CSS length values are accepted; anything else falls back to `200px`.
 - **Responsive toolbar:** at mobile breakpoints `mobileToolbar` (or a compact default) is used, and the editor re-initializes while preserving content.
 - **Group linking:** wrapped in a `VibeFormGroup`, the editor consumes the group id so the label and feedback link automatically.

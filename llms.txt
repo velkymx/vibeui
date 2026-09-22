@@ -106,7 +106,7 @@ what is non-obvious; the linked doc page (Documentation Index, bottom) is the AP
 
 **Pointer / DnD:** `VibeSortable` (single-list reorder) · `VibeDraggable` + `VibeDroppable` (cross-list) · `VibeResizable` · `VibeSlider` (single + range)
 
-**Forms:** `VibeFormGroup` (auto-links label/id/aria) · `VibeFormInput` · `VibeFormSelect` (`:options`, typed primitive values) · `VibeFormTextarea` · `VibeFormCheckbox` · `VibeFormRadio` · `VibeFormSwitch` · `VibeFormSpinbutton` · `VibeFormDatepicker` (native `<input type=date>`) · `VibeDatePicker` (custom calendar popover, range + keyboard nav) · `VibeAutocomplete` (sync or async source) · `VibeFileInput` (drag-drop, accept enforcement) · `VibeFormWysiwyg` (Quill 2.x) · `VibeInputGroup` · `VibeFormErrorSummary`
+**Forms:** `VibeFormGroup` (auto-links label/id/aria) · `VibeFormInput` · `VibeFormSelect` (`:options`, typed primitive values) · `VibeFormTextarea` · `VibeFormCheckbox` · `VibeFormRadio` · `VibeFormSwitch` · `VibeFormSpinbutton` · `VibeFormDatepicker` (native `<input type=date>`) · `VibeDatePicker` (custom calendar popover, range + keyboard nav) · `VibeAutocomplete` (sync or async source) · `VibeFileInput` (drag-drop, accept enforcement) · `VibeFormWysiwyg` (Quill 2.x; inject `quillLoader`+`sanitizer` via `app.use(VibeUI,{wysiwyg})` or props) · `VibeInputGroup` · `VibeFormErrorSummary`
 
 **Composables:** `useColorMode` · `useForm` · `useFormValidation` · `useToast` · `useBreakpoints` · `usePosition` · `useBackButton` · `useId`
 
@@ -627,7 +627,7 @@ All charts are responsive via `ResizeObserver`, render at device pixel ratio for
 - Does not bundle Bootstrap CSS or JS
 - Does not require Bootstrap Icons (optional peer dep for `VibeIcon`)
 - Does not require Vue Router — but the `to` prop renders a `router-link`, so it only resolves in an app that has installed the router. `href` never needs it.
-- Does not require QuillJS or DOMPurify — both are optional peers used only by `VibeFormWysiwyg`, imported lazily on mount and never bundled. Without `quill` the editor renders a warning alert and emits `component-error`; without `dompurify` it works but skips VibeUI's sanitizing pass. Every other component is unaffected.
+- Does not require QuillJS or DOMPurify — both are optional peers used only by `VibeFormWysiwyg`, and **the library never imports them** (dist has zero `quill`/`dompurify` references, so no bundler warnings/errors even under warnings-as-errors). The consumer injects them: `app.use(VibeUI, { wysiwyg: { quillLoader: () => import('quill'), sanitizer: makeDomPurifySanitizer(DOMPurify) } })` (or the `:quill-loader` / `:sanitizer` props), and imports `quill/dist/quill.snow.css`. Without a `quillLoader` the editor renders a warning alert and emits `component-error`; without a `sanitizer` it works but skips the sanitizing pass. Every other component is unaffected.
 - Does not provide a theme system beyond Bootstrap's `data-bs-theme` color modes
 
 ## Documentation Index
