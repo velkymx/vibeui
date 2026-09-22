@@ -18,7 +18,7 @@ export type ButtonType = 'button' | 'submit' | 'reset'
 
 export type TooltipPlacement = 'top' | 'bottom' | 'start' | 'end'
 
-export type Tag = 'div' | 'span' | 'section' | 'article' | 'nav' | 'aside' | 'header' | 'footer' | 'main'
+export type Tag = 'div' | 'span' | 'section' | 'article' | 'nav' | 'aside' | 'header' | 'footer' | 'main' | 'form'
 
 export type Direction = 'up' | 'down' | 'start' | 'end'
 

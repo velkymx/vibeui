@@ -31,6 +31,7 @@
     "test": "vitest --project unit",
     "test:ui": "vitest --ui --project unit",
     "test:run": "vitest run --project unit",
+    "test:types": "vue-tsc --noEmit -p tsconfig.types.json",
     "test:coverage": "vitest run --project unit --coverage",
     "test:browser": "vitest run --project browser",
     "test:all": "vitest run",
