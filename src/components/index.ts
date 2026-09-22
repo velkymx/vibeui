@@ -177,10 +177,17 @@ export {
 
 import type { App, Plugin } from 'vue'
 import { vTooltip } from '../directives/vTooltip'
+import type { VibeUIOptions } from '../types'
+import { VIBE_WYSIWYG_KEY } from '../composables/wysiwygConfig'
 
 // Vue plugin for global registration
 const VibeUIPlugin: Plugin = {
-  install(app: App) {
+  install(app: App, options?: VibeUIOptions) {
+    // Consumer-provided WYSIWYG peers (Quill loader + sanitizer). Provided
+    // app-wide so VibeFormWysiwyg can inject them without the library importing
+    // the optional peers itself.
+    if (options?.wysiwyg) app.provide(VIBE_WYSIWYG_KEY, options.wysiwyg)
+
     // Core
     app.component('VibeAlert', VibeAlert)
     app.component('VibeBadge', VibeBadge)

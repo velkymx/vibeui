@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeFormWysiwyg from '../../src/components/VibeFormWysiwyg.vue'
 import * as useBreakpointsModule from '../../src/composables/useBreakpoints'
-import * as sanitizeHtmlModule from '../../src/utils/sanitizeHtml'
+import { VIBE_WYSIWYG_KEY } from '../../src/composables/wysiwygConfig'
 import { ref, nextTick } from 'vue'
 
 // Mock useBreakpoints
@@ -19,221 +19,169 @@ vi.mock('../../src/composables/useBreakpoints', () => ({
   }))
 }))
 
+// Minimal Quill stub with the surface VibeFormWysiwyg calls. Consumers now inject
+// the loader, so tests provide this instead of the library importing quill.
+function makeStubQuill(overrides: Record<string, unknown> = {}) {
+  const instances: any[] = []
+  class StubQuill {
+    root: HTMLElement = document.createElement('div')
+    static instances = instances
+    on = vi.fn()
+    off = vi.fn()
+    enable = vi.fn()
+    destroy = vi.fn()
+    getText = vi.fn().mockReturnValue('')
+    getSemanticHTML = vi.fn().mockReturnValue('<p>x</p>')
+    setContents = vi.fn()
+    clipboard = { convert: vi.fn().mockReturnValue({}), dangerouslyPasteHTML: vi.fn() }
+    selection: unknown = {}
+    scroll = { observer: { disconnect: vi.fn() } }
+    constructor(container: HTMLElement, _opts: unknown) {
+      if (container) this.root = document.createElement('div')
+      instances.push(this)
+      // Instance overrides win over the class-field defaults above.
+      Object.assign(this, overrides)
+    }
+  }
+  return StubQuill
+}
+
+/** mount options that inject a stub Quill loader (and optional sanitizer). */
+function withQuill(quill: unknown, sanitizer?: (h: string) => string) {
+  return {
+    global: {
+      provide: {
+        [VIBE_WYSIWYG_KEY as symbol]: {
+          quillLoader: () => Promise.resolve(quill),
+          ...(sanitizer ? { sanitizer } : {})
+        }
+      }
+    }
+  }
+}
+
+const flush = () => new Promise((r) => setTimeout(r, 0))
+
 describe('VibeFormWysiwyg', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('renders correctly', () => {
-    const wrapper = mount(VibeFormWysiwyg)
+  it('renders the editor container when a Quill loader is provided', () => {
+    const wrapper = mount(VibeFormWysiwyg, withQuill(makeStubQuill()))
     expect(wrapper.find('.vibe-wysiwyg-container').exists()).toBe(true)
   })
 
-  it('supports custom mobile toolbar', async () => {
-    const isMobile = ref(true)
-    vi.mocked(useBreakpointsModule.useBreakpoints).mockReturnValue({
-      isMobile,
-      isXs: ref(false),
-      isSm: ref(false),
-      isMd: ref(false),
-      isLg: ref(false),
-      isXl: ref(false),
-      isXxl: ref(false),
-      isTablet: ref(false)
-    })
-
-    const customMobileToolbar = [['bold']]
-    const wrapper = mount(VibeFormWysiwyg, {
-      props: {
-        mobileToolbar: customMobileToolbar
-      }
-    } as any) // ignore type error for now since prop doesn't exist yet
-
-    expect(wrapper.props('mobileToolbar')).toEqual(customMobileToolbar)
-  })
-
-  describe('toolbar presets', () => {
-    it('accepts "minimal" preset', () => {
-      const wrapper = mount(VibeFormWysiwyg, {
-        props: { toolbar: 'minimal' }
+  describe('toolbar presets (prop plumbing)', () => {
+    for (const preset of ['minimal', 'standard', 'full'] as const) {
+      it(`accepts "${preset}" preset`, () => {
+        const wrapper = mount(VibeFormWysiwyg, { props: { toolbar: preset }, ...withQuill(makeStubQuill()) })
+        expect(wrapper.props('toolbar')).toBe(preset)
       })
-      expect(wrapper.props('toolbar')).toBe('minimal')
-    })
+    }
 
-    it('accepts "standard" preset', () => {
-      const wrapper = mount(VibeFormWysiwyg, {
-        props: { toolbar: 'standard' }
-      })
-      expect(wrapper.props('toolbar')).toBe('standard')
-    })
-
-    it('accepts "full" preset', () => {
-      const wrapper = mount(VibeFormWysiwyg, {
-        props: { toolbar: 'full' }
-      })
-      expect(wrapper.props('toolbar')).toBe('full')
-    })
-
-    it('accepts custom array (preserves Quill format)', () => {
+    it('accepts a custom array (preserves Quill format)', () => {
       const custom = [['bold'], [{ header: 1 }]]
-      const wrapper = mount(VibeFormWysiwyg, {
-        props: { toolbar: custom }
-      })
+      const wrapper = mount(VibeFormWysiwyg, { props: { toolbar: custom }, ...withQuill(makeStubQuill()) })
       expect(wrapper.props('toolbar')).toEqual(custom)
     })
 
     it('accepts toolbar=false to disable', () => {
-      const wrapper = mount(VibeFormWysiwyg, {
-        props: { toolbar: false }
-      })
+      const wrapper = mount(VibeFormWysiwyg, { props: { toolbar: false }, ...withQuill(makeStubQuill()) })
       expect(wrapper.props('toolbar')).toBe(false)
     })
   })
 
-  // Regression: isUnmounted guard — Quill constructor must not run on a detached container
-  // if unmount fires before the dynamic import() microtasks resolve. When Quill constructs
-  // successfully it injects a .ql-editor element into the container — we check for its absence.
+  describe('peer injection', () => {
+    it('initializes using an injected quillLoader', async () => {
+      const StubQuill = makeStubQuill()
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: { id: 'w1', modelValue: '<p>hi</p>' },
+        ...withQuill(StubQuill)
+      })
+      await flush(); await wrapper.vm.$nextTick()
+      expect((StubQuill as any).instances.length).toBe(1)
+      expect(wrapper.emitted('component-error')).toBeFalsy()
+    })
+
+    it('a prop quillLoader overrides the injected one', async () => {
+      const Injected = makeStubQuill()
+      const PropQuill = makeStubQuill()
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: { id: 'w2', quillLoader: () => Promise.resolve(PropQuill) },
+        ...withQuill(Injected)
+      })
+      await flush(); await wrapper.vm.$nextTick()
+      expect((PropQuill as any).instances.length).toBe(1)
+      expect((Injected as any).instances.length).toBe(0)
+    })
+
+    it('emits component-error and shows the fallback when no loader is provided', async () => {
+      const wrapper = mount(VibeFormWysiwyg, { props: { id: 'w3' } })
+      await flush(); await wrapper.vm.$nextTick()
+      const err = wrapper.emitted('component-error')
+      expect(err).toBeTruthy()
+      expect((err![0][0] as any).message).toMatch(/quill/i)
+      expect(wrapper.find('.alert').exists()).toBe(true)
+      expect(wrapper.find('.vibe-wysiwyg-container').exists()).toBe(false)
+    })
+
+    it('applies an injected sanitizer to the model HTML', async () => {
+      const StubQuill = makeStubQuill()
+      const sanitizer = vi.fn((h: string) => h)
+      mount(VibeFormWysiwyg, {
+        props: { id: 'w4', modelValue: '<p>ok</p>' },
+        ...withQuill(StubQuill, sanitizer)
+      })
+      await flush()
+      expect(sanitizer).toHaveBeenCalledWith('<p>ok</p>')
+    })
+  })
+
+  // Regression: isUnmounted guard — Quill must not construct on a detached container
+  // if unmount fires before the loader promise resolves.
   it('does not inject .ql-editor after component unmounts during async init', async () => {
-    // Attach to document so the editorContainer ref is set before unmount
     const el = document.createElement('div')
     document.body.appendChild(el)
-
-    const wrapper = mount(VibeFormWysiwyg, { attachTo: el })
-
-    // Unmount synchronously before both import() microtasks resolve
+    const wrapper = mount(VibeFormWysiwyg, { attachTo: el, ...withQuill(makeStubQuill()) })
     wrapper.unmount()
-
-    // Drain the microtask queue (two awaits in initQuill)
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    // If isUnmounted guard works, Quill never ran — no .ql-editor injected
+    await flush()
     expect(el.querySelector('.ql-editor')).toBeNull()
-
     document.body.removeChild(el)
   })
 
-  it('cleans up handlers on unmount', async () => {
-    const wrapper = mount(VibeFormWysiwyg)
-    await new Promise(resolve => setTimeout(resolve, 0))
-
-    // Should not throw during cleanup
+  it('cleans up handlers on unmount without throwing', async () => {
+    const wrapper = mount(VibeFormWysiwyg, withQuill(makeStubQuill()))
+    await flush()
     expect(() => wrapper.unmount()).not.toThrow()
   })
 
-  // CR8-1: VibeFormWysiwyg must NOT have a static `import Quill from 'quill'` at the
-  // module top level. quill is an optional peer dep — a static import causes a
-  // ModuleNotFoundError at component-evaluation time for consumers who haven't installed it.
-  // All quill usage must be lazy (inside initQuill via `await import('quill')`).
-  //
-  // Strategy: use vi.doMock (non-hoisted) + vi.resetModules() to force a fresh module
-  // evaluation with quill throwing on import. If the static import exists, the component
-  // module evaluation itself throws and the dynamic import below rejects.
-  it('evaluates the module without importing quill at the top level', async () => {
-    vi.resetModules()
-    // Register a mock that throws to simulate quill not being installed.
-    vi.doMock('quill', () => { throw new Error('quill not installed') })
-
-    // Dynamic re-import forces a fresh module evaluation with the mock active.
-    // A static `import Quill from 'quill'` would cause this to reject; lazy-only
-    // access means the component module loads fine and quill is only touched inside initQuill.
-    const mod = await import('../../src/components/VibeFormWysiwyg.vue')
-    expect(mod.default).toBeDefined()
-
-    vi.doUnmock('quill')
-    vi.resetModules()
-  })
-
-  // Security: loadDOMPurify() must be awaited during initQuill so sanitizeHtml is
-  // active before any modelValue HTML reaches Quill's clipboard.convert.
-  // Quill fails to initialize in happy-dom so we spy on the utility module directly.
-  describe('DOMPurify sanitization', () => {
-    it('calls loadDOMPurify during Quill initialization', async () => {
-      const loadSpy = vi.spyOn(sanitizeHtmlModule, 'loadDOMPurify').mockResolvedValue(undefined)
-
-      mount(VibeFormWysiwyg, { props: { modelValue: '<p>text</p>' } })
-      await new Promise(resolve => setTimeout(resolve, 0))
-
-      expect(loadSpy).toHaveBeenCalled()
-      loadSpy.mockRestore()
-    })
-
-    it('sanitizeHtml is wired to setQuillContent — see tests/utils/sanitizeHtml.test.ts for full coverage', () => {
-      // Full DOMPurify sanitization behavior is verified in the utility test suite.
-      // This test documents the contract: VibeFormWysiwyg imports and uses sanitizeHtml
-      // from src/utils/sanitizeHtml.ts for both input (setQuillContent) and
-      // output (getQuillContent → getSemanticHTML).
-      expect(typeof sanitizeHtmlModule.sanitizeHtml).toBe('function')
-      expect(typeof sanitizeHtmlModule.loadDOMPurify).toBe('function')
-    })
-  })
-
-  // CR9-8: loadError was never reset inside initQuill before the success path ran.
-  // If initQuill is called a second time (e.g. from the isMobile reinit path) and
-  // succeeds, the stale loadError from the first failure would still be visible.
-  // Fix: reset loadError = null at the top of initQuill so every attempt starts clean.
-  //
-  // Direct unit-test of the retry path is impossible without a public retry API, but
-  // we can verify the success path does NOT inadvertently leave loadError set:
-  it('does not show loadError banner when initQuill succeeds (CR9-8 success path regression)', () => {
-    const wrapper = mount(VibeFormWysiwyg)
-    // Without the fix, loadError could persist across initQuill calls. With the fix
-    // initQuill resets it before attempting to load, so no banner on clean mounts.
+  // CR9-8: loadError must reset at the top of initQuill so a clean mount shows no banner.
+  it('does not show the loadError banner when init succeeds (CR9-8)', () => {
+    const wrapper = mount(VibeFormWysiwyg, withQuill(makeStubQuill()))
     expect(wrapper.find('.alert-warning').exists()).toBe(false)
   })
 
-  // CR9-3: async setTimeout callback in watch(isMobile) had no try/catch.
-  // If cleanup code (e.g. enable(false)) throws, the rejection was silently swallowed.
-  // Fix: wrap the entire timeout body in try/catch with emit('component-error').
-  //
-  // Strategy: inject a fake Quill via vi.doMock whose enable() throws, mount the
-  // component so quillInstance.value is populated, then trigger the isMobile watcher.
-  // The debounce callback runs cleanup → enable(false) → throws.
-  // Without the try/catch: unhandled rejection; with it: component-error is emitted.
+  // CR9-3: the async setTimeout callback in watch(isMobile) is wrapped in try/catch, so a
+  // throw during reinit cleanup surfaces as component-error rather than an unhandled rejection.
   it('emits component-error when isMobile reinit cleanup throws (CR9-3)', { timeout: 5000 }, async () => {
-    vi.resetModules()
-
-    vi.doMock('quill', () => {
-      function FakeQuill(this: Record<string, unknown>, container: HTMLElement) {
-        this.root = container
-        this.on = vi.fn()
-        this.off = vi.fn()
-        // enable() throws to simulate a broken Quill state during cleanup
-        this.enable = vi.fn().mockImplementation(() => { throw new Error('enable failed during reinit') })
-        this.destroy = vi.fn()
-        this.getSemanticHTML = vi.fn().mockReturnValue('')
-        this.scroll = { observer: { disconnect: vi.fn() } }
-        this.selection = null
-      }
-      return { default: FakeQuill }
-    })
-
-    // Import fresh useBreakpoints FIRST so we hold the new mock reference
-    const freshBreakpoints = await import('../../src/composables/useBreakpoints')
     const isMobile = ref(false)
-    vi.mocked(freshBreakpoints.useBreakpoints).mockReturnValueOnce({
+    vi.mocked(useBreakpointsModule.useBreakpoints).mockReturnValueOnce({
       isMobile,
       isXs: ref(false), isSm: ref(false), isMd: ref(false),
       isLg: ref(false), isXl: ref(false), isXxl: ref(false), isTablet: ref(false)
     })
+    // enable() throws to simulate a broken Quill state during cleanup.
+    const ThrowingQuill = makeStubQuill({
+      enable: vi.fn().mockImplementation(() => { throw new Error('enable failed during reinit') })
+    })
+    const wrapper = mount(VibeFormWysiwyg, withQuill(ThrowingQuill))
+    await new Promise((r) => setTimeout(r, 50))
 
-    const { default: FreshWysiwyg } = await import('../../src/components/VibeFormWysiwyg.vue')
-    const wrapper = mount(FreshWysiwyg)
-
-    // Allow quill dynamic import to resolve and initQuill to complete
-    await new Promise(resolve => setTimeout(resolve, 50))
-
-    // Trigger the isMobile watcher — schedules setTimeout(fn, 250)
     isMobile.value = true
     await nextTick()
+    await new Promise((r) => setTimeout(r, 300))
 
-    // Wait past the 250ms debounce + async callback execution
-    await new Promise(resolve => setTimeout(resolve, 300))
-
-    // Cleanup calls enable(false) which throws; with try/catch the error is
-    // caught and emitted as component-error instead of an unhandled rejection.
     expect(wrapper.emitted('component-error')).toBeTruthy()
-
-    vi.doUnmock('quill')
-    vi.resetModules()
-  }, { timeout: 5000 })
+  })
 })

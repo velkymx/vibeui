@@ -10,6 +10,8 @@ export type { ToastSpec, ToastShowOptions, UseToastReturn } from './composables/
 export { usePosition } from './composables/usePosition'
 export type { UsePositionOptions, UsePositionReturn } from './composables/usePosition'
 export { useId } from './composables/useId'
+export { VIBE_WYSIWYG_KEY } from './composables/wysiwygConfig'
+export { makeDomPurifySanitizer, WYSIWYG_PURIFY_CONFIG } from './utils/sanitizeHtml'
 export { useColorMode } from './composables/useColorMode'
 export { useBreakpoints } from './composables/useBreakpoints'
 export { useBackButton } from './composables/useBackButton'
