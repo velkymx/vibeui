@@ -68,11 +68,9 @@ const emit = defineEmits<{
 }>()
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,
-  ariaDescribedBy,
   shouldRenderLabel,
   shouldRenderFeedback,
   shouldRenderHelp
