@@ -94,3 +94,18 @@ describe('VibeHero', () => {
     expect(mount(VibeHero, { props: { tag: 'div' } }).element.tagName).toBe('DIV')
   })
 })
+
+describe('VibeHero variant contrast default', () => {
+  it('uses contrast-correct text-bg-{variant} when no textVariant is set', () => {
+    const wrapper = mount(VibeHero, { props: { variant: 'primary' } })
+    expect(wrapper.classes()).toContain('text-bg-primary')
+    expect(wrapper.classes()).not.toContain('bg-primary')
+  })
+
+  it('keeps bg-{variant} + text-{textVariant} when textVariant is set', () => {
+    const wrapper = mount(VibeHero, { props: { variant: 'dark', textVariant: 'light' } })
+    expect(wrapper.classes()).toContain('bg-dark')
+    expect(wrapper.classes()).toContain('text-light')
+    expect(wrapper.classes()).not.toContain('text-bg-dark')
+  })
+})

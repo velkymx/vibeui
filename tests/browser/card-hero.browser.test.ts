@@ -49,7 +49,8 @@ describe('VibeHero (real browser)', () => {
   test('background variant + border render as classes', async () => {
     render(VibeHero, { props: { variant: 'dark', border: 'primary' }, slots: { default: 'x' } })
     const section = await waitForSelector('section') as HTMLElement
-    expect(section.classList.contains('bg-dark')).toBe(true)
+    // With no textVariant, VibeHero uses Bootstrap's contrast-correct text-bg-{variant}.
+    expect(section.classList.contains('text-bg-dark')).toBe(true)
     expect(section.classList.contains('border')).toBe(true)
     expect(section.classList.contains('border-primary')).toBe(true)
     expect(section.classList.contains('rounded-3')).toBe(true)

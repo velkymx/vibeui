@@ -38,12 +38,15 @@ const navbarClass = computed(() => {
   return classes.join(' ')
 })
 
-// Bootstrap 5.3 uses data-bs-theme instead of deprecated navbar-dark/navbar-light classes
+// Bootstrap 5.3 uses data-bs-theme instead of deprecated navbar-dark/navbar-light
+// classes. Derive it from the variant's luminance so a colored navbar
+// (bg-primary/success/…) gets light text instead of dark-on-dark. An explicit
+// `theme` prop always wins.
+const DARK_NAVBAR_VARIANTS = new Set(['primary', 'secondary', 'success', 'danger', 'dark'])
 const navbarTheme = computed(() => {
   if (props.theme) return props.theme
-  if (props.variant === 'dark') return 'dark'
-  if (props.variant === 'light') return 'light'
-  return undefined
+  if (!props.variant) return undefined
+  return DARK_NAVBAR_VARIANTS.has(props.variant) ? 'dark' : 'light'
 })
 
 const containerClass = computed(() => {

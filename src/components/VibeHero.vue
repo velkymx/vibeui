@@ -35,8 +35,16 @@ const safeGradient = (v: string | undefined): string | undefined => {
 
 const heroClass = computed(() => {
   const c: string[] = ['py-5', `text-${props.align}`]
-  if (props.variant) c.push(`bg-${props.variant}`)
-  if (props.textVariant) c.push(`text-${props.textVariant}`)
+  // With an explicit textVariant, keep bg-{variant} + text-{textVariant}. Without
+  // one, use Bootstrap's .text-bg-{variant} so the foreground is contrast-correct
+  // by default (a bare bg-{variant} left dark variants dark-on-dark).
+  if (props.variant && props.textVariant) {
+    c.push(`bg-${props.variant}`, `text-${props.textVariant}`)
+  } else if (props.variant) {
+    c.push(`text-bg-${props.variant}`)
+  } else if (props.textVariant) {
+    c.push(`text-${props.textVariant}`)
+  }
   if (props.border) c.push('border', `border-${props.border}`, 'rounded-3')
   // Vertically center content when an explicit min-height is given.
   if (safeLength(props.minHeight)) c.push('d-flex', 'align-items-center')
