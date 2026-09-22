@@ -11,7 +11,7 @@ Main navbar container. Provides reactive collapse state to child components via 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `variant` | `Variant\|'dark'\|'light'` | `'light'` | Background color: maps to `bg-{variant}` |
-| `theme` | `'dark'\|'light'` | auto | Color scheme applied via `data-bs-theme`. Defaults to `'dark'` when `variant='dark'`, `'light'` when `variant='light'`, otherwise unset |
+| `theme` | `'dark'\|'light'` | auto | Color scheme applied via `data-bs-theme`. Auto-derived from the variant's luminance so text stays readable: dark variants (`primary`, `secondary`, `success`, `danger`, `dark`) → `'dark'`; light variants (`light`, `info`, `warning`) → `'light'`. An explicit value overrides. |
 | `expand` | `Boolean\|String` | `'lg'` | Breakpoint for collapse: `'sm'`, `'md'`, `'lg'`, `'xl'`, or `true` for always expanded |
 | `container` | `Boolean\|String` | `true` | Container type: `true` for fluid, or `'sm'`, `'md'`, `'lg'`, `'xl'` |
 | `position` | `NavbarPosition` | `undefined` | Position: `'fixed-top'`, `'fixed-bottom'`, `'sticky-top'` |
