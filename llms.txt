@@ -67,7 +67,7 @@ createApp(App).use(VibeUI).mount('#app')         // registers every component + 
 
 ### Read the doc first
 
-A component's exact props/events/slots live in its doc page (Documentation Index, bottom). **Read it before building — do not guess props or reverse-engineer from `dist/`.** The documented API is the source of truth.
+A component's exact props/events/slots live in its doc page (Documentation Index, bottom). **Read it before building — do not guess props or reverse-engineer from `dist/`.** The documented API is the source of truth. For cross-cutting guidance (setup, props+slots, forms/a11y, optional-peer injection, tree-shaking), see [Best Practices](https://github.com/velkymx/vibeui/blob/main/docs/best-practices.md).
 
 ### Common mistakes — do NOT do these
 
