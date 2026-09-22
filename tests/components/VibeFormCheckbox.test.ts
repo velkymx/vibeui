@@ -313,4 +313,47 @@ describe('VibeFormCheckbox', () => {
       expect(input.attributes('id')).toBe('chk')
     })
   })
+
+  // Consumer attributes must target the control, not the .form-check wrapper —
+  // otherwise an aria-label or a label association points at the <div>, not the
+  // checkbox (an accessibility regression). Mirrors VibeFormInput/Select.
+  describe('$attrs passthrough to the native checkbox input', () => {
+    it('forwards aria-label to the input, not the wrapper div', () => {
+      const wrapper = mount(VibeFormCheckbox, {
+        attrs: { 'aria-label': 'Accept terms' }
+      })
+
+      expect(wrapper.find('input').attributes('aria-label')).toBe('Accept terms')
+      expect(wrapper.find('.form-check').attributes('aria-label')).toBeUndefined()
+    })
+
+    it('forwards name to the input, not the wrapper div', () => {
+      const wrapper = mount(VibeFormCheckbox, {
+        attrs: { name: 'agree' }
+      })
+
+      expect(wrapper.find('input').attributes('name')).toBe('agree')
+      expect(wrapper.find('.form-check').attributes('name')).toBeUndefined()
+    })
+
+    it('forwards arbitrary data-* attributes to the input', () => {
+      const wrapper = mount(VibeFormCheckbox, {
+        attrs: { 'data-testid': 'terms-box' }
+      })
+
+      expect(wrapper.find('input').attributes('data-testid')).toBe('terms-box')
+      expect(wrapper.find('.form-check').attributes('data-testid')).toBeUndefined()
+    })
+
+    it('merges consumer class onto the input alongside form-check-input', () => {
+      const wrapper = mount(VibeFormCheckbox, {
+        attrs: { class: 'custom-box' }
+      })
+
+      const input = wrapper.find('input')
+      expect(input.classes()).toContain('form-check-input')
+      expect(input.classes()).toContain('custom-box')
+      expect(wrapper.find('.form-check').classes()).not.toContain('custom-box')
+    })
+  })
 })

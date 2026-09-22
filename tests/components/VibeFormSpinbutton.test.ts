@@ -304,3 +304,18 @@ describe('VibeFormSpinbutton', () => {
     })
   })
 })
+
+describe('VibeFormSpinbutton $attrs passthrough', () => {
+  it('forwards aria-label / name / data-* to the input, not the wrapper', () => {
+    const wrapper = mount(VibeFormSpinbutton, { attrs: { 'aria-label': 'Qty', name: 'qty', 'data-testid': 'sb' } })
+    const input = wrapper.find('input')
+    expect(input.attributes('aria-label')).toBe('Qty')
+    expect(input.attributes('name')).toBe('qty')
+    expect(input.attributes('data-testid')).toBe('sb')
+    expect(wrapper.element.getAttribute('name')).toBeNull()
+  })
+  it('merges consumer class onto the input', () => {
+    const wrapper = mount(VibeFormSpinbutton, { attrs: { class: 'custom' } })
+    expect(wrapper.find('input').classes()).toContain('custom')
+  })
+})

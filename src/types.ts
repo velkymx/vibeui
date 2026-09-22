@@ -18,7 +18,7 @@ export type ButtonType = 'button' | 'submit' | 'reset'
 
 export type TooltipPlacement = 'top' | 'bottom' | 'start' | 'end'
 
-export type Tag = 'div' | 'span' | 'section' | 'article' | 'nav' | 'aside' | 'header' | 'footer' | 'main'
+export type Tag = 'div' | 'span' | 'section' | 'article' | 'nav' | 'aside' | 'header' | 'footer' | 'main' | 'form'
 
 export type Direction = 'up' | 'down' | 'start' | 'end'
 
@@ -187,6 +187,18 @@ export interface FormSelectOption {
   value: FormSelectOptionValue
   text: string
   disabled?: boolean
+}
+
+// WYSIWYG peer injection — VibeFormWysiwyg's Quill and sanitizer are provided by
+// the consumer so the library never imports the optional peers itself.
+export type QuillLoader = () => Promise<unknown>
+export type Sanitizer = (html: string) => string
+export interface VibeWysiwygConfig {
+  quillLoader?: QuillLoader
+  sanitizer?: Sanitizer
+}
+export interface VibeUIOptions {
+  wysiwyg?: VibeWysiwygConfig
 }
 
 // Chart types

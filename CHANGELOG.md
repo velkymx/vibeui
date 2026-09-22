@@ -6,6 +6,14 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
+## [Unreleased]
+
+### Changed (BREAKING)
+
+- **`VibeFormWysiwyg` no longer imports `quill` or `dompurify` itself — the consumer injects them.** The library's build now contains **zero** references to these optional peers, so a project that never uses the editor gets no `Can't resolve 'quill'/'dompurify'` bundler warnings (which warnings-as-errors builds turn fatal). To use the editor: `import 'quill/dist/quill.snow.css'` in your app and provide a loader (and optional sanitizer) via `app.use(VibeUI, { wysiwyg: { quillLoader: () => import('quill'), sanitizer: makeDomPurifySanitizer(DOMPurify) } })` or the new `:quill-loader` / `:sanitizer` props. New exports: `makeDomPurifySanitizer`, `WYSIWYG_PURIFY_CONFIG`, `VIBE_WYSIWYG_KEY`. Removed: the internal `loadDOMPurify` / `sanitizeHtml` from `src/utils/sanitizeHtml.ts`. See the [VibeFormWysiwyg migration note](docs/forms/form-wysiwyg.md#migration-from-1x).
+
+---
+
 ## [1.1.2] — 2026-08-06
 
 A patch release driven by a consumer bug report. Two defects turned out to be wider than reported — the `to` prop was broken on every component that accepts it, and the same class of fault appeared in a second place — plus a security gap found while fixing them, a smaller published package, and the removal of duplication across the form and chart components.

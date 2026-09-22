@@ -205,3 +205,19 @@ describe('VibeFormRadio', () => {
     expect(wrapper.emitted('change')).toBeTruthy()
   })
 })
+
+describe('VibeFormRadio $attrs passthrough', () => {
+  it('forwards aria-label / name / data-* to the input, not the wrapper', () => {
+    const wrapper = mount(VibeFormRadio, { attrs: { 'aria-label': 'Pick', name: 'grp', 'data-testid': 'r' } })
+    const input = wrapper.find('input')
+    expect(input.attributes('aria-label')).toBe('Pick')
+    expect(input.attributes('name')).toBe('grp')
+    expect(input.attributes('data-testid')).toBe('r')
+    expect(wrapper.find('.form-check').attributes('name')).toBeUndefined()
+  })
+  it('merges consumer class onto the input', () => {
+    const wrapper = mount(VibeFormRadio, { attrs: { class: 'custom' } })
+    expect(wrapper.find('input').classes()).toContain('custom')
+    expect(wrapper.find('input').classes()).toContain('form-check-input')
+  })
+})

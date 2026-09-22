@@ -61,6 +61,7 @@ Navigation links container. Supports regular links and dropdown items.
 |-------|---------|-------------|
 | `item-click` | `{ item, index, event }` | Emitted when a regular nav item is clicked |
 | `dropdown-item-click` | `{ item, itemIndex, child, childIndex, event }` | Emitted when a dropdown child item is clicked |
+| `component-error` | `ComponentError` | Emitted if the Bootstrap Dropdown integration fails to initialize (e.g. Bootstrap JS unavailable). |
 
 ## Usage
 
