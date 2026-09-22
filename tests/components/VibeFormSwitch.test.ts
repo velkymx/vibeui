@@ -179,3 +179,19 @@ describe('VibeFormSwitch', () => {
     expect(wrapper.emitted('focus')).toBeTruthy()
   })
 })
+
+describe('VibeFormSwitch $attrs passthrough', () => {
+  it('forwards aria-label / name / data-* to the input, not the wrapper', () => {
+    const wrapper = mount(VibeFormSwitch, { attrs: { 'aria-label': 'Toggle', name: 'sw', 'data-testid': 's' } })
+    const input = wrapper.find('input')
+    expect(input.attributes('aria-label')).toBe('Toggle')
+    expect(input.attributes('name')).toBe('sw')
+    expect(input.attributes('data-testid')).toBe('s')
+    expect(wrapper.find('.form-check').attributes('name')).toBeUndefined()
+  })
+  it('merges consumer class onto the input', () => {
+    const wrapper = mount(VibeFormSwitch, { attrs: { class: 'custom' } })
+    expect(wrapper.find('input').classes()).toContain('custom')
+    expect(wrapper.find('input').classes()).toContain('form-check-input')
+  })
+})
