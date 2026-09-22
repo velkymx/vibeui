@@ -41,6 +41,10 @@ const props = defineProps({
   vertical: { type: Boolean, default: false }
 })
 
+// Consumer attributes (aria-label, name, data-*, class) belong on the native
+// control, not the wrapper <div>. Mirrors VibeFormInput/VibeFormSelect.
+defineOptions({ inheritAttrs: false })
+
 const emit = defineEmits<{
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
@@ -200,6 +204,7 @@ const decrement = () => {
         <span aria-hidden="true">−</span>
       </button>
       <input
+        v-bind="$attrs"
         :id="computedId"
         type="number"
         :class="inputClass"

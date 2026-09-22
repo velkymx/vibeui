@@ -223,3 +223,19 @@ describe('VibeFormDatepicker', () => {
     expect(wrapper.emitted('focus')).toBeTruthy()
   })
 })
+
+describe('VibeFormDatepicker $attrs passthrough', () => {
+  it('forwards aria-label / name / data-* to the input, not the wrapper', () => {
+    const wrapper = mount(VibeFormDatepicker, { attrs: { 'aria-label': 'Date', name: 'd', 'data-testid': 'dp' } })
+    const input = wrapper.find('input')
+    expect(input.attributes('aria-label')).toBe('Date')
+    expect(input.attributes('name')).toBe('d')
+    expect(input.attributes('data-testid')).toBe('dp')
+    expect(wrapper.element.getAttribute('name')).toBeNull()
+  })
+  it('merges consumer class onto the input', () => {
+    const wrapper = mount(VibeFormDatepicker, { attrs: { class: 'custom' } })
+    expect(wrapper.find('input').classes()).toContain('custom')
+    expect(wrapper.find('input').classes()).toContain('form-control')
+  })
+})

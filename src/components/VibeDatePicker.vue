@@ -26,6 +26,10 @@ const props = defineProps({
   disabled: { type: Boolean, default: false }
 })
 
+// Consumer attributes belong on the native <input>, not the positioned
+// wrapper (which owns rootRef). Mirrors VibeFormInput.
+defineOptions({ inheritAttrs: false })
+
 const emit = defineEmits<{
   (e: 'update:modelValue', value: DateValue | RangeValue): void
   (e: 'open'): void
@@ -366,6 +370,7 @@ defineExpose({ open: () => { if (!isOpen.value) togglePopover() }, close: closeP
   <div class="vibe-datepicker" ref="rootRef">
     <label v-if="label" :for="computedId" class="form-label">{{ label }}</label>
     <input
+      v-bind="$attrs"
       :id="computedId"
       type="text"
       readonly
