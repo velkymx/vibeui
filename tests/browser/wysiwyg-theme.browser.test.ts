@@ -1,6 +1,12 @@
 import { render } from 'vitest-browser-vue'
 import { expect, test, describe, vi } from 'vitest'
 import VibeFormWysiwyg from '../../src/components/VibeFormWysiwyg.vue'
+import { VIBE_WYSIWYG_KEY } from '../../src/composables/wysiwygConfig'
+
+// The library no longer imports quill — inject a real loader (installed here).
+const wysiwygProvide = {
+  global: { provide: { [VIBE_WYSIWYG_KEY as symbol]: { quillLoader: () => import('quill') } } }
+}
 // Quill's snow theme hardcodes its own light palette (#444 icon strokes, #fff picker
 // background, near-black editor text). Inside a Bootstrap dark theme that renders as
 // dark-on-dark, so VibeUI remaps those to Bootstrap's theme variables. Real browser
@@ -17,7 +23,8 @@ describe('VibeFormWysiwyg colour-mode awareness', () => {
         modelValue: '<p>Hello</p>',
         toolbar: [[{ header: [1, 2, 3, false] }], ['bold', 'italic']],
         mobileToolbar: [[{ header: [1, 2, 3, false] }], ['bold', 'italic']]
-      }
+      },
+      ...wysiwygProvide
     })
     const container = await vi.waitFor(() => {
       const el = screen.container.querySelector('.vibe-wysiwyg-container') as HTMLElement | null

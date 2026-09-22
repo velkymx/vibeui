@@ -428,3 +428,19 @@ describe('VibeAutocomplete', () => {
     })
   })
 })
+
+describe('VibeAutocomplete $attrs passthrough', () => {
+  it('forwards aria-label / name / data-* to the combobox input, not the wrapper', () => {
+    const wrapper = mount(VibeAutocomplete, { props: { source: [] }, attrs: { 'aria-label': 'Search', name: 'q', 'data-testid': 'ac' } })
+    const input = wrapper.find('input')
+    expect(input.attributes('aria-label')).toBe('Search')
+    expect(input.attributes('name')).toBe('q')
+    expect(input.attributes('data-testid')).toBe('ac')
+    expect(wrapper.find('.vibe-autocomplete').attributes('name')).toBeUndefined()
+  })
+  it('merges consumer class onto the input', () => {
+    const wrapper = mount(VibeAutocomplete, { props: { source: [] }, attrs: { class: 'custom' } })
+    expect(wrapper.find('input').classes()).toContain('custom')
+    expect(wrapper.find('input').classes()).toContain('form-control')
+  })
+})

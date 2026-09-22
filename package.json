@@ -5,6 +5,7 @@
   "main": "./dist/vibeui.umd.js",
   "module": "./dist/vibeui.es.js",
   "types": "./dist/src/index.d.ts",
+  "style": "./dist/vibeui.css",
   "sideEffects": [
     "**/*.css"
   ],
@@ -14,6 +15,8 @@
       "import": "./dist/vibeui.es.js",
       "require": "./dist/vibeui.umd.js"
     },
+    "./style.css": "./dist/vibeui.css",
+    "./dist/vibeui.css": "./dist/vibeui.css",
     "./dist/style.css": "./dist/vibeui.css"
   },
   "files": [
@@ -31,6 +34,7 @@
     "test": "vitest --project unit",
     "test:ui": "vitest --ui --project unit",
     "test:run": "vitest run --project unit",
+    "test:types": "vue-tsc --noEmit -p tsconfig.types.json",
     "test:coverage": "vitest run --project unit --coverage",
     "test:browser": "vitest run --project browser",
     "test:all": "vitest run",

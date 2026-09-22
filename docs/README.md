@@ -7,6 +7,8 @@ Complete documentation for VibeUI - A modern Vue 3 UI component library built wi
 VibeUI is designed to be simple and lightweight, providing Vue 3 components that wrap Bootstrap 5.3 functionality with a clean, intuitive API.
 
 > **New here?** See the [Starter Template](./getting-started/starter-template.md) for a complete, copy-pasteable minimal app.
+>
+> **Building for real?** Read [Best Practices](./best-practices.md) — how to use VibeUI well (setup, the props+slots API, forms/a11y, optional-peer injection, tree-shaking), with cited sources.
 
 ### Installation
 
@@ -33,6 +35,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import VibeUI, { useColorMode } from '@velkymx/vibeui'
 import 'bootstrap/dist/css/bootstrap.min.css'
+import '@velkymx/vibeui/style.css'   // VibeUI's own component styles
 
 // Restore saved color mode preference before mounting
 const { initColorMode } = useColorMode()
@@ -40,6 +43,10 @@ initColorMode()
 
 createApp(App).use(VibeUI).mount('#app')
 ```
+
+### Stylesheet
+
+The canonical import for VibeUI's own styles is **`@velkymx/vibeui/style.css`**. It maps to the shipped `dist/vibeui.css`. The full path `@velkymx/vibeui/dist/vibeui.css` also works, as does the legacy `@velkymx/vibeui/dist/style.css` alias (kept for back-compat). Bootstrap's CSS is separate and you import it yourself, as shown above.
 
 ### Bootstrap JavaScript
 
@@ -64,6 +71,7 @@ The library handles:
 - [VibeButton](./components/core/button.md)
 - [VibeButtonGroup](./components/core/button-group.md)
 - [VibeCloseButton](./components/core/close-button.md)
+- [VibeIcon](./components/core/icon.md)
 - [VibeLink](./components/core/link.md)
 - [VibePlaceholder](./components/core/placeholder.md)
 - [VibeSkeleton](./components/core/skeleton.md)
