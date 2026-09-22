@@ -7,6 +7,8 @@ Complete documentation for VibeUI - A modern Vue 3 UI component library built wi
 VibeUI is designed to be simple and lightweight, providing Vue 3 components that wrap Bootstrap 5.3 functionality with a clean, intuitive API.
 
 > **New here?** See the [Starter Template](./getting-started/starter-template.md) for a complete, copy-pasteable minimal app.
+>
+> **Building for real?** Read [Best Practices](./best-practices.md) — how to use VibeUI well (setup, the props+slots API, forms/a11y, optional-peer injection, tree-shaking), with cited sources.
 
 ### Installation
 
