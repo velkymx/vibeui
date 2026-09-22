@@ -76,7 +76,7 @@ function redraw() {
   )
 }
 
-useChartResize(containerEl, canvasEl, (w, h) => {
+useChartResize(containerEl, (w, h) => {
   currentW = w
   currentH = h
   redraw()

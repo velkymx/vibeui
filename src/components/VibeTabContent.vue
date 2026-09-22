@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type PropType } from 'vue'
+import { type PropType } from 'vue'
 import type { Tag, TabPane } from '../types'
 
 const props = defineProps({

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, inject, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
 import { useFormField } from '../composables/useFormField'
 import type { Size, ValidationState } from '../types'
 
@@ -36,7 +36,6 @@ defineOptions({ inheritAttrs: false })
 // VibeFormGroup's id when present, and defer label/help/feedback rendering to
 // the group so they aren't duplicated.
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,

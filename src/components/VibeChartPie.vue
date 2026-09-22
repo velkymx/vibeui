@@ -57,7 +57,7 @@ function redraw() {
   drawPie(ctx, props.data, currentW, currentH, resolvedColors.value)
 }
 
-useChartResize(containerEl, canvasEl, (w, h) => {
+useChartResize(containerEl, (w, h) => {
   currentW = w
   currentH = h
   redraw()
