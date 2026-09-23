@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { BreadcrumbItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 import { linkBindings } from '../utils/linkBindings'

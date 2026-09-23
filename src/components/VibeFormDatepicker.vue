@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -39,6 +39,10 @@ const props = defineProps({
   type: { type: String as () => 'date' | 'time' | 'datetime-local' | 'month' | 'week', default: 'date' }
 })
 
+// Consumer attributes (aria-label, name, data-*, class) belong on the native
+// control, not the wrapper <div>. Mirrors VibeFormInput/VibeFormSelect.
+defineOptions({ inheritAttrs: false })
+
 const emit = defineEmits<{
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
@@ -49,7 +53,6 @@ const emit = defineEmits<{
 
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,
@@ -96,6 +99,7 @@ const handleFocus = (event: FocusEvent) => {
       <span v-if="required" class="text-danger">*</span>
     </label>
     <input
+      v-bind="$attrs"
       :id="computedId"
       :type="type"
       :class="inputClass"

@@ -14,8 +14,8 @@ A hero / banner section. Renders a `<section>` with consistent padding, an inner
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `variant` | `Variant` | `undefined` | Background color → `bg-{variant}` (same vocabulary as `VibeCard`) |
-| `textVariant` | `Variant` | `undefined` | Text color → `text-{variant}` |
+| `variant` | `Variant` | `undefined` | Background color. With no `textVariant`, renders `text-bg-{variant}` so the foreground is contrast-correct by default; with a `textVariant`, renders `bg-{variant}` + `text-{textVariant}`. |
+| `textVariant` | `Variant` | `undefined` | Explicit text color → `text-{variant}` (overrides the contrast-correct default). |
 | `border` | `Variant` | `undefined` | Adds `border border-{variant} rounded-3` (the bordered-hero pattern) |
 | `align` | `'start' \| 'center' \| 'end'` | `'center'` | Content alignment → `text-{align}` |
 | `fluid` | `Boolean \| ContainerType` | `false` | Inner container width (same vocabulary as `VibeContainer`) |

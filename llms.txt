@@ -33,7 +33,8 @@ npm install @velkymx/vibeui bootstrap
 // main.ts
 import { createApp } from 'vue'
 import VibeUI, { useColorMode } from '@velkymx/vibeui'
-import 'bootstrap/dist/css/bootstrap.min.css'   // YOU import the CSS
+import 'bootstrap/dist/css/bootstrap.min.css'   // YOU import Bootstrap's CSS
+import '@velkymx/vibeui/style.css'              // …and VibeUI's own component styles
 import App from './App.vue'
 
 useColorMode().initColorMode()                   // restore saved light/dark/auto before first render
@@ -67,7 +68,7 @@ createApp(App).use(VibeUI).mount('#app')         // registers every component + 
 
 ### Read the doc first
 
-A component's exact props/events/slots live in its doc page (Documentation Index, bottom). **Read it before building — do not guess props or reverse-engineer from `dist/`.** The documented API is the source of truth.
+A component's exact props/events/slots live in its doc page (Documentation Index, bottom). **Read it before building — do not guess props or reverse-engineer from `dist/`.** The documented API is the source of truth. For cross-cutting guidance (setup, props+slots, forms/a11y, optional-peer injection, tree-shaking), see [Best Practices](https://github.com/velkymx/vibeui/blob/main/docs/best-practices.md).
 
 ### Common mistakes — do NOT do these
 
@@ -106,7 +107,7 @@ what is non-obvious; the linked doc page (Documentation Index, bottom) is the AP
 
 **Pointer / DnD:** `VibeSortable` (single-list reorder) · `VibeDraggable` + `VibeDroppable` (cross-list) · `VibeResizable` · `VibeSlider` (single + range)
 
-**Forms:** `VibeFormGroup` (auto-links label/id/aria) · `VibeFormInput` · `VibeFormSelect` (`:options`, typed primitive values) · `VibeFormTextarea` · `VibeFormCheckbox` · `VibeFormRadio` · `VibeFormSwitch` · `VibeFormSpinbutton` · `VibeFormDatepicker` (native `<input type=date>`) · `VibeDatePicker` (custom calendar popover, range + keyboard nav) · `VibeAutocomplete` (sync or async source) · `VibeFileInput` (drag-drop, accept enforcement) · `VibeFormWysiwyg` (Quill 2.x) · `VibeInputGroup` · `VibeFormErrorSummary`
+**Forms:** `VibeFormGroup` (auto-links label/id/aria) · `VibeFormInput` · `VibeFormSelect` (`:options`, typed primitive values) · `VibeFormTextarea` · `VibeFormCheckbox` · `VibeFormRadio` · `VibeFormSwitch` · `VibeFormSpinbutton` · `VibeFormDatepicker` (native `<input type=date>`) · `VibeDatePicker` (custom calendar popover, range + keyboard nav) · `VibeAutocomplete` (sync or async source) · `VibeFileInput` (drag-drop, accept enforcement) · `VibeFormWysiwyg` (Quill 2.x; inject `quillLoader`+`sanitizer` via `app.use(VibeUI,{wysiwyg})` or props) · `VibeInputGroup` · `VibeFormErrorSummary`
 
 **Composables:** `useColorMode` · `useForm` · `useFormValidation` · `useToast` · `useBreakpoints` · `usePosition` · `useBackButton` · `useId`
 
@@ -627,7 +628,7 @@ All charts are responsive via `ResizeObserver`, render at device pixel ratio for
 - Does not bundle Bootstrap CSS or JS
 - Does not require Bootstrap Icons (optional peer dep for `VibeIcon`)
 - Does not require Vue Router — but the `to` prop renders a `router-link`, so it only resolves in an app that has installed the router. `href` never needs it.
-- Does not require QuillJS or DOMPurify — both are optional peers used only by `VibeFormWysiwyg`, imported lazily on mount and never bundled. Without `quill` the editor renders a warning alert and emits `component-error`; without `dompurify` it works but skips VibeUI's sanitizing pass. Every other component is unaffected.
+- Does not require QuillJS or DOMPurify — both are optional peers used only by `VibeFormWysiwyg`, and **the library never imports them** (dist has zero `quill`/`dompurify` references, so no bundler warnings/errors even under warnings-as-errors). The consumer injects them: `app.use(VibeUI, { wysiwyg: { quillLoader: () => import('quill'), sanitizer: makeDomPurifySanitizer(DOMPurify) } })` (or the `:quill-loader` / `:sanitizer` props), and imports `quill/dist/quill.snow.css`. Without a `quillLoader` the editor renders a warning alert and emits `component-error`; without a `sanitizer` it works but skips the sanitizing pass. Every other component is unaffected.
 - Does not provide a theme system beyond Bootstrap's `data-bs-theme` color modes
 
 ## Documentation Index
@@ -640,7 +641,7 @@ These pages ship inside the npm package under `docs/`, so you can read them stra
 
 **Layout:** [VibeContainer](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/container.md) · [VibeRow](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/row.md) · [VibeCol](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/col.md)
 
-**Core:** [VibeAlert](https://github.com/velkymx/vibeui/blob/main/docs/components/core/alert.md) · [VibeBadge](https://github.com/velkymx/vibeui/blob/main/docs/components/core/badge.md) · [VibeButton](https://github.com/velkymx/vibeui/blob/main/docs/components/core/button.md) · [VibeButtonGroup](https://github.com/velkymx/vibeui/blob/main/docs/components/core/button-group.md) · [VibeCloseButton](https://github.com/velkymx/vibeui/blob/main/docs/components/core/close-button.md) · [VibeLink](https://github.com/velkymx/vibeui/blob/main/docs/components/core/link.md) · [VibePlaceholder](https://github.com/velkymx/vibeui/blob/main/docs/components/core/placeholder.md) · [VibeSkeleton](https://github.com/velkymx/vibeui/blob/main/docs/components/core/skeleton.md) · [VibeSpinner](https://github.com/velkymx/vibeui/blob/main/docs/components/core/spinner.md)
+**Core:** [VibeAlert](https://github.com/velkymx/vibeui/blob/main/docs/components/core/alert.md) · [VibeBadge](https://github.com/velkymx/vibeui/blob/main/docs/components/core/badge.md) · [VibeButton](https://github.com/velkymx/vibeui/blob/main/docs/components/core/button.md) · [VibeButtonGroup](https://github.com/velkymx/vibeui/blob/main/docs/components/core/button-group.md) · [VibeCloseButton](https://github.com/velkymx/vibeui/blob/main/docs/components/core/close-button.md) · [VibeIcon](https://github.com/velkymx/vibeui/blob/main/docs/components/core/icon.md) · [VibeLink](https://github.com/velkymx/vibeui/blob/main/docs/components/core/link.md) · [VibePlaceholder](https://github.com/velkymx/vibeui/blob/main/docs/components/core/placeholder.md) · [VibeSkeleton](https://github.com/velkymx/vibeui/blob/main/docs/components/core/skeleton.md) · [VibeSpinner](https://github.com/velkymx/vibeui/blob/main/docs/components/core/spinner.md)
 
 **Card / Hero / List:** [VibeCard](https://github.com/velkymx/vibeui/blob/main/docs/components/card/card.md) · [VibeHero](https://github.com/velkymx/vibeui/blob/main/docs/components/hero/hero.md) · [VibeListGroup](https://github.com/velkymx/vibeui/blob/main/docs/components/list/list-group.md)
 

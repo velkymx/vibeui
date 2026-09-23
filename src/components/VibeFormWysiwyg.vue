@@ -5,7 +5,8 @@ import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
 import { useFormField } from '../composables/useFormField'
 import { useBreakpoints } from '../composables/useBreakpoints'
-import { loadDOMPurify, sanitizeHtml } from '../utils/sanitizeHtml'
+import { VIBE_WYSIWYG_KEY } from '../composables/wysiwygConfig'
+import type { QuillLoader, Sanitizer } from '../types'
 import { safeLength } from '../utils/safeCss'
 
 interface QuillInstance {
@@ -48,7 +49,12 @@ const props = defineProps({
   validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
   validateOn: { type: String as PropType<'change' | 'blur'>, default: 'blur' },
   helpText: { type: String, default: undefined },
-  height: { type: String, default: '200px' }
+  height: { type: String, default: '200px' },
+  // Consumer-provided Quill loader / sanitizer. Override the app-level config
+  // set via app.use(VibeUI, { wysiwyg: { ... } }). The library never imports
+  // quill or dompurify itself.
+  quillLoader: { type: Function as PropType<QuillLoader>, default: undefined },
+  sanitizer: { type: Function as PropType<Sanitizer>, default: undefined }
 })
 
 const emit = defineEmits<{
@@ -62,11 +68,9 @@ const emit = defineEmits<{
 }>()
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,
-  ariaDescribedBy,
   shouldRenderLabel,
   shouldRenderFeedback,
   shouldRenderHelp
@@ -74,6 +78,28 @@ const {
 
 const safeMinHeight = computed(() => safeLength(props.height) ?? '200px')
 const { isMobile } = useBreakpoints()
+
+// WYSIWYG peers resolve prop → app-provided → none. The library imports neither
+// quill nor dompurify, so its dist has no optional-peer specifier for a bundler
+// to resolve (avoids "Can't resolve" warnings/errors in strict builds).
+const injectedWysiwyg = inject(VIBE_WYSIWYG_KEY, null)
+const resolveQuillLoader = (): QuillLoader | undefined =>
+  props.quillLoader ?? injectedWysiwyg?.quillLoader
+let warnedNoSanitizer = false
+const resolveSanitizer = (): Sanitizer => {
+  const s = props.sanitizer ?? injectedWysiwyg?.sanitizer
+  if (s) return s
+  if (import.meta.env.DEV && !warnedNoSanitizer) {
+    warnedNoSanitizer = true
+    console.warn(
+      '[VibeFormWysiwyg] No sanitizer provided — HTML is passed to Quill unsanitized ' +
+      "(Quill's Delta conversion is the only backstop). Provide one via " +
+      'app.use(VibeUI, { wysiwyg: { sanitizer: makeDomPurifySanitizer(DOMPurify) } }) ' +
+      'or the :sanitizer prop.'
+    )
+  }
+  return (html: string) => html
+}
 
 
 const editorContainer = ref<HTMLElement | null>(null)
@@ -177,7 +203,7 @@ const setQuillContent = (html: string) => {
   // selection.normalizedToRange when the input format includes a wrapping
   // <p>. Convert the HTML to a Delta and atomically replace via setContents
   // — this is the supported path and emits a single text-change.
-  const clean = sanitizeHtml(html || '')
+  const clean = resolveSanitizer()(html || '')
   const delta = quillInstance.value.clipboard.convert({ html: clean })
   quillInstance.value.setContents(delta, 'silent')
   isUpdatingFromProp.value = false
@@ -189,7 +215,7 @@ const getQuillContent = (): string => {
   if (text.length === 0) return ''
   // Sanitize the output from Quill before emitting — defense-in-depth against any
   // XSS that survives Quill's own Delta allowlist conversion.
-  return sanitizeHtml(quillInstance.value.getSemanticHTML())
+  return resolveSanitizer()(quillInstance.value.getSemanticHTML())
 }
 
 const updateAriaAttributes = () => {
@@ -210,19 +236,27 @@ const initQuill = async () => {
   if (initInFlight) return
   initInFlight = true
   loadError.value = null
-  // Start loading the sanitizer immediately, in parallel with Quill and independent of
-  // its resolution — the sanitizer must be ready before any modelValue HTML is set, and
-  // kicking it off here (not after the Quill import) keeps that guarantee deterministic.
-  const purifyReady = loadDOMPurify()
-  try {
-    const QuillModule = await import('quill')
-    const Quill = QuillModule.default || QuillModule
-    await Promise.all([
-      import('quill/dist/quill.snow.css'),
-      purifyReady
-    ])
 
-    // Guard: component may have unmounted while the imports were in-flight.
+  const loader = resolveQuillLoader()
+  if (!loader) {
+    loadError.value =
+      'VibeFormWysiwyg needs a Quill loader. Install quill and its snow theme ' +
+      'CSS, then provide a loader through the wysiwyg plugin option or the ' +
+      'quill-loader prop. See the VibeFormWysiwyg docs for the exact snippet.'
+    emit('component-error', {
+      message: loadError.value,
+      componentName: 'VibeFormWysiwyg',
+      originalError: new Error('No quillLoader provided')
+    })
+    initInFlight = false
+    return
+  }
+
+  try {
+    const QuillModule = await loader() as { default?: unknown }
+    const Quill = (QuillModule.default ?? QuillModule) as new (el: HTMLElement, opts: unknown) => unknown
+
+    // Guard: component may have unmounted while the loader was in-flight.
     if (!editorContainer.value || isUnmounted) return
 
     if (editorContainer.value) {
@@ -283,10 +317,12 @@ const initQuill = async () => {
     if (import.meta.env.DEV) {
       console.warn('[VibeFormWysiwyg] Failed to load Quill editor:', error)
     }
-    loadError.value = 'Failed to load WYSIWYG editor. Please install quill: npm install quill'
+    loadError.value =
+      'Failed to load Quill. Ensure quill is installed and the provided ' +
+      'quill-loader resolves it. See the VibeFormWysiwyg docs.'
     isQuillLoaded.value = false
     emit('component-error', {
-      message: 'Quill not loaded. Install quill: npm install quill',
+      message: loadError.value,
       componentName: 'VibeFormWysiwyg',
       originalError: error
     })

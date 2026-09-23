@@ -21,6 +21,7 @@ Checkbox for a single boolean value or as part of a grouped multi-select (array 
 | `validationRules` | `ValidationRule[] \| ValidatorFunction` | `undefined` | Rules carried for use with a validation composable. |
 | `validateOn` | `'change' \| 'blur'` | `'change'` | When the `validate` event fires. |
 | `helpText` | `string` | `undefined` | Help text below the checkbox. |
+| `noWrapper` | `boolean` | `false` | Render only the bare checkbox `<input>` (no `.form-check` wrapper, label or feedback). Use when the checkbox must be a direct flex/grid child or an aria-only control (pass `aria-label`). |
 
 ## Events
 

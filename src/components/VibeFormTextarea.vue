@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -29,7 +29,10 @@ const props = defineProps({
   validateOn: { type: String as PropType<'input' | 'blur' | 'change'>, default: 'blur' },
   helpText: { type: String, default: undefined },
   noResize: { type: Boolean, default: false },
-  showCharCount: { type: Boolean, default: false }
+  showCharCount: { type: Boolean, default: false },
+  // Render only the bare <textarea> (no wrapper <div>, label, char count or
+  // feedback), so it can be a direct flex child (e.g. an auto-grow composer).
+  noWrapper: { type: Boolean, default: false }
 })
 
 const emit = defineEmits<{
@@ -42,7 +45,6 @@ const emit = defineEmits<{
 
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,
@@ -90,7 +92,7 @@ const handleFocus = (event: FocusEvent) => {
 </script>
 
 <template>
-  <div :class="{ 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }">
+  <div v-if="!noWrapper" :class="{ 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }">
     <label v-if="shouldRenderLabel" :for="computedId" class="form-label">
       {{ label }}
       <span v-if="required" class="text-danger">*</span>
@@ -132,4 +134,25 @@ const handleFocus = (event: FocusEvent) => {
       :show-feedback="shouldRenderFeedback"
     />
   </div>
+
+  <textarea
+    v-else
+    v-bind="$attrs"
+    :id="computedId"
+    :class="textareaClass"
+    :style="textareaStyle"
+    :value="modelValue"
+    :placeholder="placeholder"
+    :rows="rows"
+    :maxlength="maxlength"
+    :disabled="disabled"
+    :readonly="readonly"
+    :required="required"
+    :aria-invalid="validationState === 'invalid'"
+    :aria-describedby="ariaDescribedBy"
+    @input="handleInput"
+    @change="handleChange"
+    @blur="handleBlur"
+    @focus="handleFocus"
+  ></textarea>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -41,6 +41,10 @@ const props = defineProps({
   vertical: { type: Boolean, default: false }
 })
 
+// Consumer attributes (aria-label, name, data-*, class) belong on the native
+// control, not the wrapper <div>. Mirrors VibeFormInput/VibeFormSelect.
+defineOptions({ inheritAttrs: false })
+
 const emit = defineEmits<{
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
@@ -53,7 +57,6 @@ const emit = defineEmits<{
 
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,
@@ -200,6 +203,7 @@ const decrement = () => {
         <span aria-hidden="true">−</span>
       </button>
       <input
+        v-bind="$attrs"
         :id="computedId"
         type="number"
         :class="inputClass"

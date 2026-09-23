@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -24,6 +24,10 @@ const props = defineProps({
   reverse: { type: Boolean, default: false }
 })
 
+// Consumer attributes (aria-label, name, data-*, class) belong on the native
+// control, not the wrapper <div>. Mirrors VibeFormInput/VibeFormSelect.
+defineOptions({ inheritAttrs: false })
+
 const emit = defineEmits<{
   (e: 'validate'): void
   (e: 'blur', event: FocusEvent): void
@@ -33,7 +37,6 @@ const emit = defineEmits<{
 
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,
@@ -78,6 +81,7 @@ const handleFocus = (event: FocusEvent) => {
 <template>
   <div :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
     <input
+      v-bind="$attrs"
       :id="computedId"
       type="radio"
       :class="inputClass"

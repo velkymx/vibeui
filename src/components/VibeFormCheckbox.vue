@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, inject, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 const modelValue = defineModel<boolean | string | number | (string | number | boolean)[]>({ default: false })
+
+// Consumer attributes (aria-label, name, data-*, class, …) belong on the native
+// checkbox <input>, not the .form-check wrapper <div> — otherwise a label
+// association or aria-label targets the wrapper, not the control (a11y regression).
+// Auto-inheritance is disabled and $attrs is bound explicitly on the input (first,
+// so prop-driven bindings like :id/:class win).
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps({
   value: { type: [String, Number, Boolean], default: true },
@@ -22,7 +29,10 @@ const props = defineProps({
   validationRules: { type: [Array, Function] as PropType<ValidationRule[] | ValidatorFunction>, default: undefined },
   validateOn: { type: String as PropType<'change' | 'blur'>, default: 'change' },
   helpText: { type: String, default: undefined },
-  reverse: { type: Boolean, default: false }
+  reverse: { type: Boolean, default: false },
+  // Render only the bare checkbox <input> (no .form-check wrapper, label or
+  // feedback), so it can be a direct flex/grid child or an aria-only control.
+  noWrapper: { type: Boolean, default: false }
 })
 
 const emit = defineEmits<{
@@ -34,7 +44,6 @@ const emit = defineEmits<{
 
 
 const {
-  formGroup,
   computedId,
   helpId,
   feedbackId,
@@ -105,9 +114,10 @@ watch(() => props.indeterminate, (val) => {
 </script>
 
 <template>
-  <div :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
+  <div v-if="!noWrapper" :class="[containerClass, { 'mb-3': shouldRenderLabel || shouldRenderHelp || shouldRenderFeedback }]">
     <input
       ref="inputRef"
+      v-bind="$attrs"
       :id="computedId"
       type="checkbox"
       :class="inputClass"
@@ -135,4 +145,21 @@ watch(() => props.indeterminate, (val) => {
       :show-feedback="shouldRenderFeedback"
     />
   </div>
+
+  <input
+    v-else
+    ref="inputRef"
+    v-bind="$attrs"
+    :id="computedId"
+    type="checkbox"
+    :class="inputClass"
+    :checked="isChecked"
+    :disabled="disabled"
+    :required="required"
+    :aria-invalid="validationState === 'invalid'"
+    :aria-describedby="ariaDescribedBy"
+    @change="handleChange"
+    @blur="handleBlur"
+    @focus="handleFocus"
+  />
 </template>

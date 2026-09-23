@@ -39,6 +39,7 @@ interface NavItem {
 | `shown` | `event` | Emitted when a tab is fully shown |
 | `hide` | `event` | Emitted when a tab starts hiding |
 | `hidden` | `event` | Emitted when a tab is fully hidden |
+| `component-error` | `ComponentError` | Emitted if the Bootstrap Tab integration fails to initialize (e.g. Bootstrap JS unavailable). |
 
 ## Slots
 

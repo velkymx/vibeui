@@ -2,7 +2,6 @@ import { type Ref, onMounted, onUnmounted } from 'vue'
 
 export function useChartResize(
   container: Ref<HTMLElement | null>,
-  canvas: Ref<HTMLCanvasElement | null>,
   onResize: (w: number, h: number) => void
 ): void {
   let observer: ResizeObserver | null = null

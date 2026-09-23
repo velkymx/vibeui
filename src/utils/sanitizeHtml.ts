@@ -10,38 +10,17 @@ export const WYSIWYG_PURIFY_CONFIG = {
   ALLOWED_ATTR: ['href', 'target', 'rel']
 }
 
-// Resolved once on first call. null = DOMPurify is not installed.
-let _purify: ((html: string) => string) | null = null
-let _loaded = false
-
-export async function loadDOMPurify(): Promise<void> {
-  if (_loaded) return
-  _loaded = true
-  try {
-    const mod = await import('dompurify')
-    const DOMPurify = (mod.default ?? mod) as { sanitize: (html: string, cfg: object) => string }
-    _purify = (html: string) => DOMPurify.sanitize(html, WYSIWYG_PURIFY_CONFIG)
-  } catch {
-    if (import.meta.env.DEV) {
-      console.warn(
-        '[VibeFormWysiwyg] DOMPurify not installed — HTML modelValue is passed ' +
-        'unsanitized to Quill. Run: npm install dompurify'
-      )
-    }
-  }
+/** Minimal shape of the DOMPurify export the sanitizer needs. */
+export interface DomPurifyLike {
+  sanitize: (html: string, cfg: object) => string
 }
 
 /**
- * Sanitize an HTML string if DOMPurify is available.
- * Falls back to the original string if DOMPurify is not installed — the caller
- * (Quill's clipboard converter) applies its own Delta-based sanitization regardless.
+ * Build a sanitizer bound to a consumer-provided DOMPurify and the WYSIWYG
+ * allowlist. DOMPurify is an optional peer that the library never imports
+ * itself — keeping it out of the source means the built dist has no
+ * `dompurify` specifier for a consumer's bundler to resolve.
  */
-export function sanitizeHtml(html: string): string {
-  return _purify ? _purify(html) : html
-}
-
-/** Reset state — for use in tests only. */
-export function _resetSanitizer(): void {
-  _purify = null
-  _loaded = false
+export function makeDomPurifySanitizer(dompurify: DomPurifyLike): (html: string) => string {
+  return (html: string) => dompurify.sanitize(html, WYSIWYG_PURIFY_CONFIG)
 }

@@ -65,7 +65,7 @@ function redraw() {
   drawBar(ctx, props.data, currentW, currentH, resolvedColors.value, props.showAxes, props.showGrid, props.stacked)
 }
 
-useChartResize(containerEl, canvasEl, (w, h) => {
+useChartResize(containerEl, (w, h) => {
   currentW = w
   currentH = h
   redraw()
