@@ -6,11 +6,33 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
-## [Unreleased]
+## [1.2.0] — 2026-09-23
 
-### Changed (BREAKING)
+An accessibility and forms hardening release, plus packaging/type-tooling fixes, expanded docs, and a reworked (bundler-safe) WYSIWYG peer model.
 
-- **`VibeFormWysiwyg` no longer imports `quill` or `dompurify` itself — the consumer injects them.** The library's build now contains **zero** references to these optional peers, so a project that never uses the editor gets no `Can't resolve 'quill'/'dompurify'` bundler warnings (which warnings-as-errors builds turn fatal). To use the editor: `import 'quill/dist/quill.snow.css'` in your app and provide a loader (and optional sanitizer) via `app.use(VibeUI, { wysiwyg: { quillLoader: () => import('quill'), sanitizer: makeDomPurifySanitizer(DOMPurify) } })` or the new `:quill-loader` / `:sanitizer` props. New exports: `makeDomPurifySanitizer`, `WYSIWYG_PURIFY_CONFIG`, `VIBE_WYSIWYG_KEY`. Removed: the internal `loadDOMPurify` / `sanitizeHtml` from `src/utils/sanitizeHtml.ts`. See the [VibeFormWysiwyg migration note](docs/forms/form-wysiwyg.md#migration-from-1x).
+### Changed (BREAKING — VibeFormWysiwyg only)
+
+- **`VibeFormWysiwyg` no longer imports `quill` or `dompurify` itself — the consumer injects them.** The build now contains **zero** references to these optional peers, so a project that never uses the editor gets no `Can't resolve 'quill'/'dompurify'` bundler warnings (which warnings-as-errors builds turn fatal — even for non-WYSIWYG apps in 1.1.2). To use the editor: `import 'quill/dist/quill.snow.css'` in your app and provide a loader (and optional sanitizer) via `app.use(VibeUI, { wysiwyg: { quillLoader: () => import('quill'), sanitizer: makeDomPurifySanitizer(DOMPurify) } })` or the new `:quill-loader` / `:sanitizer` props. New exports: `makeDomPurifySanitizer`, `WYSIWYG_PURIFY_CONFIG`, `VIBE_WYSIWYG_KEY`. Removed the internal `loadDOMPurify` / `sanitizeHtml`. See the [migration note](docs/forms/form-wysiwyg.md#migration-from-1x).
+
+### Added
+
+- **`noWrapper` mode on `VibeFormTextarea` and `VibeFormCheckbox`** — render just the bare control (no wrapper `<div>`) for flex/grid layouts, matching `VibeFormInput`.
+- **`textColor` prop on `VibeBadge`** for an explicit foreground override.
+- **`npm run typecheck`** — `vue-tsc` type gate (added `@vue/tsconfig` devDependency); `*.test-d.ts` type-level regression tests via `npm run test:types`.
+- **Docs:** a `VibeIcon` page, a cited **Best Practices** guide, and the `component-error` event documented on `VibeAlert`/`VibeBreadcrumb`/`VibeListGroup`/`VibeNav`/`VibeNavbarNav`.
+
+### Fixed
+
+- **`$attrs` now reach the native control, not the wrapper**, on `VibeFormCheckbox`, `VibeFormRadio`, `VibeFormSwitch`, `VibeFormSpinbutton`, `VibeFormDatepicker`, `VibeAutocomplete` and `VibeDatePicker` — so `aria-label`/`name`/`data-*` associate correctly and native form submission works. ⚠️ Behavior: consumer `class`/`style` now apply to the control.
+- **`VibeBadge` contrast (WCAG 1.4.3)** — non-subtle badges use `.text-bg-{variant}`, fixing white-on-light for `light`/`warning`/`info`. ⚠️ Rendered class changes `bg-{variant}` → `text-bg-{variant}`.
+- **`VibeNavbar` / `VibeHero` contrast** — colored variants derive a contrast-correct foreground (`data-bs-theme` by luminance / `text-bg-{variant}`) instead of dark-on-dark.
+- **`VibeRow tag="form"` now type-checks** — `'form'` added to the shared `Tag` union.
+- **Canonical stylesheet import** — `@velkymx/vibeui/style.css` (and `dist/vibeui.css`) now resolve; previously only a phantom `dist/style.css` was exported.
+- **`VibeCarousel`** type errors (`TS2769`) resolved; unused imports/bindings removed library-wide.
+
+### Package size / internal
+
+- No public API change beyond the items above. The dist no longer bundles or references the optional peers.
 
 ---
 
