@@ -14,7 +14,8 @@ import { useColorMode } from '@velkymx/vibeui'
 
 | Name | Type | Description |
 |---|---|---|
-| `colorMode` | `Ref<ColorMode>` | Reactive current mode. Bind to template or watch for changes. |
+| `colorMode` | `Ref<ColorMode>` | Reactive current mode (`'light' \| 'dark' \| 'auto'`). Bind to template or watch for changes. |
+| `resolvedMode` | `ComputedRef<'light' \| 'dark'>` | The theme the page actually renders: `colorMode` when explicit, or the OS `prefers-color-scheme` when `'auto'`. Reactive to OS changes. Use this when you need to branch on the real theme. |
 | `setColorMode(mode)` | `(mode: ColorMode) => void` | Set a specific mode. Persists to `localStorage` and updates `<html data-bs-theme>`. |
 | `toggleColorMode()` | `() => void` | Cycle through `light → dark → auto → light`. |
 | `initColorMode()` | `() => void` | Restore the saved preference from `localStorage` and attach the system-theme listener. **Call once at app startup, before mount.** Subsequent calls are no-ops while already initialized. |
