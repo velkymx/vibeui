@@ -17,7 +17,8 @@
     },
     "./style.css": "./dist/vibeui.css",
     "./dist/vibeui.css": "./dist/vibeui.css",
-    "./dist/style.css": "./dist/vibeui.css"
+    "./dist/style.css": "./dist/vibeui.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
