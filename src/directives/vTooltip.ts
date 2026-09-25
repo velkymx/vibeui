@@ -74,8 +74,14 @@ const create = async (el: AugmentedElement, opts: TooltipOptions): Promise<void>
 
 const destroy = (el: AugmentedElement): void => {
   const instance = el[INSTANCE_KEY]
-  if (instance) {
+  if (!instance) return
+  try {
     instance.dispose()
+  } catch {
+    // Bootstrap can throw disposing a tooltip whose tip is mid-transition or whose
+    // element is already detached (e.g. a v-if / route change unmounting the host).
+    // Swallow it so teardown never surfaces an error that breaks the page.
+  } finally {
     el[INSTANCE_KEY] = null
   }
 }

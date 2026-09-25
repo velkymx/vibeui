@@ -36,6 +36,10 @@ export interface FormField {
   shouldRenderLabel: ComputedRef<boolean>
   shouldRenderFeedback: ComputedRef<boolean>
   shouldRenderHelp: ComputedRef<boolean>
+  /** Control's own validationState, or the group's when the control has none. */
+  resolvedValidationState: ComputedRef<string | null>
+  validationClass: ComputedRef<string | null>
+  ariaInvalid: ComputedRef<boolean>
 }
 
 /**
@@ -58,11 +62,27 @@ export function useFormField(
   const helpId = computed(() => `${computedId.value}-help`)
   const feedbackId = computed(() => `${computedId.value}-feedback`)
 
-  const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
+  // `.form-check` controls (checkbox/radio/switch) label each option individually,
+  // so they must keep their own label even inside a labelled VibeFormGroup — the
+  // group label titles the set, not each option. Single-line controls defer to it.
+  const ownsLabel = prefix === 'checkbox' || prefix === 'radio' || prefix === 'switch'
+  const shouldRenderLabel = computed(() => !!props.label && (ownsLabel || !formGroup?.hasLabel.value))
   const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
   const shouldRenderHelp = computed(
     () => (!!props.helpText || !!options.extraHelp?.()) && !formGroup?.hasHelp.value
   )
+
+  // A control adopts the group's validation state when it has none of its own,
+  // so `<VibeFormGroup :validation-state>` marks the wrapped control invalid/valid.
+  const resolvedValidationState = computed<string | null>(
+    () => props.validationState ?? (formGroup?.hasValidation.value ? formGroup.validationState.value : null)
+  )
+  const validationClass = computed<string | null>(() =>
+    resolvedValidationState.value === 'valid' ? 'is-valid'
+      : resolvedValidationState.value === 'invalid' ? 'is-invalid'
+        : null
+  )
+  const ariaInvalid = computed(() => resolvedValidationState.value === 'invalid')
 
   // WCAG 1.3.1 / 3.3.1: describe the control with its own help and feedback *and*
   // with the group's, since the common pattern puts those props on VibeFormGroup.
@@ -85,6 +105,9 @@ export function useFormField(
     ariaDescribedBy,
     shouldRenderLabel,
     shouldRenderFeedback,
-    shouldRenderHelp
+    shouldRenderHelp,
+    resolvedValidationState,
+    validationClass,
+    ariaInvalid
   }
 }

@@ -6,6 +6,23 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
+## [1.2.1] - 2026-09-25
+
+A patch release covering consumer-reported bug fixes to packaging, forms, tabs, the tooltip directive, and navbar color-mode consistency. No API changes.
+
+### Fixed
+
+- **`types` / `exports` now point at the real `./dist/index.d.ts`.** 1.2.0 shipped a phantom `./dist/src/index.d.ts`, so TypeScript consumers received no types for the package. (#64)
+- **`@velkymx/vibeui/package.json` is now importable.** Added the `"./package.json"` exports entry; previously reading the manifest threw `ERR_PACKAGE_PATH_NOT_EXPORTED`, breaking tooling that inspects a dependency's `package.json`. (#87)
+- **`VibeTabs` renders the initially-active tab under `lazy` + `v-model`.** The tab named by `modelValue` at mount now renders instead of staying blank until first click. (#67)
+- **`VibeFormSelect` updates the model on `change`, not only `input`.** Selection changes commit reliably across browsers. (#73)
+- **`VibeFormGroup` `validation-state` marks the wrapped control.** The group's state now applies `is-valid` / `is-invalid` and `aria-invalid` to the native control, not just the wrapper. (#68)
+- **Radio, checkbox, and switch keep their own label inside a labelled `VibeFormGroup`.** The control's own `label` is no longer suppressed by the group label. (#69)
+- **`v-tooltip` unmount no longer surfaces an error.** `dispose()` is guarded so tearing down a tooltip'd element never throws, for example when Bootstrap JS has already cleaned it up. (#66)
+- **`VibeNavbar` follows the page color mode by default.** With no `variant`, the navbar inherits the page's `data-bs-theme` for consistency with the other components, instead of forcing a light bar. (#72)
+
+---
+
 ## [1.2.0] — 2026-09-23
 
 An accessibility and forms hardening release, plus packaging/type-tooling fixes, expanded docs, and a reworked (bundler-safe) WYSIWYG peer model.

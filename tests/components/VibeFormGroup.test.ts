@@ -292,3 +292,23 @@ describe('VibeFormGroup', () => {
     expect(contentDiv.html()).toContain('<input class="form-control"')
   })
 })
+
+describe('VibeFormGroup validation-state marks the child control (issue #68)', () => {
+  it('applies is-invalid to the wrapped control when the group is invalid', () => {
+    const wrapper = mount(VibeFormGroup, {
+      props: { label: 'Email', validationState: 'invalid', validationMessage: 'Bad' },
+      slots: { default: `<VibeFormInput />` },
+      global: { components: { VibeFormInput } }
+    })
+    expect(wrapper.find('input').classes()).toContain('is-invalid')
+    expect(wrapper.find('input').attributes('aria-invalid')).toBe('true')
+  })
+  it("a control's own validationState still wins over the group", () => {
+    const wrapper = mount(VibeFormGroup, {
+      props: { label: 'Email', validationState: 'invalid' },
+      slots: { default: `<VibeFormInput validation-state="valid" />` },
+      global: { components: { VibeFormInput } }
+    })
+    expect(wrapper.find('input').classes()).toContain('is-valid')
+  })
+})

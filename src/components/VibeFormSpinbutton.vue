@@ -63,14 +63,15 @@ const {
   ariaDescribedBy,
   shouldRenderLabel,
   shouldRenderFeedback,
-  shouldRenderHelp
+  shouldRenderHelp,
+  validationClass,
+  ariaInvalid
 } = useFormField('spinbutton', props)
 
 const inputClass = computed(() => {
   const classes = ['form-control']
   if (props.size) classes.push(`form-control-${props.size}`)
-  if (props.validationState === 'valid') classes.push('is-valid')
-  if (props.validationState === 'invalid') classes.push('is-invalid')
+  if (validationClass.value) classes.push(validationClass.value)
   return classes.join(' ')
 })
 
@@ -214,7 +215,7 @@ const decrement = () => {
         :min="min"
         :max="max"
         :step="safeStep"
-        :aria-invalid="validationState === 'invalid'"
+        :aria-invalid="ariaInvalid"
         :aria-describedby="ariaDescribedBy"
         @input="handleInput"
         @change="handleChange"

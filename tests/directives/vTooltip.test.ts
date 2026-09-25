@@ -240,3 +240,24 @@ describe('v-vibe-tooltip directive', () => {
     })
   })
 })
+
+describe('v-vibe-tooltip unmount safety (issue #66)', () => {
+  it('does not surface an error when Bootstrap dispose() throws on unmount', async () => {
+    // Vue swallows a throw in beforeUnmount and routes it to app.config.errorHandler,
+    // so we assert that handler is never invoked (a page-breaking error otherwise).
+    const errorHandler = vi.fn()
+    const Component = defineComponent({
+      directives: { 'vibe-tooltip': vTooltip },
+      template: '<button v-vibe-tooltip="\'Tip\'">x</button>'
+    })
+    const wrapper = mount(Component, { global: { config: { errorHandler } } })
+    await flushAsync()
+    // Bootstrap's dispose can throw when the tip is mid-transition / detached.
+    // Use the most recent instance (this describe has no mock-clearing beforeEach).
+    const results = vi.mocked(bootstrap.Tooltip).mock.results
+    const instance = results[results.length - 1].value
+    instance.dispose = () => { throw new Error('dispose boom') }
+    wrapper.unmount()
+    expect(errorHandler).not.toHaveBeenCalled()
+  })
+})

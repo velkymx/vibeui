@@ -1,23 +1,24 @@
 {
   "name": "@velkymx/vibeui",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A lightweight Vue 3 component library for Bootstrap 5.3 with dual-mode support (shorthand props and composable slots)",
   "main": "./dist/vibeui.umd.js",
   "module": "./dist/vibeui.es.js",
-  "types": "./dist/src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "style": "./dist/vibeui.css",
   "sideEffects": [
     "**/*.css"
   ],
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/vibeui.es.js",
       "require": "./dist/vibeui.umd.js"
     },
     "./style.css": "./dist/vibeui.css",
     "./dist/vibeui.css": "./dist/vibeui.css",
-    "./dist/style.css": "./dist/vibeui.css"
+    "./dist/style.css": "./dist/vibeui.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
