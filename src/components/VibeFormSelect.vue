@@ -77,8 +77,7 @@ const selectClass = computed(() => {
   return classes.join(' ')
 })
 
-const handleInput = (event: Event) => {
-  const target = event.target as HTMLSelectElement
+const syncModelFromSelect = (target: HTMLSelectElement) => {
   let newValue: FormSelectOptionValue | FormSelectOptionValue[]
   if (props.multiple) {
     newValue = Array.from(target.selectedOptions).map(readOptionValue)
@@ -88,6 +87,10 @@ const handleInput = (event: Event) => {
     newValue = selected ? readOptionValue(selected) : ''
   }
   modelValue.value = newValue
+}
+
+const handleInput = (event: Event) => {
+  syncModelFromSelect(event.target as HTMLSelectElement)
 }
 
 // Selection cannot be expressed by binding `value` on the <select>: that value is a
@@ -142,6 +145,10 @@ watch(
 )
 
 const handleChange = (event: Event) => {
+  // Also sync on `change` so a programmatic change (or a test dispatching only
+  // `change`) updates the model. On user interaction `input` fires first, so this
+  // sets the same value and defineModel does not re-emit.
+  syncModelFromSelect(event.target as HTMLSelectElement)
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }

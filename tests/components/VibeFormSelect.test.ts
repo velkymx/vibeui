@@ -594,3 +594,22 @@ describe('VibeFormSelect', () => {
     })
   })
 })
+
+describe('VibeFormSelect updates on change (issue #73)', () => {
+  it('updates v-model when only a change event is dispatched (programmatic)', async () => {
+    const wrapper = mount(VibeFormSelect, {
+      props: {
+        modelValue: 'a',
+        options: [{ value: 'a', text: 'A' }, { value: 'b', text: 'B' }]
+      }
+    })
+    const select = wrapper.find('select').element as HTMLSelectElement
+    select.value = 'b'
+    // dispatch ONLY change (no input) — the usual programmatic/test path
+    select.dispatchEvent(new Event('change'))
+    await wrapper.vm.$nextTick()
+    const emitted = wrapper.emitted('update:modelValue') as unknown[][]
+    expect(emitted).toBeTruthy()
+    expect(emitted[emitted.length - 1][0]).toBe('b')
+  })
+})
