@@ -36,6 +36,10 @@ export interface FormField {
   shouldRenderLabel: ComputedRef<boolean>
   shouldRenderFeedback: ComputedRef<boolean>
   shouldRenderHelp: ComputedRef<boolean>
+  /** Control's own validationState, or the group's when the control has none. */
+  resolvedValidationState: ComputedRef<string | null>
+  validationClass: ComputedRef<string | null>
+  ariaInvalid: ComputedRef<boolean>
 }
 
 /**
@@ -68,6 +72,18 @@ export function useFormField(
     () => (!!props.helpText || !!options.extraHelp?.()) && !formGroup?.hasHelp.value
   )
 
+  // A control adopts the group's validation state when it has none of its own,
+  // so `<VibeFormGroup :validation-state>` marks the wrapped control invalid/valid.
+  const resolvedValidationState = computed<string | null>(
+    () => props.validationState ?? (formGroup?.hasValidation.value ? formGroup.validationState.value : null)
+  )
+  const validationClass = computed<string | null>(() =>
+    resolvedValidationState.value === 'valid' ? 'is-valid'
+      : resolvedValidationState.value === 'invalid' ? 'is-invalid'
+        : null
+  )
+  const ariaInvalid = computed(() => resolvedValidationState.value === 'invalid')
+
   // WCAG 1.3.1 / 3.3.1: describe the control with its own help and feedback *and*
   // with the group's, since the common pattern puts those props on VibeFormGroup.
   // Keyed off what is actually rendered, so an id is never referenced without a
@@ -89,6 +105,9 @@ export function useFormField(
     ariaDescribedBy,
     shouldRenderLabel,
     shouldRenderFeedback,
-    shouldRenderHelp
+    shouldRenderHelp,
+    resolvedValidationState,
+    validationClass,
+    ariaInvalid
   }
 }

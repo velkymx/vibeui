@@ -73,7 +73,9 @@ const {
   feedbackId,
   shouldRenderLabel,
   shouldRenderFeedback,
-  shouldRenderHelp
+  shouldRenderHelp,
+  validationClass,
+  ariaInvalid
 } = useFormField('wysiwyg', props)
 
 const safeMinHeight = computed(() => safeLength(props.height) ?? '200px')
@@ -127,8 +129,7 @@ let textChangeHandler: ((...args: unknown[]) => void) | null = null
 
 const containerClass = computed(() => {
   const classes = ['vibe-wysiwyg-container']
-  if (props.validationState === 'valid') classes.push('is-valid')
-  if (props.validationState === 'invalid') classes.push('is-invalid')
+  if (validationClass.value) classes.push(validationClass.value)
   if (props.disabled) classes.push('disabled')
   return classes.join(' ')
 })
@@ -221,7 +222,7 @@ const getQuillContent = (): string => {
 const updateAriaAttributes = () => {
   const root = quillInstance.value?.root
   if (!root) return
-  root.setAttribute('aria-invalid', String(props.validationState === 'invalid'))
+  root.setAttribute('aria-invalid', String(ariaInvalid.value))
   const helpAttr = props.helpText ? `${computedId.value}-help` : null
   const feedbackAttr = props.validationMessage ? `${computedId.value}-feedback` : null
   const describedBy = [helpAttr, feedbackAttr].filter(Boolean).join(' ')
@@ -399,7 +400,7 @@ watch(() => props.readonly, (newValue) => {
   }
 })
 
-watch([() => props.validationState, () => props.helpText, () => props.validationMessage], updateAriaAttributes)
+watch([ariaInvalid, () => props.helpText, () => props.validationMessage], updateAriaAttributes)
 
 // Watch for breakpoint changes and re-initialize Quill if the toolbar needs to change.
 // Debounced: a viewport resize can cross the breakpoint repeatedly, and each rebuild is

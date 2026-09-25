@@ -13,7 +13,7 @@ Wrapper that owns a form control's label, help text, validation feedback, and id
 | `label` | `string` | `undefined` | Label text rendered for the first child control. |
 | `labelFor` | `string` | `undefined` | Explicit id to use instead of the auto-generated one. |
 | `required` | `boolean` | `false` | `true` appends a red `*` (aria-hidden) and a visually-hidden "required" span to the label. `false` (default) appends a gray "(optional)" label (aria-hidden). Omit on the child control — the group renders the indicator. |
-| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Render valid/invalid feedback. |
+| `validationState` | `'valid' \| 'invalid' \| null` | `null` | Render valid/invalid feedback, and mark the wrapped control (`is-valid`/`is-invalid` + `aria-invalid`). A control's own `validationState` overrides the group's. |
 | `validationMessage` | `string` | `undefined` | Feedback message text. |
 | `helpText` | `string` | `undefined` | Help text rendered below the control. |
 | `floating` | `boolean` | `false` | Use Bootstrap floating-label layout (`.form-floating`). |

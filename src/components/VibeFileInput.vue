@@ -42,7 +42,9 @@ const {
   ariaDescribedBy,
   shouldRenderLabel,
   shouldRenderFeedback,
-  shouldRenderHelp
+  shouldRenderHelp,
+  validationClass,
+  ariaInvalid
 } = useFormField('file-input', props)
 const isDragging = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -51,8 +53,7 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const inputClass = computed(() => {
   const c = ['form-control']
   if (props.size) c.push(`form-control-${props.size}`)
-  if (props.validationState === 'valid') c.push('is-valid')
-  if (props.validationState === 'invalid') c.push('is-invalid')
+  if (validationClass.value) c.push(validationClass.value)
   return c.join(' ')
 })
 
@@ -158,7 +159,7 @@ const dropzoneClass = computed(() => {
   if (props.disabled) c.push('vibe-file-input-dropzone-disabled')
   // The native input is hidden in dragDrop mode, so Bootstrap's is-invalid
   // border would be invisible — surface the invalid state on the dropzone.
-  if (props.validationState === 'invalid') c.push('vibe-file-input-dropzone-invalid')
+  if (ariaInvalid.value) c.push('vibe-file-input-dropzone-invalid')
   return c.join(' ')
 })
 
@@ -213,7 +214,7 @@ onBeforeUnmount(() => {
       :accept="accept"
       :disabled="disabled"
       :style="dragDrop ? 'display: none' : undefined"
-      :aria-invalid="validationState === 'invalid'"
+      :aria-invalid="ariaInvalid"
       :aria-describedby="ariaDescribedBy"
       @change="handleChange"
     />
