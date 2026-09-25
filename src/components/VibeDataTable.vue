@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
-import type { DataTableColumn, ComponentError } from '../types'
+import { ref, computed, watch, onBeforeUnmount, type PropType } from 'vue'
+import type { DataTableColumn, ComponentError, Variant } from '../types'
 import { safeCssObject } from '../utils/safeCss'
 
 const props = defineProps({
@@ -20,7 +20,7 @@ const props = defineProps({
   small: { type: Boolean, default: false },
   responsive: { type: Boolean, default: true },
   stack: { type: Boolean, default: false },
-  variant: { type: String, default: undefined },
+  variant: { type: String as PropType<Variant>, default: undefined },
 
   // Features
   searchable: { type: Boolean, default: true },
