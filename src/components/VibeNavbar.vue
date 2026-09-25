@@ -4,7 +4,10 @@ import type { Variant, Tag, NavbarPosition } from '../types'
 import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 
 const props = defineProps({
-  variant: { type: String as () => Variant | 'dark' | 'light', default: 'light' },
+  // No default: a plain navbar inherits the page's data-bs-theme (like every other
+  // component) and follows light/dark mode. Set an explicit variant for a fixed-color
+  // bar — it then derives a contrast-correct data-bs-theme (see navbarTheme).
+  variant: { type: String as () => Variant | 'dark' | 'light', default: undefined },
   theme: { type: String as () => 'dark' | 'light', default: undefined },
   expand: { type: [Boolean, String], default: 'lg' },
   container: { type: [Boolean, String], default: true },
