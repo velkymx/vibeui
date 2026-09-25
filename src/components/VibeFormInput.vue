@@ -22,6 +22,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
   required: { type: Boolean, default: false },
+  hideOptional: { type: Boolean, default: false },
   size: { type: String as PropType<Size>, default: undefined },
   validationState: { type: String as PropType<ValidationState>, default: null },
   validationMessage: { type: String, default: undefined },
@@ -141,7 +142,7 @@ const handleFocus = (event: FocusEvent) => {
     <label v-if="shouldRenderLabel" :for="computedId" class="form-label">
       {{ label }}
       <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
-      <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+      <span v-else-if="!hideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
       <!-- Screen-reader-only equivalent of the visual asterisk -->
       <span v-if="required" class="visually-hidden">required</span>
     </label>

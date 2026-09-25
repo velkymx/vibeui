@@ -14,6 +14,7 @@ Single-line text input supporting all standard HTML input types, with built-in v
 | `disabled` | `boolean` | `false` | Disable the input. |
 | `readonly` | `boolean` | `false` | Make the input read-only. |
 | `required` | `boolean` | `false` | Mark as required (renders a `*` next to a standalone label). |
+| `hideOptional` | `boolean` | `false` | Suppress the "(optional)" suffix on the standalone label of non-required fields. |
 | `size` | `'sm' \| 'lg'` | `undefined` | Control size. |
 | `validationState` | `'valid' \| 'invalid' \| null` | `null` | Visual validation state. |
 | `validationMessage` | `string` | `undefined` | Feedback message shown for the current `validationState`. |
