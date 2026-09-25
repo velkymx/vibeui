@@ -13,6 +13,7 @@ Wrapper that owns a form control's label, help text, validation feedback, and id
 | `label` | `string` | `undefined` | Label text rendered for the first child control. |
 | `labelFor` | `string` | `undefined` | Explicit id to use instead of the auto-generated one. |
 | `required` | `boolean` | `false` | `true` appends a red `*` (aria-hidden) and a visually-hidden "required" span to the label. `false` (default) appends a gray "(optional)" label (aria-hidden). Omit on the child control — the group renders the indicator. |
+| `hideOptional` | `boolean` | `false` | Suppress the "(optional)" suffix on non-required fields (the red `*` and required semantics are unaffected). |
 | `validationState` | `'valid' \| 'invalid' \| null` | `null` | Render valid/invalid feedback. |
 | `validationMessage` | `string` | `undefined` | Feedback message text. |
 | `helpText` | `string` | `undefined` | Help text rendered below the control. |
