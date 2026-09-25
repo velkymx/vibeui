@@ -58,7 +58,11 @@ export function useFormField(
   const helpId = computed(() => `${computedId.value}-help`)
   const feedbackId = computed(() => `${computedId.value}-feedback`)
 
-  const shouldRenderLabel = computed(() => !!props.label && !formGroup?.hasLabel.value)
+  // `.form-check` controls (checkbox/radio/switch) label each option individually,
+  // so they must keep their own label even inside a labelled VibeFormGroup — the
+  // group label titles the set, not each option. Single-line controls defer to it.
+  const ownsLabel = prefix === 'checkbox' || prefix === 'radio' || prefix === 'switch'
+  const shouldRenderLabel = computed(() => !!props.label && (ownsLabel || !formGroup?.hasLabel.value))
   const shouldRenderFeedback = computed(() => !!props.validationState && !formGroup?.hasValidation.value)
   const shouldRenderHelp = computed(
     () => (!!props.helpText || !!options.extraHelp?.()) && !formGroup?.hasHelp.value

@@ -221,3 +221,19 @@ describe('VibeFormRadio $attrs passthrough', () => {
     expect(wrapper.find('input').classes()).toContain('form-check-input')
   })
 })
+
+import VibeFormGroup from '../../src/components/VibeFormGroup.vue'
+describe('VibeFormRadio label inside a labelled VibeFormGroup (issue #69)', () => {
+  it('still renders its own option label when the group has a label', () => {
+    const wrapper = mount(VibeFormGroup, {
+      props: { label: 'Choose one' },
+      slots: { default: `<VibeFormRadio label="Option A" value="a" />` },
+      global: { components: { VibeFormRadio } }
+    })
+    // group legend/title present
+    expect(wrapper.text()).toContain('Choose one')
+    // the radio's own label must still render
+    const optionLabel = wrapper.findAll('label').find(l => l.text().includes('Option A'))
+    expect(optionLabel).toBeTruthy()
+  })
+})
