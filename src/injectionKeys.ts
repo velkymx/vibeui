@@ -14,6 +14,8 @@ export interface FormGroupContext {
   consumeId: () => string | null
   hasLabel: ComputedRef<boolean>
   hasValidation: ComputedRef<boolean>
+  /** The group's validation state, adopted by a nested control that has none of its own. */
+  validationState: ComputedRef<string | null>
   hasHelp: ComputedRef<boolean>
   /**
    * WCAG 1.3.1 / 3.3.1: ids of the help text and feedback elements rendered by

@@ -66,14 +66,15 @@ const {
   ariaDescribedBy,
   shouldRenderLabel,
   shouldRenderFeedback,
-  shouldRenderHelp
+  shouldRenderHelp,
+  validationClass,
+  ariaInvalid
 } = useFormField('select', props)
 
 const selectClass = computed(() => {
   const classes = ['form-select']
   if (props.size) classes.push(`form-select-${props.size}`)
-  if (props.validationState === 'valid') classes.push('is-valid')
-  if (props.validationState === 'invalid') classes.push('is-invalid')
+  if (validationClass.value) classes.push(validationClass.value)
   return classes.join(' ')
 })
 
@@ -171,7 +172,7 @@ const handleFocus = (event: FocusEvent) => {
       :size="htmlSize || selectSize"
       :disabled="disabled"
       :required="required"
-      :aria-invalid="validationState === 'invalid'"
+      :aria-invalid="ariaInvalid"
       :aria-describedby="ariaDescribedBy"
       @input="handleInput"
       @change="handleChange"

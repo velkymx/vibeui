@@ -50,7 +50,9 @@ const {
   ariaDescribedBy,
   shouldRenderLabel,
   shouldRenderFeedback,
-  shouldRenderHelp
+  shouldRenderHelp,
+  validationClass,
+  ariaInvalid
 } = useFormField('checkbox', props)
 
 const containerClass = computed(() => {
@@ -62,8 +64,7 @@ const containerClass = computed(() => {
 
 const inputClass = computed(() => {
   const classes = ['form-check-input']
-  if (props.validationState === 'valid') classes.push('is-valid')
-  if (props.validationState === 'invalid') classes.push('is-invalid')
+  if (validationClass.value) classes.push(validationClass.value)
   return classes.join(' ')
 })
 
@@ -124,7 +125,7 @@ watch(() => props.indeterminate, (val) => {
       :checked="isChecked"
       :disabled="disabled"
       :required="required"
-      :aria-invalid="validationState === 'invalid'"
+      :aria-invalid="ariaInvalid"
       :aria-describedby="ariaDescribedBy"
       @change="handleChange"
       @blur="handleBlur"
@@ -156,7 +157,7 @@ watch(() => props.indeterminate, (val) => {
     :checked="isChecked"
     :disabled="disabled"
     :required="required"
-    :aria-invalid="validationState === 'invalid'"
+    :aria-invalid="ariaInvalid"
     :aria-describedby="ariaDescribedBy"
     @change="handleChange"
     @blur="handleBlur"
