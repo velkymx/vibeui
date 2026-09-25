@@ -44,7 +44,7 @@ export type JustifyContent = 'start' | 'center' | 'end' | 'around' | 'between' |
 // DataTable types
 export type SortDirection = 'asc' | 'desc' | null
 
-export interface DataTableColumn<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface DataTableColumn<T extends object = Record<string, unknown>> {
   key: keyof T & string
   label: string
   sortable?: boolean
@@ -56,7 +56,7 @@ export interface DataTableColumn<T extends Record<string, unknown> = Record<stri
   tdStyle?: Record<string, string>
 }
 
-export interface DataTableCellSlotProps<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface DataTableCellSlotProps<T extends object = Record<string, unknown>> {
   item: T
   value: T[keyof T]
   index: number

@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends Record<string, unknown>">
+<script setup lang="ts" generic="T extends object">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import type { DataTableColumn, ComponentError } from '../types'
 import { safeCssObject } from '../utils/safeCss'
@@ -64,10 +64,17 @@ const debouncedSearchQuery = ref('')
  * a unique identifier property in your data (e.g., 'id', 'uuid', '_id').
  * The fallback uses index which can cause issues with sorting/filtering.
  */
+// T is constrained to `object` so plain interfaces (no index signature) work as
+// row types (#38). `object` can't be indexed by an arbitrary string, so reads by
+// a runtime string key (rowKey, sortBy) go through this cast. Column reads use
+// `keyof T`, which type-checks without it.
+const readField = (row: T, key: string): unknown => (row as Record<string, unknown>)[key]
+
 const getRowKey = (item: T, index: number): string | number => {
   // Try to use the specified rowKey property
-  if (props.rowKey && item[props.rowKey] !== undefined) {
-    return String(item[props.rowKey])
+  const rowKeyValue = readField(item, props.rowKey)
+  if (props.rowKey && rowKeyValue !== undefined) {
+    return String(rowKeyValue)
   }
 
   // Warn in development if no rowKey is found
@@ -180,7 +187,7 @@ const sortedItems = computed(() => {
   const items = [...filteredItems.value]
   const sortKey = sortBy.value
 
-  items.sort((a, b) => compareValues(a[sortKey], b[sortKey], sortDesc.value))
+  items.sort((a, b) => compareValues(readField(a, sortKey), readField(b, sortKey), sortDesc.value))
 
   return items
 })
