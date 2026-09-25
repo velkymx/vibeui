@@ -261,3 +261,22 @@ describe('VibeTabs', () => {
     }
   })
 })
+
+describe('VibeTabs lazy + v-model initial render (issue #67)', () => {
+  it('renders the initially-active tab immediately when active is set via v-model', async () => {
+    const wrapper = mount(VibeTabs, {
+      props: { modelValue: 'b', lazy: true },
+      slots: {
+        default: `
+          <VibeTab name="a" label="Alpha">A body</VibeTab>
+          <VibeTab name="b" label="Beta">B body</VibeTab>
+        `
+      },
+      global: { components: { VibeTab } }
+    })
+    await nextTick()
+    await nextTick()
+    expect(wrapper.text()).toContain('B body')
+    expect(wrapper.text()).not.toContain('A body')
+  })
+})

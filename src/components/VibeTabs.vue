@@ -27,6 +27,9 @@ const emit = defineEmits<{
 const registry = reactive<TabRecord[]>([])
 const internalActive = ref<string | undefined>(props.modelValue)
 const visited = reactive(new Set<string>())
+// Seed the initially-active tab (set via v-model at mount) so `lazy` renders it
+// immediately — otherwise it's never marked visited until the tab is switched.
+if (props.modelValue !== undefined) visited.add(props.modelValue)
 
 const activeName = computed(() => internalActive.value)
 
