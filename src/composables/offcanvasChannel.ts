@@ -1,4 +1,4 @@
-import { onPersistent, emitEvent, registerSupportedEvent } from './useEventBus'
+import { onPersistent, emitEvent } from './useEventBus'
 
 /**
  * Offcanvas + layout command routing for the event bus (#100).
@@ -39,13 +39,20 @@ onPersistent('layout:sidebar-toggle', () => {
   })
 })
 
-registerSupportedEvent('offcanvas:open', 'offcanvas:close', 'offcanvas:toggle', 'layout:sidebar-toggle')
+// Note: no registerSupportedEvent here. The dispatchers above always handle the
+// offcanvas / layout commands, so the foundation's zero-handler guard never
+// applies; unknown ids (and a missing sidebar) are reported by the dispatchers.
 
 /**
  * Register an offcanvas controller under its id. Pass `isSidebar` to make it the
  * target of `layout:sidebar-toggle`. Returns an unregister function.
  */
 export function registerOffcanvas(id: string, controller: OffcanvasController, isSidebar: boolean): () => void {
+  // Ids must be unique: the registry is last-wins, so a duplicate silently hides
+  // the first offcanvas from the bus. Warn in development to surface the mistake.
+  if (import.meta.env.DEV && registry.has(id)) {
+    console.warn(`[VibeUI] An offcanvas with id "${id}" is already registered on the event bus; the later one overrides it. Use unique ids.`)
+  }
   registry.set(id, controller)
   if (isSidebar) sidebarId = id
   return () => {

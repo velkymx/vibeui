@@ -52,4 +52,13 @@ describe('modalChannel registry + dispatcher (#98)', () => {
     emitEvent('modal:open', { id: 'm1' })
     expect(open).toHaveBeenCalledTimes(1)
   })
+
+  it('warns when registering a duplicate id (#117)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    registerModal('dup', { open: vi.fn(), close: vi.fn() })
+    registerModal('dup', { open: vi.fn(), close: vi.fn() })
+    expect(warn).toHaveBeenCalled()
+    expect(String(warn.mock.calls[0][0])).toContain('dup')
+    warn.mockRestore()
+  })
 })
