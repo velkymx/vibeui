@@ -48,6 +48,15 @@ describe('offcanvasChannel registry + dispatcher (#100)', () => {
     expect(onUnhandled.mock.calls[0][0]).toMatchObject({ event: 'layout:sidebar-toggle' })
   })
 
+  it('warns when registering a duplicate id (#117)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    registerOffcanvas('dup', controller(), false)
+    registerOffcanvas('dup', controller(), false)
+    expect(warn).toHaveBeenCalled()
+    expect(String(warn.mock.calls[0][0])).toContain('dup')
+    warn.mockRestore()
+  })
+
   it('stops routing after unregister', () => {
     const c = controller()
     const unregister = registerOffcanvas('oc1', c, true)
