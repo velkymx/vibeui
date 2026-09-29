@@ -7,6 +7,37 @@ export interface ComponentError {
   originalError: unknown
 }
 
+/**
+ * Payload for the bus `error:unhandled` event: a Tier 1 supported event was
+ * emitted with no target to act on it (e.g. `notification:show` with no
+ * `VibeToastHost` mounted).
+ */
+export interface UnhandledEventError {
+  event: string
+  id?: string
+  message: string
+}
+
+/**
+ * The typed event catalog for the VibeUI event bus. Library channels are
+ * declared here; consumers add their own events by declaration merging:
+ *
+ * ```ts
+ * declare module '@velkymx/vibeui' {
+ *   interface VibeEventMap { 'cart:add': { productId: string; qty: number } }
+ * }
+ * ```
+ *
+ * Events not listed here still work via the string-key fallback on the bus,
+ * with an `unknown` payload.
+ */
+export interface VibeEventMap {
+  /** Any component reported an error (the anchor channel; always present). */
+  'error:component': ComponentError
+  /** A supported event was emitted with no handler/target to act on it. */
+  'error:unhandled': UnhandledEventError
+}
+
 export type ColorMode = 'light' | 'dark' | 'auto'
 
 export type Variant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
