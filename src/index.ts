@@ -29,6 +29,8 @@ export {
   onBeforeModalClose,
   onModalOpened,
   onModalClosed,
+  emitThemeSet,
+  onThemeChanged,
 } from './composables/eventHelpers'
 
 // Export the plugin as default for app.use(VibeUI)

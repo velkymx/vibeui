@@ -47,3 +47,11 @@ export const onModalOpened = (
 export const onModalClosed = (
   handler: (payload: VibeEventMap['modal:closed']) => void,
 ): (() => void) => useEventBus().on('modal:closed', handler)
+
+// Theme channel (#99)
+export const emitThemeSet = (payload: VibeEventMap['theme:set']): void =>
+  emitEvent('theme:set', payload)
+
+export const onThemeChanged = (
+  handler: (payload: VibeEventMap['theme:changed']) => void,
+): (() => void) => useEventBus().on('theme:changed', handler)

@@ -62,6 +62,13 @@ export interface VibeEventMap {
   'modal:opened': { id: string }
   /** Lifecycle: the modal finished closing. */
   'modal:closed': { id: string }
+
+  // Theme channel. Command sets the color mode; lifecycle fires when the
+  // resolved (light/dark) theme changes, including OS changes in auto mode.
+  /** Command: set the color mode to light or dark. */
+  'theme:set': { theme: 'light' | 'dark' }
+  /** Lifecycle: the resolved theme changed. */
+  'theme:changed': { theme: 'light' | 'dark' }
 }
 
 export type ColorMode = 'light' | 'dark' | 'auto'
