@@ -6,6 +6,16 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
+## [1.2.2] - 2026-09-28
+
+A patch release fixing a `VibeListGroup` rendering bug. No API changes.
+
+### Fixed
+
+- **`VibeListGroup` no longer collapses a scoped `#item` slot to the first row.** A per-row `v-memo` tracked only a fixed subset of item fields, so when those fields were identical across rows (for example rows shaped `{ key, value }` with no `text`), every row reused the first row's vnode and `index` froze at `0`. The unsound memo has been removed; a component cannot know which fields a consumer's slot reads. (#90)
+
+---
+
 ## [1.2.1] - 2026-09-25
 
 A patch release covering consumer-reported bug fixes to packaging, forms, tabs, the tooltip directive, and navbar color-mode consistency. No API changes.
