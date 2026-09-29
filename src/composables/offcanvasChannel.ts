@@ -1,4 +1,4 @@
-import { useEventBus, emitEvent, registerSupportedEvent } from './useEventBus'
+import { onPersistent, emitEvent, registerSupportedEvent } from './useEventBus'
 
 /**
  * Offcanvas + layout command routing for the event bus (#100).
@@ -19,18 +19,18 @@ export interface OffcanvasController {
 const registry = new Map<string, OffcanvasController>()
 let sidebarId: string | null = null
 
-const bus = useEventBus()
-
 function route(id: string, action: keyof OffcanvasController, event: string): void {
   const controller = registry.get(id)
   if (controller) controller[action]()
   else emitEvent('error:unhandled', { event, id, message: `${event} for unknown id "${id}".` })
 }
 
-bus.on('offcanvas:open', ({ id }) => route(id, 'open', 'offcanvas:open'))
-bus.on('offcanvas:close', ({ id }) => route(id, 'close', 'offcanvas:close'))
-bus.on('offcanvas:toggle', ({ id }) => route(id, 'toggle', 'offcanvas:toggle'))
-bus.on('layout:sidebar-toggle', () => {
+// Persistent module-load subscriptions: they survive an SSR reset (see
+// onPersistent) so the command dispatchers keep working across requests.
+onPersistent('offcanvas:open', ({ id }) => route(id, 'open', 'offcanvas:open'))
+onPersistent('offcanvas:close', ({ id }) => route(id, 'close', 'offcanvas:close'))
+onPersistent('offcanvas:toggle', ({ id }) => route(id, 'toggle', 'offcanvas:toggle'))
+onPersistent('layout:sidebar-toggle', () => {
   const controller = sidebarId ? registry.get(sidebarId) : undefined
   if (controller) controller.toggle()
   else emitEvent('error:unhandled', {

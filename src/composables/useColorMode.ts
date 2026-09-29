@@ -1,6 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import type { ColorMode } from '../types'
-import { emitEvent, useEventBus } from './useEventBus'
+import { emitEvent, onPersistent } from './useEventBus'
 
 const STORAGE_KEY = 'vibe-color-mode'
 
@@ -102,7 +102,8 @@ function setModeAndPersist(mode: ColorMode) {
 // flush: 'sync' so the bus event fires the instant the theme flips, matching
 // pub/sub expectations rather than deferring to the next tick.
 watch(resolvedMode, (theme) => emitEvent('theme:changed', { theme }), { flush: 'sync' })
-useEventBus().on('theme:set', ({ theme }) => setModeAndPersist(theme))
+// Persistent so the theme:set handler survives an SSR reset.
+onPersistent('theme:set', ({ theme }) => setModeAndPersist(theme))
 
 export function useColorMode() {
   function setColorMode(mode: ColorMode) {
