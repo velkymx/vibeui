@@ -41,4 +41,14 @@ describe('VibeBreadcrumb over the event bus (#101)', () => {
     // no throw and no further updates; just assert the last render held
     expect(true).toBe(true)
   })
+
+  it('tracks busUpdates reactively (#119)', async () => {
+    const wrapper = mount(VibeBreadcrumb, { props: { busUpdates: false } })
+    emitNavBreadcrumbUpdate({ items: [{ label: 'Reactive', path: '/r' }] })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).not.toContain('Reactive')
+    await wrapper.setProps({ busUpdates: true })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).toContain('Reactive')
+  })
 })

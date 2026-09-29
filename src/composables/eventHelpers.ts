@@ -75,7 +75,7 @@ export const onOffcanvasClosed = (
 ): (() => void) => useEventBus().on('offcanvas:closed', handler)
 
 export const emitLayoutSidebarToggle = (): void =>
-  emitEvent('layout:sidebar-toggle', undefined)
+  emitEvent('layout:sidebar-toggle')
 
 export const onLayoutSidebarToggled = (
   handler: (payload: VibeEventMap['layout:sidebar-toggled']) => void,

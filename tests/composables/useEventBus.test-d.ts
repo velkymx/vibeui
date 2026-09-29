@@ -37,3 +37,10 @@ bus.on('some:adhoc', (p) => {
   void p // p: unknown
 })
 bus.emit('some:adhoc', 123)
+
+// Void events (built-in `layout:sidebar-toggle`) emit with no payload argument.
+bus.emit('layout:sidebar-toggle')
+// @ts-expect-error a void event takes no payload
+bus.emit('layout:sidebar-toggle', 1)
+// @ts-expect-error a declared-payload event still requires its payload
+bus.emit('cart:add')

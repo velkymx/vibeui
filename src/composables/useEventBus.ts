@@ -23,12 +23,18 @@ export type VibeEventKey = keyof VibeEventMap | (string & {})
 /** Strict payload for a declared event, `unknown` for an ad-hoc one. */
 export type VibePayloadOf<K> = K extends keyof VibeEventMap ? VibeEventMap[K] : unknown
 
+/**
+ * Emit arguments for an event: no payload arg for a `void` event (e.g.
+ * `layout:sidebar-toggle`), a required payload for every other declared event.
+ */
+export type VibeEmitArgs<K> = VibePayloadOf<K> extends void ? [] : [payload: VibePayloadOf<K>]
+
 /** The public, typed bus surface. */
 export interface VibeEventBus {
   on<K extends VibeEventKey>(event: K, handler: (payload: VibePayloadOf<K>) => void): () => void
   once<K extends VibeEventKey>(event: K, handler: (payload: VibePayloadOf<K>) => void): () => void
   off<K extends VibeEventKey>(event: K, handler: (payload: VibePayloadOf<K>) => void): void
-  emit<K extends VibeEventKey>(event: K, payload: VibePayloadOf<K>): void
+  emit<K extends VibeEventKey>(event: K, ...args: VibeEmitArgs<K>): void
   clear(): void
 }
 
@@ -153,8 +159,8 @@ export function useEventBus(): VibeEventBus {
  * Internal publish path for framework code and channel modules, so components
  * can emit without calling `useEventBus()`. Same registry as the public bus.
  */
-export function emitEvent<K extends VibeEventKey>(event: K, payload: VibePayloadOf<K>): void {
-  emit(event as string, payload)
+export function emitEvent<K extends VibeEventKey>(event: K, ...args: VibeEmitArgs<K>): void {
+  emit(event as string, args[0])
 }
 
 /**

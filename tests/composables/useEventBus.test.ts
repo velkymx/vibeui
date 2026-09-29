@@ -181,4 +181,35 @@ describe('useEventBus', () => {
     expect(fn).toHaveBeenCalledTimes(1)
     expect(fn).toHaveBeenCalledWith(1)
   })
+
+  it('supports nested emit from within a handler', () => {
+    const bus = useEventBus()
+    const inner = vi.fn()
+    bus.on('inner', inner)
+    bus.on('outer', () => bus.emit('inner', 42))
+    bus.emit('outer', 0)
+    expect(inner).toHaveBeenCalledWith(42)
+  })
+
+  it('a handler added during dispatch does not fire in the same emit', () => {
+    const bus = useEventBus()
+    const late = vi.fn()
+    bus.on('x', () => { bus.on('x', late) })
+    bus.emit('x', 1)
+    expect(late).not.toHaveBeenCalled()
+    bus.emit('x', 2)
+    expect(late).toHaveBeenCalledTimes(1)
+  })
+
+  it('handlers live at emit-time all run even if one is removed mid-dispatch (snapshot), and are gone next emit', () => {
+    const bus = useEventBus()
+    const b = vi.fn()
+    let offB: () => void = () => {}
+    bus.on('x', () => offB()) // removes b during this dispatch
+    offB = bus.on('x', b)
+    bus.emit('x', 1)
+    expect(b).toHaveBeenCalledTimes(1) // snapshot: b was live when emit started
+    bus.emit('x', 2)
+    expect(b).toHaveBeenCalledTimes(1) // and removed for subsequent emits
+  })
 })
