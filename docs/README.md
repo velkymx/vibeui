@@ -147,9 +147,11 @@ Standalone utilities that can be used independently of any component.
 - [useBackButton](./composables/back-button.md) - Android hardware back button handling
 - [useBreakpoints](./composables/breakpoints.md) - Programmatic breakpoint detection
 - [useColorMode](./composables/color-mode.md) - Bootstrap light/dark/auto color modes
+- [useEventBus](./composables/event-bus.md) - Zero-init app event bus and custom events
 - [useForm](./composables/use-form.md) - Multi-field form state with validation
 - [usePosition](./composables/use-position.md) - Floating-UI based anchor positioning
 - [useToast](./composables/use-toast.md) - Global toast service
+- [Event bus cookbook](./composables/event-bus-cookbook.md) - Recipes for the built-in channels and custom events
 
 ## Directives
 
