@@ -1,3 +1,4 @@
+import './global-components'
 import VibeUIPlugin from './components'
 
 export * from './components'
