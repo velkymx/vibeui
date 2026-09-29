@@ -23,6 +23,12 @@ export {
   emitNotificationDismiss,
   onNotificationShown,
   onNotificationDismissed,
+  emitModalOpen,
+  emitModalClose,
+  onBeforeModalOpen,
+  onBeforeModalClose,
+  onModalOpened,
+  onModalClosed,
 } from './composables/eventHelpers'
 
 // Export the plugin as default for app.use(VibeUI)

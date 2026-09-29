@@ -47,6 +47,21 @@ export interface VibeEventMap {
   'notification:shown': { id: string }
   /** Lifecycle: a toast was removed. */
   'notification:dismissed': { id: string }
+
+  // Modal channel. Command events are handled by the VibeModal with the given id;
+  // guard events are cancelable; lifecycle events fire after the transition.
+  /** Command: open the modal with this id, optionally passing a payload. */
+  'modal:open': { id: string; payload?: unknown }
+  /** Command: close the modal with this id. */
+  'modal:close': { id: string }
+  /** Guard: about to open; call `cancel()` to veto. */
+  'modal:beforeOpen': { id: string; cancel: () => void }
+  /** Guard: about to close; call `cancel()` to veto. */
+  'modal:beforeClose': { id: string; cancel: () => void }
+  /** Lifecycle: the modal finished opening. */
+  'modal:opened': { id: string }
+  /** Lifecycle: the modal finished closing. */
+  'modal:closed': { id: string }
 }
 
 export type ColorMode = 'light' | 'dark' | 'auto'
