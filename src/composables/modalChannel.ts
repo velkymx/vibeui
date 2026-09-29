@@ -1,4 +1,4 @@
-import { useEventBus, emitEvent, registerSupportedEvent } from './useEventBus'
+import { onPersistent, emitEvent, registerSupportedEvent } from './useEventBus'
 
 /**
  * Modal command routing for the event bus (#98).
@@ -17,15 +17,15 @@ export interface ModalController {
 
 const registry = new Map<string, ModalController>()
 
-// Subscribe once at module load. This runs outside any component scope, so the
-// dispatcher persists (it is not auto-torn-down with a component).
-const bus = useEventBus()
-bus.on('modal:open', ({ id, payload }) => {
+// Subscribe once at module load, persistently, so the dispatcher survives an SSR
+// reset (resetEventBusForSSR keeps onPersistent handlers) and is not auto-torn-
+// down with any component.
+onPersistent('modal:open', ({ id, payload }) => {
   const controller = registry.get(id)
   if (controller) controller.open(payload)
   else emitEvent('error:unhandled', { event: 'modal:open', id, message: `modal:open for unknown id "${id}".` })
 })
-bus.on('modal:close', ({ id }) => {
+onPersistent('modal:close', ({ id }) => {
   const controller = registry.get(id)
   if (controller) controller.close()
   else emitEvent('error:unhandled', { event: 'modal:close', id, message: `modal:close for unknown id "${id}".` })

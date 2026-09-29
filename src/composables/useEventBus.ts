@@ -34,9 +34,12 @@ export interface VibeEventBus {
 
 // Module-level registries. `handlers` is per-app subscription state (reset on
 // SSR); `supported` is a static registration of Tier 1 events that require a
-// target, contributed by channel modules at import time.
+// target, contributed by channel modules at import time. `persistentHandlers`
+// tracks library subscriptions wired once at module load (channel dispatchers,
+// the theme handler) so an SSR reset does not remove them.
 const handlers = new Map<string, Set<Handler>>()
 const supported = new Set<string>()
+const persistentHandlers = new Set<Handler>()
 
 const ERROR_COMPONENT = 'error:component'
 const ERROR_UNHANDLED = 'error:unhandled'
@@ -155,6 +158,26 @@ export function emitEvent<K extends VibeEventKey>(event: K, payload: VibePayload
 }
 
 /**
+ * Subscribe a persistent handler: like `on`, but it survives
+ * `resetEventBusForSSR()`. Used by the library's module-load command dispatchers
+ * (modal, offcanvas) and the theme handler, which must stay wired for the whole
+ * process, not just one SSR request. Called outside a component scope, so there
+ * is no auto-cleanup to attach. Returns an unsubscribe function.
+ */
+export function onPersistent<K extends VibeEventKey>(
+  event: K,
+  handler: (payload: VibePayloadOf<K>) => void,
+): () => void {
+  const h = handler as Handler
+  persistentHandlers.add(h)
+  const off = on(event as string, h)
+  return () => {
+    persistentHandlers.delete(h)
+    off()
+  }
+}
+
+/**
  * Register Tier 1 supported events (those that require a target). Channel
  * modules call this at import time so the unhandled-event guard knows which
  * events must be handled.
@@ -165,15 +188,22 @@ export function registerSupportedEvent(...events: string[]): void {
 
 /**
  * Clear per-app subscription state. Call once per request in SSR to avoid
- * leaking handlers across requests (the bus is a module singleton). Does not
- * touch the static supported-event registry.
+ * leaking handlers across requests (the bus is a module singleton). Persistent
+ * library subscriptions (see `onPersistent`) and the static supported-event
+ * registry are kept, so the built-in channels keep working after a reset.
  */
 export function resetEventBusForSSR(): void {
-  handlers.clear()
+  for (const [event, set] of handlers) {
+    for (const handler of [...set]) {
+      if (!persistentHandlers.has(handler)) set.delete(handler)
+    }
+    if (set.size === 0) handlers.delete(event)
+  }
 }
 
-/** Test-only: reset both handlers and the supported-event registry. */
+/** Test-only: reset handlers, the supported-event registry, and persistents. */
 export function __resetEventBusForTests(): void {
   handlers.clear()
   supported.clear()
+  persistentHandlers.clear()
 }

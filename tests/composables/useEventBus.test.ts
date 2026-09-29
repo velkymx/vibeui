@@ -3,6 +3,7 @@ import { effectScope } from 'vue'
 import {
   useEventBus,
   emitEvent,
+  onPersistent,
   registerSupportedEvent,
   resetEventBusForSSR,
   __resetEventBusForTests,
@@ -156,5 +157,28 @@ describe('useEventBus', () => {
     resetEventBusForSSR()
     bus.emit('x', 1)
     expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('resetEventBusForSSR keeps persistent handlers but drops per-app handlers (#115)', () => {
+    const bus = useEventBus()
+    const normal = vi.fn()
+    const persistent = vi.fn()
+    bus.on('x', normal)
+    onPersistent('x', persistent)
+    resetEventBusForSSR()
+    bus.emit('x', 1)
+    expect(normal).not.toHaveBeenCalled()
+    expect(persistent).toHaveBeenCalledWith(1)
+  })
+
+  it('onPersistent returns an unsubscribe and delivers like on()', () => {
+    const bus = useEventBus()
+    const fn = vi.fn()
+    const off = onPersistent('y', fn)
+    bus.emit('y', 1)
+    off()
+    bus.emit('y', 2)
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(fn).toHaveBeenCalledWith(1)
   })
 })

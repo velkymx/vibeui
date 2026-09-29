@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { registerModal, __resetModalRegistry } from '../../src/composables/modalChannel'
-import { useEventBus, emitEvent } from '../../src/composables/useEventBus'
+import { useEventBus, emitEvent, resetEventBusForSSR } from '../../src/composables/useEventBus'
 
 describe('modalChannel registry + dispatcher (#98)', () => {
   beforeEach(() => {
@@ -43,5 +43,13 @@ describe('modalChannel registry + dispatcher (#98)', () => {
     off()
     expect(open).not.toHaveBeenCalled()
     expect(onUnhandled).toHaveBeenCalledTimes(1)
+  })
+
+  it('the dispatcher survives resetEventBusForSSR (#115)', () => {
+    const open = vi.fn()
+    registerModal('m1', { open, close: vi.fn() })
+    resetEventBusForSSR()
+    emitEvent('modal:open', { id: 'm1' })
+    expect(open).toHaveBeenCalledTimes(1)
   })
 })
