@@ -8,6 +8,7 @@ const props = defineProps({
   label: { type: String, default: undefined },
   labelFor: { type: String, default: undefined },
   required: { type: Boolean, default: false },
+  hideOptional: { type: Boolean, default: false },
   validationState: { type: String as () => ValidationState, default: null },
   validationMessage: { type: String, default: undefined },
   helpText: { type: String, default: undefined },
@@ -93,7 +94,7 @@ const helpId = computed(() => `${computedId.value}-help`)
       {{ label }}
       <!-- WCAG 3.3.2: visible required/optional signal (aria-hidden so SR uses the span below) -->
       <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
-      <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+      <span v-else-if="!hideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
       <!-- Screen-reader-only equivalent of the visual asterisk -->
       <span v-if="required" class="visually-hidden">required</span>
     </label>
@@ -123,7 +124,7 @@ const helpId = computed(() => `${computedId.value}-help`)
       >
         {{ label }}
         <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
-        <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+        <span v-else-if="!hideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
         <span v-if="required" class="visually-hidden">required</span>
       </label>
 

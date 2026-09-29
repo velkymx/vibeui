@@ -463,3 +463,10 @@ describe('VibeFormInput', () => {
     })
   })
 })
+
+describe('VibeFormInput hideOptional (issue #74)', () => {
+  it('hides "(optional)" on the standalone label when hideOptional is set', () => {
+    const wrapper = mount(VibeFormInput, { props: { id: 'n', label: 'Name', hideOptional: true } })
+    expect(wrapper.text()).not.toContain('(optional)')
+  })
+})
