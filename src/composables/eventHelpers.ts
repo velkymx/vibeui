@@ -80,3 +80,11 @@ export const emitLayoutSidebarToggle = (): void =>
 export const onLayoutSidebarToggled = (
   handler: (payload: VibeEventMap['layout:sidebar-toggled']) => void,
 ): (() => void) => useEventBus().on('layout:sidebar-toggled', handler)
+
+// Navigation channel (#101)
+export const emitNavBreadcrumbUpdate = (payload: VibeEventMap['nav:breadcrumb-updated']): void =>
+  emitEvent('nav:breadcrumb-updated', payload)
+
+export const onNavBreadcrumbUpdated = (
+  handler: (payload: VibeEventMap['nav:breadcrumb-updated']) => void,
+): (() => void) => useEventBus().on('nav:breadcrumb-updated', handler)

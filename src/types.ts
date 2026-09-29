@@ -87,6 +87,11 @@ export interface VibeEventMap {
   'layout:sidebar-toggle': void
   /** Lifecycle: the sidebar's open state changed. */
   'layout:sidebar-toggled': { open: boolean }
+
+  // Navigation channel. The app publishes breadcrumb updates from anywhere; a
+  // VibeBreadcrumb with `bus-updates` subscribes and renders them.
+  /** Publish the current breadcrumb trail. */
+  'nav:breadcrumb-updated': { items: { label: string; path: string }[] }
 }
 
 export type ColorMode = 'light' | 'dark' | 'auto'
