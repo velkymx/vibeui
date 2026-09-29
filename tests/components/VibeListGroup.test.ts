@@ -206,4 +206,20 @@ describe('VibeListGroup', () => {
     const style = wrapper.find('li').attributes('style') ?? ''
     expect(style).not.toContain('cursor: pointer')
   })
+
+  // Regression (#90): a per-row v-memo tracked only a fixed subset of item
+  // fields. A scoped #item slot can render anything (index, value, key), so
+  // when the memoized fields were identical across rows (all undefined for
+  // rows like { value }), v-memo reused the first row's vnode for every row —
+  // freezing index at 0 and duplicating the first row.
+  it('renders each row and its own index under a scoped #item slot when items lack the memoized fields (#90)', () => {
+    const items = [{ value: 'a' }, { value: 'b' }, { value: 'c' }] as unknown as ListGroupItem[]
+    const wrapper = mount(VibeListGroup, {
+      props: { items },
+      slots: {
+        item: `<template #item="{ index, item }">[{{ index }}:{{ item.value }}]</template>`
+      }
+    })
+    expect(wrapper.text()).toBe('[0:a][1:b][2:c]')
+  })
 })
