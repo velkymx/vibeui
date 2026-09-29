@@ -15,6 +15,8 @@ export { makeDomPurifySanitizer, WYSIWYG_PURIFY_CONFIG } from './utils/sanitizeH
 export { useColorMode } from './composables/useColorMode'
 export { useBreakpoints } from './composables/useBreakpoints'
 export { useBackButton } from './composables/useBackButton'
+export { useEventBus, resetEventBusForSSR } from './composables/useEventBus'
+export type { VibeEventBus } from './composables/useEventBus'
 
 // Export the plugin as default for app.use(VibeUI)
 export default VibeUIPlugin
