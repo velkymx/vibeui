@@ -4,6 +4,8 @@ import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vu
 import type { Size, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
+import { emitEvent } from '../composables/useEventBus'
+import { registerModal } from '../composables/modalChannel'
 
 interface BootstrapModal {
   show: () => void
@@ -51,6 +53,8 @@ const computedId = computed(() => props.id || _generatedId)
 const modalRef = ref<HTMLElement | null>(null)
 const bsModal = shallowRef<BootstrapModal | null>(null)
 const isVisible = ref(false)
+// Payload delivered by a `modal:open` bus command, exposed to the default slot.
+const busPayload = ref<unknown>(undefined)
 
 // WCAG 2.4.3: focus must return to the trigger after the modal closes. Bootstrap's
 // own restore is unreliable when the modal is shown programmatically (no trigger
@@ -155,6 +159,8 @@ const onShown = () => {
   isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
+  // Bus lifecycle: fires however the modal was opened (v-model, method, or bus).
+  emitEvent('modal:opened', { id: computedId.value })
   // WCAG 2.1.2: lock out the page behind the modal from keyboard / SR navigation.
   applyInert()
   // WCAG 2.4.3: move keyboard focus to the first form control so users don't
@@ -178,6 +184,9 @@ const onHidden = () => {
   isVisible.value = false
   emit('hidden')
   emit('update:modelValue', false)
+  // Bus lifecycle + clear any payload delivered on open.
+  emitEvent('modal:closed', { id: computedId.value })
+  busPayload.value = undefined
   // WCAG 2.1.2: restore inert on any previously locked-out siblings.
   removeInert()
   // WCAG 2.4.3: return focus to the element that opened the modal.
@@ -284,6 +293,24 @@ const show = () => bsModal.value?.show()
 const hide = () => bsModal.value?.hide()
 const handleUpdate = () => bsModal.value?.handleUpdate()
 
+// Event-bus modal channel (#98): open/close this modal by id from anywhere.
+// Guards are cancelable; the payload is exposed to the default slot.
+const openFromBus = (payload?: unknown) => {
+  let canceled = false
+  emitEvent('modal:beforeOpen', { id: computedId.value, cancel: () => { canceled = true } })
+  if (canceled) return
+  busPayload.value = payload
+  show()
+}
+const closeFromBus = () => {
+  let canceled = false
+  emitEvent('modal:beforeClose', { id: computedId.value, cancel: () => { canceled = true } })
+  if (canceled) return
+  hide()
+}
+const unregisterModal = registerModal(computedId.value, { open: openFromBus, close: closeFromBus })
+onBeforeUnmount(unregisterModal)
+
 // Support Android back button in hybrid mobile apps
 useBackButton(() => {
   if (isVisible.value) hide()
@@ -315,7 +342,7 @@ defineExpose({ show, hide, handleUpdate, _unsafe_bsInstance: bsModal })
             <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
           </div>
           <div class="modal-body">
-            <slot />
+            <slot :payload="busPayload" />
           </div>
           <div v-if="!hideFooter" class="modal-footer">
             <slot name="footer">
