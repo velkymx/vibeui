@@ -36,6 +36,17 @@ export interface VibeEventMap {
   'error:component': ComponentError
   /** A supported event was emitted with no handler/target to act on it. */
   'error:unhandled': UnhandledEventError
+
+  // Notification channel. Command events are handled by a mounted VibeToastHost;
+  // lifecycle events are published by the toast store.
+  /** Command: raise a toast from anywhere (needs a mounted VibeToastHost). */
+  'notification:show': { message: string; type: 'success' | 'error' | 'info' }
+  /** Command: dismiss a toast by id. */
+  'notification:dismiss': { id: string }
+  /** Lifecycle: a toast was created. */
+  'notification:shown': { id: string }
+  /** Lifecycle: a toast was removed. */
+  'notification:dismissed': { id: string }
 }
 
 export type ColorMode = 'light' | 'dark' | 'auto'
