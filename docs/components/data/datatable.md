@@ -34,7 +34,7 @@ Powerful data table component with search, sorting, and pagination - similar to 
 > ]
 > ```
 >
-> Without the annotation, `T` defaults to `Record<string, unknown>` and slot props arrive as `unknown`.
+> Any plain object type works as the row type `T` — no string index signature (`[key: string]: unknown`) and no cast are required, so your existing domain interfaces slot in directly. Without the annotation, `T` defaults to `Record<string, unknown>` and slot props arrive as `unknown`.
 
 ### Table Styling Props
 
