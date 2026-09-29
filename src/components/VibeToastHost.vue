@@ -2,13 +2,27 @@
 import { computed } from 'vue'
 import VibeToast from './VibeToast.vue'
 import { __toastStore, useToast, type ToastSpec } from '../composables/useToast'
+import { useEventBus } from '../composables/useEventBus'
 import type { ToastPlacement } from '../types'
 
 const props = defineProps({
   defaultPlacement: { type: String as () => ToastPlacement, default: 'top-end' }
 })
 
-const { dismiss } = useToast()
+const toast = useToast()
+const { dismiss } = toast
+
+// Bus notification channel: while this host is mounted it handles the command
+// events, so `notification:show` / `notification:dismiss` from anywhere render
+// here. on() auto-unsubscribes when the host unmounts, so with no host mounted
+// the bus reports these commands as unhandled.
+const bus = useEventBus()
+bus.on('notification:show', ({ message, type }) => {
+  toast[type](message)
+})
+bus.on('notification:dismiss', ({ id }) => {
+  toast.dismiss(id)
+})
 
 const grouped = computed<Array<{ placement: ToastPlacement; toasts: ToastSpec[] }>>(() => {
   const buckets = new Map<ToastPlacement, ToastSpec[]>()

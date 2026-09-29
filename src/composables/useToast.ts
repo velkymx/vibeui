@@ -1,5 +1,10 @@
 import { reactive, readonly, type DeepReadonly } from 'vue'
 import type { Variant, ToastPlacement } from '../types'
+import { emitEvent, registerSupportedEvent } from './useEventBus'
+
+// The notification command events require a target (a mounted VibeToastHost),
+// so register them for the bus unhandled-event guard.
+registerSupportedEvent('notification:show', 'notification:dismiss')
 
 export interface ToastSpec {
   id: string
@@ -68,6 +73,7 @@ const push = (body: string, options: ToastShowOptions): ToastSpec => {
   }
   toastMap.set(id, spec)
   store.toasts.push(spec)
+  emitEvent('notification:shown', { id })
   return spec
 }
 
@@ -76,6 +82,7 @@ const dismissById = (id: string): boolean => {
   toastMap.delete(id)
   const idx = store.toasts.findIndex(t => t.id === id)
   if (idx !== -1) store.toasts.splice(idx, 1)
+  emitEvent('notification:dismissed', { id })
   return true
 }
 
