@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { ColorMode } from '../types'
 
 const STORAGE_KEY = 'vibe-color-mode'
@@ -26,6 +26,17 @@ function getSystemTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
+// Reactive OS theme, kept in sync on attach and on media-query changes.
+const systemTheme = ref<'light' | 'dark'>(getSystemTheme())
+
+/**
+ * The theme the page actually renders: the explicit `colorMode` when it is
+ * `'light'`/`'dark'`, or the OS `prefers-color-scheme` when `'auto'`. Reactive.
+ */
+const resolvedMode = computed<'light' | 'dark'>(() =>
+  colorMode.value === 'auto' ? systemTheme.value : colorMode.value
+)
+
 function applyColorMode(mode: ColorMode) {
   if (typeof document === 'undefined') return
   const activeMode = mode === 'auto' ? getSystemTheme() : mode
@@ -47,6 +58,7 @@ try {
 } catch { /* ignore SSR / private browsing */ }
 
 const onSystemThemeChange = () => {
+  systemTheme.value = getSystemTheme()
   if (colorMode.value === 'auto') {
     applyColorMode('auto')
     callbacks.forEach(cb => cb('auto'))
@@ -58,6 +70,7 @@ let systemThemeMq: MediaQueryList | null = null
 function attachSystemListener() {
   if (typeof window === 'undefined') return
   systemThemeMq = window.matchMedia('(prefers-color-scheme: dark)')
+  systemTheme.value = getSystemTheme()
   systemThemeMq.addEventListener('change', onSystemThemeChange)
 }
 
@@ -138,6 +151,7 @@ export function useColorMode() {
 
   return {
     colorMode,
+    resolvedMode,
     setColorMode,
     toggleColorMode,
     initColorMode,
