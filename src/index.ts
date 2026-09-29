@@ -31,6 +31,13 @@ export {
   onModalClosed,
   emitThemeSet,
   onThemeChanged,
+  emitOffcanvasOpen,
+  emitOffcanvasClose,
+  emitOffcanvasToggle,
+  onOffcanvasOpened,
+  onOffcanvasClosed,
+  emitLayoutSidebarToggle,
+  onLayoutSidebarToggled,
 } from './composables/eventHelpers'
 
 // Export the plugin as default for app.use(VibeUI)

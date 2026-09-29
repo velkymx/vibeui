@@ -55,3 +55,28 @@ export const emitThemeSet = (payload: VibeEventMap['theme:set']): void =>
 export const onThemeChanged = (
   handler: (payload: VibeEventMap['theme:changed']) => void,
 ): (() => void) => useEventBus().on('theme:changed', handler)
+
+// Layout / offcanvas channel (#100)
+export const emitOffcanvasOpen = (payload: VibeEventMap['offcanvas:open']): void =>
+  emitEvent('offcanvas:open', payload)
+
+export const emitOffcanvasClose = (payload: VibeEventMap['offcanvas:close']): void =>
+  emitEvent('offcanvas:close', payload)
+
+export const emitOffcanvasToggle = (payload: VibeEventMap['offcanvas:toggle']): void =>
+  emitEvent('offcanvas:toggle', payload)
+
+export const onOffcanvasOpened = (
+  handler: (payload: VibeEventMap['offcanvas:opened']) => void,
+): (() => void) => useEventBus().on('offcanvas:opened', handler)
+
+export const onOffcanvasClosed = (
+  handler: (payload: VibeEventMap['offcanvas:closed']) => void,
+): (() => void) => useEventBus().on('offcanvas:closed', handler)
+
+export const emitLayoutSidebarToggle = (): void =>
+  emitEvent('layout:sidebar-toggle', undefined)
+
+export const onLayoutSidebarToggled = (
+  handler: (payload: VibeEventMap['layout:sidebar-toggled']) => void,
+): (() => void) => useEventBus().on('layout:sidebar-toggled', handler)
