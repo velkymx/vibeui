@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { AccordionItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
@@ -145,7 +146,7 @@ const initItems = async () => {
       }
     })
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Accordion will use data attributes only.',
       componentName: 'VibeAccordion',
       originalError: error
@@ -189,7 +190,7 @@ watch([() => props.items, () => props.alwaysOpen], async () => {
     await nextTick()
     await initItems()
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Error reinitialising accordion items.',
       componentName: 'VibeAccordion',
       originalError: error

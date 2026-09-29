@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { Variant } from '../types'
 
@@ -74,7 +75,7 @@ const setupBootstrap = async () => {
     bsAlert.value = new bootstrap.Alert(alertRef.value) as BootstrapAlert
     attachAlertListeners()
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Alert will use basic Vue logic.',
       componentName: 'VibeAlert',
       originalError: error

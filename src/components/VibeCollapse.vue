@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { shallowRef, computed, watch, ref, inject, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import type { Tag, ComponentError } from '../types'
 import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
@@ -112,7 +113,7 @@ onMounted(async () => {
     }
   } catch (error) {
     bsInitialized.value = true
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Collapse will use CSS classes only.',
       componentName: 'VibeCollapse',
       originalError: error
