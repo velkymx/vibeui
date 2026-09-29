@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
@@ -139,7 +140,7 @@ const initOffcanvas = async () => {
       bsOffcanvas.value.show()
     }
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Offcanvas will use data attributes only.',
       componentName: 'VibeOffcanvas',
       originalError: error

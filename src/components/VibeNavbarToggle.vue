@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { inject, computed } from 'vue'
 import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 
@@ -40,7 +41,7 @@ const handleClick = async () => {
       bsCollapse.toggle()
     }
   } catch (error) {
-    emit('component-error', { message: 'Bootstrap JS toggle failed.', componentName: 'VibeNavbarToggle', originalError: error })
+    reportComponentError(emit, { message: 'Bootstrap JS toggle failed.', componentName: 'VibeNavbarToggle', originalError: error })
   }
 }
 </script>

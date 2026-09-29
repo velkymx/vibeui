@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType } from 'vue'
@@ -244,7 +245,7 @@ const initQuill = async () => {
       'VibeFormWysiwyg needs a Quill loader. Install quill and its snow theme ' +
       'CSS, then provide a loader through the wysiwyg plugin option or the ' +
       'quill-loader prop. See the VibeFormWysiwyg docs for the exact snippet.'
-    emit('component-error', {
+    reportComponentError(emit, {
       message: loadError.value,
       componentName: 'VibeFormWysiwyg',
       originalError: new Error('No quillLoader provided')
@@ -322,7 +323,7 @@ const initQuill = async () => {
       'Failed to load Quill. Ensure quill is installed and the provided ' +
       'quill-loader resolves it. See the VibeFormWysiwyg docs.'
     isQuillLoaded.value = false
-    emit('component-error', {
+    reportComponentError(emit, {
       message: loadError.value,
       componentName: 'VibeFormWysiwyg',
       originalError: error
@@ -464,7 +465,7 @@ watch(isMobile, () => {
       // from the async setTimeout callback is silently swallowed by the runtime.
       quillInstance.value = null
       isQuillLoaded.value = false
-      emit('component-error', {
+      reportComponentError(emit, {
         message: 'Editor failed to reinitialise on mobile breakpoint change.',
         componentName: 'VibeFormWysiwyg',
         originalError: error

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { NavItem, DropdownItem, ComponentError } from '../types'
 import { linkBindings } from '../utils/linkBindings'
@@ -34,7 +35,7 @@ const initDropdowns = async () => {
       }
     })
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Dropdowns will use data attributes only.',
       componentName: 'VibeNavbarNav',
       originalError: error

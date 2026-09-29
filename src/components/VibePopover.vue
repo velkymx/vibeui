@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { TooltipPlacement, ComponentError } from '../types'
 
@@ -64,7 +65,7 @@ const initPopover = async () => {
       html: false
     }) as BootstrapPopover
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Popover will use data attributes only.',
       componentName: 'VibePopover',
       originalError: error

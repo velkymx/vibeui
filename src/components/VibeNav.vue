@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { NavItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
@@ -80,7 +81,7 @@ const initTabs = async () => {
       }
     })
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Nav will use basic Vue logic.',
       componentName: 'VibeNav',
       originalError: error

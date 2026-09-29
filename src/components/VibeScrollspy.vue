@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { shallowRef, ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated, computed } from 'vue'
 import type { Tag, ComponentError } from '../types'
 import { safeLength } from '../utils/safeCss'
@@ -74,7 +75,7 @@ const initScrollspy = async () => {
 
     scrollspyRef.value.addEventListener('activate.bs.scrollspy', onActivate)
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. ScrollSpy will use data attributes only.',
       componentName: 'VibeScrollspy',
       originalError: error

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { TooltipPlacement, ComponentError } from '../types'
 
@@ -67,7 +68,7 @@ const initTooltip = async () => {
       html: false
     }) as BootstrapTooltip
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Tooltip will use data attributes only.',
       componentName: 'VibeTooltip',
       originalError: error

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { emitEvent } from '../composables/useEventBus'
 import { computed, ref, onBeforeUnmount, onDeactivated, type PropType } from 'vue'
 
 export interface StepperStep {
@@ -67,7 +68,16 @@ const runGuard = async (
     const result = guard(props.modelValue, direction)
     return result instanceof Promise ? await result : result
   } catch (err) {
+    // VibeStepper's local component-error event carries the raw error (unknown),
+    // unlike the ComponentError other components emit. Keep that event as-is
+    // (changing its payload would be breaking) and publish a structured
+    // ComponentError to the bus so the error channel stays uniformly typed.
     emit('component-error', err)
+    emitEvent('error:component', {
+      message: 'A step guard threw.',
+      componentName: 'VibeStepper',
+      originalError: err,
+    })
     return false
   }
 }
