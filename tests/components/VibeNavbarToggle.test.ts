@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import VibeNavbarToggle from '../../src/components/VibeNavbarToggle.vue'
 import { NAVBAR_COLLAPSE_KEY } from '../../src/injectionKeys'
+import { useEventBus, __resetEventBusForTests } from '../../src/composables/useEventBus'
 
 const mockBsToggle = vi.fn()
 const mockGetOrCreate = vi.fn(() => ({ toggle: mockBsToggle }))
@@ -118,6 +119,30 @@ describe('VibeNavbarToggle', () => {
       expect(wrapper.emitted('component-error')).toBeTruthy()
       const [payload] = wrapper.emitted('component-error')![0] as [{ componentName: string }]
       expect(payload.componentName).toBe('VibeNavbarToggle')
+
+      document.body.removeChild(el)
+    })
+
+    // #96: the same error also reaches the bus error:component channel, so a
+    // single app-wide subscriber observes every component's errors.
+    it('also publishes the error on the bus error:component channel (#96)', async () => {
+      __resetEventBusForTests()
+      const onBus = vi.fn()
+      useEventBus().on('error:component', onBus)
+
+      mockGetOrCreate.mockImplementationOnce(() => {
+        throw new Error('bs-fail')
+      })
+      const el = document.createElement('div')
+      el.id = 'err-collapse-bus'
+      document.body.appendChild(el)
+
+      const wrapper = mount(VibeNavbarToggle, { props: { target: 'err-collapse-bus' } })
+      await wrapper.find('button').trigger('click')
+      await flushPromises()
+
+      expect(onBus).toHaveBeenCalledTimes(1)
+      expect(onBus.mock.calls[0][0]).toMatchObject({ componentName: 'VibeNavbarToggle' })
 
       document.body.removeChild(el)
     })

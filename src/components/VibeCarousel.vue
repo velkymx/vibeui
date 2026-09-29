@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { CarouselItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
@@ -132,7 +133,7 @@ const initCarousel = async () => {
     }
   } catch (error) {
     attachedEl.value = null
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Carousel will use data attributes only.',
       componentName: 'VibeCarousel',
       originalError: error

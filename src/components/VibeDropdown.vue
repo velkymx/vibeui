@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
@@ -105,7 +106,7 @@ const initDropdown = async () => {
       toggleEl.addEventListener('hidden.bs.dropdown', onHidden)
     }
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Dropdown will use data attributes only.',
       componentName: 'VibeDropdown',
       originalError: error
