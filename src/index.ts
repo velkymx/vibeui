@@ -38,6 +38,8 @@ export {
   onOffcanvasClosed,
   emitLayoutSidebarToggle,
   onLayoutSidebarToggled,
+  emitNavBreadcrumbUpdate,
+  onNavBreadcrumbUpdated,
 } from './composables/eventHelpers'
 
 // Export the plugin as default for app.use(VibeUI)
