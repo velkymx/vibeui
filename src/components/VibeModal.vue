@@ -308,8 +308,14 @@ const closeFromBus = () => {
   if (canceled) return
   hide()
 }
-const unregisterModal = registerModal(computedId.value, { open: openFromBus, close: closeFromBus })
-onBeforeUnmount(unregisterModal)
+let unregisterModal = registerModal(computedId.value, { open: openFromBus, close: closeFromBus })
+// Re-register if the id changes after mount (e.g. a `:id` bound to data that
+// resolves later), so bus commands always reach this modal under its current id.
+watch(computedId, (id) => {
+  unregisterModal()
+  unregisterModal = registerModal(id, { open: openFromBus, close: closeFromBus })
+})
+onBeforeUnmount(() => unregisterModal())
 
 // Support Android back button in hybrid mobile apps
 useBackButton(() => {

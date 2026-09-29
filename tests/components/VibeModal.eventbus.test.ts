@@ -83,4 +83,22 @@ describe('VibeModal over the event bus (#98)', () => {
     off()
     expect(onUnhandled).toHaveBeenCalledTimes(1)
   })
+
+  it('re-registers when the id changes after mount (#119)', async () => {
+    const wrapper = mount(VibeModal, { props: { id: 'a', teleport: false } })
+    await flushPromises()
+    await wrapper.setProps({ id: 'b' })
+    await flushPromises()
+
+    // the old id is now unknown
+    const onUnhandled = vi.fn()
+    const off = useEventBus().on('error:unhandled', onUnhandled)
+    emitModalOpen({ id: 'a' })
+    off()
+    expect(onUnhandled).toHaveBeenCalledTimes(1)
+
+    // the new id opens this modal
+    emitModalOpen({ id: 'b' })
+    expect(lastModal().show).toHaveBeenCalledTimes(1)
+  })
 })

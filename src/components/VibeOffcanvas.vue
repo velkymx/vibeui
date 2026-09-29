@@ -188,12 +188,15 @@ const hide = () => bsOffcanvas.value?.hide()
 
 // Event-bus layout/offcanvas channel (#100): open/close/toggle this offcanvas by
 // id from anywhere. A `sidebar` offcanvas also answers layout:sidebar-toggle.
-const unregisterOffcanvas = registerOffcanvas(
-  computedId.value,
-  { open: show, close: hide, toggle: () => (isVisible.value ? hide() : show()) },
-  props.sidebar
-)
-onBeforeUnmount(unregisterOffcanvas)
+const offcanvasController = { open: show, close: hide, toggle: () => (isVisible.value ? hide() : show()) }
+let unregisterOffcanvas = registerOffcanvas(computedId.value, offcanvasController, props.sidebar)
+// Re-register if the id changes after mount so bus commands always reach this
+// offcanvas under its current id.
+watch(computedId, (id) => {
+  unregisterOffcanvas()
+  unregisterOffcanvas = registerOffcanvas(id, offcanvasController, props.sidebar)
+})
+onBeforeUnmount(() => unregisterOffcanvas())
 
 // Support Android back button in hybrid mobile apps
 useBackButton(() => {

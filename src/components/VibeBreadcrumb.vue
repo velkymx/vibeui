@@ -20,17 +20,17 @@ const emit = defineEmits<{
 }>()
 
 // Trail received from the bus, mapped from { label, path } to BreadcrumbItem.
+// Subscribe unconditionally (on() auto-unsubscribes on unmount) so toggling
+// `busUpdates` reactively takes effect; whether the bus trail is shown is
+// decided in displayItems.
 const busItems = ref<BreadcrumbItem[]>([])
-if (props.busUpdates) {
-  // on() auto-unsubscribes when this component unmounts.
-  onNavBreadcrumbUpdated(({ items }) => {
-    busItems.value = items.map(i => ({ text: i.label, to: i.path }))
-  })
-}
+onNavBreadcrumbUpdated(({ items }) => {
+  busItems.value = items.map(i => ({ text: i.label, to: i.path }))
+})
 
-// Explicit items win; otherwise fall back to the bus-provided trail.
+// Explicit items win; otherwise use the bus trail only when busUpdates is on.
 const displayItems = computed<BreadcrumbItem[]>(() =>
-  props.items.length > 0 ? props.items : busItems.value
+  props.items.length > 0 ? props.items : (props.busUpdates ? busItems.value : props.items)
 )
 
 const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
