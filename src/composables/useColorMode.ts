@@ -1,5 +1,6 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { ColorMode } from '../types'
+import { emitEvent, useEventBus } from './useEventBus'
 
 const STORAGE_KEY = 'vibe-color-mode'
 
@@ -85,6 +86,23 @@ if (typeof window !== 'undefined') {
   attachSystemListener()
   initialized = true
 }
+
+// Event-bus theme channel (#99). Publish theme:changed whenever the resolved
+// light/dark theme flips (mode change or OS change in auto mode), and accept
+// theme:set to change the mode from anywhere. Wired once at module load, outside
+// any component scope, so it lives for the app's lifetime.
+function setModeAndPersist(mode: ColorMode) {
+  try {
+    localStorage.setItem(STORAGE_KEY, mode)
+  } catch {
+    // localStorage may be unavailable (SSR / private browsing)
+  }
+  applyAndUpdate(mode)
+}
+// flush: 'sync' so the bus event fires the instant the theme flips, matching
+// pub/sub expectations rather than deferring to the next tick.
+watch(resolvedMode, (theme) => emitEvent('theme:changed', { theme }), { flush: 'sync' })
+useEventBus().on('theme:set', ({ theme }) => setModeAndPersist(theme))
 
 export function useColorMode() {
   function setColorMode(mode: ColorMode) {
