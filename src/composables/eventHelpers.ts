@@ -24,3 +24,26 @@ export const onNotificationShown = (
 export const onNotificationDismissed = (
   handler: (payload: VibeEventMap['notification:dismissed']) => void,
 ): (() => void) => useEventBus().on('notification:dismissed', handler)
+
+// Modal channel (#98)
+export const emitModalOpen = (payload: VibeEventMap['modal:open']): void =>
+  emitEvent('modal:open', payload)
+
+export const emitModalClose = (payload: VibeEventMap['modal:close']): void =>
+  emitEvent('modal:close', payload)
+
+export const onBeforeModalOpen = (
+  handler: (payload: VibeEventMap['modal:beforeOpen']) => void,
+): (() => void) => useEventBus().on('modal:beforeOpen', handler)
+
+export const onBeforeModalClose = (
+  handler: (payload: VibeEventMap['modal:beforeClose']) => void,
+): (() => void) => useEventBus().on('modal:beforeClose', handler)
+
+export const onModalOpened = (
+  handler: (payload: VibeEventMap['modal:opened']) => void,
+): (() => void) => useEventBus().on('modal:opened', handler)
+
+export const onModalClosed = (
+  handler: (payload: VibeEventMap['modal:closed']) => void,
+): (() => void) => useEventBus().on('modal:closed', handler)
