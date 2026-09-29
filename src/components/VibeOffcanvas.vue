@@ -4,6 +4,8 @@ import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vu
 import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
+import { emitEvent } from '../composables/useEventBus'
+import { registerOffcanvas } from '../composables/offcanvasChannel'
 
 interface BootstrapOffcanvas {
   show: () => void
@@ -22,7 +24,9 @@ const props = defineProps({
   placement: { type: String as () => OffcanvasPlacement, default: 'start' },
   backdrop: { type: [Boolean, String], default: true },
   scroll: { type: Boolean, default: false },
-  teleport: { type: [String, Boolean], default: 'body' }
+  teleport: { type: [String, Boolean], default: 'body' },
+  // Designate this offcanvas as the app sidebar, targeted by layout:sidebar-toggle.
+  sidebar: { type: Boolean, default: false }
 })
 
 const emit = defineEmits<{
@@ -69,6 +73,9 @@ const onShown = () => {
   isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
+  // Bus lifecycle: fires however the offcanvas was opened.
+  emitEvent('offcanvas:opened', { id: computedId.value })
+  if (props.sidebar) emitEvent('layout:sidebar-toggled', { open: true })
 }
 
 const onHide = () => {
@@ -79,6 +86,9 @@ const onHidden = () => {
   isVisible.value = false
   emit('hidden')
   emit('update:modelValue', false)
+  // Bus lifecycle.
+  emitEvent('offcanvas:closed', { id: computedId.value })
+  if (props.sidebar) emitEvent('layout:sidebar-toggled', { open: false })
   // WCAG 2.4.3: return focus to the element that opened the offcanvas.
   if (preFocusEl && typeof preFocusEl.focus === 'function') {
     preFocusEl.focus()
@@ -175,6 +185,15 @@ watch([() => props.placement, () => props.backdrop, () => props.scroll], initOff
 
 const show = () => bsOffcanvas.value?.show()
 const hide = () => bsOffcanvas.value?.hide()
+
+// Event-bus layout/offcanvas channel (#100): open/close/toggle this offcanvas by
+// id from anywhere. A `sidebar` offcanvas also answers layout:sidebar-toggle.
+const unregisterOffcanvas = registerOffcanvas(
+  computedId.value,
+  { open: show, close: hide, toggle: () => (isVisible.value ? hide() : show()) },
+  props.sidebar
+)
+onBeforeUnmount(unregisterOffcanvas)
 
 // Support Android back button in hybrid mobile apps
 useBackButton(() => {

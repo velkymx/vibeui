@@ -69,6 +69,24 @@ export interface VibeEventMap {
   'theme:set': { theme: 'light' | 'dark' }
   /** Lifecycle: the resolved theme changed. */
   'theme:changed': { theme: 'light' | 'dark' }
+
+  // Layout / offcanvas channel. Command events are handled by the VibeOffcanvas
+  // with the given id; layout:sidebar-toggle targets the offcanvas flagged as the
+  // sidebar. Lifecycle events fire after the transition.
+  /** Command: open the offcanvas with this id. */
+  'offcanvas:open': { id: string }
+  /** Command: close the offcanvas with this id. */
+  'offcanvas:close': { id: string }
+  /** Command: toggle the offcanvas with this id. */
+  'offcanvas:toggle': { id: string }
+  /** Lifecycle: the offcanvas finished opening. */
+  'offcanvas:opened': { id: string }
+  /** Lifecycle: the offcanvas finished closing. */
+  'offcanvas:closed': { id: string }
+  /** Command: toggle the designated sidebar offcanvas. */
+  'layout:sidebar-toggle': void
+  /** Lifecycle: the sidebar's open state changed. */
+  'layout:sidebar-toggled': { open: boolean }
 }
 
 export type ColorMode = 'light' | 'dark' | 'auto'
