@@ -47,7 +47,7 @@ Powerful data table component with search, sorting, and pagination - similar to 
 | `small` | `Boolean` | `false` | Compact table |
 | `responsive` | `Boolean` | `true` | Responsive table wrapper |
 | `stack` | `Boolean` | `false` | Transforms table into cards on mobile screens |
-| `variant` | `String` | `undefined` | Table color variant |
+| `variant` | `Variant` | `undefined` | Table color variant (`table-{variant}`); typed to the `Variant` union. |
 
 ### Feature Props
 
