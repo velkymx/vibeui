@@ -15,6 +15,9 @@ Button component with variants, sizes, and support for links and router-links.
 | `to` | `String\|Object` | `undefined` | Renders as router-link with to prop |
 | `active` | `Boolean` | `false` | Apply active state styling |
 | `focusRing` | `Boolean` | `false` | Enable the Bootstrap 5.3 focus-ring helper |
+| `loading` | `Boolean` | `false` | Controlled loading state: shows a spinner, disables the button, and sets `aria-busy`. Clicks are ignored while true |
+| `action` | `(event: MouseEvent) => unknown` | `undefined` | Auto-runner: called on click; if it returns a promise the button owns the loading state until it settles |
+| `loadingText` | `String` | `undefined` | Optional label shown in place of the slot while loading (for example `"Saving..."`) |
 
 ## Important Notes
 
@@ -145,6 +148,47 @@ const handleClick = () => {
   </VibeButton>
 </template>
 ```
+
+### Async Actions
+
+Two modes cover both the controlled and the automatic case.
+
+**Controlled (`loading`):** you own the boolean and keep using `@click`. The button shows a spinner, disables itself, sets `aria-busy`, and ignores clicks while `loading` is true.
+
+```vue
+<script setup>
+import { ref } from 'vue'
+const busy = ref(false)
+async function save() {
+  busy.value = true
+  try {
+    await api.save()
+  } finally {
+    busy.value = false
+  }
+}
+</script>
+
+<template>
+  <VibeButton :loading="busy" @click="save">Save</VibeButton>
+</template>
+```
+
+**Automatic (`:action`):** pass the async function and the button owns the whole lifecycle: it awaits the returned promise, shows the spinner, blocks re-entrant clicks (no double-submit), and clears loading when the promise settles. On rejection it clears loading and emits `component-error` (it does not swallow the error silently).
+
+```vue
+<script setup>
+async function save() {
+  await api.save()
+}
+</script>
+
+<template>
+  <VibeButton :action="save" loading-text="Saving...">Save</VibeButton>
+</template>
+```
+
+If both `loading` and `:action` are set, the controlled `loading` prop wins. Use `loadingText` to swap the label while loading; omit it to keep the label and just prepend the spinner.
 
 ## Bootstrap CSS Classes
 
