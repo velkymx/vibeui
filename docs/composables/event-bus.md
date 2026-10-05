@@ -76,6 +76,10 @@ VibeUI publishes to and acts on a fixed set of channels. They fall into three ti
 
 For runnable, end-to-end examples of each channel, see the [event bus cookbook](./event-bus-cookbook.md).
 
+### Pick one control path per instance
+
+`VibeModal` and `VibeOffcanvas` can be driven two ways: a `v-model` binding, or the command channel by `id` (`modal:open`, `offcanvas:toggle`, and so on). Choose one per instance. The two paths are not reconciled: a bus command does not update a bound `v-model` ref, so mixing them lets the ref and the actual open/closed state disagree. Driving a `v-model`-bound instance by bus command logs a development warning. Use `v-model` when the parent owns the state; use the command channel to open or close from anywhere without wiring a ref.
+
 ## Your own events
 
 The library only ships the channels above. Everything else, such as app-level `auth`, `cart`, `realtime`, or `form` events, you add yourself on the same bus. There is no separate emitter to install.

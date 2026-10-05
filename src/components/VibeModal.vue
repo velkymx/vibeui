@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
 import type { Size, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
@@ -293,9 +293,24 @@ const show = () => bsModal.value?.show()
 const hide = () => bsModal.value?.hide()
 const handleUpdate = () => bsModal.value?.handleUpdate()
 
+// #121: v-model and the bus command channel are mutually exclusive per instance.
+// Vue exposes a v-model binding as an `onUpdate:modelValue` listener on the vnode;
+// detect it once at setup (getCurrentInstance() is null outside setup, so the
+// bus controller below reads this captured flag, not a fresh lookup).
+const vModelBound = getCurrentInstance()?.vnode.props?.['onUpdate:modelValue'] != null
+const warnIfVModel = () => {
+  if (import.meta.env.DEV && vModelBound) {
+    console.warn(
+      `[VibeModal] "${computedId.value}" received a bus command while bound with v-model. ` +
+      'Use either v-model or the bus command channel for one instance, not both (#121).'
+    )
+  }
+}
+
 // Event-bus modal channel (#98): open/close this modal by id from anywhere.
 // Guards are cancelable; the payload is exposed to the default slot.
 const openFromBus = (payload?: unknown) => {
+  warnIfVModel()
   let canceled = false
   emitEvent('modal:beforeOpen', { id: computedId.value, cancel: () => { canceled = true } })
   if (canceled) return
@@ -303,6 +318,7 @@ const openFromBus = (payload?: unknown) => {
   show()
 }
 const closeFromBus = () => {
+  warnIfVModel()
   let canceled = false
   emitEvent('modal:beforeClose', { id: computedId.value, cancel: () => { canceled = true } })
   if (canceled) return

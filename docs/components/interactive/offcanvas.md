@@ -75,6 +75,8 @@ const showOffcanvas = ref(false)
 
 **Escape Hatch:** The exposed `_unsafe_bsInstance` template ref gives raw access to the underlying Bootstrap Offcanvas instance. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly **will** break the component. Prefer `v-model` and the exposed `show()` / `hide()` methods.
 
+**One control path per instance:** Drive an offcanvas with either `v-model` or the event bus command channel (`offcanvas:open` / `offcanvas:close` / `offcanvas:toggle` by `id`, or `layout:sidebar-toggle`), not both. The two paths are not reconciled, so a bus command on a `v-model`-bound offcanvas logs a development warning. See [useEventBus](../../composables/event-bus.md#pick-one-control-path-per-instance).
+
 ## Mobile Optimization
 
 **Safe Areas:** When used in hybrid apps with `viewport-fit=cover`, the offcanvas header automatically adds padding to account for device notches.
