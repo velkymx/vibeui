@@ -187,6 +187,11 @@ export interface ListGroupItem {
   active?: boolean
   disabled?: boolean
   variant?: Variant
+  // #34: override the auto-chosen wrapper element (e.g. 'button' for an
+  // actionable row). Defaults to a/router-link/li based on href/to.
+  tag?: string
+  // #34: extra classes merged onto the list-group-item element.
+  class?: string
 }
 
 export interface AccordionItem {
