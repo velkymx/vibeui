@@ -5,6 +5,7 @@ import type { NavItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 import { linkBindings } from '../utils/linkBindings'
 import { routeKey } from '../utils/routeKey'
+import { dropdownItemKey } from '../utils/dropdownItemKey'
 
 interface BootstrapTab {
   show: () => void
@@ -179,7 +180,7 @@ defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
           {{ item.text }}
         </button>
         <ul class="dropdown-menu">
-          <li v-for="(child, childIndex) in item.children" :key="child.href || child.text || String(childIndex)">
+          <li v-for="(child, childIndex) in item.children" :key="dropdownItemKey(child, childIndex, 'VibeNav')">
             <template v-if="child.divider">
               <hr class="dropdown-divider">
             </template>

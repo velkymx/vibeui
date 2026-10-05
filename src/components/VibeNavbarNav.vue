@@ -4,6 +4,7 @@ import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { NavItem, DropdownItem, ComponentError } from '../types'
 import { linkBindings } from '../utils/linkBindings'
 import { safeHref } from '../utils/safeHref'
+import { dropdownItemKey } from '../utils/dropdownItemKey'
 
 interface BootstrapDropdown {
   dispose: () => void
@@ -122,7 +123,7 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
             </slot>
           </button>
           <ul class="dropdown-menu">
-            <template v-for="(child, childIndex) in item.children" :key="child.href || child.text || String(childIndex)">
+            <template v-for="(child, childIndex) in item.children" :key="dropdownItemKey(child, childIndex, 'VibeNavbarNav')">
               <li v-if="child.divider">
                 <hr class="dropdown-divider">
               </li>
