@@ -199,7 +199,8 @@ export interface ListGroupItem {
 }
 
 export interface AccordionItem {
-  id: string
+  // Optional: when omitted, VibeAccordion generates a stable id per item.
+  id?: string
   title: string
   content: string
   show?: boolean
