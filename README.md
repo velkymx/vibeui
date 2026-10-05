@@ -263,6 +263,12 @@ Form validation rules and `useForm()` API: [docs](https://github.com/velkymx/vib
 |-----------|-------------|------|
 | `v-vibe-tooltip` | Directive-based tooltip on any element | [docs](https://github.com/velkymx/vibeui/blob/main/docs/directives/v-tooltip.md) |
 
+## Tooling
+
+| Tool | Description | Docs |
+|------|-------------|------|
+| `use-vibeui` ESLint rule | Flags raw HTML elements (`button`, `a`, `input`, the `table` family, `nav`, ...) that have a VibeUI equivalent, so the library is actually used | [docs](https://github.com/velkymx/vibeui/blob/main/docs/eslint/use-vibeui.md) |
+
 ## Examples
 
 Full-page templates built entirely with VibeUI components — open [`examples/index.html`](./examples/index.html) (see [`examples/README.md`](./examples/README.md) for how to run them):

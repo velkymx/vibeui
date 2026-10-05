@@ -65,6 +65,7 @@ createApp(App).use(VibeUI).mount('#app')         // registers every component + 
 - **Composables:** `useToast` (global toasts; mount `<VibeToastHost/>` once), `useColorMode` (light/dark/auto), `useBreakpoints` (`isMobile`/`isTablet`/…), `useForm`, `usePosition`.
 - **Layout & sections:** `VibeContainer` / `VibeRow` (`:gutters`) / `VibeCol` (`:cols`/`:md`/…/`:order`); `VibeHero` for banner/hero sections; `VibeCard` (with `headerClass`/`bodyClass`/`#image`).
 - **Copy whole patterns** from the full-page templates in `examples/` (Album, Pricing, Checkout, Sign-in, Dashboard, Sidebars, Cover, Product, Carousel, Blog).
+- **Enforce usage:** the `use-vibeui` ESLint rule flags raw `<button>`/`<a>`/`<input>`/`<table>`/`<nav>` (and the table family) that have a VibeUI equivalent. See [ESLint rule docs](https://github.com/velkymx/vibeui/blob/main/docs/eslint/use-vibeui.md).
 
 ### Read the doc first
 
@@ -662,3 +663,5 @@ These pages ship inside the npm package under `docs/`, so you can read them stra
 **Directives:** [v-vibe-tooltip](https://github.com/velkymx/vibeui/blob/main/docs/directives/v-tooltip.md)
 
 **Utilities:** [Position utility classes](https://github.com/velkymx/vibeui/blob/main/docs/utilities/position.md)
+
+**Tooling:** [ESLint rule: use-vibeui](https://github.com/velkymx/vibeui/blob/main/docs/eslint/use-vibeui.md) - flags raw HTML elements that have a VibeUI equivalent
