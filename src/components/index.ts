@@ -179,10 +179,16 @@ import type { App, Plugin } from 'vue'
 import { vTooltip } from '../directives/vTooltip'
 import type { VibeUIOptions } from '../types'
 import { VIBE_WYSIWYG_KEY } from '../composables/wysiwygConfig'
+import { initColorModeEager } from '../composables/useColorMode'
 
 // Vue plugin for global registration
 const VibeUIPlugin: Plugin = {
   install(app: App, options?: VibeUIOptions) {
+    // #132: apply the color mode eagerly here (not at module import) so the bare
+    // import has no DOM side effect. Runs during app.use(), before mount, so the
+    // first paint still gets the right theme.
+    initColorModeEager()
+
     // Consumer-provided WYSIWYG peers (Quill loader + sanitizer). Provided
     // app-wide so VibeFormWysiwyg can inject them without the library importing
     // the optional peers itself.

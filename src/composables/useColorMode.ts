@@ -80,8 +80,16 @@ function detachSystemListener() {
   systemThemeMq = null
 }
 
-// Bug 1 fix: gate module-level side effects behind window check for SSR safety
-if (typeof window !== 'undefined') {
+/**
+ * #132: eager color-mode initialization. Applies the persisted/initial theme to
+ * `<html data-bs-theme>` and attaches the OS theme listener. The VibeUI plugin
+ * `install()` calls this, so it still runs during `app.use()` before mount
+ * (preventing a flash) while a bare import of this module stays free of DOM side
+ * effects. Idempotent, and a no-op during SSR. Consumers who use `useColorMode`
+ * without installing the plugin should call `initColorMode()` themselves.
+ */
+export function initColorModeEager(): void {
+  if (typeof window === 'undefined' || initialized) return
   applyAndUpdate(_initial)
   attachSystemListener()
   initialized = true
