@@ -137,6 +137,10 @@ export interface DataTableColumn<T extends object = Record<string, unknown>> {
   sortable?: boolean
   searchable?: boolean
   formatter?: (value: T[keyof T], row: T) => string | number
+  // #70: text to search for this column. Use it when the displayed value comes
+  // from a #cell slot (not visible to the filter) or differs from the raw value.
+  // Takes precedence over `formatter`, which is itself searched when present.
+  searchValue?: (row: T) => string | number
   class?: string
   headerClass?: string
   thStyle?: Record<string, string>

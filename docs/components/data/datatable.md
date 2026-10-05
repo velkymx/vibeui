@@ -102,6 +102,7 @@ interface DataTableColumn {
   sortable?: boolean            // Enable/disable sorting (default: true)
   searchable?: boolean          // Include in search (default: true)
   formatter?: (value: any, row: any) => string | number  // Custom formatter
+  searchValue?: (row: any) => string | number  // Text to search for this column
   class?: string                // CSS class for td
   headerClass?: string          // CSS class for th
   thStyle?: Record<string, string>  // Inline styles for th (sanitized — see note)
@@ -110,6 +111,19 @@ interface DataTableColumn {
 ```
 
 > **`thStyle` / `tdStyle` are sanitized.** Both objects are filtered against a safe CSS-property allowlist before being applied, as a defense against CSS injection (data exfiltration / UI spoofing) when column config comes from an API or untrusted source. Properties outside the allowlist are dropped.
+
+### Searching the displayed value
+
+Search matches the text a column actually shows. A column with a `formatter` is searched by its formatted output (search "Yes", not the raw `true`). When the displayed value comes from a `#cell` slot, or is otherwise derived, give the column a `searchValue(row)` function returning the text to match. `searchValue` takes precedence over `formatter`.
+
+```typescript
+const columns = [
+  // Searched by "Enabled" / "Disabled", not the raw status string.
+  { key: 'status', label: 'Status', formatter: (v) => (v === 'active' ? 'Enabled' : 'Disabled') },
+  // #cell slot renders tags; searchValue makes them searchable.
+  { key: 'tags', label: 'Tags', searchValue: (row) => row.tags.join(' ') },
+]
+```
 
 ## Events
 

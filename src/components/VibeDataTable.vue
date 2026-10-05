@@ -126,7 +126,13 @@ const filteredItems = computed(() => {
   return (props.items || []).filter((item) => {
     return (props.columns || []).some((column) => {
       if (column.searchable === false) return false
-      const value = item[column.key]
+      // #70: search the DISPLAYED text. searchValue (explicit hook, e.g. for
+      // #cell slots) wins, then formatter output, then the raw value.
+      const value = column.searchValue
+        ? column.searchValue(item)
+        : column.formatter
+          ? column.formatter(item[column.key], item)
+          : item[column.key]
       if (value == null) return false
       return String(value).toLowerCase().includes(query)
     })
