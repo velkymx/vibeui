@@ -22,6 +22,16 @@ const props = defineProps({
 
 const computedId = computed(() => props.id || _generatedId)
 
+// #139: item.id is optional. Resolve a stable id per item (explicit id wins,
+// otherwise derive one from the accordion id + index) for the panel id,
+// data-bs-target, aria wiring, and collapse tracking.
+const resolvedItems = computed(() =>
+  props.items.map((item, index) => ({
+    item,
+    id: item.id || `${computedId.value}-panel-${index}`,
+  }))
+)
+
 // CSS-special characters break Bootstrap's internal querySelector (e.g. #my.id).
 const CSS_SPECIAL_CHARS = /[ .:#[\](){}+~>,|^$*?=]/
 
@@ -138,9 +148,9 @@ const initItems = async () => {
         el.addEventListener('hide.bs.collapse', handlers.hide)
         el.addEventListener('hidden.bs.collapse', handlers.hidden)
 
-        // Check initial state from props
-        const item = props.items.find(i => i.id === id)
-        if (item?.show) {
+        // Check initial state from props (match on the resolved id).
+        const entry = resolvedItems.value.find(e => e.id === id)
+        if (entry?.item.show) {
           bsCollapse.show()
         }
       }
@@ -212,33 +222,33 @@ defineExpose({ refresh: initItems, _unsafe_bsInstances: bsCollapses })
 <template>
   <div ref="accordionRef" :id="computedId" :class="['accordion', { 'accordion-flush': flush }]">
     <div
-      v-for="(item, index) in items"
-      :key="item.id"
+      v-for="(entry, index) in resolvedItems"
+      :key="entry.id"
       class="accordion-item"
     >
       <h2 class="accordion-header">
         <button
-          :class="['accordion-button', { collapsed: !item.show }]"
+          :class="['accordion-button', { collapsed: !entry.item.show }]"
           type="button"
           data-bs-toggle="collapse"
-          :data-bs-target="`#${item.id}`"
-          :aria-expanded="item.show"
-          :aria-controls="item.id"
-          @click="handleItemClick(item, index)"
+          :data-bs-target="`#${entry.id}`"
+          :aria-expanded="entry.item.show"
+          :aria-controls="entry.id"
+          @click="handleItemClick(entry.item, index)"
         >
-          <slot name="title" :item="item" :index="index">
-            {{ item.title }}
+          <slot name="title" :item="entry.item" :index="index">
+            {{ entry.item.title }}
           </slot>
         </button>
       </h2>
       <div
-        :id="item.id"
+        :id="entry.id"
         :class="['accordion-collapse', 'collapse']"
         :data-bs-parent="alwaysOpen ? undefined : `#${computedId}`"
       >
         <div class="accordion-body">
-          <slot name="content" :item="item" :index="index">
-            {{ item.content }}
+          <slot name="content" :item="entry.item" :index="index">
+            {{ entry.item.content }}
           </slot>
         </div>
       </div>

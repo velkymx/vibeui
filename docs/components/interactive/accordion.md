@@ -15,12 +15,14 @@ Collapsible accordion component for organizing content in a data-driven way.
 
 ```typescript
 interface AccordionItem {
-  id: string
+  id?: string   // Optional: a stable id is generated per item when omitted
   title: string
   content: string
   show?: boolean
 }
 ```
+
+> `id` is optional. Provide one when you need a predictable anchor or to target a panel from the event system; otherwise VibeUI generates a stable id per item.
 
 ## Events
 
