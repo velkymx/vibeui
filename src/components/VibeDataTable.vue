@@ -27,6 +27,13 @@ const props = defineProps({
   sortable: { type: Boolean, default: true },
   paginated: { type: Boolean, default: true },
 
+  // #124: server-side (manual) mode. When true, the table does no local
+  // filtering/sorting/paging: `items` is rendered as-is (the current page from
+  // the backend) and `totalRows` drives pagination. Page/sort changes emit via
+  // the existing models (update:currentPage/update:sortBy); search emits `search`.
+  serverMode: { type: Boolean, default: false },
+  totalRows: { type: Number, default: undefined },
+
   // Search
   searchPlaceholder: { type: String, default: 'Search...' },
   searchDebounce: { type: Number, default: 300 },
@@ -51,6 +58,8 @@ const sortDesc = defineModel<boolean>('sortDesc', { default: false })
 const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
   (e: 'component-error', error: ComponentError): void
+  // #124: emitted with the (debounced) search query so a server-mode consumer can fetch.
+  (e: 'search', query: string): void
 }>()
 
 // Local state for search
@@ -103,6 +112,8 @@ watch(searchQuery, (newVal) => {
     if (isUnmounted) return
     debouncedSearchQuery.value = newVal
     currentPage.value = 1
+    // #124: let a server-mode consumer fetch the matching page.
+    emit('search', newVal)
     searchDebounceTimer.value = null
   }, props.searchDebounce)
 })
@@ -118,6 +129,8 @@ onBeforeUnmount(() => {
 
 // Filtered items (based on search)
 const filteredItems = computed(() => {
+  // #124: in server mode the backend already filtered; render items as-is.
+  if (props.serverMode) return props.items || []
   if (!props.searchable || !debouncedSearchQuery.value) {
     return props.items || []
   }
@@ -186,7 +199,8 @@ const compareValues = (a: unknown, b: unknown, desc: boolean): number => {
 
 // Sorted items
 const sortedItems = computed(() => {
-  if (!props.sortable || !sortBy.value) {
+  // #124: in server mode the backend already sorted; do not reorder.
+  if (props.serverMode || !props.sortable || !sortBy.value) {
     return filteredItems.value
   }
 
@@ -200,7 +214,8 @@ const sortedItems = computed(() => {
 
 // Paginated items
 const paginatedItems = computed(() => {
-  if (!props.paginated) {
+  // #124: in server mode `items` is already the current page; render as-is.
+  if (props.serverMode || !props.paginated) {
     return sortedItems.value
   }
 
@@ -210,27 +225,37 @@ const paginatedItems = computed(() => {
 })
 
 // Pagination info
-const totalRows = computed(() => props.items.length)
-const totalFilteredRows = computed(() => filteredItems.value.length)
+// Rows loaded in the browser. In server mode this is just the current page slice.
+const clientTotalRows = computed(() => props.items.length)
+// #124: the total the pagination reflects. Server mode uses the external totalRows
+// prop (the backend's full count); client mode uses the locally filtered count.
+const totalFilteredRows = computed(() =>
+  props.serverMode ? (props.totalRows ?? clientTotalRows.value) : filteredItems.value.length
+)
 const totalPages = computed(() => Math.ceil(totalFilteredRows.value / Math.max(1, perPage.value)))
 const startRow = computed(() => {
   if (totalFilteredRows.value === 0) return 0
   return (currentPage.value - 1) * perPage.value + 1
 })
 const endRow = computed(() => {
+  // Server mode: the slice length is whatever the backend returned for this page.
+  if (props.serverMode) {
+    return startRow.value === 0 ? 0 : startRow.value + props.items.length - 1
+  }
   const end = currentPage.value * perPage.value
   return Math.min(end, totalFilteredRows.value)
 })
 
 const infoString = computed(() => {
-  const isFiltered = totalFilteredRows.value !== totalRows.value
+  // "filtered from N" only makes sense for local filtering.
+  const isFiltered = !props.serverMode && totalFilteredRows.value !== clientTotalRows.value
   const template = isFiltered ? props.filteredInfoText : props.infoText
 
   return template
     .replace('{start}', String(startRow.value))
     .replace('{end}', String(endRow.value))
     .replace('{total}', String(totalFilteredRows.value))
-    .replace('{totalRows}', String(totalRows.value))
+    .replace('{totalRows}', String(props.serverMode ? totalFilteredRows.value : clientTotalRows.value))
 })
 
 const visiblePages = computed(() => {

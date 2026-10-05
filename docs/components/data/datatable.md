@@ -57,6 +57,8 @@ Powerful data table component with search, sorting, and pagination - similar to 
 | `sortable` | `Boolean` | `true` | Enable column sorting |
 | `paginated` | `Boolean` | `true` | Enable pagination |
 | `clickable` | `Boolean` | `false` | Show a pointer cursor on rows to signal they are interactive (pair with a `@row-clicked` listener) |
+| `serverMode` | `Boolean` | `false` | Server-side mode: disable all local filtering, sorting, and paging. `items` is rendered as-is (the current page from your backend) |
+| `totalRows` | `Number` | `undefined` | Total row count from the backend; drives pagination in `serverMode` |
 
 ### Search Props
 
@@ -134,7 +136,40 @@ const columns = [
 | `update:sortBy` | `String` | Emitted when sort column changes |
 | `update:sortDesc` | `Boolean` | Emitted when sort direction changes |
 | `row-clicked` | `(item, globalIndex)` | Emitted when a row is clicked. `globalIndex` is the index within the full filtered/sorted dataset, not the current page. Only emitted when a `@row-clicked` listener is attached (rows show a pointer cursor in that case). |
+| `search` | `String` | Emitted (debounced) with the search query. Use it in `serverMode` to fetch the matching page. |
 | `component-error` | `ComponentError` | Emitted if an internal error occurs |
+
+### Server-side mode
+
+Set `serverMode` to hand filtering, sorting, and paging to your backend. The table renders `items` exactly as given (the current page), uses `totalRows` for the page count, and emits the state you need to refetch: `update:currentPage`, `update:perPage`, `update:sortBy`, `update:sortDesc`, and `search`. No local filtering, sorting, or slicing happens.
+
+```vue
+<template>
+  <VibeDataTable
+    :columns="columns"
+    :items="rows"
+    server-mode
+    :total-rows="total"
+    v-model:current-page="page"
+    v-model:sort-by="sortBy"
+    v-model:sort-desc="sortDesc"
+    @search="onSearch"
+  />
+</template>
+
+<script setup>
+import { ref, watch } from 'vue'
+const rows = ref([]); const total = ref(0)
+const page = ref(1); const sortBy = ref(); const sortDesc = ref(false); const query = ref('')
+function onSearch(q) { query.value = q }
+// Refetch whenever any server-driven input changes.
+watch([page, sortBy, sortDesc, query], async () => {
+  const res = await api.fetch({ page: page.value, sortBy: sortBy.value, sortDesc: sortDesc.value, q: query.value })
+  rows.value = res.items
+  total.value = res.total
+}, { immediate: true })
+</script>
+```
 
 ## Slots
 
