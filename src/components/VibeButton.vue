@@ -31,6 +31,17 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #140: DEV-only guard against the common Bootstrap habit of variant="outline-*".
+// VibeUI models outline as a boolean prop, so an "outline-primary" variant is not
+// a valid value; point the consumer at the correct form.
+if (import.meta.env.DEV && typeof props.variant === 'string' && props.variant.startsWith('outline-')) {
+  const base = props.variant.slice('outline-'.length)
+  console.warn(
+    `[VibeButton] variant="${props.variant}" is not valid. ` +
+    `Use the boolean prop instead: variant="${base}" outline.`
+  )
+}
+
 // Loading driven by the :action auto-runner. Controlled `loading` always wins
 // (see isLoading), so a consumer-owned boolean overrides the internal state.
 const actionLoading = ref(false)
