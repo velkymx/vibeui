@@ -161,6 +161,10 @@ Standalone utilities that can be used independently of any component.
 
 - [Position utility classes](./utilities/position.md) - Bootstrap position-* / top-* / translate-middle reference
 
+## Tooling
+
+- [ESLint rule: use-vibeui](./eslint/use-vibeui.md) - flags raw HTML elements that have a VibeUI equivalent, so the library is actually used
+
 ## Versioning & Stability
 
 - [Versioning & Stability Policy](./versioning.md) - SemVer commitment, what's covered by the public API, deprecation and peer-dependency policy

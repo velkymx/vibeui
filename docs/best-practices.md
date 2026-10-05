@@ -176,6 +176,8 @@ import { VibeButton, VibeModal } from '@velkymx/vibeui'
 | reverse-engineering props from `dist/` | read the component's doc page |
 | mutating chart data in place | replace the data reference immutably |
 
+Enforce the "use the component" habit automatically with the [`use-vibeui` ESLint rule](./eslint/use-vibeui.md): it flags raw `<button>` / `<a>` / `<input>` / `<table>` / `<nav>` (and the table family) that have a VibeUI equivalent.
+
 ---
 
 ## Further reading
