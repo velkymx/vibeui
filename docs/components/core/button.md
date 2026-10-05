@@ -6,7 +6,7 @@ Button component with variants, sizes, and support for links and router-links.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `variant` | `Variant` | `'primary'` | Button color variant |
+| `variant` | `Variant` | `'primary'` | Button color variant. **Not** `outline-*`: use the `outline` boolean prop instead (e.g. `variant="primary" outline`, not `variant="outline-primary"`). A development warning fires if you pass an `outline-*` value. |
 | `size` | `Size` | `undefined` | Button size: `'sm'` or `'lg'` |
 | `outline` | `Boolean` | `false` | Use outline style instead of solid |
 | `disabled` | `Boolean` | `false` | Disable the button |
