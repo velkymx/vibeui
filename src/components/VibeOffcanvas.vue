@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
 import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
@@ -186,9 +186,26 @@ watch([() => props.placement, () => props.backdrop, () => props.scroll], initOff
 const show = () => bsOffcanvas.value?.show()
 const hide = () => bsOffcanvas.value?.hide()
 
+// #121: v-model and the bus command channel are mutually exclusive per instance.
+// A v-model binding surfaces as an `onUpdate:modelValue` listener on the vnode;
+// capture it at setup (getCurrentInstance() is null in the bus controller below).
+const vModelBound = getCurrentInstance()?.vnode.props?.['onUpdate:modelValue'] != null
+const warnIfVModel = () => {
+  if (import.meta.env.DEV && vModelBound) {
+    console.warn(
+      `[VibeOffcanvas] "${computedId.value}" received a bus command while bound with v-model. ` +
+      'Use either v-model or the bus command channel for one instance, not both (#121).'
+    )
+  }
+}
+
 // Event-bus layout/offcanvas channel (#100): open/close/toggle this offcanvas by
 // id from anywhere. A `sidebar` offcanvas also answers layout:sidebar-toggle.
-const offcanvasController = { open: show, close: hide, toggle: () => (isVisible.value ? hide() : show()) }
+const offcanvasController = {
+  open: () => { warnIfVModel(); show() },
+  close: () => { warnIfVModel(); hide() },
+  toggle: () => { warnIfVModel(); isVisible.value ? hide() : show() },
+}
 let unregisterOffcanvas = registerOffcanvas(computedId.value, offcanvasController, props.sidebar)
 // Re-register if the id changes after mount so bus commands always reach this
 // offcanvas under its current id.
