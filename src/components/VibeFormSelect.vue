@@ -139,10 +139,21 @@ const syncSelection = () => {
 
 onMounted(syncSelection)
 // `post` flush runs after the option elements have been patched into the DOM.
+// #131: no `deep` watcher. syncSelection only needs to re-run when the model, the
+// options identity/length, `multiple`, or `placeholder` change. Tracking
+// `() => props.options` (reference) plus its length catches replacement and
+// in-place length changes without the O(options) deep traversal on every change.
+// Consumers should replace the options array rather than mutate it in place.
 watch(
-  [modelValue, () => props.options, () => props.multiple, () => props.placeholder],
+  [
+    modelValue,
+    () => props.options,
+    () => props.options.length,
+    () => props.multiple,
+    () => props.placeholder,
+  ],
   syncSelection,
-  { flush: 'post', deep: true }
+  { flush: 'post' }
 )
 
 const handleChange = (event: Event) => {
