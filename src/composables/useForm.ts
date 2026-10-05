@@ -15,8 +15,8 @@ export interface UseFormReturn<T extends Record<string, unknown>> {
   isDirty: ComputedRef<boolean>
   isValid: ComputedRef<boolean>
   values: ComputedRef<T>
-  validate: (rules: FormFieldRules<T>) => Promise<FormValidateResult<T>>
-  validateField: <K extends keyof T>(key: K, rule: ValidationRule[] | ValidatorFunction) => Promise<string>
+  validate: (rules?: FormFieldRules<T>) => Promise<FormValidateResult<T>>
+  validateField: <K extends keyof T>(key: K, rule?: ValidationRule[] | ValidatorFunction) => Promise<string>
   reset: () => void
   markTouched: <K extends keyof T>(key: K) => void
   markAllTouched: () => void
@@ -42,7 +42,12 @@ const runRules = async (
   return ''
 }
 
-export function useForm<T extends Record<string, unknown>>(initial: T): UseFormReturn<T> {
+export function useForm<T extends Record<string, unknown>>(
+  initial: T,
+  // #138: optional default rules held by the form. validate()/validateField()
+  // use them unless a per-call rule is supplied.
+  defaultRules?: FormFieldRules<T>
+): UseFormReturn<T> {
   const initialSnapshot = deepClone(initial)
   const fields = reactive(deepClone(initial)) as T
 
@@ -89,19 +94,22 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
 
   const validateField = async <K extends keyof T>(
     key: K,
-    rule: ValidationRule[] | ValidatorFunction
+    rule?: ValidationRule[] | ValidatorFunction
   ): Promise<string> => {
-    const message = await runRules(fields[key], rule)
+    // Fall back to the constructor rule for this field when none is passed.
+    const effective = rule ?? defaultRules?.[key]
+    const message = effective ? await runRules(fields[key], effective) : ''
     errors[key] = message
     hasValidated.value = true
     return message
   }
 
-  const validate = async (rules: FormFieldRules<T>): Promise<FormValidateResult<T>> => {
+  const validate = async (rules?: FormFieldRules<T>): Promise<FormValidateResult<T>> => {
+    const effectiveRules: FormFieldRules<T> = rules ?? defaultRules ?? {}
     const out: Partial<Record<keyof T, string>> = {}
     let valid = true
-    for (const key of Object.keys(rules) as Array<keyof T>) {
-      const rule = rules[key]
+    for (const key of Object.keys(effectiveRules) as Array<keyof T>) {
+      const rule = effectiveRules[key]
       if (!rule) continue
       const message = await runRules(fields[key], rule)
       errors[key] = message
