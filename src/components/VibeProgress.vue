@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { PropType } from 'vue'
 import type { ProgressBar } from '../types'
 import { safeLength } from '../utils/safeCss'
 
 const props = defineProps({
-  height: { type: String, default: undefined },
+  // #137: a number is treated as pixels (consistent with the chart components);
+  // a string passes through. Both are validated by safeLength below.
+  height: { type: [Number, String] as PropType<number | string>, default: undefined },
   bars: { type: Array as () => ProgressBar[], required: true }
 })
 
 const progressStyle = computed(() => {
-  // Validate freeform height prop before binding to :style — blocks CSS injection.
-  const h = safeLength(props.height)
+  // Normalize a numeric height to px, then validate the freeform value before
+  // binding to :style — blocks CSS injection.
+  const raw = typeof props.height === 'number' ? `${props.height}px` : props.height
+  const h = safeLength(raw)
   return h ? { height: h } : undefined
 })
 

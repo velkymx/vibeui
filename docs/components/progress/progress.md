@@ -6,7 +6,7 @@ Data-driven progress bar component supporting single or multiple bars.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `height` | `String` | `undefined` | Custom height (e.g., `'20px'`, `'2rem'`). Validated as a CSS length; invalid values are ignored |
+| `height` | `Number \| String` | `undefined` | Custom height. A number is treated as pixels (`:height="20"`); a string passes through (`'20px'`, `'2rem'`). Validated as a CSS length; invalid values are ignored |
 | `bars` | `ProgressBar[]` | Required | Array of progress bars to display |
 
 ### ProgressBar Interface
