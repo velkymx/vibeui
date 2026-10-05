@@ -32,12 +32,19 @@ const listGroupClass = computed(() => {
 })
 
 
+// #34: resolve the wrapper element. An explicit item.tag wins (e.g. 'button'),
+// otherwise fall back to the href/to based anchor/router-link/li.
+const getItemTag = (item: ListGroupItem) =>
+  item.tag ? item.tag : safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'li'
+
 const getItemClass = (item: ListGroupItem) => {
   const classes = ['list-group-item']
   if (safeHref(item.href) || item.to || !item.disabled) classes.push('list-group-item-action')
   if (item.active) classes.push('active')
   if (item.disabled) classes.push('disabled')
   if (item.variant) classes.push(`list-group-item-${item.variant}`)
+  // #34: per-item class passthrough.
+  if (item.class) classes.push(item.class)
   return classes.join(' ')
 }
 
@@ -52,10 +59,12 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
   <component :is="tag" :class="listGroupClass">
     <template v-for="(item, index) in items" :key="item.href ?? item.text ?? index">
     <component
-      :is="safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'li'"
+      :is="getItemTag(item)"
       :class="getItemClass(item)"
       :style="!safeHref(item.href) && !item.to && !item.disabled ? { cursor: 'pointer' } : undefined"
       v-bind="linkBindings(safeHref(item.href), item.to)"
+      :type="getItemTag(item) === 'button' ? 'button' : undefined"
+      :disabled="getItemTag(item) === 'button' ? item.disabled || undefined : undefined"
       :aria-disabled="item.disabled || undefined"
       :aria-current="item.active"
       @click="handleItemClick(item, index, $event)"
