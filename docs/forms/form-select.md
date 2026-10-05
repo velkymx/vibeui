@@ -92,6 +92,7 @@ const options: FormSelectOption[] = [
 - **Matching is by identity, first match wins:** the selected option is found with `Object.is` against `modelValue`, so `0`, `false`, `''` and `null` stay distinct. If two options share a value, the earlier one is selected.
 - **Placeholder:** only applies to single-select; it renders a disabled empty-value option. It is selected whenever `modelValue` matches no option — including when an option's own value is `''`, which stays distinct from the placeholder.
 - **Group linking:** wrapped in a `VibeFormGroup`, the select consumes the group id so the label and feedback link automatically.
+- **Updating options:** replace the `options` array with a new reference rather than mutating it in place. Selection re-syncs on options identity and length changes (there is no deep watcher), which is the standard data-down Vue pattern.
 
 ## Bootstrap CSS Classes
 
