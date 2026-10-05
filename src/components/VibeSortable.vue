@@ -19,6 +19,40 @@ const emit = defineEmits<{
 
 const draggingIndex = ref<number | null>(null)
 
+// #130: rows must keep a stable key across reorder so Vue moves the DOM node
+// instead of re-patching each position in place (which leaks a row's slot-local
+// state onto whatever item lands there). itemKey is preferred; without it we
+// assign a stable id per item object (survives the splice reorder, which keeps
+// the same references). A WeakMap keeps this type-safe (number) and leak-free.
+const keyCache = new WeakMap<object, number>()
+let keySeq = 0
+let warnedNoKey = false
+const resolveKey = (item: T): string | number => {
+  const isObject = item !== null && typeof item === 'object'
+  // Objects with an explicit key field: use it.
+  if (isObject && props.itemKey) return (item as Record<string, unknown>)[props.itemKey] as string | number
+  // Primitives: the value is the identity, stable across reorder.
+  if (!isObject) return item as unknown as string | number
+  // Objects without itemKey: assign a stable id per reference (survives the
+  // splice reorder, which keeps the same object references). WeakMap keeps this
+  // type-safe and leak-free. Warn once, since the id is not stable across
+  // immutable replacement of items.
+  if (import.meta.env.DEV && !warnedNoKey) {
+    warnedNoKey = true
+    console.warn(
+      '[VibeSortable] No `itemKey` prop set for object rows. Rows are keyed by item ' +
+      'identity, which is stable across reorder but not across immutable replacement ' +
+      'of items. Pass :item-key="\'id\'" (the unique field on your row type).'
+    )
+  }
+  let id = keyCache.get(item as object)
+  if (id === undefined) {
+    id = ++keySeq
+    keyCache.set(item as object, id)
+  }
+  return id
+}
+
 const onDragStart = (event: DragEvent, index: number) => {
   if (props.disabled) {
     event.preventDefault()
@@ -75,7 +109,7 @@ onActivated(() => { draggingIndex.value = null })
     <component
       :is="itemTag"
       v-for="(item, index) in modelValue"
-      :key="itemKey ? (item[itemKey] as string | number) : index"
+      :key="resolveKey(item)"
       class="vibe-sortable-item"
       :class="{ 'vibe-sortable-dragging': draggingIndex === index }"
       :draggable="!disabled"
