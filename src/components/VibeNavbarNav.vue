@@ -21,6 +21,13 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type item slots.
+defineSlots<{
+  item?: (props: { item: NavItem; index: number }) => unknown
+  'dropdown-item'?: (props: { item: NavItem; child: DropdownItem; index: number; childIndex: number }) => unknown
+  default?: () => unknown
+}>()
+
 const navbarNavRef = ref<HTMLElement | null>(null)
 const bsDropdowns = new Map<HTMLElement, BootstrapDropdown>()
 
@@ -138,7 +145,7 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
                   :type="getItemTag(child) === 'button' ? 'button' : undefined"
                   @click="handleDropdownItemClick(item, index, child, childIndex, $event)"
                 >
-                  <slot name="dropdown-item" :item="item" :child="child" :index="index" :child-index="childIndex">
+                  <slot name="dropdown-item" :item="item" :child="child" :index="index" :childIndex="childIndex">
                     {{ child.text }}
                   </slot>
                 </component>

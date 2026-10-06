@@ -9,6 +9,11 @@ const props = defineProps({
   fade: { type: Boolean, default: true }
 })
 
+// #147: type pane slot.
+defineSlots<{
+  pane?: (props: { pane: TabPane; index: number }) => unknown
+}>()
+
 
 const getTabPaneClass = (pane: TabPane) => {
   const classes = ['tab-pane']
