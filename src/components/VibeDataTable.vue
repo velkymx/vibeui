@@ -1,7 +1,8 @@
 <script setup lang="ts" generic="T extends object">
-import { ref, computed, watch, onBeforeUnmount, type PropType } from 'vue'
+import { ref, computed, watch, type PropType } from 'vue'
 import type { DataTableColumn, ComponentError, Variant } from '../types'
 import { safeCssObject } from '../utils/safeCss'
+import { useDebouncedRef } from '../composables/useDebouncedRef'
 
 const props = defineProps({
   // Data
@@ -71,8 +72,9 @@ defineSlots<{
 
 // Local state for search
 const searchQuery = ref('')
-const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
-const debouncedSearchQuery = ref('')
+// #158: debounced mirror. The pending timer clears on scope dispose, so no
+// post-unmount commit can fire (replaces the hand-rolled timer + guard).
+const debouncedSearchQuery = useDebouncedRef('', () => props.searchDebounce)
 
 /**
  * Generate a unique key for each row.
@@ -108,30 +110,18 @@ const getRowKey = (item: T, index: number): string | number => {
   return `__row_${(startRow.value - 1) + index}`
 }
 
-let isUnmounted = false
-
-// Debounced search with proper cleanup
+// Fan raw input into the debounced mirror; side effects run on commit.
 watch(searchQuery, (newVal) => {
-  if (searchDebounceTimer.value !== null) {
-    clearTimeout(searchDebounceTimer.value)
-  }
-  searchDebounceTimer.value = setTimeout(() => {
-    if (isUnmounted) return
-    debouncedSearchQuery.value = newVal
-    currentPage.value = 1
-    // #124: let a server-mode consumer fetch the matching page.
-    emit('search', newVal)
-    searchDebounceTimer.value = null
-  }, props.searchDebounce)
+  debouncedSearchQuery.value = newVal
 })
 
-// Cleanup debounce timer on unmount
-onBeforeUnmount(() => {
-  isUnmounted = true
-  if (searchDebounceTimer.value !== null) {
-    clearTimeout(searchDebounceTimer.value)
-    searchDebounceTimer.value = null
-  }
+// Watch through a fresh array so every commit notifies: watch() skips the
+// callback when the value is unchanged, but every input event schedules work
+// (matches the pre-#158 per-keystroke timer behavior).
+watch(() => [debouncedSearchQuery.value], ([newVal]) => {
+  currentPage.value = 1
+  // #124: let a server-mode consumer fetch the matching page.
+  emit('search', newVal)
 })
 
 // Filtered items (based on search)
