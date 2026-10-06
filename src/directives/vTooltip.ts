@@ -14,7 +14,8 @@ interface TooltipOptions {
   trigger?: string
 }
 
-type TooltipBindingValue = string | TooltipOptions | undefined
+// #153: exported so consumers (and type tests) can reference the binding value.
+export type TooltipBindingValue = string | TooltipOptions | undefined
 
 const INSTANCE_KEY: unique symbol = Symbol('vibeTooltipInstance')
 const PENDING_KEY: unique symbol = Symbol('vibeTooltipPending')

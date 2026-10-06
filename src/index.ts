@@ -1,4 +1,5 @@
 import './global-components'
+import './global-directives'
 import VibeUIPlugin from './components'
 
 export * from './components'
