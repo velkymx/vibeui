@@ -70,6 +70,10 @@ function passwordStrength(pw: string): { level: number; label: string } {
 
 const strength = computed(() => passwordStrength(String(modelValue.value ?? '')))
 const strengthColors = ['', '#dc3545', '#fd7e14', '#0d6efd', '#198754']
+// #155: the active bar color is component-level (shared by every lit bar), so
+// it rides a reactive v-bind() in the scoped stylesheet instead of a per-bar
+// inline :style object allocated each render.
+const activeStrengthColor = computed(() => strengthColors[strength.value.level] ?? 'var(--bs-border-color)')
 
 const inputmodeAutoMap: Partial<Record<InputType, InputMode>> = {
   number: 'decimal',
@@ -210,9 +214,8 @@ const handleFocus = (event: FocusEvent) => {
         <div
           v-for="i in 4"
           :key="i"
-          class="flex-fill rounded"
-          style="height: 4px"
-          :style="{ backgroundColor: i <= strength.level ? strengthColors[strength.level] : 'var(--bs-border-color)' }"
+          class="flex-fill rounded vibe-strength-bar"
+          :class="{ 'vibe-strength-active': i <= strength.level }"
         />
       </div>
       <small class="text-muted">Password strength: {{ strength.label }}</small>
@@ -260,5 +263,15 @@ const handleFocus = (event: FocusEvent) => {
 input::placeholder {
   color: var(--bs-secondary-color) !important;
   opacity: 1 !important;
+}
+
+/* #155: strength bars own their presentation; the active color arrives via
+   reactive v-bind() (see activeStrengthColor). */
+.vibe-strength-bar {
+  height: 4px;
+  background-color: var(--bs-border-color);
+}
+.vibe-strength-active {
+  background-color: v-bind(activeStrengthColor);
 }
 </style>
