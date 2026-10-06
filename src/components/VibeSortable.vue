@@ -17,6 +17,11 @@ const emit = defineEmits<{
   (e: 'reorder', payload: { from: number; to: number; item: T }): void
 }>()
 
+// #147: type the default slot to the row type T (typed item + index, not `any`).
+defineSlots<{
+  default?: (props: { item: T; index: number }) => unknown
+}>()
+
 const draggingIndex = ref<number | null>(null)
 
 // #130: rows must keep a stable key across reorder so Vue moves the DOM node

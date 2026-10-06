@@ -62,6 +62,13 @@ const emit = defineEmits<{
   (e: 'search', query: string): void
 }>()
 
+// #147: type the per-column cell slots to the row type T. A `cell(<key>)` slot
+// receives the typed row, the typed cell value, and the row index, so consumers
+// get autocomplete and type-checking instead of `any`.
+defineSlots<{
+  [K in keyof T & string as `cell(${K})`]?: (props: { item: T; value: T[K]; index: number }) => unknown
+}>()
+
 // Local state for search
 const searchQuery = ref('')
 const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
