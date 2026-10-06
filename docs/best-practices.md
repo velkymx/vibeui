@@ -160,6 +160,7 @@ import { VibeButton, VibeModal } from '@velkymx/vibeui'
 - Named imports (`import { VibeButton } from '@velkymx/vibeui'`) also give **template type-checking** of props with `vue-tsc`.
 - Public types are exported from the package: `Variant`, `Size`, `FormSelectOption`, `DataTableColumn<T>`, `ComponentError`, and the WYSIWYG `QuillLoader` / `Sanitizer` / `VibeUIOptions`.
 - `VibeFormSelect` preserves typed primitive option values (`number`, `boolean`, `null`) through `v-model` — you don't stringify.
+- **Scoped slot props are typed:** `defineSlots<>()` types `#item`, `cell(<key>)`, `#page`, `#pane`, `#label`, `#marker`, `#step`, `#actions`, and modal `#default` (`{ payload }`), so slot props autocomplete and type-check instead of `any`. DataTable cells are per-key (`value: T[K]`); Sortable slots carry the row type `T`.
 
 ---
 
