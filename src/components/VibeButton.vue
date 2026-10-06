@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { useTemplateRef, computed, onMounted, ref } from 'vue'
 import type { PropType } from 'vue'
 import type { ButtonVariant, Size, ButtonType, ComponentError } from '../types'
 import { linkBindings } from '../utils/linkBindings'
@@ -48,7 +48,7 @@ const actionLoading = ref(false)
 const isLoading = computed(() => props.loading || actionLoading.value)
 
 // Root ref used only for the DEV-only a11y check below.
-const rootRef = ref<HTMLElement | { $el?: HTMLElement } | null>(null)
+const rootRef = useTemplateRef<HTMLElement | { $el?: HTMLElement }>('rootRef')
 
 // DEV-only: warn when the button has content but no visible text and no
 // aria-label/aria-labelledby — screen readers would only announce "button" (WCAG 4.1.2).

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useTemplateRef, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { safeHref } from '../utils/safeHref'
@@ -49,7 +49,7 @@ defineSlots<{
 
 const computedId = computed(() => props.id || _generatedId)
 
-const dropdownRef = ref<HTMLElement | null>(null)
+const dropdownRef = useTemplateRef<HTMLElement>('dropdownRef')
 const bsDropdown = shallowRef<BootstrapDropdown | null>(null)
 let toggleEl: HTMLElement | null = null
 let reinitGuard = false

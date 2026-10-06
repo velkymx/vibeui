@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useTemplateRef, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { AccordionItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
@@ -65,7 +65,7 @@ defineSlots<{
   content?: (props: { item: AccordionItem; index: number }) => unknown
 }>()
 
-const accordionRef = ref<HTMLElement | null>(null)
+const accordionRef = useTemplateRef<HTMLElement>('accordionRef')
 const bsCollapses = new Map<string, BootstrapCollapse>()
 const collapseElements = new Map<string, HTMLElement>()
 let initInFlight = false

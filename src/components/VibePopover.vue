@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { useTemplateRef, shallowRef, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { TooltipPlacement, ComponentError } from '../types'
 
 interface BootstrapPopover {
@@ -20,7 +20,7 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const popoverRef = ref<HTMLElement | null>(null)
+const popoverRef = useTemplateRef<HTMLElement>('popoverRef')
 const bsPopover = shallowRef<BootstrapPopover | null>(null)
 
 // Tracks whether onBeforeUnmount has fired. The template ref (popoverRef) may still be

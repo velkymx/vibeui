@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { useTemplateRef, computed, onMounted, watch } from 'vue'
 import type { PropType } from 'vue'
 import type { FormSelectOption, FormSelectOptionValue, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -99,7 +99,7 @@ const handleInput = (event: Event) => {
 // per-option, because an option's selectedness is not reliably retained while its
 // siblings are still being inserted. Vue's own v-model on <select> resolves this by
 // applying selectedness imperatively once the options are in the DOM — mirror that.
-const selectEl = ref<HTMLSelectElement | null>(null)
+const selectEl = useTemplateRef<HTMLSelectElement>('selectEl')
 
 // Index into `props.options`; -1 when the model matches no option. First match wins,
 // so duplicate values resolve to the earliest option.

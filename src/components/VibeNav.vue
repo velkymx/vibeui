@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useTemplateRef, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { NavItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 import { linkBindings } from '../utils/linkBindings'
@@ -37,7 +37,7 @@ defineSlots<{
   item?: (props: { item: NavItem; index: number }) => unknown
 }>()
 
-const navRef = ref<HTMLElement | null>(null)
+const navRef = useTemplateRef<HTMLElement>('navRef')
 const bsTabs = new Map<HTMLElement, BootstrapTab>()
 
 // Guards concurrent initTabs calls and post-unmount Bootstrap construction.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, ref, watch, nextTick, onMounted, onBeforeUnmount, onActivated, computed } from 'vue'
+import { useTemplateRef, shallowRef, watch, nextTick, onMounted, onBeforeUnmount, onActivated, computed } from 'vue'
 import type { Tag, ComponentError } from '../types'
 import { safeLength } from '../utils/safeCss'
 
@@ -35,7 +35,7 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const scrollspyRef = ref<HTMLElement | null>(null)
+const scrollspyRef = useTemplateRef<HTMLElement>('scrollspyRef')
 const bsScrollspy = shallowRef<BootstrapScrollSpy | null>(null)
 let initInFlight = false
 

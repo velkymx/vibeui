@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { useTemplateRef, shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
 import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
@@ -40,7 +40,7 @@ const emit = defineEmits<{
 
 const computedId = computed(() => props.id || _generatedId)
 
-const offcanvasRef = ref<HTMLElement | null>(null)
+const offcanvasRef = useTemplateRef<HTMLElement>('offcanvasRef')
 const bsOffcanvas = shallowRef<BootstrapOffcanvas | null>(null)
 const isVisible = ref(false)
 

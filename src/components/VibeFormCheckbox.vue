@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, ref, watch, onMounted } from 'vue'
+import { useTemplateRef, computed, watch, onMounted } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -103,7 +103,7 @@ const handleFocus = (event: FocusEvent) => {
   emit('focus', event)
 }
 
-const inputRef = ref<HTMLInputElement | null>(null)
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 
 onMounted(() => {
   if (inputRef.value) inputRef.value.indeterminate = props.indeterminate

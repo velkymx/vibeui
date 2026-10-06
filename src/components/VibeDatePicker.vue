@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch, type PropType } from 'vue'
+import { useTemplateRef, computed, nextTick, onBeforeUnmount, ref, watch, type PropType } from 'vue'
 import { useId } from '../composables/useId'
 
 type IsoDate = string // YYYY-MM-DD
@@ -75,8 +75,8 @@ const todayDate = (): Date => new Date()
 const viewYear = ref(todayDate().getFullYear())
 const viewMonth = ref(todayDate().getMonth())
 const focusedIso = ref<IsoDate | null>(null)
-const rootRef = ref<HTMLElement | null>(null)
-const popoverRef = ref<HTMLElement | null>(null)
+const rootRef = useTemplateRef<HTMLElement>('rootRef')
+const popoverRef = useTemplateRef<HTMLElement>('popoverRef')
 
 const lowDate = computed<DateValue>(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue[0]
