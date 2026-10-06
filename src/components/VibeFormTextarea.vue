@@ -6,7 +6,9 @@ import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '.
 import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
-const modelValue = defineModel<string>({ default: '' })
+// #148: destructured for modelModifiers (.lazy gates input vs change commits;
+// .trim/.number need no component code, Vue core applies them to update:* args).
+const [modelValue, modelModifiers] = defineModel<string>({ default: '' })
 
 // Consumer HTML attributes (name, wrap, …) belong on the native <textarea>, not the
 // wrapper <div> — native form submission needs `name` on the control. Auto-inheritance
@@ -71,13 +73,15 @@ const textareaStyle = computed(() => {
 const currentCount = computed(() => modelValue.value?.length || 0)
 
 const handleInput = (event: Event) => {
-  const target = event.target as HTMLTextAreaElement
-  modelValue.value = target.value
+  // #148: .lazy defers the model commit to change.
+  if (!modelModifiers.lazy) modelValue.value = (event.target as HTMLTextAreaElement).value
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
+  // #148: .lazy commits here instead of on input.
+  if (modelModifiers.lazy) modelValue.value = (event.target as HTMLTextAreaElement).value
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }

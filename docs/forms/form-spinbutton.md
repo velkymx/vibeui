@@ -85,6 +85,7 @@ const onIncrement = (value: number) => console.log('new value', value)
 - **Clamping:** typed values are clamped to `min`/`max` on `change` and `blur`; an empty field is treated as `0`.
 - **`increment` / `decrement` payload:** both events carry the resulting numeric value, so you do not need to read `modelValue` separately.
 - **Number model only:** when using a validation composable, bind to `.value` (a dev-mode warning fires if an object is passed).
+- **v-model modifiers:** `.lazy` defers the model commit from `input` to `change` (the stepper display stays live); `.number`/`.trim` are meaningless here, the model is already numeric.
 
 ## Bootstrap CSS Classes
 

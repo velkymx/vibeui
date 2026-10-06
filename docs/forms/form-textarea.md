@@ -74,6 +74,7 @@ const notes = ref('')
 
 - **Character counter:** `showCharCount` renders inside the help-text row. When inside a `VibeFormGroup` that provides its own help text, the counter is suppressed (the group owns help rendering).
 - **Group linking:** wrapped in a `VibeFormGroup`, the textarea consumes the group id so the label and feedback link automatically.
+- **v-model modifiers:** `.trim` behaves like native inputs (applied by Vue core); `.lazy` defers the model commit from `input` to `change`.
 
 ## Bootstrap CSS Classes
 
