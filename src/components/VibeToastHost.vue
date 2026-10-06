@@ -55,20 +55,49 @@ const containerClassFor = (p: ToastPlacement): string => {
       :class="containerClassFor(group.placement)"
       style="z-index: 1090"
     >
-      <VibeToast
-        v-for="t in group.toasts"
-        :key="t.id"
-        no-container
-        :model-value="true"
-        :title="t.title || ''"
-        :variant="t.variant"
-        :placement="group.placement"
-        :autohide="t.autohide ?? true"
-        :delay="t.delay ?? 5000"
-        @hidden="dismiss(t.id)"
-      >
-        {{ t.body }}
-      </VibeToast>
+      <!-- #149: keyed enter/leave plus FLIP reposition rides a TransitionGroup.
+           Fragment (no tag) so the positioned container stays the parent. -->
+      <TransitionGroup name="vibe-toast" move-class="vibe-toast-move">
+        <VibeToast
+          v-for="t in group.toasts"
+          :key="t.id"
+          no-container
+          :model-value="true"
+          :title="t.title || ''"
+          :variant="t.variant"
+          :placement="group.placement"
+          :autohide="t.autohide ?? true"
+          :delay="t.delay ?? 5000"
+          @hidden="dismiss(t.id)"
+        >
+          {{ t.body }}
+        </VibeToast>
+      </TransitionGroup>
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+/* #149: toast stack motion. Enter/leave fade plus slide via the independent
+   `translate` property so FLIP `transform` moves compose without clobbering.
+   Kill all motion when the user opts out. */
+.vibe-toast-move {
+  transition: transform 0.3s ease;
+}
+.vibe-toast-enter-active,
+.vibe-toast-leave-active {
+  transition: opacity 0.25s ease, translate 0.25s ease;
+}
+.vibe-toast-enter-from,
+.vibe-toast-leave-to {
+  opacity: 0;
+  translate: 0 -0.5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vibe-toast-move,
+  .vibe-toast-enter-active,
+  .vibe-toast-leave-active {
+    transition: none;
+  }
+}
+</style>
