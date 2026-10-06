@@ -1,16 +1,11 @@
-import { getCurrentInstance } from 'vue'
+import { useId as vueUseId } from 'vue'
 
-let counter = 0
-const instanceCounters = new WeakMap<object, number>()
-
+/**
+ * #146: SSR-safe unique id with a VibeUI prefix. Delegates to Vue's native
+ * `useId()` (3.5+), which produces ids that match between server and client,
+ * avoiding hydration mismatches. Call once in `setup()`; the prefix keeps ids
+ * human-readable in the DOM (e.g. `modal-...`).
+ */
 export function useId(prefix = 'vibe'): string {
-  const instance = getCurrentInstance()
-  if (!instance) return `${prefix}-${++counter}`
-  const n = (instanceCounters.get(instance) ?? 0) + 1
-  instanceCounters.set(instance, n)
-  return `${prefix}-${instance.uid}-${n}`
-}
-
-export function _resetIdCounter(): void {
-  counter = 0
+  return `${prefix}-${vueUseId()}`
 }
