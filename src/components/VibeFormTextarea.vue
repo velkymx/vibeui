@@ -60,12 +60,9 @@ const textareaClass = computed(() => {
   const classes = ['form-control']
   if (props.size) classes.push(`form-control-${props.size}`)
   if (validationClass.value) classes.push(validationClass.value)
+  // #155: static resize-off state lives in the stylesheet, not an inline :style.
+  if (props.noResize) classes.push('vibe-textarea-no-resize')
   return classes.join(' ')
-})
-
-const textareaStyle = computed(() => {
-  if (props.noResize) return { resize: 'none' as const }
-  return undefined
 })
 
 const currentCount = computed(() => modelValue.value?.length || 0)
@@ -102,7 +99,6 @@ const handleFocus = (event: FocusEvent) => {
       v-bind="$attrs"
       :id="computedId"
       :class="textareaClass"
-      :style="textareaStyle"
       :value="modelValue"
       :placeholder="placeholder"
       :rows="rows"
@@ -141,7 +137,6 @@ const handleFocus = (event: FocusEvent) => {
     v-bind="$attrs"
     :id="computedId"
     :class="textareaClass"
-    :style="textareaStyle"
     :value="modelValue"
     :placeholder="placeholder"
     :rows="rows"
@@ -157,3 +152,10 @@ const handleFocus = (event: FocusEvent) => {
     @focus="handleFocus"
   ></textarea>
 </template>
+
+<style scoped>
+/* #155: static resize-off state for noResize (was an inline :style). */
+.vibe-textarea-no-resize {
+  resize: none;
+}
+</style>
