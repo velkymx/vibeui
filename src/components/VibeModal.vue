@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { useTemplateRef, shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
 import type { Size, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
@@ -57,7 +57,7 @@ defineSlots<{
 
 const computedId = computed(() => props.id || _generatedId)
 
-const modalRef = ref<HTMLElement | null>(null)
+const modalRef = useTemplateRef<HTMLElement>('modalRef')
 const bsModal = shallowRef<BootstrapModal | null>(null)
 const isVisible = ref(false)
 // Payload delivered by a `modal:open` bus command, exposed to the default slot.

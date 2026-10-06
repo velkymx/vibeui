@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeChartLegend from './chart/VibeChartLegend.vue'
-import { ref, computed, watch, onMounted, onUnmounted, type PropType } from 'vue'
+import { useTemplateRef, ref, computed, watch, onMounted, onUnmounted, type PropType } from 'vue'
 import type { ChartData, ChartLegendPosition } from '../types'
 import { resolveSliceColors } from './chart/chartColors'
 import { useChartResize } from './chart/chartResize'
@@ -13,8 +13,8 @@ const props = defineProps({
   height: { type: [Number, String] as PropType<number | string>, default: 'auto' },
 })
 
-const containerEl = ref<HTMLElement | null>(null)
-const canvasEl = ref<HTMLCanvasElement | null>(null)
+const containerEl = useTemplateRef<HTMLElement>('containerEl')
+const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
 let cleanupTooltip: (() => void) | null = null
 let currentW = 0
 let currentH = 0

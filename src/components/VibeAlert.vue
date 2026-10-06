@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useTemplateRef, shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { Variant } from '../types'
 
 interface BootstrapAlert {
@@ -26,7 +26,7 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const alertRef = ref<HTMLElement | null>(null)
+const alertRef = useTemplateRef<HTMLElement>('alertRef')
 const bsAlert = shallowRef<BootstrapAlert | null>(null)
 const isVisible = ref(props.modelValue)
 

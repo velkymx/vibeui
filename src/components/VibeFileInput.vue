@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
+import { useTemplateRef, computed, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
 import { useFormField } from '../composables/useFormField'
 import type { Size, ValidationState } from '../types'
 
@@ -47,7 +47,7 @@ const {
   ariaInvalid
 } = useFormField('file-input', props)
 const isDragging = ref(false)
-const inputRef = ref<HTMLInputElement | null>(null)
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 
 
 const inputClass = computed(() => {

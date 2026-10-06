@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch, type PropType } from 'vue'
+import { useTemplateRef, computed, onMounted, onBeforeUnmount, ref, watch, type PropType } from 'vue'
 
 type SliderValue = number | [number, number]
 
@@ -18,7 +18,7 @@ const emit = defineEmits<{
   (e: 'change', value: SliderValue): void
 }>()
 
-const trackRef = ref<HTMLElement | null>(null)
+const trackRef = useTemplateRef<HTMLElement>('trackRef')
 const activeHandle = ref<0 | 1 | null>(null)
 let activePointerId: number | null = null
 const isDragging = computed(() => activeHandle.value !== null)

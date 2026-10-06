@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useTemplateRef, shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { CarouselItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
@@ -55,7 +55,7 @@ defineSlots<{
   caption?: (props: { item: CarouselItem; index: number }) => unknown
 }>()
 
-const carouselRef = ref<HTMLElement | null>(null)
+const carouselRef = useTemplateRef<HTMLElement>('carouselRef')
 const bsCarousel = shallowRef<BootstrapCarousel | null>(null)
 const activeIndex = ref(props.modelValue)
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useTemplateRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { NavItem, DropdownItem, ComponentError } from '../types'
 import { linkBindings } from '../utils/linkBindings'
 import { safeHref } from '../utils/safeHref'
@@ -28,7 +28,7 @@ defineSlots<{
   default?: () => unknown
 }>()
 
-const navbarNavRef = ref<HTMLElement | null>(null)
+const navbarNavRef = useTemplateRef<HTMLElement>('navbarNavRef')
 const bsDropdowns = new Map<HTMLElement, BootstrapDropdown>()
 
 const initDropdowns = async () => {

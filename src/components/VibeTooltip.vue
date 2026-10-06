@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { useTemplateRef, shallowRef, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { TooltipPlacement, ComponentError } from '../types'
 
 interface BootstrapTooltip {
@@ -24,7 +24,7 @@ if (props.content !== undefined && props.text === undefined) {
   console.warn('[VibeTooltip] The `content` prop is deprecated and may be removed in a future version. Use `text` instead.')
 }
 
-const tooltipRef = ref<HTMLElement | null>(null)
+const tooltipRef = useTemplateRef<HTMLElement>('tooltipRef')
 const bsTooltip = shallowRef<BootstrapTooltip | null>(null)
 
 // Tracks whether onBeforeUnmount has fired. The template ref (tooltipRef) may still be

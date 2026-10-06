@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
+import { useTemplateRef, shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -105,7 +105,7 @@ const resolveSanitizer = (): Sanitizer => {
 }
 
 
-const editorContainer = ref<HTMLElement | null>(null)
+const editorContainer = useTemplateRef<HTMLElement>('editorContainer')
 const quillInstance = shallowRef<QuillInstance | null>(null)
 const isQuillLoaded = ref(false)
 const loadError = ref<string | null>(null)
