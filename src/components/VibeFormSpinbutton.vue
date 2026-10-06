@@ -7,7 +7,9 @@ import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 // The validator option still forwards to the underlying prop.
-const modelValue = defineModel<number>({
+// #148: destructured for modelModifiers (.lazy defers the model commit to change;
+// .number/.trim are meaningless here, the model is already numeric).
+const [modelValue, modelModifiers] = defineModel<number>({
   default: 0,
   validator: (value: unknown) => {
     if (import.meta.env.DEV && value !== null && typeof value === 'object') {
@@ -111,7 +113,8 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   const raw = target.value === '' ? 0 : Number(target.value)
   internalValue.value = raw
-  modelValue.value = raw
+  // #148: .lazy defers the model commit to change; the stepper display stays live.
+  if (!modelModifiers.lazy) modelValue.value = raw
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
@@ -121,7 +124,8 @@ const handleChange = (event: Event) => {
   const raw = target.value === '' ? 0 : Number(target.value)
   const clamped = clampValue(raw)
   internalValue.value = clamped
-  if (clamped !== raw) modelValue.value = clamped
+  // #148: with .lazy the model was untouched on input, so always commit here.
+  if (modelModifiers.lazy || clamped !== raw) modelValue.value = clamped
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }

@@ -6,7 +6,9 @@ import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Siz
 import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
-const modelValue = defineModel<string | number>({ default: '' })
+// #148: destructured for modelModifiers (.lazy gates input vs change commits;
+// .trim/.number need no component code, Vue core applies them to update:* args).
+const [modelValue, modelModifiers] = defineModel<string | number>({ default: '' })
 
 // Consumer HTML attributes (name, min, maxlength, pattern, …) belong on the native
 // <input>, not the wrapper <div> — native form submission needs `name` on the control
@@ -114,15 +116,21 @@ const inputClass = computed(() => {
   return classes.join(' ')
 })
 
+const commitFromTarget = (target: HTMLInputElement) => {
+  modelValue.value = props.type === 'number' ? (target.value === '' ? '' : Number(target.value)) : target.value
+}
+
 const handleInput = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const newValue = props.type === 'number' ? (target.value === '' ? '' : Number(target.value)) : target.value
-  modelValue.value = newValue
+  // #148: .lazy defers the model commit to change; the native input keeps its
+  // own display value meanwhile (same as native v-model.lazy).
+  if (!modelModifiers.lazy) commitFromTarget(event.target as HTMLInputElement)
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
+  // #148: .lazy commits here instead of on input.
+  if (modelModifiers.lazy) commitFromTarget(event.target as HTMLInputElement)
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
