@@ -48,6 +48,13 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type header/body/footer slots. Default exposes bus payload.
+defineSlots<{
+  header?: () => unknown
+  default?: (props: { payload: unknown }) => unknown
+  footer?: () => unknown
+}>()
+
 const computedId = computed(() => props.id || _generatedId)
 
 const modalRef = ref<HTMLElement | null>(null)

@@ -4,5 +4,5 @@
     "noEmit": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["tests/**/*.test-d.ts"]
+  "include": ["tests/**/*.test-d.ts", "src/shims-optional-deps.d.ts"]
 }

@@ -50,6 +50,11 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type the caption slot.
+defineSlots<{
+  caption?: (props: { item: CarouselItem; index: number }) => unknown
+}>()
+
 const carouselRef = ref<HTMLElement | null>(null)
 const bsCarousel = shallowRef<BootstrapCarousel | null>(null)
 const activeIndex = ref(props.modelValue)

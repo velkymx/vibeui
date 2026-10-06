@@ -59,6 +59,12 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type the title/content slots.
+defineSlots<{
+  title?: (props: { item: AccordionItem; index: number }) => unknown
+  content?: (props: { item: AccordionItem; index: number }) => unknown
+}>()
+
 const accordionRef = ref<HTMLElement | null>(null)
 const bsCollapses = new Map<string, BootstrapCollapse>()
 const collapseElements = new Map<string, HTMLElement>()

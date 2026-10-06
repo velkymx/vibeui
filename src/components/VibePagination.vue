@@ -28,6 +28,13 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type page/prev/next slots.
+defineSlots<{
+  prev?: (props: { disabled: boolean }) => unknown
+  page?: (props: { page: number; active: boolean }) => unknown
+  next?: (props: { disabled: boolean }) => unknown
+}>()
+
 const paginationClass = computed(() => {
   const classes = ['pagination']
   if (props.size) classes.push(`pagination-${props.size}`)

@@ -11,6 +11,11 @@ const props = defineProps({
   bars: { type: Array as () => ProgressBar[], required: true }
 })
 
+// #147: type label slot.
+defineSlots<{
+  label?: (props: { bar: ProgressBar; index: number }) => unknown
+}>()
+
 const progressStyle = computed(() => {
   // Normalize a numeric height to px, then validate the freeform value before
   // binding to :style — blocks CSS injection.

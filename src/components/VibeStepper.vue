@@ -29,6 +29,14 @@ const emit = defineEmits<{
   (e: 'component-error', error: unknown): void
 }>()
 
+// #147: type marker/label/step/actions slots.
+defineSlots<{
+  marker?: (props: { index: number; step: StepperStep; active: boolean }) => unknown
+  label?: (props: { index: number; step: StepperStep }) => unknown
+  step?: (props: { index: number; step: StepperStep | undefined }) => unknown
+  actions?: (props: { next: () => Promise<void>; prev: () => Promise<void>; isFirst: boolean; isLast: boolean }) => unknown
+}>()
+
 const stepperClass = computed(() => {
   const c = ['vibe-stepper']
   if (props.vertical) c.push('vibe-stepper-vertical')
@@ -171,7 +179,7 @@ const activeStep = computed(() => {
     </div>
 
     <div class="vibe-stepper-actions">
-      <slot name="actions" :next="goNext" :prev="goPrev" :is-first="isFirst" :is-last="isLast">
+      <slot name="actions" :next="goNext" :prev="goPrev" :isFirst="isFirst" :isLast="isLast">
         <button
           type="button"
           class="btn btn-secondary"

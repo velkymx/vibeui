@@ -19,6 +19,11 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type the item slot.
+defineSlots<{
+  item?: (props: { item: BreadcrumbItem; index: number }) => unknown
+}>()
+
 // Trail received from the bus, mapped from { label, path } to BreadcrumbItem.
 // Subscribe unconditionally (on() auto-unsubscribes on unmount) so toggling
 // `busUpdates` reactively takes effect; whether the bus trail is shown is
