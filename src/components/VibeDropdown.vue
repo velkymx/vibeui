@@ -40,6 +40,13 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type the dropdown slots.
+defineSlots<{
+  button?: () => unknown
+  header?: (props: { item: DropdownItem; index: number }) => unknown
+  item?: (props: { item: DropdownItem; index: number }) => unknown
+}>()
+
 const computedId = computed(() => props.id || _generatedId)
 
 const dropdownRef = ref<HTMLElement | null>(null)

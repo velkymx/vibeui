@@ -17,6 +17,11 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type the item slot.
+defineSlots<{
+  item?: (props: { item: ListGroupItem; index: number }) => unknown
+}>()
+
 const listGroupClass = computed(() => {
   const classes = ['list-group']
   if (props.flush) classes.push('list-group-flush')

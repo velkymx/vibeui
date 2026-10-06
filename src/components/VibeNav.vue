@@ -32,6 +32,11 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type the item slot.
+defineSlots<{
+  item?: (props: { item: NavItem; index: number }) => unknown
+}>()
+
 const navRef = ref<HTMLElement | null>(null)
 const bsTabs = new Map<HTMLElement, BootstrapTab>()
 
