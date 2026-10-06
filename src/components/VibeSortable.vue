@@ -1,12 +1,14 @@
 <!-- NOTE: VibeSortable manages its own drag state (draggingIndex). It is NOT compatible
      with dndStore / VibeDraggable / VibeDroppable — mixing them causes undefined behavior.
      Use VibeDraggable + VibeDroppable for cross-list or free-form drag-drop scenarios. -->
-<script setup lang="ts" generic="T extends Record<string, unknown>">
+<script setup lang="ts" generic="T extends object">
 import { ref, onMounted, onBeforeUnmount, onActivated, type PropType } from 'vue'
 
 const props = defineProps({
   modelValue: { type: Array as PropType<T[]>, required: true },
-  itemKey: { type: String, default: undefined },
+  // #162: narrowed to the row's keys so itemKey autocompletes (mirrors
+  // DataTableColumn.key from #38). Runtime reads go through readField below.
+  itemKey: { type: String as unknown as PropType<keyof T & string>, default: undefined },
   disabled: { type: Boolean, default: false },
   tag: { type: String, default: 'div' },
   itemTag: { type: String, default: 'div' }
@@ -32,10 +34,14 @@ const draggingIndex = ref<number | null>(null)
 const keyCache = new WeakMap<object, number>()
 let keySeq = 0
 let warnedNoKey = false
+// #162: T is constrained to `object` so plain interfaces (no index signature)
+// work as row types (#38). `object` cannot be indexed by a runtime string, so
+// key reads go through this cast (same pattern as VibeDataTable.readField).
+const readField = (row: T, key: string): unknown => (row as Record<string, unknown>)[key]
 const resolveKey = (item: T): string | number => {
   const isObject = item !== null && typeof item === 'object'
   // Objects with an explicit key field: use it.
-  if (isObject && props.itemKey) return (item as Record<string, unknown>)[props.itemKey] as string | number
+  if (isObject && props.itemKey) return readField(item, props.itemKey) as string | number
   // Primitives: the value is the identity, stable across reorder.
   if (!isObject) return item as unknown as string | number
   // Objects without itemKey: assign a stable id per reference (survives the
