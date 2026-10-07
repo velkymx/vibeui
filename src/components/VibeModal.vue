@@ -89,8 +89,19 @@ function getFocusableEls(): HTMLElement[] {
   return Array.from(modalRef.value.querySelectorAll<HTMLElement>(FOCUSABLE))
 }
 
-// Single keydown handler for the modal — handles both focus trapping and form submission.
+// Single keydown handler for the modal — handles focus trapping, form
+// submission, and close intent.
 function onModalKeydown(e: KeyboardEvent) {
+  // #183: own the Escape close intent so it survives a Bootstrap transition.
+  // Bootstrap drops hide() issued mid-transition (silent _isTransitioning
+  // guard) without telling the component, losing the close. requestHide
+  // stores the intent and consumes it when the transition settles. Runs even
+  // mid-transition (before isVisible flips). Skipped for static backdrops,
+  // which stay open on Escape by design.
+  if (e.key === 'Escape' && !props.staticBackdrop) {
+    requestHide()
+    return
+  }
   if (!isVisible.value) return
 
   // WCAG 2.1.1: Cmd/Ctrl+Enter submits the first <form> in the modal.
@@ -147,6 +158,54 @@ let listenersAttached = false
 // a Bootstrap Modal instance on a detached element during a mount/unmount race.
 let isUnmounted = false
 
+// #183: Bootstrap drops show()/hide() issued mid-transition (its
+// _isTransitioning guard returns silently, firing no events). Track the
+// in-flight direction ourselves: a contrary intent arriving mid-transition is
+// stored and consumed when the transition settles, so no request is lost.
+// The flag is set only for state-changing calls (redundant calls are silent
+// no-ops in Bootstrap too, so there is nothing to await for them).
+let transitioning = false
+let pendingDesired: boolean | null = null
+
+const requestShow = () => {
+  if (!bsModal.value || isUnmounted) return
+  if (transitioning) {
+    pendingDesired = true
+    return
+  }
+  if (!isVisible.value) {
+    transitioning = true
+    bsModal.value.show()
+  } else {
+    bsModal.value.show()
+  }
+}
+
+const requestHide = () => {
+  if (!bsModal.value || isUnmounted) return
+  if (transitioning) {
+    pendingDesired = false
+    return
+  }
+  if (isVisible.value) {
+    transitioning = true
+    bsModal.value.hide()
+  } else {
+    bsModal.value.hide()
+  }
+}
+
+// Consumes a queued intent once a transition settles. Runs after isVisible is
+// updated so the follow-up request sees fresh state.
+const settleTransition = () => {
+  transitioning = false
+  if (pendingDesired === null) return
+  const desired = pendingDesired
+  pendingDesired = null
+  if (desired) requestShow()
+  else requestHide()
+}
+
 const dialogClass = computed(() => {
   const classes = ['modal-dialog']
   if (resolvedSize.value) classes.push(`modal-${resolvedSize.value}`)
@@ -189,6 +248,7 @@ const onShown = () => {
     )
     ;(firstControl ?? getFocusableEls()[0])?.focus()
   }
+  settleTransition()
 }
 
 const onHide = () => {
@@ -209,6 +269,7 @@ const onHidden = () => {
     preFocusEl.focus()
   }
   preFocusEl = null
+  settleTransition()
 }
 
 // Bug 4: listener attach/detach helpers
@@ -220,7 +281,17 @@ function attachListeners() {
   modalRef.value.addEventListener('hidden.bs.modal', onHidden)
   // Keyboard events bubble up from children to the modal root.
   modalRef.value.addEventListener('keydown', onModalKeydown)
+  // #183: element-level keydown misses Escape while focus sits outside the
+  // modal, which is exactly the opening-transition window. Catch it at
+  // document level for that window only; settled states keep Bootstrap's own
+  // handling (preserving stacked-modal behavior).
+  document.addEventListener('keydown', onDocumentKeydown)
   listenersAttached = true
+}
+
+function onDocumentKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape' || props.staticBackdrop || !transitioning) return
+  requestHide()
 }
 
 function detachListeners() {
@@ -230,6 +301,7 @@ function detachListeners() {
   modalRef.value.removeEventListener('hide.bs.modal', onHide)
   modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
   modalRef.value.removeEventListener('keydown', onModalKeydown)
+  document.removeEventListener('keydown', onDocumentKeydown)
   listenersAttached = false
 }
 
@@ -249,6 +321,10 @@ const initModal = async () => {
       bsModal.value.dispose()
       bsModal.value = null
     }
+    // Fresh instance, fresh transition tracking. The init-time show below
+    // re-arms the flag through requestShow.
+    transitioning = false
+    pendingDesired = null
 
     const bootstrap = await import('bootstrap')
 
@@ -266,7 +342,7 @@ const initModal = async () => {
     attachListeners()
 
     if (props.modelValue) {
-      bsModal.value.show()
+      requestShow()
     }
   } catch (error) {
     reportComponentError(emit, {
@@ -285,6 +361,7 @@ onMounted(initModal)
 // Bug 4: detach listeners before dispose
 onBeforeUnmount(() => {
   isUnmounted = true
+  pendingDesired = null
   // WCAG 2.1.2: must clear inert even if the modal was never formally closed.
   removeInert()
   detachListeners()
@@ -293,19 +370,15 @@ onBeforeUnmount(() => {
 })
 
 watch(() => props.modelValue, (newValue) => {
-  if (!bsModal.value) return
-  if (newValue && !isVisible.value) {
-    bsModal.value.show()
-  } else if (!newValue && isVisible.value) {
-    bsModal.value.hide()
-  }
+  if (newValue) requestShow()
+  else requestHide()
 })
 
 // Re-init when config changes
 watch(() => props.staticBackdrop, initModal)
 
-const show = () => bsModal.value?.show()
-const hide = () => bsModal.value?.hide()
+const show = () => requestShow()
+const hide = () => requestHide()
 const handleUpdate = () => bsModal.value?.handleUpdate()
 
 // #121: v-model and the bus command channel are mutually exclusive per instance.
