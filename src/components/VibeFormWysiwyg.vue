@@ -9,6 +9,7 @@ import { useBreakpoints } from '../composables/useBreakpoints'
 import { VIBE_WYSIWYG_KEY } from '../composables/wysiwygConfig'
 import type { QuillLoader, Sanitizer } from '../types'
 import { safeLength } from '../utils/safeCss'
+import { fallbackSanitizeHtml } from '../utils/sanitizeHtml'
 
 interface QuillInstance {
   root: HTMLElement
@@ -95,13 +96,17 @@ const resolveSanitizer = (): Sanitizer => {
   if (import.meta.env.DEV && !warnedNoSanitizer) {
     warnedNoSanitizer = true
     console.warn(
-      '[VibeFormWysiwyg] No sanitizer provided — HTML is passed to Quill unsanitized ' +
-      "(Quill's Delta conversion is the only backstop). Provide one via " +
+      '[VibeFormWysiwyg] No sanitizer provided, using the built-in minimal fallback ' +
+      '(strips scriptable tags, on* handlers, and javascript:/vbscript:/data:text/html URLs). ' +
+      'For full allowlist protection provide one via ' +
       'app.use(VibeUI, { wysiwyg: { sanitizer: makeDomPurifySanitizer(DOMPurify) } }) ' +
       'or the :sanitizer prop.'
     )
   }
-  return (html: string) => html
+  // #186: safe-by-default. Previously returned an identity function, which left
+  // production builds (where the DEV warning above is stripped) with no
+  // sanitization at all on either the inbound or outbound path.
+  return fallbackSanitizeHtml
 }
 
 
