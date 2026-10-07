@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
+import { safeLength } from '../utils/safeCss'
 
 type SkeletonVariant = 'text' | 'rect' | 'circle' | 'card'
 type Dim = string | number
@@ -14,7 +15,9 @@ const props = defineProps({
 
 const toCss = (v: Dim | undefined): string | undefined => {
   if (v === undefined) return undefined
-  return typeof v === 'number' ? `${v}px` : v
+  // Freeform consumer string: validate before it reaches :style (see #193).
+  if (typeof v === 'number') return Number.isFinite(v) ? `${v}px` : undefined
+  return safeLength(String(v))
 }
 
 const baseClasses = computed(() => {
