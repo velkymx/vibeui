@@ -20,12 +20,15 @@ const props = defineProps({
   variant: { type: String as () => Variant, default: undefined },
   autohide: { type: Boolean, default: true },
   delay: { type: Number, default: 5000 },
-  teleport: { type: [String, Boolean], default: 'body' },
+  teleport: { type: [String, Boolean], default: undefined },
   placement: { type: String as () => ToastPlacement, default: 'top-end' },
   // When true, render only the .toast element (no Teleport, no .toast-container wrapper).
   // Used by VibeToastHost to group multiple toasts under a single shared container.
   noContainer: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const resolvedTeleport = computed(() => resolveProp(props.teleport, vibeDefaults.teleport, 'body'))
+
 // #159: explicit prop wins, then the global default, then the builtin.
 const vibeDefaults = useVibeDefaults()
 const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
@@ -47,7 +50,7 @@ const isVisible = ref(false)
 
 const toastClass = computed(() => {
   const classes = ['toast']
-  if (resolvedVariant) classes.push(`text-bg-${resolvedVariant}`)
+  if (resolvedVariant.value) classes.push(`text-bg-${resolvedVariant.value}`)
   return classes.join(' ')
 })
 
@@ -169,7 +172,7 @@ defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
 // WCAG 4.1.3: only error/warning toasts may interrupt screen-reader speech
 // (role="alert" / assertive); success/info/neutral toasts are polite status
 // messages, per the ARIA convention Bootstrap documents for toasts.
-const isUrgent = computed(() => resolvedVariant === 'danger' || resolvedVariant === 'warning')
+const isUrgent = computed(() => resolvedVariant.value === 'danger' || resolvedVariant.value === 'warning')
 
 // Shared attrs for the .toast element — avoids repeating them in both template branches.
 // `as const` preserves the literal types ('true', role/aria-live unions) so they stay
@@ -189,8 +192,8 @@ const toastAttrs = computed(() => ({
   <!-- Single Teleport: disabled when noContainer (VibeToastHost owns the wrapper)
        or when the teleport prop is falsy (caller wants inline rendering). -->
   <Teleport
-    :to="teleport === true ? 'body' : (teleport || undefined)"
-    :disabled="noContainer || !teleport"
+    :to="resolvedTeleport === true ? 'body' : (resolvedTeleport || undefined)"
+    :disabled="noContainer || !resolvedTeleport"
   >
     <div v-if="!noContainer" :class="containerClass" style="z-index: 1090">
       <div ref="toastRef" v-bind="toastAttrs">

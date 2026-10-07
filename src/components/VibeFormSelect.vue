@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { useTemplateRef, computed, onMounted, watch } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { FormSelectOption, FormSelectOptionValue, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -50,6 +51,10 @@ const props = defineProps({
   validateOn: { type: String as PropType<'change' | 'blur'>, default: 'change' },
   helpText: { type: String, default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'validate'): void
@@ -73,7 +78,7 @@ const {
 
 const selectClass = computed(() => {
   const classes = ['form-select']
-  if (props.size) classes.push(`form-select-${props.size}`)
+  if (resolvedSize.value) classes.push(`form-select-${resolvedSize.value}`)
   if (validationClass.value) classes.push(validationClass.value)
   return classes.join(' ')
 })

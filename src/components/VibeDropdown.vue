@@ -32,6 +32,9 @@ const props = defineProps({
   autoClose: { type: [Boolean, String], default: true }
 })
 // #159: explicit prop wins, then the global default, then the builtin.
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
+// #159: explicit prop wins, then the global default, then the builtin.
 const vibeDefaults = useVibeDefaults()
 const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, 'primary'))
 
@@ -72,8 +75,8 @@ const dropdownClass = computed(() => {
 })
 
 const buttonClass = computed(() => {
-  const classes = ['btn', `btn-${resolvedVariant}`]
-  if (props.size) classes.push(`btn-${props.size}`)
+  const classes = ['btn', `btn-${resolvedVariant.value}`]
+  if (resolvedSize.value) classes.push(`btn-${resolvedSize.value}`)
   return classes.join(' ')
 })
 

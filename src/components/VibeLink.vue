@@ -36,8 +36,8 @@ const linkAttrs = computed(() =>
 const linkClass = computed(() => {
   const classes: string[] = []
   
-  if (resolvedVariant) {
-    classes.push(`link-${resolvedVariant}`)
+  if (resolvedVariant.value) {
+    classes.push(`link-${resolvedVariant.value}`)
   }
 
   if (props.underline === false || props.underline === '0') {

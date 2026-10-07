@@ -16,7 +16,19 @@ export function useVibeDefaults(): VibeDefaults {
  * #159: single precedence rule shared by every component: explicit per-instance
  * prop wins, then the injected global default, then the component builtin.
  * Nullish-only fallthrough keeps explicit falsy values (false, '', 0) intact.
+ * Separate T/G params so overlapping-but-distinct prop/global types (e.g.
+ * ButtonVariant vs Variant) unify instead of collapsing to never.
  */
-export function resolveProp<T>(prop: T | undefined, global: T | undefined, builtin: T): T {
+export function resolveProp<T>(prop: T | undefined, global: T | undefined, builtin: T): T
+export function resolveProp<T, G>(
+  prop: T | undefined,
+  global: G | undefined,
+  builtin: T | G | undefined
+): T | G | undefined
+export function resolveProp<T, G>(
+  prop: T | undefined,
+  global: G | undefined,
+  builtin: T | G | undefined
+): T | G | undefined {
   return prop ?? global ?? builtin
 }

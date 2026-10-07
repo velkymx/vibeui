@@ -21,11 +21,11 @@ const badgeClass = computed(() => {
   const classes = ['badge']
 
   if (props.subtle) {
-    classes.push(`bg-${resolvedVariant}-subtle`, `text-${resolvedVariant}-emphasis`)
+    classes.push(`bg-${resolvedVariant.value}-subtle`, `text-${resolvedVariant.value}-emphasis`)
   } else {
     // .text-bg-{variant} pairs the background with a contrast-correct foreground,
     // so light/warning/info stay readable — .badge alone defaults to color:#fff.
-    classes.push(`text-bg-${resolvedVariant}`)
+    classes.push(`text-bg-${resolvedVariant.value}`)
   }
 
   if (props.pill) classes.push('rounded-pill')

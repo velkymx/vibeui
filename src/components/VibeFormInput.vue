@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed, ref } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size, AutocompleteType, InputMode } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -24,7 +25,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
   required: { type: Boolean, default: false },
-  hideOptional: { type: Boolean, default: false },
+  hideOptional: { type: Boolean, default: undefined },
   size: { type: String as PropType<Size>, default: undefined },
   validationState: { type: String as PropType<ValidationState>, default: null },
   validationMessage: { type: String, default: undefined },
@@ -39,6 +40,13 @@ const props = defineProps({
   autocomplete: { type: String as PropType<AutocompleteType>, default: undefined },
   inputmode: { type: String as PropType<InputMode>, default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const resolvedHideOptional = computed(() => resolveProp(props.hideOptional, vibeDefaults.hideOptional, false))
+
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'validate'): void
@@ -113,7 +121,7 @@ const inputClass = computed(() => {
     classes.push('form-control-plaintext')
   } else {
     classes.push('form-control')
-    if (props.size) classes.push(`form-control-${props.size}`)
+    if (resolvedSize.value) classes.push(`form-control-${resolvedSize.value}`)
   }
   if (validationClass.value) classes.push(validationClass.value)
   if (props.focusRing) classes.push('focus-ring')
@@ -155,7 +163,7 @@ const handleFocus = (event: FocusEvent) => {
     <label v-if="shouldRenderLabel" :for="computedId" class="form-label">
       {{ label }}
       <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
-      <span v-else-if="!hideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+      <span v-else-if="!resolvedHideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
       <!-- Screen-reader-only equivalent of the visual asterisk -->
       <span v-if="required" class="visually-hidden">required</span>
     </label>

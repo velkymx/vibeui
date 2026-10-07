@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
 import { useTemplateRef, shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
@@ -24,10 +25,14 @@ const props = defineProps({
   placement: { type: String as () => OffcanvasPlacement, default: 'start' },
   backdrop: { type: [Boolean, String], default: true },
   scroll: { type: Boolean, default: false },
-  teleport: { type: [String, Boolean], default: 'body' },
+  teleport: { type: [String, Boolean], default: undefined },
   // Designate this offcanvas as the app sidebar, targeted by layout:sidebar-toggle.
   sidebar: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedTeleport = computed(() => resolveProp(props.teleport, vibeDefaults.teleport, 'body'))
+
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
@@ -226,7 +231,7 @@ defineExpose({ show, hide, _unsafe_bsInstance: bsOffcanvas })
 </script>
 
 <template>
-  <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
+  <Teleport :to="resolvedTeleport === true ? 'body' : (resolvedTeleport || undefined)" :disabled="!resolvedTeleport">
     <div
       ref="offcanvasRef"
       :id="computedId"

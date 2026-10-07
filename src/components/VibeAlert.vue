@@ -136,9 +136,9 @@ const dismiss = () => {
 const alertClass = computed(() => {
   const classes = ['alert']
   if (props.subtle) {
-    classes.push(`bg-${resolvedVariant}-subtle`, `text-${resolvedVariant}-emphasis`, `border-${resolvedVariant}-subtle`)
+    classes.push(`bg-${resolvedVariant.value}-subtle`, `text-${resolvedVariant.value}-emphasis`, `border-${resolvedVariant.value}-subtle`)
   } else {
-    classes.push(`alert-${resolvedVariant}`)
+    classes.push(`alert-${resolvedVariant.value}`)
   }
   if (props.dismissible) classes.push('alert-dismissible')
   if (props.fade) classes.push('fade', 'show')

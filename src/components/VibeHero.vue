@@ -43,10 +43,10 @@ const heroClass = computed(() => {
   // With an explicit textVariant, keep bg-{variant} + text-{textVariant}. Without
   // one, use Bootstrap's .text-bg-{variant} so the foreground is contrast-correct
   // by default (a bare bg-{variant} left dark variants dark-on-dark).
-  if (resolvedVariant && props.textVariant) {
-    c.push(`bg-${resolvedVariant}`, `text-${props.textVariant}`)
-  } else if (resolvedVariant) {
-    c.push(`text-bg-${resolvedVariant}`)
+  if (resolvedVariant.value && props.textVariant) {
+    c.push(`bg-${resolvedVariant.value}`, `text-${props.textVariant}`)
+  } else if (resolvedVariant.value) {
+    c.push(`text-bg-${resolvedVariant.value}`)
   } else if (props.textVariant) {
     c.push(`text-${props.textVariant}`)
   }

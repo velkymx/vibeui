@@ -1,5 +1,6 @@
 <script setup lang="ts" generic="T = string">
 import { useTemplateRef, ref, computed, watch, onWatcherCleanup, onBeforeUnmount, type PropType, type Ref } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import { useId } from '../composables/useId'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
 
@@ -12,7 +13,7 @@ const props = defineProps({
     required: true
   },
   minChars: { type: Number, default: 1 },
-  debounce: { type: Number, default: 200 },
+  debounce: { type: Number, default: undefined },
   placeholder: { type: String, default: '' },
   label: { type: String, default: undefined },
   id: { type: String, default: undefined },
@@ -43,7 +44,9 @@ const highlightedIndex = ref(-1)
 const isOpen = ref(false)
 // #158: debounced query mirror; the pending timer clears on scope dispose
 // (replaces the hand-rolled timer). Latest write wins; delay <= 0 commits sync.
-const debouncedQuery = useDebouncedRef('', () => props.debounce)
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const debouncedQuery = useDebouncedRef('', () => resolveProp(props.debounce, vibeDefaults.debounce, 200))
 const rootRef = useTemplateRef<HTMLElement>('rootRef')
 // Current-run invalidation (#150): every new search marks the previous run
 // stale, whichever path started it (debounced watcher, focus, keyboard, or

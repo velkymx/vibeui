@@ -11,14 +11,17 @@ const props = defineProps({
   tag: { type: String, default: 'div' }
 })
 // #159: explicit prop wins, then the global default, then the builtin.
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
+// #159: explicit prop wins, then the global default, then the builtin.
 const vibeDefaults = useVibeDefaults()
 const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
 
 
 const spinnerClass = computed(() => {
   const classes = [`spinner-${props.type}`]
-  if (resolvedVariant) classes.push(`text-${resolvedVariant}`)
-  if (props.size) classes.push(`spinner-${props.type}-${props.size}`)
+  if (resolvedVariant.value) classes.push(`text-${resolvedVariant.value}`)
+  if (resolvedSize.value) classes.push(`spinner-${props.type}-${resolvedSize.value}`)
   return classes.join(' ')
 })
 </script>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -36,6 +37,10 @@ const props = defineProps({
   // feedback), so it can be a direct flex child (e.g. an auto-grow composer).
   noWrapper: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'validate'): void
@@ -60,7 +65,7 @@ const {
 
 const textareaClass = computed(() => {
   const classes = ['form-control']
-  if (props.size) classes.push(`form-control-${props.size}`)
+  if (resolvedSize.value) classes.push(`form-control-${resolvedSize.value}`)
   if (validationClass.value) classes.push(validationClass.value)
   // #155: static resize-off state lives in the stylesheet, not an inline :style.
   if (props.noResize) classes.push('vibe-textarea-no-resize')

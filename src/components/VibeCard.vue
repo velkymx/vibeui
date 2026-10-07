@@ -35,7 +35,7 @@ const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.v
 
 const cardClass = computed(() => {
   const classes = ['card']
-  if (resolvedVariant) classes.push(`text-bg-${resolvedVariant}`)
+  if (resolvedVariant.value) classes.push(`text-bg-${resolvedVariant.value}`)
   if (props.border) classes.push(`border-${props.border}`)
   if (props.textVariant) classes.push(`text-${props.textVariant}`)
   return classes.join(' ')

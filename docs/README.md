@@ -44,6 +44,23 @@ initColorMode()
 createApp(App).use(VibeUI).mount('#app')
 ```
 
+### Global configuration
+
+Set library-wide prop defaults once instead of repeating props. Every key is opt-in; an explicit per-instance prop always wins, then the global default, then the component builtin. Variant/size globals apply where the prop type accepts them (standard `Variant`/`Size` components; `VibeSkeleton` and `VibeTabs` keep their specialized variants).
+
+```javascript
+createApp(App).use(VibeUI, {
+  defaults: {
+    variant: 'primary',     // default variant (buttons, badges, alerts, …)
+    size: 'sm',             // default size (inputs, buttons, modals, …)
+    toastPosition: 'top-end', // default VibeToastHost placement
+    teleport: 'body',       // default modal/offcanvas/toast target (false renders inline)
+    debounce: 200,          // default search debounce ms (DataTable, Autocomplete)
+    hideOptional: true,     // hide the "(optional)" label suffix everywhere
+  },
+}).mount('#app')
+```
+
 ### Stylesheet
 
 The canonical import for VibeUI's own styles is **`@velkymx/vibeui/style.css`**. It maps to the shipped `dist/vibeui.css`. The full path `@velkymx/vibeui/dist/vibeui.css` also works, as does the legacy `@velkymx/vibeui/dist/style.css` alias (kept for back-compat). Bootstrap's CSS is separate and you import it yourself, as shown above.

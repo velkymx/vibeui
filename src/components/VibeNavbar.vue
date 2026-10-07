@@ -37,7 +37,7 @@ const navbarClass = computed(() => {
     classes.push(`navbar-expand-${props.expand}`)
   }
 
-  if (resolvedVariant) classes.push(`bg-${resolvedVariant}`)
+  if (resolvedVariant.value) classes.push(`bg-${resolvedVariant.value}`)
 
   if (props.position) {
     classes.push(props.position)
@@ -53,8 +53,8 @@ const navbarClass = computed(() => {
 const DARK_NAVBAR_VARIANTS = new Set(['primary', 'secondary', 'success', 'danger', 'dark'])
 const navbarTheme = computed(() => {
   if (props.theme) return props.theme
-  if (!resolvedVariant) return undefined
-  return DARK_NAVBAR_VARIANTS.has(resolvedVariant) ? 'dark' : 'light'
+  if (!resolvedVariant.value) return undefined
+  return DARK_NAVBAR_VARIANTS.has(resolvedVariant.value) ? 'dark' : 'light'
 })
 
 const containerClass = computed(() => {

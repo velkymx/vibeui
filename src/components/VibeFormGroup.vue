@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, provide, ref } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { ValidationState } from '../types'
 import { useId } from '../composables/useId'
 import { FORM_GROUP_KEY } from '../injectionKeys'
@@ -8,7 +9,7 @@ const props = defineProps({
   label: { type: String, default: undefined },
   labelFor: { type: String, default: undefined },
   required: { type: Boolean, default: false },
-  hideOptional: { type: Boolean, default: false },
+  hideOptional: { type: Boolean, default: undefined },
   validationState: { type: String as () => ValidationState, default: null },
   validationMessage: { type: String, default: undefined },
   helpText: { type: String, default: undefined },
@@ -17,6 +18,10 @@ const props = defineProps({
   labelCols: { type: [Number, String], default: undefined },
   labelAlign: { type: String as () => 'start' | 'center' | 'end', default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedHideOptional = computed(() => resolveProp(props.hideOptional, vibeDefaults.hideOptional, false))
+
 
 const _generatedId = useId('form-group')
 const computedId = computed(() => props.labelFor || _generatedId)
@@ -94,7 +99,7 @@ const helpId = computed(() => `${computedId.value}-help`)
       {{ label }}
       <!-- WCAG 3.3.2: visible required/optional signal (aria-hidden so SR uses the span below) -->
       <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
-      <span v-else-if="!hideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+      <span v-else-if="!resolvedHideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
       <!-- Screen-reader-only equivalent of the visual asterisk -->
       <span v-if="required" class="visually-hidden">required</span>
     </label>
@@ -124,7 +129,7 @@ const helpId = computed(() => `${computedId.value}-help`)
       >
         {{ label }}
         <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
-        <span v-else-if="!hideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+        <span v-else-if="!resolvedHideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
         <span v-if="required" class="visually-hidden">required</span>
       </label>
 

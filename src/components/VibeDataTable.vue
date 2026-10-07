@@ -38,7 +38,7 @@ const props = defineProps({
 
   // Search
   searchPlaceholder: { type: String, default: 'Search...' },
-  searchDebounce: { type: Number, default: 300 },
+  searchDebounce: { type: Number, default: undefined },
 
   // Display
   showEmpty: { type: Boolean, default: true },
@@ -79,7 +79,7 @@ defineSlots<{
 const searchQuery = ref('')
 // #158: debounced mirror. The pending timer clears on scope dispose, so no
 // post-unmount commit can fire (replaces the hand-rolled timer + guard).
-const debouncedSearchQuery = useDebouncedRef('', () => props.searchDebounce)
+const debouncedSearchQuery = useDebouncedRef('', () => resolveProp(props.searchDebounce, vibeDefaults.debounce, 300))
 
 /**
  * Generate a unique key for each row.
@@ -279,7 +279,7 @@ const tableClass = computed(() => {
   if (props.hover) classes.push('table-hover')
   if (props.small) classes.push('table-sm')
   if (props.stack) classes.push('vibe-table-stack')
-  if (resolvedVariant) classes.push(`table-${resolvedVariant}`)
+  if (resolvedVariant.value) classes.push(`table-${resolvedVariant.value}`)
   return classes.join(' ')
 })
 

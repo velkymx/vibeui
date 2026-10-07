@@ -11,14 +11,17 @@ const props = defineProps({
   tag: { type: String as () => Tag, default: 'span' }
 })
 // #159: explicit prop wins, then the global default, then the builtin.
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
+// #159: explicit prop wins, then the global default, then the builtin.
 const vibeDefaults = useVibeDefaults()
 const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
 
 
 const placeholderClass = computed(() => {
   const classes = ['placeholder']
-  if (resolvedVariant) classes.push(`bg-${resolvedVariant}`)
-  if (props.size) classes.push(`placeholder-${props.size}`)
+  if (resolvedVariant.value) classes.push(`bg-${resolvedVariant.value}`)
+  if (resolvedSize.value) classes.push(`placeholder-${resolvedSize.value}`)
   return classes.join(' ')
 })
 

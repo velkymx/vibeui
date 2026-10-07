@@ -27,6 +27,9 @@ const props = defineProps({
   loadingText: { type: String, default: undefined }
 })
 // #159: explicit prop wins, then the global default, then the builtin.
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
+// #159: explicit prop wins, then the global default, then the builtin.
 const vibeDefaults = useVibeDefaults()
 const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, 'primary'))
 
@@ -39,10 +42,10 @@ const emit = defineEmits<{
 // #140: DEV-only guard against the common Bootstrap habit of variant="outline-*".
 // VibeUI models outline as a boolean prop, so an "outline-primary" variant is not
 // a valid value; point the consumer at the correct form.
-if (import.meta.env.DEV && typeof resolvedVariant === 'string' && resolvedVariant.startsWith('outline-')) {
-  const base = resolvedVariant.slice('outline-'.length)
+if (import.meta.env.DEV && typeof resolvedVariant.value === 'string' && resolvedVariant.value.startsWith('outline-')) {
+  const base = resolvedVariant.value.slice('outline-'.length)
   console.warn(
-    `[VibeButton] variant="${resolvedVariant}" is not valid. ` +
+    `[VibeButton] variant="${resolvedVariant.value}" is not valid. ` +
     `Use the boolean prop instead: variant="${base}" outline.`
   )
 }
@@ -95,15 +98,15 @@ const rootBindings = computed(() => linkBindings(sanitizedHref.value, tag.value 
 const buttonClass = computed(() => {
   const classes = ['btn']
 
-  if (resolvedVariant === 'link') {
+  if (resolvedVariant.value === 'link') {
     classes.push('btn-link')
   } else if (props.outline) {
-    classes.push(`btn-outline-${resolvedVariant}`)
+    classes.push(`btn-outline-${resolvedVariant.value}`)
   } else {
-    classes.push(`btn-${resolvedVariant}`)
+    classes.push(`btn-${resolvedVariant.value}`)
   }
 
-  if (props.size) classes.push(`btn-${props.size}`)
+  if (resolvedSize.value) classes.push(`btn-${resolvedSize.value}`)
   if (props.active) classes.push('active')
   if (props.focusRing) classes.push('focus-ring')
   // Bootstrap uses the 'disabled' CSS class for non-button elements
