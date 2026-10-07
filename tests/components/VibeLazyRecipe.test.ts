@@ -20,9 +20,7 @@ describe('lazy hydration recipe (#152)', () => {
   })
 
   it('an async wrapper around the chart loader mounts and renders', async () => {
-    const LazyChartLine = defineAsyncComponent(() =>
-      import('../../src/index').then((m) => m.VibeChartLine),
-    )
+    const LazyChartLine = defineAsyncComponent(() => import('../../src/chart-line').then((m) => m.default))
     const wrapper = mount({
       components: { LazyChartLine },
       template: '<LazyChartLine :data="d" />',

@@ -12,7 +12,7 @@ import { defineAsyncComponent, hydrateOnVisible } from 'vue'
 import type { ChartData } from '@velkymx/vibeui'
 
 const LazyChartLine = defineAsyncComponent({
-  loader: () => import('@velkymx/vibeui').then((m) => m.VibeChartLine),
+  loader: () => import('@velkymx/vibeui/chart-line'),
   hydrate: hydrateOnVisible(),
 })
 
@@ -38,7 +38,7 @@ Hydrate a secondary editor when the browser is idle instead of during first pain
 import { defineAsyncComponent, hydrateOnIdle } from 'vue'
 
 const LazyWysiwyg = defineAsyncComponent({
-  loader: () => import('@velkymx/vibeui').then((m) => m.VibeFormWysiwyg),
+  loader: () => import('@velkymx/vibeui/wysiwyg'),
   hydrate: hydrateOnIdle(2000),
 })
 </script>
@@ -65,6 +65,7 @@ Props, slots, `v-model`, and events pass through async wrappers unchanged. A loa
 
 ## Trade-offs
 
-- **Coarse chunk.** The loader imports the package root, so the deferred download is the whole library, not just the chart. Per-component sub-path entries (finer splitting) are possible follow-up work; they need a multi-entry build, which the current single-entry UMD pipeline does not support.
+- **Sub-path entries are ESM-only.** `@velkymx/vibeui/chart-line`, `/chart-bar`, `/chart-pie`, and `/wysiwyg` ship ESM chunks (chart entries share one small tooltip chunk). The single-entry UMD bundle is unchanged for `require()` consumers.
+- **Styles stay global.** Sub-path chunks carry no CSS; import `@velkymx/vibeui/style.css` once as usual, since component styles ship in the main stylesheet.
 - **SSR only.** Hydration strategies apply to server-rendered markup. On a pure client-rendered page the loader still code-splits the download, but there is nothing to hydrate.
 - **Eager alternative.** If the component is above the fold, import it statically; lazy hydration only adds latency there.
