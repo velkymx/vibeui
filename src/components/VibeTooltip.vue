@@ -51,6 +51,7 @@ const initTooltip = async () => {
 
   if (bsTooltip.value) {
     bsTooltip.value.dispose()
+    bsTooltip.value = null
   }
 
   try {
@@ -75,7 +76,14 @@ const initTooltip = async () => {
     })
   } finally {
     initInFlight = false
-    if (pendingReinit) { pendingReinit = false; void initTooltip() }
+    // A reinit queued while the import was in flight must not run after
+    // teardown: onBeforeUnmount already ran, so a new instance would leak.
+    if (!isUnmounted && pendingReinit) {
+      pendingReinit = false
+      void initTooltip()
+    } else {
+      pendingReinit = false
+    }
   }
 }
 

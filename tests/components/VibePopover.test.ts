@@ -144,4 +144,27 @@ describe('VibePopover', () => {
     wrapper.unmount()
     expect(vi.mocked(bootstrap.Popover).mock.results[0].value.dispose).toHaveBeenCalled()
   })
+
+  // #191: same reinit-across-unmount race as VibeTooltip. The in-flight init
+  // must not dispose the live instance twice and must not rebuild after.
+  it('#191 reinit in flight across unmount disposes once and never rebuilds', async () => {
+    const wrapper = mount(VibePopover, {
+      props: { content: 'Test', placement: 'top' },
+      slots: { default: '<button>x</button>' }
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const ctor = vi.mocked(bootstrap.Popover)
+    expect(ctor).toHaveBeenCalledTimes(1)
+    const first = ctor.mock.results[0].value as { dispose: ReturnType<typeof vi.fn> }
+
+    await wrapper.setProps({ placement: 'bottom' })
+    const builtAtUnmount = ctor.mock.calls.length
+    wrapper.unmount()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(ctor.mock.calls.length).toBe(builtAtUnmount)
+    expect(first.dispose).toHaveBeenCalledTimes(1)
+  })
 })
