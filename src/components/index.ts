@@ -52,6 +52,7 @@ import VibeTooltip from './VibeTooltip.vue'
 import VibePopover from './VibePopover.vue'
 import VibeScrollspy from './VibeScrollspy.vue'
 import VibeIcon from './VibeIcon.vue'
+import VibeErrorBoundary from './VibeErrorBoundary.vue'
 
 // Chart Components
 import VibeChartLine from './VibeChartLine.vue'
@@ -141,6 +142,7 @@ export {
   VibePopover,
   VibeScrollspy,
   VibeIcon,
+  VibeErrorBoundary,
 
   // Chart
   VibeChartLine,
@@ -248,6 +250,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibePopover', VibePopover)
     app.component('VibeScrollspy', VibeScrollspy)
     app.component('VibeIcon', VibeIcon)
+    app.component('VibeErrorBoundary', VibeErrorBoundary)
 
     // Chart
     app.component('VibeChartLine', VibeChartLine)

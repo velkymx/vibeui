@@ -24,6 +24,7 @@ declare module '@vue/runtime-core' {
     VibeDraggable: typeof import('./components')['VibeDraggable']
     VibeDropdown: typeof import('./components')['VibeDropdown']
     VibeDroppable: typeof import('./components')['VibeDroppable']
+    VibeErrorBoundary: typeof import('./components')['VibeErrorBoundary']
     VibeFileInput: typeof import('./components')['VibeFileInput']
     VibeFormCheckbox: typeof import('./components')['VibeFormCheckbox']
     VibeFormDatepicker: typeof import('./components')['VibeFormDatepicker']

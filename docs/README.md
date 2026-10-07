@@ -94,6 +94,7 @@ The library handles:
 - [VibeToast](./components/interactive/toast.md)
 
 ### [Advanced Components](./components/advanced/)
+- [VibeErrorBoundary](./components/advanced/error-boundary.md)
 - [VibePopover](./components/advanced/popover.md)
 - [VibeScrollspy](./components/advanced/scrollspy.md)
 - [VibeTooltip](./components/advanced/tooltip.md)
