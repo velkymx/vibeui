@@ -273,14 +273,22 @@ const onHidden = () => {
 }
 
 // Bug 4: listener attach/detach helpers
+// The element listeners were attached to. Cached at attach time so teardown
+// does not depend on the template ref still being populated: on the
+// staticBackdrop re-init path the ref can be transiently null while
+// listenersAttached is true, which would skip the document.removeEventListener
+// below and leak a document keydown listener.
+let listenersEl: HTMLElement | null = null
+
 function attachListeners() {
   if (listenersAttached || !modalRef.value) return
-  modalRef.value.addEventListener('show.bs.modal', onShow)
-  modalRef.value.addEventListener('shown.bs.modal', onShown)
-  modalRef.value.addEventListener('hide.bs.modal', onHide)
-  modalRef.value.addEventListener('hidden.bs.modal', onHidden)
+  listenersEl = modalRef.value
+  listenersEl.addEventListener('show.bs.modal', onShow)
+  listenersEl.addEventListener('shown.bs.modal', onShown)
+  listenersEl.addEventListener('hide.bs.modal', onHide)
+  listenersEl.addEventListener('hidden.bs.modal', onHidden)
   // Keyboard events bubble up from children to the modal root.
-  modalRef.value.addEventListener('keydown', onModalKeydown)
+  listenersEl.addEventListener('keydown', onModalKeydown)
   // #183: element-level keydown misses Escape while focus sits outside the
   // modal, which is exactly the opening-transition window. Catch it at
   // document level for that window only; settled states keep Bootstrap's own
@@ -295,12 +303,15 @@ function onDocumentKeydown(e: KeyboardEvent) {
 }
 
 function detachListeners() {
-  if (!listenersAttached || !modalRef.value) return
-  modalRef.value.removeEventListener('show.bs.modal', onShow)
-  modalRef.value.removeEventListener('shown.bs.modal', onShown)
-  modalRef.value.removeEventListener('hide.bs.modal', onHide)
-  modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
-  modalRef.value.removeEventListener('keydown', onModalKeydown)
+  if (!listenersAttached) return
+  if (listenersEl) {
+    listenersEl.removeEventListener('show.bs.modal', onShow)
+    listenersEl.removeEventListener('shown.bs.modal', onShown)
+    listenersEl.removeEventListener('hide.bs.modal', onHide)
+    listenersEl.removeEventListener('hidden.bs.modal', onHidden)
+    listenersEl.removeEventListener('keydown', onModalKeydown)
+    listenersEl = null
+  }
   document.removeEventListener('keydown', onDocumentKeydown)
   listenersAttached = false
 }

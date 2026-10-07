@@ -102,21 +102,29 @@ const onHidden = () => {
 }
 
 // Bug 4: listener attach/detach helpers
+// Cached attach target so teardown never depends on the template ref
+// surviving (same pattern as VibeCarousel's attachedEl).
+let listenersEl: HTMLElement | null = null
+
 function attachListeners() {
   if (listenersAttached || !offcanvasRef.value) return
-  offcanvasRef.value.addEventListener('show.bs.offcanvas', onShow)
-  offcanvasRef.value.addEventListener('shown.bs.offcanvas', onShown)
-  offcanvasRef.value.addEventListener('hide.bs.offcanvas', onHide)
-  offcanvasRef.value.addEventListener('hidden.bs.offcanvas', onHidden)
+  listenersEl = offcanvasRef.value
+  listenersEl.addEventListener('show.bs.offcanvas', onShow)
+  listenersEl.addEventListener('shown.bs.offcanvas', onShown)
+  listenersEl.addEventListener('hide.bs.offcanvas', onHide)
+  listenersEl.addEventListener('hidden.bs.offcanvas', onHidden)
   listenersAttached = true
 }
 
 function detachListeners() {
-  if (!listenersAttached || !offcanvasRef.value) return
-  offcanvasRef.value.removeEventListener('show.bs.offcanvas', onShow)
-  offcanvasRef.value.removeEventListener('shown.bs.offcanvas', onShown)
-  offcanvasRef.value.removeEventListener('hide.bs.offcanvas', onHide)
-  offcanvasRef.value.removeEventListener('hidden.bs.offcanvas', onHidden)
+  if (!listenersAttached) return
+  if (listenersEl) {
+    listenersEl.removeEventListener('show.bs.offcanvas', onShow)
+    listenersEl.removeEventListener('shown.bs.offcanvas', onShown)
+    listenersEl.removeEventListener('hide.bs.offcanvas', onHide)
+    listenersEl.removeEventListener('hidden.bs.offcanvas', onHidden)
+    listenersEl = null
+  }
   listenersAttached = false
 }
 
