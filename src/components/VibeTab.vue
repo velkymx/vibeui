@@ -10,8 +10,10 @@ const props = defineProps({
 
 const ctx = inject(TABS_CONTEXT_KEY, null)
 if (!ctx) {
-  // Use console.error instead of throw so app.config.errorHandler can catch it
-  // and the component renders without tearing down the entire component tree
+  // Log directly and render without group wiring: a missing provider must not
+  // tear down the tree. NOTE: app.config.errorHandler does not catch
+  // console.error output, it only receives errors Vue itself throws or
+  // propagates during render/lifecycle.
   console.error('[VibeTab] must be a descendant of <VibeTabs>')
 }
 

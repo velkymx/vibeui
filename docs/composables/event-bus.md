@@ -45,6 +45,24 @@ Outside a component (a Pinia store, a router guard, a plain module), keep the re
 
 Each subscriber runs in its own try/catch during `emit`. A handler that throws cannot break the other handlers or the `emit` call; its error is reported on the `error:component` channel (and logged in development), never swallowed silently.
 
+### Error observability
+
+Two paths feed the same `error:component` channel, so one observer sees every failure:
+
+- **Caught component errors.** Components report their own caught failures via `reportComponentError`, which emits the local `component-error` event and publishes `error:component`. `VibeErrorBoundary` extends this to descendant render/lifecycle crashes with a fallback UI.
+- **Uncaught Vue errors (opt-in).** Errors Vue itself throws during render/lifecycle reach `app.config.errorHandler`, which VibeUI never sets by default (setting it could clobber yours). Opt in with the exported helper, before `app.mount()`:
+
+```ts
+import VibeUI, { installErrorHandler } from '@velkymx/vibeui'
+
+const app = createApp(App)
+app.use(VibeUI)
+const uninstall = installErrorHandler(app) // routes into error:component, chains your existing handler
+app.mount('#app')
+```
+
+A pre-existing `errorHandler` is called first (inside try/finally, so the bus publish still runs if it throws), never overwritten. The helper returns an uninstall function that restores the previous handler.
+
 ## Built-in channels
 
 VibeUI publishes to and acts on a fixed set of channels. They fall into three tiers, so it is always clear who acts on an event.
