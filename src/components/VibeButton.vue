@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useTemplateRef, computed, onMounted, ref } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { ButtonVariant, Size, ButtonType, ComponentError } from '../types'
 import { linkBindings } from '../utils/linkBindings'
@@ -8,7 +9,7 @@ import { reportComponentError } from '../utils/reportComponentError'
 import VibeSpinner from './VibeSpinner.vue'
 
 const props = defineProps({
-  variant: { type: String as () => ButtonVariant, default: 'primary' },
+  variant: { type: String as () => ButtonVariant, default: undefined },
   size: { type: String as () => Size, default: undefined },
   outline: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
@@ -25,6 +26,10 @@ const props = defineProps({
   // #94: optional label swap while loading (e.g. "Saving..."), no layout shift otherwise.
   loadingText: { type: String, default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, 'primary'))
+
 
 const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
@@ -34,10 +39,10 @@ const emit = defineEmits<{
 // #140: DEV-only guard against the common Bootstrap habit of variant="outline-*".
 // VibeUI models outline as a boolean prop, so an "outline-primary" variant is not
 // a valid value; point the consumer at the correct form.
-if (import.meta.env.DEV && typeof props.variant === 'string' && props.variant.startsWith('outline-')) {
-  const base = props.variant.slice('outline-'.length)
+if (import.meta.env.DEV && typeof resolvedVariant === 'string' && resolvedVariant.startsWith('outline-')) {
+  const base = resolvedVariant.slice('outline-'.length)
   console.warn(
-    `[VibeButton] variant="${props.variant}" is not valid. ` +
+    `[VibeButton] variant="${resolvedVariant}" is not valid. ` +
     `Use the boolean prop instead: variant="${base}" outline.`
   )
 }
@@ -90,12 +95,12 @@ const rootBindings = computed(() => linkBindings(sanitizedHref.value, tag.value 
 const buttonClass = computed(() => {
   const classes = ['btn']
 
-  if (props.variant === 'link') {
+  if (resolvedVariant === 'link') {
     classes.push('btn-link')
   } else if (props.outline) {
-    classes.push(`btn-outline-${props.variant}`)
+    classes.push(`btn-outline-${resolvedVariant}`)
   } else {
-    classes.push(`btn-${props.variant}`)
+    classes.push(`btn-${resolvedVariant}`)
   }
 
   if (props.size) classes.push(`btn-${props.size}`)

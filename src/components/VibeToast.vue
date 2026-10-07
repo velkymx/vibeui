@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
 import { useTemplateRef, shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, ToastPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
@@ -25,6 +26,10 @@ const props = defineProps({
   // Used by VibeToastHost to group multiple toasts under a single shared container.
   noContainer: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
@@ -42,7 +47,7 @@ const isVisible = ref(false)
 
 const toastClass = computed(() => {
   const classes = ['toast']
-  if (props.variant) classes.push(`text-bg-${props.variant}`)
+  if (resolvedVariant) classes.push(`text-bg-${resolvedVariant}`)
   return classes.join(' ')
 })
 
@@ -164,7 +169,7 @@ defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
 // WCAG 4.1.3: only error/warning toasts may interrupt screen-reader speech
 // (role="alert" / assertive); success/info/neutral toasts are polite status
 // messages, per the ARIA convention Bootstrap documents for toasts.
-const isUrgent = computed(() => props.variant === 'danger' || props.variant === 'warning')
+const isUrgent = computed(() => resolvedVariant === 'danger' || resolvedVariant === 'warning')
 
 // Shared attrs for the .toast element — avoids repeating them in both template branches.
 // `as const` preserves the literal types ('true', role/aria-live unions) so they stay

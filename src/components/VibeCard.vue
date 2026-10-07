@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { Variant, Tag } from '../types'
 
@@ -27,10 +28,14 @@ const props = defineProps({
   imgTop: { type: Boolean, default: false },
   imgBottom: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 const cardClass = computed(() => {
   const classes = ['card']
-  if (props.variant) classes.push(`text-bg-${props.variant}`)
+  if (resolvedVariant) classes.push(`text-bg-${resolvedVariant}`)
   if (props.border) classes.push(`border-${props.border}`)
   if (props.textVariant) classes.push(`text-${props.textVariant}`)
   return classes.join(' ')

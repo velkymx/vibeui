@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, Size, PlaceholderAnimation, Tag } from '../types'
 
 const props = defineProps({
@@ -9,10 +10,14 @@ const props = defineProps({
   width: { type: [String, Number], default: undefined },
   tag: { type: String as () => Tag, default: 'span' }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 const placeholderClass = computed(() => {
   const classes = ['placeholder']
-  if (props.variant) classes.push(`bg-${props.variant}`)
+  if (resolvedVariant) classes.push(`bg-${resolvedVariant}`)
   if (props.size) classes.push(`placeholder-${props.size}`)
   return classes.join(' ')
 })
