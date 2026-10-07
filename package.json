@@ -15,6 +15,22 @@
       "import": "./dist/vibeui.es.js",
       "require": "./dist/vibeui.umd.js"
     },
+    "./chart-line": {
+      "types": "./dist/chart-line.d.ts",
+      "import": "./dist/chart-line.es.js"
+    },
+    "./chart-bar": {
+      "types": "./dist/chart-bar.d.ts",
+      "import": "./dist/chart-bar.es.js"
+    },
+    "./chart-pie": {
+      "types": "./dist/chart-pie.d.ts",
+      "import": "./dist/chart-pie.es.js"
+    },
+    "./wysiwyg": {
+      "types": "./dist/wysiwyg.d.ts",
+      "import": "./dist/wysiwyg.es.js"
+    },
     "./style.css": "./dist/vibeui.css",
     "./dist/vibeui.css": "./dist/vibeui.css",
     "./dist/style.css": "./dist/vibeui.css",
@@ -28,7 +44,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.entries.config.ts",
     "preview": "vite preview",
     "examples": "npm run build && cd examples && python3 -m http.server 8000",
     "smoke": "npm run build && cp dist/vibeui.es.js dist/vibeui.css smoke/dist/ && cd smoke && python3 -m http.server 8001",
