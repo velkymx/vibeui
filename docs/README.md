@@ -176,6 +176,10 @@ Standalone utilities that can be used independently of any component.
 
 - [v-vibe-tooltip](./directives/v-tooltip.md) - Inline tooltip directive
 
+## Performance
+
+- [Lazy hydration for heavy components](./performance/lazy-hydration.md) - Defer chart and editor download plus hydration with Vue 3.5 strategies
+
 ## Utilities
 
 - [Position utility classes](./utilities/position.md) - Bootstrap position-* / top-* / translate-middle reference
