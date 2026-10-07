@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed, ref, watch } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -42,6 +43,10 @@ const props = defineProps({
   wrap: { type: Boolean, default: false },
   vertical: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 // Consumer attributes (aria-label, name, data-*, class) belong on the native
 // control, not the wrapper <div>. Mirrors VibeFormInput/VibeFormSelect.
@@ -72,14 +77,14 @@ const {
 
 const inputClass = computed(() => {
   const classes = ['form-control']
-  if (props.size) classes.push(`form-control-${props.size}`)
+  if (resolvedSize.value) classes.push(`form-control-${resolvedSize.value}`)
   if (validationClass.value) classes.push(validationClass.value)
   return classes.join(' ')
 })
 
 const inputGroupClass = computed(() => {
   const classes = ['input-group']
-  if (props.size) classes.push(`input-group-${props.size}`)
+  if (resolvedSize.value) classes.push(`input-group-${resolvedSize.value}`)
   if (props.vertical) classes.push('input-group-vertical')
   return classes.join(' ')
 })

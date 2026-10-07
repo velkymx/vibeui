@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { Variant, Tag, ContainerType } from '../types'
 import { safeHref } from '../utils/safeHref'
@@ -23,6 +24,10 @@ const props = defineProps({
   gradient: { type: String, default: undefined },
   tag: { type: String as () => Tag, default: 'section' }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 // Allow only *-gradient(...) values, and never url()/expression()/javascript:.
 const GRADIENT_RE = /^(?:repeating-)?(?:linear|radial|conic)-gradient\([^;{}]*\)$/i
@@ -38,10 +43,10 @@ const heroClass = computed(() => {
   // With an explicit textVariant, keep bg-{variant} + text-{textVariant}. Without
   // one, use Bootstrap's .text-bg-{variant} so the foreground is contrast-correct
   // by default (a bare bg-{variant} left dark variants dark-on-dark).
-  if (props.variant && props.textVariant) {
-    c.push(`bg-${props.variant}`, `text-${props.textVariant}`)
-  } else if (props.variant) {
-    c.push(`text-bg-${props.variant}`)
+  if (resolvedVariant.value && props.textVariant) {
+    c.push(`bg-${resolvedVariant.value}`, `text-${props.textVariant}`)
+  } else if (resolvedVariant.value) {
+    c.push(`text-bg-${resolvedVariant.value}`)
   } else if (props.textVariant) {
     c.push(`text-${props.textVariant}`)
   }

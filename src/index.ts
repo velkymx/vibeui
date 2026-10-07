@@ -14,6 +14,7 @@ export type { UsePositionOptions, UsePositionReturn } from './composables/usePos
 export { useId } from './composables/useId'
 export { useDebouncedRef } from './composables/useDebouncedRef'
 export { VIBE_WYSIWYG_KEY } from './composables/wysiwygConfig'
+export { VIBE_DEFAULTS_KEY, useVibeDefaults, resolveProp } from './composables/vibeDefaults'
 export { makeDomPurifySanitizer, WYSIWYG_PURIFY_CONFIG } from './utils/sanitizeHtml'
 export { installErrorHandler } from './utils/installErrorHandler'
 export { useColorMode, initColorModeEager } from './composables/useColorMode'

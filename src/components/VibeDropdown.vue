@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
 import { useTemplateRef, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { safeHref } from '../utils/safeHref'
@@ -22,7 +23,7 @@ const _generatedId = useId('dropdown')
 const props = defineProps({
   id: { type: String, default: undefined },
   text: { type: String, default: 'Dropdown' },
-  variant: { type: String as () => Variant, default: 'primary' },
+  variant: { type: String as () => Variant, default: undefined },
   size: { type: String as () => Size, default: undefined },
   split: { type: Boolean, default: false },
   direction: { type: String as () => Direction, default: 'down' },
@@ -30,6 +31,13 @@ const props = defineProps({
   items: { type: Array as () => DropdownItem[], required: true },
   autoClose: { type: [Boolean, String], default: true }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, 'primary'))
+
 
 const emit = defineEmits<{
   (e: 'item-click', payload: { item: DropdownItem; index: number; event: Event }): void
@@ -67,8 +75,8 @@ const dropdownClass = computed(() => {
 })
 
 const buttonClass = computed(() => {
-  const classes = ['btn', `btn-${props.variant}`]
-  if (props.size) classes.push(`btn-${props.size}`)
+  const classes = ['btn', `btn-${resolvedVariant.value}`]
+  if (resolvedSize.value) classes.push(`btn-${resolvedSize.value}`)
   return classes.join(' ')
 })
 

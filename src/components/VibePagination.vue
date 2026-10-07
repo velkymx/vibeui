@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Size, ComponentError } from '../types'
 
 const props = defineProps({
@@ -21,6 +22,10 @@ const props = defineProps({
   nextText: { type: String, default: 'Next' },
   maxVisiblePages: { type: Number, default: 7 }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'update:currentPage', page: number): void
@@ -37,7 +42,7 @@ defineSlots<{
 
 const paginationClass = computed(() => {
   const classes = ['pagination']
-  if (props.size) classes.push(`pagination-${props.size}`)
+  if (resolvedSize.value) classes.push(`pagination-${resolvedSize.value}`)
   return classes.join(' ')
 })
 

@@ -1,5 +1,6 @@
 <script setup lang="ts" generic="T extends object">
 import { ref, computed, watch, type PropType } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { DataTableColumn, ComponentError, Variant } from '../types'
 import { safeCssObject } from '../utils/safeCss'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
@@ -37,7 +38,7 @@ const props = defineProps({
 
   // Search
   searchPlaceholder: { type: String, default: 'Search...' },
-  searchDebounce: { type: Number, default: 300 },
+  searchDebounce: { type: Number, default: undefined },
 
   // Display
   showEmpty: { type: Boolean, default: true },
@@ -49,6 +50,10 @@ const props = defineProps({
   perPageOptions: { type: Array as () => number[], default: () => [5, 10, 25, 50, 100] },
   clickable: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 // Use defineModel for two-way binding (Vue 3.4+)
 const currentPage = defineModel<number>('currentPage', { default: 1 })
@@ -74,7 +79,7 @@ defineSlots<{
 const searchQuery = ref('')
 // #158: debounced mirror. The pending timer clears on scope dispose, so no
 // post-unmount commit can fire (replaces the hand-rolled timer + guard).
-const debouncedSearchQuery = useDebouncedRef('', () => props.searchDebounce)
+const debouncedSearchQuery = useDebouncedRef('', () => resolveProp(props.searchDebounce, vibeDefaults.debounce, 300))
 
 /**
  * Generate a unique key for each row.
@@ -274,7 +279,7 @@ const tableClass = computed(() => {
   if (props.hover) classes.push('table-hover')
   if (props.small) classes.push('table-sm')
   if (props.stack) classes.push('vibe-table-stack')
-  if (props.variant) classes.push(`table-${props.variant}`)
+  if (resolvedVariant.value) classes.push(`table-${resolvedVariant.value}`)
   return classes.join(' ')
 })
 

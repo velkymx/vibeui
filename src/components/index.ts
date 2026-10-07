@@ -181,6 +181,7 @@ import type { App, Plugin } from 'vue'
 import { vTooltip } from '../directives/vTooltip'
 import type { VibeUIOptions } from '../types'
 import { VIBE_WYSIWYG_KEY } from '../composables/wysiwygConfig'
+import { VIBE_DEFAULTS_KEY } from '../composables/vibeDefaults'
 import { initColorModeEager } from '../composables/useColorMode'
 
 // Vue plugin for global registration
@@ -195,6 +196,10 @@ const VibeUIPlugin: Plugin = {
     // app-wide so VibeFormWysiwyg can inject them without the library importing
     // the optional peers itself.
     if (options?.wysiwyg) app.provide(VIBE_WYSIWYG_KEY, options.wysiwyg)
+
+    // #159: library-wide prop defaults. Provided only when set; components
+    // fall back to builtins otherwise, so bare installs behave identically.
+    if (options?.defaults) app.provide(VIBE_DEFAULTS_KEY, options.defaults)
 
     // Core
     app.component('VibeAlert', VibeAlert)

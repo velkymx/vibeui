@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import VibeToast from './VibeToast.vue'
 import { __toastStore, useToast, type ToastSpec } from '../composables/useToast'
 import { useEventBus } from '../composables/useEventBus'
 import type { ToastPlacement } from '../types'
 
 const props = defineProps({
-  defaultPlacement: { type: String as () => ToastPlacement, default: 'top-end' }
+  defaultPlacement: { type: String as () => ToastPlacement, default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedPlacement = computed(() => resolveProp(props.defaultPlacement, vibeDefaults.toastPosition, 'top-end'))
+
 
 const toast = useToast()
 const { dismiss } = toast
@@ -27,7 +32,7 @@ bus.on('notification:dismiss', ({ id }) => {
 const grouped = computed<Array<{ placement: ToastPlacement; toasts: ToastSpec[] }>>(() => {
   const buckets = new Map<ToastPlacement, ToastSpec[]>()
   for (const t of __toastStore.toasts) {
-    const placement = t.placement ?? props.defaultPlacement
+    const placement = t.placement ?? resolvedPlacement.value
     const list = buckets.get(placement)
     if (list) list.push(t)
     else buckets.set(placement, [t])

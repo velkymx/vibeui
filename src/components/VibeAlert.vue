@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
 import { useTemplateRef, shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant } from '../types'
 
 interface BootstrapAlert {
@@ -9,13 +10,17 @@ interface BootstrapAlert {
 }
 
 const props = defineProps({
-  variant: { type: String as () => Variant, default: 'primary' },
+  variant: { type: String as () => Variant, default: undefined },
   subtle: { type: Boolean, default: false },
   modelValue: { type: Boolean, default: true },
   dismissible: { type: Boolean, default: false },
   message: { type: String, default: '' },
   fade: { type: Boolean, default: true }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, 'primary'))
+
 
 import type { ComponentError } from '../types'
 
@@ -131,9 +136,9 @@ const dismiss = () => {
 const alertClass = computed(() => {
   const classes = ['alert']
   if (props.subtle) {
-    classes.push(`bg-${props.variant}-subtle`, `text-${props.variant}-emphasis`, `border-${props.variant}-subtle`)
+    classes.push(`bg-${resolvedVariant.value}-subtle`, `text-${resolvedVariant.value}-emphasis`, `border-${resolvedVariant.value}-subtle`)
   } else {
-    classes.push(`alert-${props.variant}`)
+    classes.push(`alert-${resolvedVariant.value}`)
   }
   if (props.dismissible) classes.push('alert-dismissible')
   if (props.fade) classes.push('fade', 'show')

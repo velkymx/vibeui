@@ -296,6 +296,23 @@ export interface VibeWysiwygConfig {
 }
 export interface VibeUIOptions {
   wysiwyg?: VibeWysiwygConfig
+  defaults?: VibeDefaults
+}
+
+/**
+ * #159: library-wide prop defaults set once at `app.use(VibeUI, { defaults })`.
+ * Every key is opt-in; an explicit per-instance prop always wins, then the
+ * global default, then the component builtin. Variant/size apply only where
+ * the prop type accepts them (standard Variant/Size components; Skeleton and
+ * Tabs keep their specialized variants).
+ */
+export interface VibeDefaults {
+  variant?: Variant
+  size?: Size
+  toastPosition?: ToastPlacement
+  teleport?: string | boolean
+  debounce?: number
+  hideOptional?: boolean
 }
 
 // Chart types

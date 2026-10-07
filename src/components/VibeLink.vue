@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Tag, Variant } from '../types'
 import { safeHref } from '../utils/safeHref'
 import { linkBindings } from '../utils/linkBindings'
@@ -16,6 +17,10 @@ const props = defineProps({
   opacity: { type: [String, Number] as PropType<'10' | '25' | '50' | '75' | '100' | 10 | 25 | 50 | 75 | 100>, default: undefined },
   focusRing: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 const isRouterLink = computed(() => !!props.to)
 const componentTag = computed(() => {
@@ -31,8 +36,8 @@ const linkAttrs = computed(() =>
 const linkClass = computed(() => {
   const classes: string[] = []
   
-  if (props.variant) {
-    classes.push(`link-${props.variant}`)
+  if (resolvedVariant.value) {
+    classes.push(`link-${resolvedVariant.value}`)
   }
 
   if (props.underline === false || props.underline === '0') {

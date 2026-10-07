@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
 import { useTemplateRef, shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Size, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
@@ -29,7 +30,7 @@ const props = defineProps({
   staticBackdrop: { type: Boolean, default: false },
   hideHeader: { type: Boolean, default: false },
   hideFooter: { type: Boolean, default: false },
-  teleport: { type: [String, Boolean], default: 'body' },
+  teleport: { type: [String, Boolean], default: undefined },
   // WCAG 2.4.3: move focus to the first form control when the modal opens.
   // Set false to opt out (e.g. modals with a long async transition).
   autoFocus: { type: Boolean, default: true },
@@ -38,6 +39,13 @@ const props = defineProps({
   // Set false to opt out.
   submitOnMetaEnter: { type: Boolean, default: true }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const resolvedTeleport = computed(() => resolveProp(props.teleport, vibeDefaults.teleport, 'body'))
+
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
@@ -141,7 +149,7 @@ let isUnmounted = false
 
 const dialogClass = computed(() => {
   const classes = ['modal-dialog']
-  if (props.size) classes.push(`modal-${props.size}`)
+  if (resolvedSize.value) classes.push(`modal-${resolvedSize.value}`)
   if (props.centered) classes.push('modal-dialog-centered')
   if (props.scrollable) classes.push('modal-dialog-scrollable')
   if (props.fullscreen === true) {
@@ -351,7 +359,7 @@ defineExpose({ show, hide, handleUpdate, _unsafe_bsInstance: bsModal })
 </script>
 
 <template>
-  <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
+  <Teleport :to="resolvedTeleport === true ? 'body' : (resolvedTeleport || undefined)" :disabled="!resolvedTeleport">
     <div
       ref="modalRef"
       :id="computedId"
