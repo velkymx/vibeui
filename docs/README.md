@@ -179,6 +179,7 @@ Standalone utilities that can be used independently of any component.
 ## Performance
 
 - [Lazy hydration for heavy components](./performance/lazy-hydration.md) - Defer chart and editor download plus hydration with Vue 3.5 strategies
+- [Custom elements spike: decision record](./spikes/custom-elements.md) - Why framework-agnostic distribution is NO-GO for now
 
 ## Utilities
 
