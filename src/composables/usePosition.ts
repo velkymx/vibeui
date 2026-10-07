@@ -83,6 +83,13 @@ export function usePosition(
   let cleanup: (() => void) | null = null
   let savedStyle: SavedStyle | null = null
   let savedFor: HTMLElement | null = null
+  // Post-await writes must not land on a detached element: an in-flight
+  // update() can resolve after stop()/unmount and would re-apply computed
+  // styles over the restored ones.
+  let alive = true
+  // Bumped by stop() so updates already awaiting computePosition bail instead
+  // of writing. A later manual update() captures the new epoch and proceeds.
+  let epoch = 0
 
   const buildMiddleware = (opts: UsePositionOptions) => {
     const mw = []
@@ -118,6 +125,8 @@ export function usePosition(
   }
 
   const update = async (): Promise<void> => {
+    if (!alive) return
+    const run = epoch
     const t = target.value
     const a = anchor.value
     if (!t || !a) return
@@ -130,6 +139,11 @@ export function usePosition(
       strategy: opts.strategy ?? 'absolute',
       middleware: buildMiddleware(opts)
     })
+    // Bail if stopped/unmounted while awaiting, or if the target moved to a
+    // different element in the meantime. Writing now would re-apply computed
+    // styles over restored ones on a detached node.
+    if (!alive || run !== epoch) return
+    if (target.value !== t) return
     x.value = result.x
     y.value = result.y
     placement.value = result.placement
@@ -141,6 +155,7 @@ export function usePosition(
   }
 
   const stop = (): void => {
+    epoch += 1
     if (cleanup) {
       cleanup()
       cleanup = null
@@ -176,6 +191,7 @@ export function usePosition(
   )
 
   onBeforeUnmount(() => {
+    alive = false
     stop()
   })
 
