@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type PropType } from 'vue'
+import { computed, useAttrs, type PropType } from 'vue'
 
 type SkeletonVariant = 'text' | 'rect' | 'circle' | 'card'
 type Dim = string | number
@@ -25,6 +25,36 @@ const baseClasses = computed(() => {
 
 const lineCount = computed(() => Math.max(1, props.lines))
 
+// The last line of a multi-line skeleton is shortened, matching the
+// placeholder pattern.
+const textWidth = computed(() => toCss(props.width))
+
+const attrs = useAttrs()
+
+// #189: class/style/data-* fall through to every line (uniform CR9-19
+// styling; data-* is inert so duplication is harmless). Everything else
+// (id, listeners, aria) binds to the first line only so ids stay unique,
+// handlers fire once, and one live region announces.
+const sharedLineAttrs = () => {
+  const out: Record<string, unknown> = { class: attrs.class, style: attrs.style }
+  for (const key of Object.keys(attrs)) {
+    if (key.startsWith('data-')) out[key] = attrs[key]
+  }
+  return out
+}
+const firstOnlyAttrs = () => {
+  const { class: _cls, style: _sty, ...rest } = attrs
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(rest)) {
+    if (!key.startsWith('data-')) out[key] = value
+  }
+  return out
+}
+const lineAttrs = (first: boolean) => ({
+  ...sharedLineAttrs(),
+  ...(first ? firstOnlyAttrs() : {})
+})
+
 // Circle width: explicit width wins, otherwise CSS default (.vibe-skeleton-circle).
 const circleWidth = computed(() => (props.variant === 'circle' ? toCss(props.width) : undefined))
 // Circle height: explicit height wins, otherwise mirror the width to keep 1:1.
@@ -41,9 +71,10 @@ const sharedAttrs = {
 } as const
 
 // The `text` variant renders a multi-root fragment, so Vue cannot auto-inherit
-// consumer attrs — it would silently drop them with a dev warning. Disable automatic
-// inheritance and bind $attrs explicitly on every line so class/data-*/listeners
-// propagate uniformly across all skeleton lines.
+// consumer attrs, it would silently drop them with a dev warning. Disable automatic
+// inheritance: class/style fall through to every line (uniform styling), all
+// other attrs bind to the first line only (unique ids, single-fire listeners,
+// one live region).
 defineOptions({ inheritAttrs: false })
 </script>
 
@@ -59,12 +90,12 @@ defineOptions({ inheritAttrs: false })
         i === lineCount && lineCount > 1 ? 'vibe-skeleton-text-last' : ''
       ]"
       :style="{
-        width: i === lineCount && lineCount > 1 ? '60%' : toCss(width),
+        width: i === lineCount && lineCount > 1 ? '60%' : textWidth,
         height: toCss(height)
       }"
-      v-bind="$attrs"
-      role="status"
-      aria-busy="true"
+      v-bind="lineAttrs(i === 1)"
+      :role="i === 1 ? 'status' : undefined"
+      :aria-busy="i === 1 ? 'true' : undefined"
     />
   </template>
 
