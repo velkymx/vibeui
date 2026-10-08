@@ -81,6 +81,10 @@ const {
 } = useFormField('wysiwyg', props)
 
 const safeMinHeight = computed(() => safeLength(props.height) ?? '200px')
+
+// Hoisted: the inline object was re-allocated on every render, defeating Vue's
+// style patch short-circuit by reference.
+const wysiwygStyle = computed(() => ({ minHeight: safeMinHeight.value }))
 const { isMobile } = useBreakpoints()
 
 // WYSIWYG peers resolve prop → app-provided → none. The library imports neither
@@ -492,9 +496,25 @@ watch(isMobile, () => {
     </div>
 
     <div
-      v-else
+      v-else-if="!isQuillLoaded"
+      class="vibe-wysiwyg-loading d-flex align-items-center justify-content-center text-body-secondary"
+      :style="wysiwygStyle"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading editor"
+    >
+      <span class="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+      Loading editor...
+    </div>
+
+    <!-- Always rendered while there is no load error (visibility toggled):
+      initQuill mounts onto editorContainer while the loader is in flight, so
+      the node must exist before isQuillLoaded flips. -->
+    <div
+      v-if="!loadError"
+      v-show="isQuillLoaded"
       :class="containerClass"
-      :style="{ minHeight: safeMinHeight }"
+      :style="wysiwygStyle"
     >
       <div ref="editorContainer"></div>
     </div>

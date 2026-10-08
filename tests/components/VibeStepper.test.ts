@@ -506,4 +506,67 @@ describe('VibeStepper', () => {
       expect(vm.active).toBe(1)
     })
   })
+
+  // #197: the in-flight guard state must reach the user: both default buttons
+  // disable plus aria-busy while transitioning, and the actions slot receives
+  // transitioning.
+  describe('async busy state (#197)', () => {
+    it('disables both buttons and sets aria-busy during a deferred guard', async () => {
+      let resolveGuard!: (v: boolean) => void
+      const wrapper = mount(VibeStepper, {
+        props: {
+          steps: baseSteps,
+          modelValue: 1,
+          beforeNext: () => new Promise<boolean>((r) => { resolveGuard = r })
+        }
+      })
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await nextTick()
+
+      const next = wrapper.find('[data-stepper-next]')
+      const prev = wrapper.find('[data-stepper-prev]')
+      expect(next.attributes('disabled')).toBeDefined()
+      expect(prev.attributes('disabled')).toBeDefined()
+      expect(next.attributes('aria-busy')).toBe('true')
+      expect(next.find('.spinner-border').exists()).toBe(true)
+
+      resolveGuard(true)
+      await new Promise((r) => setTimeout(r, 10))
+      await nextTick()
+      expect(wrapper.find('[data-stepper-next]').attributes('disabled')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('exposes transitioning to the actions slot', async () => {
+      let resolveGuard!: (v: boolean) => void
+      const wrapper = mount(VibeStepper, {
+        props: {
+          steps: baseSteps,
+          modelValue: 1,
+          beforeNext: () => new Promise<boolean>((r) => { resolveGuard = r })
+        },
+        slots: {
+          actions: ({
+            next,
+            transitioning
+          }: {
+            next: () => Promise<void>
+            transitioning: boolean
+          }) => [
+            h('span', { class: 'slot-busy' }, transitioning ? 'busy' : 'idle'),
+            h('button', { class: 'slot-next', onClick: () => { void next() } }, 'go')
+          ]
+        }
+      })
+      expect(wrapper.find('.slot-busy').text()).toBe('idle')
+      await wrapper.find('.slot-next').trigger('click')
+      await nextTick()
+      expect(wrapper.find('.slot-busy').text()).toBe('busy')
+      resolveGuard(true)
+      await new Promise((r) => setTimeout(r, 10))
+      await nextTick()
+      expect(wrapper.find('.slot-busy').text()).toBe('idle')
+      wrapper.unmount()
+    })
+  })
 })
