@@ -152,6 +152,38 @@ describe('VibeSkeleton', () => {
     })
   })
 
+  // #193: freeform width/height strings are untrusted. expression()/url()
+  // payloads must be dropped before :style; valid values still render.
+  describe('untrusted dimension strings (#193)', () => {
+    it('drops expression() and url() widths on the rect variant', () => {
+      // happy-dom parses :style, so syntactically invalid values never reach
+      // the attribute even pre-fix. calc() is valid CSS but outside the
+      // safeLength allowlist: it renders pre-fix and is dropped post-fix,
+      // which is what makes this test discriminate.
+      for (const payload of ['expression(alert(1))', 'url(https://evil/x)', 'calc(100% - 10px)']) {
+        const wrapper = mount(VibeSkeleton, {
+          props: { variant: 'rect', width: payload, height: payload }
+        })
+        const style = wrapper.find('.vibe-skeleton-rect').attributes('style') ?? ''
+        expect(style).not.toContain('expression')
+        expect(style).not.toContain('url(')
+        expect(style).not.toContain('calc(')
+      }
+    })
+
+    it('keeps valid widths and drops non-finite numbers', () => {
+      const ok = mount(VibeSkeleton, { props: { variant: 'rect', width: '200px', height: 100 } })
+      const el = ok.find('.vibe-skeleton-rect').element as HTMLElement
+      expect(el.style.width).toBe('200px')
+      expect(el.style.height).toBe('100px')
+
+      const bad = mount(VibeSkeleton, {
+        props: { variant: 'rect', width: Number.NaN as unknown as number }
+      })
+      expect((bad.find('.vibe-skeleton-rect').element as HTMLElement).style.width).toBe('')
+    })
+  })
+
   // #189: unique attrs (id), live-region semantics (role/aria-busy), and
   // listeners must land on exactly one line. class/style keep the CR9-19
   // uniform fallthrough on all lines; everything else binds once.

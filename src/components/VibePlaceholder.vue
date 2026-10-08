@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { safeLength } from '../utils/safeCss'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, Size, PlaceholderAnimation, Tag } from '../types'
 
@@ -31,11 +32,13 @@ const containerClass = computed(() => {
 })
 
 const widthStyle = computed(() => {
-  if (props.width) {
-    const value = typeof props.width === 'number' ? `${props.width}%` : props.width
-    return { width: value }
-  }
-  return undefined
+  const value = props.width
+  if (value === undefined || value === null || value === '') return undefined
+  // Freeform consumer string: validate before it reaches :style (see #193).
+  const resolved = typeof value === 'number'
+    ? (Number.isFinite(value) ? `${value}%` : undefined)
+    : safeLength(String(value))
+  return resolved ? { width: resolved } : undefined
 })
 </script>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
+import { safeColor } from '../../utils/safeCss'
 
 export interface ChartLegendItem {
   label: string | number | undefined
@@ -17,12 +18,20 @@ defineProps({
   position: { type: String as PropType<'top' | 'bottom'>, required: true },
   items: { type: Array as PropType<ChartLegendItem[]>, required: true }
 })
+
+// item.color can originate from dataset data (see ChartDataset.color), so it is
+// treated as untrusted: validated with safeColor and bound via the longhand
+// background-color, never the `background` shorthand that accepts url()/images.
+const swatchStyle = (color: string) => {
+  const safe = safeColor(color)
+  return safe ? { backgroundColor: safe } : undefined
+}
 </script>
 
 <template>
   <div class="vibe-chart-legend" :class="`vibe-chart-legend--${position}`">
-    <span v-for="(item, i) in items" :key="item.label ?? i" class="vibe-chart-legend-item">
-      <span class="vibe-chart-legend-swatch" :style="{ background: item.color }" />
+    <span v-for="(item, i) in items" :key="`${item.label ?? 'item'}-${i}`" class="vibe-chart-legend-item">
+      <span class="vibe-chart-legend-swatch" :style="swatchStyle(item.color)" />
       {{ item.label }}
     </span>
   </div>
