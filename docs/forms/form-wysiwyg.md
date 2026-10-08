@@ -99,6 +99,10 @@ No other props or events changed.
 
 None.
 
+## Loading state
+
+While the Quill loader is pending, the component renders a `role="status"` region with `aria-busy="true"` and a Bootstrap spinner (`Loading editor...`) instead of an empty box. The editor container stays mounted but hidden until Quill initializes.
+
 ## Usage
 
 ### Recommended: inside a VibeFormGroup

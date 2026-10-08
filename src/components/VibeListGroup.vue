@@ -9,7 +9,9 @@ const props = defineProps({
   horizontal: { type: [Boolean, String], default: false },
   numbered: { type: Boolean, default: false },
   tag: { type: String as () => Tag | 'ul' | 'ol', default: 'ul' },
-  items: { type: Array as () => ListGroupItem[], required: true }
+  items: { type: Array as () => ListGroupItem[], required: true },
+  showEmpty: { type: Boolean, default: true },
+  emptyText: { type: String, default: 'No items' }
 })
 
 const emit = defineEmits<{
@@ -81,6 +83,9 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
 
 <template>
   <component :is="tag" :class="listGroupClass">
+    <div v-if="items.length === 0 && showEmpty" class="list-group-item text-body-secondary">
+      {{ emptyText }}
+    </div>
     <template v-for="(item, index) in items" :key="item.href ?? item.text ?? index">
     <component
       :is="itemMeta.tag.get(item)"

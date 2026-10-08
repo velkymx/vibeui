@@ -8,6 +8,8 @@ Data-driven breadcrumb navigation to indicate the current page's location within
 |------|------|---------|-------------|
 | `ariaLabel` | `String` | `'breadcrumb'` | ARIA label for navigation |
 | `items` | `BreadcrumbItem[]` | Required | Array of breadcrumb items |
+| `showEmpty` | `Boolean` | `false` | Show `emptyText` row when the trail is empty (empty trails render nothing by default) |
+| `emptyText` | `String` | `'…'` | Empty state message |
 
 ### BreadcrumbItem Interface
 

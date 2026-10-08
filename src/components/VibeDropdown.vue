@@ -29,7 +29,9 @@ const props = defineProps({
   direction: { type: String as () => Direction, default: 'down' },
   menuEnd: { type: Boolean, default: false },
   items: { type: Array as () => DropdownItem[], required: true },
-  autoClose: { type: [Boolean, String], default: true }
+  autoClose: { type: [Boolean, String], default: true },
+  showEmpty: { type: Boolean, default: true },
+  emptyText: { type: String, default: 'No options' }
 })
 // #159: explicit prop wins, then the global default, then the builtin.
 const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
@@ -188,6 +190,7 @@ defineExpose({ show, hide, toggle })
       type="button"
       data-bs-toggle="dropdown"
       aria-expanded="false"
+      :disabled="items.length === 0 || undefined"
       :data-bs-auto-close="autoClose"
     >
       <slot name="button">{{ text }}</slot>
@@ -207,6 +210,7 @@ defineExpose({ show, hide, toggle })
         :class="[buttonClass, 'dropdown-toggle', 'dropdown-toggle-split']"
         data-bs-toggle="dropdown"
         aria-expanded="false"
+        :disabled="items.length === 0 || undefined"
         :data-bs-auto-close="autoClose"
       >
         <span class="visually-hidden">Toggle Dropdown</span>
@@ -214,6 +218,9 @@ defineExpose({ show, hide, toggle })
     </template>
 
     <ul :class="menuClass" :aria-labelledby="computedId">
+      <li v-if="items.length === 0 && showEmpty" class="dropdown-item-text text-body-secondary">
+        {{ emptyText }}
+      </li>
       <template v-for="(item, index) in items" :key="dropdownItemKey(item, index, 'VibeDropdown')">
         <li v-if="item.divider"><hr class="dropdown-divider"></li>
         <li v-else-if="item.header">

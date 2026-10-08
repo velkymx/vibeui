@@ -34,7 +34,7 @@ defineSlots<{
   marker?: (props: { index: number; step: StepperStep; active: boolean }) => unknown
   label?: (props: { index: number; step: StepperStep }) => unknown
   step?: (props: { index: number; step: StepperStep | undefined }) => unknown
-  actions?: (props: { next: () => Promise<void>; prev: () => Promise<void>; isFirst: boolean; isLast: boolean }) => unknown
+  actions?: (props: { next: () => Promise<void>; prev: () => Promise<void>; isFirst: boolean; isLast: boolean; transitioning: boolean }) => unknown
 }>()
 
 const stepperClass = computed(() => {
@@ -190,11 +190,12 @@ const activeStep = computed(() => {
     </div>
 
     <div class="vibe-stepper-actions">
-      <slot name="actions" :next="goNext" :prev="goPrev" :isFirst="isFirst" :isLast="isLast">
+      <slot name="actions" :next="goNext" :prev="goPrev" :isFirst="isFirst" :isLast="isLast" :transitioning="transitioning">
         <button
           type="button"
           class="btn btn-secondary"
-          :disabled="isFirst"
+          :disabled="isFirst || transitioning"
+          :aria-busy="transitioning || undefined"
           data-stepper-prev
           @click="goPrev"
         >
@@ -203,9 +204,17 @@ const activeStep = computed(() => {
         <button
           type="button"
           class="btn btn-primary"
+          :disabled="transitioning"
+          :aria-busy="transitioning || undefined"
           data-stepper-next
           @click="goNext"
         >
+          <span
+            v-if="transitioning"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          />
           {{ isLast ? finishText : nextText }}
         </button>
       </slot>

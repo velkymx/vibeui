@@ -222,4 +222,19 @@ describe('VibeListGroup', () => {
     })
     expect(wrapper.text()).toBe('[0:a][1:b][2:c]')
   })
+
+  // #196: empty items render a defined empty state.
+  describe('empty state (#196)', () => {
+    it('renders emptyText when items is empty', () => {
+      const wrapper = mount(VibeListGroup, { props: { items: [] } })
+      expect(wrapper.find('.list-group-item').text()).toBe('No items')
+    })
+
+    it('supports custom emptyText and showEmpty=false', () => {
+      const custom = mount(VibeListGroup, { props: { items: [], emptyText: 'Nothing here' } })
+      expect(custom.find('.list-group-item').text()).toBe('Nothing here')
+      const off = mount(VibeListGroup, { props: { items: [], showEmpty: false } })
+      expect(off.find('.list-group-item').exists()).toBe(false)
+    })
+  })
 })
