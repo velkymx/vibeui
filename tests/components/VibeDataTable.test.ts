@@ -632,4 +632,28 @@ describe('VibeDataTable', () => {
       expect(style).not.toContain('animation')
     })
   })
+
+  // #198: the consumer formatter must run once per data change, not once per
+  // render. A bare re-render (no data change) must not re-invoke it.
+  describe('formatter memoization (#198)', () => {
+    it('does not re-invoke the formatter on a data-identical re-render', async () => {
+      let calls = 0
+      const fmtColumns = [
+        { key: 'id', label: 'ID' },
+        { key: 'name', label: 'Name', formatter: (v: unknown) => { calls += 1; return `n:${String(v)}` } }
+      ]
+      const rows = [
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' }
+      ]
+      const wrapper = mount(VibeDataTable, { props: { columns: fmtColumns, items: rows } })
+      await nextTick()
+      expect(calls).toBe(2)
+
+      wrapper.vm.$forceUpdate()
+      await nextTick()
+      expect(calls).toBe(2)
+      wrapper.unmount()
+    })
+  })
 })

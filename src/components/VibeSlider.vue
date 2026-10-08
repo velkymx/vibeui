@@ -112,7 +112,7 @@ const highHandleStyle = computed(() => (props.vertical
   ? { bottom: `${highPercent.value}%` }
   : { left: `${highPercent.value}%` }))
 
-const emitValue = (handleIdx: 0 | 1, next: number) => {
+const emitValue = (handleIdx: 0 | 1, next: number, commit = true) => {
   if (props.range && Array.isArray(internalValue.value)) {
     const [lo, hi] = internalValue.value as [number, number]
     const snapped = stepSnap(next)
@@ -148,7 +148,7 @@ const emitValue = (handleIdx: 0 | 1, next: number) => {
     // same drag frame see the latest position rather than the stale prop.
     internalValue.value = out
     emit('update:modelValue', out)
-    emit('change', out)
+    if (commit) emit('change', out)
     return
   }
   const snapped = stepSnap(next)
@@ -156,7 +156,7 @@ const emitValue = (handleIdx: 0 | 1, next: number) => {
   // Update internalValue immediately (same reason as above).
   internalValue.value = snapped
   emit('update:modelValue', snapped)
-  emit('change', snapped)
+  if (commit) emit('change', snapped)
 }
 
 const trackClickToValue = (event: PointerEvent): number => {
@@ -219,6 +219,8 @@ const handlePointerDown = (handleIdx: 0 | 1, event: PointerEvent) => {
     : props.modelValue
   activeHandle.value = handleIdx
   activePointerId = event.pointerId
+  const current = internalValue.value
+  dragStartValue = Array.isArray(current) ? [...current] as SliderValue : current
   window.addEventListener('pointermove', handlePointerMove)
   window.addEventListener('pointerup', handlePointerUp)
 }
@@ -230,18 +232,51 @@ const onHighKeydown = (e: KeyboardEvent) => handleKeydown(1, e)
 const onLowPointerDown = (e: PointerEvent) => handlePointerDown(0, e)
 const onHighPointerDown = (e: PointerEvent) => handlePointerDown(1, e)
 
-const handlePointerMove = (event: PointerEvent) => {
-  if (activeHandle.value === null || !trackRef.value || event.pointerId !== activePointerId) return
+// Pointer moves arrive far faster than paint. Coalesce onto one animation frame
+// and keep only the last event, so a drag performs one layout read and one
+// emit per frame instead of one per event (see #198). `change` fires only on
+// release (commit), not per frame.
+let pendingMove: PointerEvent | null = null
+let moveRaf: number | null = null
+// Model value when the current drag started. `change` fires on release only
+// if the drag moved away from it (see #198).
+let dragStartValue: SliderValue | null = null
+
+const flushMove = (commit = false): void => {
+  moveRaf = null
+  const event = pendingMove
+  pendingMove = null
+  if (!event || activeHandle.value === null || !trackRef.value) return
+  if (event.pointerId !== activePointerId) return
   const rect = trackRef.value.getBoundingClientRect()
   const ratio = props.vertical
     ? 1 - (event.clientY - rect.top) / rect.height
     : (event.clientX - rect.left) / rect.width
   const raw = props.min + ratio * (props.max - props.min)
-  emitValue(activeHandle.value, raw)
+  emitValue(activeHandle.value, raw, commit)
+}
+
+const handlePointerMove = (event: PointerEvent) => {
+  if (activeHandle.value === null || event.pointerId !== activePointerId) return
+  pendingMove = event
+  if (moveRaf === null) moveRaf = requestAnimationFrame(() => flushMove())
 }
 
 const handlePointerUp = (event: PointerEvent) => {
   if (activeHandle.value === null || event.pointerId !== activePointerId) return
+  if (moveRaf !== null) {
+    cancelAnimationFrame(moveRaf)
+    moveRaf = null
+  }
+  // Deliver the final position before releasing the handle so the model is
+  // exact at release, then stop listening. `change` fires here (once) if the
+  // drag moved the value; per-frame flushes only emit update:modelValue.
+  pendingMove = event
+  flushMove()
+  if (dragStartValue !== null && JSON.stringify(internalValue.value) !== JSON.stringify(dragStartValue)) {
+    emit('change', internalValue.value)
+  }
+  dragStartValue = null
   activeHandle.value = null
   activePointerId = null
   window.removeEventListener('pointermove', handlePointerMove)
@@ -254,6 +289,12 @@ onBeforeUnmount(() => {
     window.removeEventListener('pointermove', handlePointerMove)
     window.removeEventListener('pointerup', handlePointerUp)
   }
+  if (moveRaf !== null && typeof cancelAnimationFrame !== 'undefined') {
+    cancelAnimationFrame(moveRaf)
+    moveRaf = null
+  }
+  pendingMove = null
+  dragStartValue = null
   activeHandle.value = null
   activePointerId = null
 })

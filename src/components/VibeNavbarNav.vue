@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { computed, useTemplateRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { NavItem, DropdownItem, ComponentError } from '../types'
 import { linkBindings } from '../utils/linkBindings'
 import { safeHref } from '../utils/safeHref'
@@ -109,19 +109,42 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
     emit('dropdown-item-click', { item, itemIndex, child, childIndex, event })
   }
 }
+
+// Per-item render data, computed once per items change instead of re-running
+// tag/class/link resolution on every render (see #198). Dropdown children are
+// included so nested rows resolve from the same maps.
+const linkMeta = computed(() => {
+  const itemCls = new Map<NavItem, string>()
+  const linkCls = new Map<NavItem, string>()
+  const tag = new Map<NavItem | DropdownItem, string>()
+  const links = new Map<NavItem | DropdownItem, Record<string, unknown>>()
+  const dropCls = new Map<DropdownItem, string>()
+  for (const item of props.items ?? []) {
+    itemCls.set(item, getItemClass(item))
+    linkCls.set(item, getLinkClass(item))
+    tag.set(item, getItemTag(item))
+    links.set(item, linkBindings(safeHref(item.href), item.to))
+    for (const child of item.children ?? []) {
+      tag.set(child, getItemTag(child))
+      dropCls.set(child, getDropdownItemClass(child))
+      links.set(child, linkBindings(safeHref(child.href), child.to))
+    }
+  }
+  return { itemCls, linkCls, tag, links, dropCls }
+})
 </script>
 
 <template>
   <component :is="tag" ref="navbarNavRef" class="navbar-nav">
     <!-- Data-driven mode: generate from items array -->
     <template v-if="items && items.length > 0">
-      <li v-for="(item, index) in items" :key="item.href || item.text || String(index)" :class="getItemClass(item)">
+      <li v-for="(item, index) in items" :key="item.href || item.text || String(index)" :class="linkMeta.itemCls.get(item)">
 
         <!-- Dropdown item -->
         <template v-if="item.children?.length">
           <button
             type="button"
-            :class="getLinkClass(item)"
+            :class="linkMeta.linkCls.get(item)"
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
@@ -139,10 +162,10 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
               </li>
               <li v-else>
                 <component
-                  :is="getItemTag(child)"
-                  :class="getDropdownItemClass(child)"
-                  v-bind="linkBindings(safeHref(child.href), child.to)"
-                  :type="getItemTag(child) === 'button' ? 'button' : undefined"
+                  :is="linkMeta.tag.get(child)"
+                  :class="linkMeta.dropCls.get(child)"
+                  v-bind="linkMeta.links.get(child)"
+                  :type="linkMeta.tag.get(child) === 'button' ? 'button' : undefined"
                   @click="handleDropdownItemClick(item, index, child, childIndex, $event)"
                 >
                   <slot name="dropdown-item" :item="item" :child="child" :index="index" :childIndex="childIndex">
@@ -157,10 +180,10 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
         <!-- Regular nav-link -->
         <component
           v-else
-          :is="getItemTag(item)"
-          :class="getLinkClass(item)"
-          v-bind="linkBindings(safeHref(item.href), item.to)"
-          :type="getItemTag(item) === 'button' ? 'button' : undefined"
+          :is="linkMeta.tag.get(item)"
+          :class="linkMeta.linkCls.get(item)"
+          v-bind="linkMeta.links.get(item)"
+          :type="linkMeta.tag.get(item) === 'button' ? 'button' : undefined"
           :aria-current="item.active ? 'page' : undefined"
           :aria-disabled="item.disabled"
           @click="handleItemClick(item, index, $event)"

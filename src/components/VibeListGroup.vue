@@ -24,6 +24,10 @@ defineSlots<{
   item?: (props: { item: ListGroupItem; index: number }) => unknown
 }>()
 
+// Hoisted: a fresh object literal in :style defeats Vue's reference-based style
+// patch check on every render (see #198).
+const CLICKABLE_STYLE = { cursor: 'pointer' }
+
 const listGroupClass = computed(() => {
   const classes = ['list-group']
   if (props.flush) classes.push('list-group-flush')
@@ -55,6 +59,21 @@ const getItemClass = (item: ListGroupItem) => {
   return classes.join(' ')
 }
 
+// Per-item render data, computed once per items change instead of re-running
+// tag/class/link resolution on every render (see #198). Same pattern as
+// VibeDataTable's sortIconMap/thStyleMap.
+const itemMeta = computed(() => {
+  const tag = new Map<ListGroupItem, string>()
+  const cls = new Map<ListGroupItem, string>()
+  const links = new Map<ListGroupItem, Record<string, unknown>>()
+  for (const item of props.items) {
+    tag.set(item, getItemTag(item))
+    cls.set(item, getItemClass(item))
+    links.set(item, linkBindings(safeHref(item.href), item.to))
+  }
+  return { tag, cls, links }
+})
+
 const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
   if (!item.disabled) {
     emit('item-click', { item, index, event })
@@ -69,12 +88,12 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
     </div>
     <template v-for="(item, index) in items" :key="item.href ?? item.text ?? index">
     <component
-      :is="getItemTag(item)"
-      :class="getItemClass(item)"
-      :style="!safeHref(item.href) && !item.to && !item.disabled ? { cursor: 'pointer' } : undefined"
-      v-bind="linkBindings(safeHref(item.href), item.to)"
-      :type="getItemTag(item) === 'button' ? 'button' : undefined"
-      :disabled="getItemTag(item) === 'button' ? item.disabled || undefined : undefined"
+      :is="itemMeta.tag.get(item)"
+      :class="itemMeta.cls.get(item)"
+      :style="!safeHref(item.href) && !item.to && !item.disabled ? CLICKABLE_STYLE : undefined"
+      v-bind="itemMeta.links.get(item)"
+      :type="itemMeta.tag.get(item) === 'button' ? 'button' : undefined"
+      :disabled="itemMeta.tag.get(item) === 'button' ? item.disabled || undefined : undefined"
       :aria-disabled="item.disabled || undefined"
       :aria-current="item.active"
       @click="handleItemClick(item, index, $event)"
