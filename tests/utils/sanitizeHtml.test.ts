@@ -98,4 +98,42 @@ describe('fallbackSanitizeHtml', () => {
   it('handles empty and non-string-ish input without throwing', () => {
     expect(fallbackSanitizeHtml('')).toBe('')
   })
+
+  // #222: the fallback fails its own contract on four vectors.
+  describe('contract hardening (#222)', () => {
+    it('removes non-html data: hrefs (svg script carriers)', () => {
+      const out = fallbackSanitizeHtml(
+        `<a href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' onload='alert(1)'>">report</a>`
+      )
+      expect(out.toLowerCase()).not.toContain('data:image/svg+xml')
+    })
+
+    it('removes whitespace-obfuscated javascript: schemes', () => {
+      const out = fallbackSanitizeHtml('<a href="java&#x09;script:alert(1)">click</a>')
+      expect(out.toLowerCase()).not.toContain('alert(1)')
+      expect(out).not.toContain('href=')
+    })
+
+    it('reduces inline style to color declarations only', () => {
+      const out = fallbackSanitizeHtml(
+        '<p style="position:fixed;color: red; background:url(https://evil.example/x)">hi</p>'
+      )
+      expect(out).not.toContain('position')
+      expect(out).not.toContain('url(')
+      expect(out).toContain('color: red')
+    })
+
+    it('adds rel noopener to target=_blank links', () => {
+      const out = fallbackSanitizeHtml('<a href="https://evil.example" target="_blank">report</a>')
+      expect(out).toContain('noopener')
+    })
+
+    it('preserves raster data: images on img src and Quill color spans', () => {
+      const png = 'data:image/png;base64,iVBORw0KGgo='
+      const img = fallbackSanitizeHtml(`<img src="${png}">`)
+      expect(img).toContain(png)
+      const span = fallbackSanitizeHtml('<span style="color: #ff0000">red</span>')
+      expect(span).toContain('color: #ff0000')
+    })
+  })
 })

@@ -1,3 +1,5 @@
+import { safeColor } from './safeCss'
+
 // Tags and attributes produced by the Quill 2.x editor toolbar.
 // This allowlist is intentionally restrictive — anything not listed is stripped.
 export const WYSIWYG_PURIFY_CONFIG = {
@@ -32,6 +34,37 @@ const SCRIPTABLE_TAGS = 'script, style, iframe, object, embed, form, base, link,
 const URL_ATTRIBUTES = ['href', 'src', 'xlink:href', 'action', 'formaction', 'srcdoc']
 const DANGEROUS_URL = /^\s*(javascript|vbscript)\s*:/i
 const DANGEROUS_DATA_URL = /^\s*data\s*:\s*text\/html/i
+// WHATWG URL parsing strips ASCII whitespace/control characters before scheme
+// extraction, so `java<TAB>script:` navigates as javascript:. De-obfuscate
+// before testing, or the anchored regexes below are bypassable (see #222).
+const SCHEME_OBFUSCATION = /[\u0000-\u0020]+/g
+// Inline documents are never safe as navigation/fetch targets. Only raster
+// images on <img src> keep their data: URLs (pasted/dragged uploads).
+const SAFE_DATA_URL = /^data:image\/(png|jpe?g|gif|webp);base64,[a-zA-Z0-9+/=]+$/
+// Quill's own color/background toolbar renders these as inline styles, so they
+// stay; everything else (position, background-image/url(...), width tricks for
+// overlay phishing) goes.
+const SAFE_STYLE_PROPS = new Set(['color', 'background-color'])
+
+const sanitizeStyleAttribute = (el: Element): void => {
+  const raw = el.getAttribute('style')
+  if (raw === null) return
+  const kept: string[] = []
+  for (const declaration of raw.split(';')) {
+    const colon = declaration.indexOf(':')
+    if (colon === -1) continue
+    const prop = declaration.slice(0, colon).trim().toLowerCase()
+    const value = declaration.slice(colon + 1).trim()
+    if (!SAFE_STYLE_PROPS.has(prop)) continue
+    // safeColor's var() branch permits a url() fallback, so reject url(
+    // explicitly: a style value must never fetch.
+    if (value.includes('url(')) continue
+    if (safeColor(value) === undefined) continue
+    kept.push(`${prop}: ${value}`)
+  }
+  if (kept.length > 0) el.setAttribute('style', kept.join('; '))
+  else el.removeAttribute('style')
+}
 
 /**
  * Built-in safety net used by VibeFormWysiwyg when the consumer provides no
@@ -66,10 +99,27 @@ export function fallbackSanitizeHtml(html: string): string {
         el.removeAttribute(attr.name)
         continue
       }
-      if (!URL_ATTRIBUTES.includes(name)) continue
-      if (DANGEROUS_URL.test(attr.value) || DANGEROUS_DATA_URL.test(attr.value)) {
-        el.removeAttribute(attr.name)
+      if (name === 'style') {
+        sanitizeStyleAttribute(el)
+        continue
       }
+      if (!URL_ATTRIBUTES.includes(name)) continue
+      const deobfuscated = attr.value.replace(SCHEME_OBFUSCATION, '')
+      if (DANGEROUS_URL.test(deobfuscated) || DANGEROUS_DATA_URL.test(deobfuscated)) {
+        el.removeAttribute(attr.name)
+        continue
+      }
+      if (/^\s*data\s*:/i.test(deobfuscated)) {
+        const isImgSrc = el.tagName === 'IMG' && name === 'src'
+        if (!isImgSrc || !SAFE_DATA_URL.test(deobfuscated)) {
+          el.removeAttribute(attr.name)
+        }
+      }
+    }
+    if (el.tagName === 'A' && el.getAttribute('target') === '_blank') {
+      const rel = (el.getAttribute('rel') ?? '').split(/\s+/).filter(Boolean)
+      if (!rel.includes('noopener')) rel.push('noopener')
+      el.setAttribute('rel', rel.join(' '))
     }
   }
 
