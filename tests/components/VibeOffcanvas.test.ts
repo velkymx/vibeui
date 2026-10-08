@@ -157,4 +157,23 @@ describe('VibeOffcanvas', () => {
     wrapper.unmount()
     document.body.removeChild(trigger)
   })
+
+  // #192: element listeners detach from the cached element, so bootstrap
+  // events on the detached node after unmount emit nothing.
+  it('#192 detached offcanvas element emits nothing after unmount', async () => {
+    const wrapper = mount(VibeOffcanvas, { props: { teleport: false } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const el = wrapper.find('.offcanvas').element as HTMLElement
+    wrapper.unmount()
+
+    el.dispatchEvent(new Event('show.bs.offcanvas'))
+    el.dispatchEvent(new Event('shown.bs.offcanvas'))
+    el.dispatchEvent(new Event('hide.bs.offcanvas'))
+    el.dispatchEvent(new Event('hidden.bs.offcanvas'))
+    expect(wrapper.emitted('show')).toBeUndefined()
+    expect(wrapper.emitted('shown')).toBeUndefined()
+    expect(wrapper.emitted('hide')).toBeUndefined()
+    expect(wrapper.emitted('hidden')).toBeUndefined()
+  })
 })

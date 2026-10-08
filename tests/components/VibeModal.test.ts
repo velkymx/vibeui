@@ -398,4 +398,58 @@ describe('VibeModal', () => {
     expect((sibling as HTMLElement).inert).toBe(false)
     sibling.remove()
   })
+
+  // #192: teardown detaches from the cached element, never the template ref.
+  // Document keydown adds/removes must balance across mount, staticBackdrop
+  // re-init, and unmount: no leaked document listener.
+  it('#192 document keydown listener balanced across re-init and unmount', async () => {
+    const added: EventTarget[] = []
+    const removed: EventTarget[] = []
+    const rawAdd = document.addEventListener
+    const rawRemove = document.removeEventListener
+    document.addEventListener = ((type: string, listener: EventListener, options?: unknown) => {
+      if (type === 'keydown') added.push(document)
+      return (rawAdd as (...a: unknown[]) => void).call(document, type, listener, options)
+    }) as typeof document.addEventListener
+    document.removeEventListener = ((type: string, listener: EventListener, options?: unknown) => {
+      if (type === 'keydown') removed.push(document)
+      return (rawRemove as (...a: unknown[]) => void).call(document, type, listener, options)
+    }) as typeof document.removeEventListener
+    try {
+      const wrapper = mount(VibeModal, { props: { teleport: false } })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      // staticBackdrop toggle drives the initModal re-init path (detach + attach).
+      await wrapper.setProps({ staticBackdrop: true })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      wrapper.unmount()
+      expect(added.length).toBeGreaterThan(0)
+      expect(removed.length).toBe(added.length)
+    } finally {
+      document.addEventListener = rawAdd
+      document.removeEventListener = rawRemove
+    }
+  })
+
+  // #192: element listeners come off the cached element, so dispatching
+  // bootstrap events on the detached node after unmount emits nothing.
+  it('#192 detached modal element emits nothing after unmount', async () => {
+    const wrapper = mount(VibeModal, { props: { teleport: false } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const el = wrapper.find('.modal').element as HTMLElement
+    wrapper.unmount()
+
+    el.dispatchEvent(new Event('show.bs.modal'))
+    el.dispatchEvent(new Event('shown.bs.modal'))
+    el.dispatchEvent(new Event('hide.bs.modal'))
+    el.dispatchEvent(new Event('hidden.bs.modal'))
+    expect(wrapper.emitted('show')).toBeUndefined()
+    expect(wrapper.emitted('shown')).toBeUndefined()
+    expect(wrapper.emitted('hide')).toBeUndefined()
+    expect(wrapper.emitted('hidden')).toBeUndefined()
+  })
 })
