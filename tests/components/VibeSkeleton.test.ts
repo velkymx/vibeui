@@ -151,4 +151,35 @@ describe('VibeSkeleton', () => {
       expect(root.attributes('data-testid')).toBe('sk')
     })
   })
+
+  // #189: unique attrs (id), live-region semantics (role/aria-busy), and
+  // listeners must land on exactly one line. class/style keep the CR9-19
+  // uniform fallthrough on all lines; everything else binds once.
+  describe('unique attrs bind once (#189)', () => {
+    it('renders one id and one live region for lines=3', () => {
+      const wrapper = mount(VibeSkeleton, {
+        props: { variant: 'text', lines: 3 },
+        attrs: { id: 'sk-one' }
+      })
+      const lines = wrapper.findAll('.vibe-skeleton-text')
+      expect(lines).toHaveLength(3)
+      expect(lines.filter((l) => l.attributes('id') === 'sk-one')).toHaveLength(1)
+      expect(lines.filter((l) => l.attributes('role') === 'status')).toHaveLength(1)
+      expect(lines.filter((l) => l.attributes('aria-busy') === 'true')).toHaveLength(1)
+    })
+
+    it('fires a click listener once, not once per line', async () => {
+      let calls = 0
+      const wrapper = mount(VibeSkeleton, {
+        props: { variant: 'text', lines: 3 },
+        attrs: { onClick: () => { calls += 1 } }
+      })
+      const lines = wrapper.findAll('.vibe-skeleton-text')
+      expect(lines).toHaveLength(3)
+      for (const line of lines) {
+        await line.trigger('click')
+      }
+      expect(calls).toBe(1)
+    })
+  })
 })
