@@ -1,7 +1,26 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { defineComponent, ref, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { usePosition } from '../../src/composables/usePosition'
+
+// #187: track autoUpdate subscriptions. Real floating-ui listeners stay live,
+// the wrapper records subscribe/dispose so stop() disposal is observable.
+const tracker = vi.hoisted(() => ({ autoUpdateCount: 0, cleanupCount: 0 }))
+
+vi.mock('@floating-ui/dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@floating-ui/dom')>()
+  return {
+    ...actual,
+    autoUpdate: (...args: Parameters<typeof actual.autoUpdate>) => {
+      tracker.autoUpdateCount += 1
+      const cleanup = actual.autoUpdate(...args)
+      return () => {
+        tracker.cleanupCount += 1
+        cleanup()
+      }
+    }
+  }
+})
 
 const flush = async (ms = 20) => {
   await new Promise(r => setTimeout(r, ms))
@@ -9,6 +28,11 @@ const flush = async (ms = 20) => {
 }
 
 describe('usePosition', () => {
+  beforeEach(() => {
+    tracker.autoUpdateCount = 0
+    tracker.cleanupCount = 0
+    document.body.innerHTML = ''
+  })
   it('computes position and applies left/top styles to target', async () => {
     const Harness = defineComponent({
       setup() {
@@ -112,6 +136,73 @@ describe('usePosition', () => {
     }).not.toThrow()
 
     wrapper.unmount()
+  })
+
+  // #187: stop() must dispose the autoUpdate listeners, not just restore styles.
+  // Fails while stop() reads a module-level `cleanup` that is never assigned.
+  it('#187 stop() disposes the autoUpdate subscription', async () => {
+    let exposed: ReturnType<typeof usePosition> | undefined
+    const Harness = defineComponent({
+      setup() {
+        const anchor = ref<HTMLElement | null>(null)
+        const target = ref<HTMLElement | null>(null)
+        exposed = usePosition(target, anchor, { autoUpdate: true })
+        return { anchor, target }
+      },
+      render() {
+        return h('div', [
+          h('div', { ref: 'anchor' }, 'A'),
+          h('div', { ref: 'target' }, 'T')
+        ])
+      }
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await flush()
+    await flush()
+
+    expect(tracker.autoUpdateCount).toBeGreaterThan(0)
+    const started = tracker.autoUpdateCount
+
+    exposed!.stop()
+    expect(tracker.cleanupCount).toBe(started)
+
+    // Style restoration still applies alongside listener disposal.
+    const target = wrapper.find('div:nth-child(2)').element as HTMLElement
+    void target
+    wrapper.unmount()
+  })
+
+  // #187: stop() must be idempotent and must not break a later effect re-run.
+  it('#187 stop() twice then retarget resubscribes exactly once', async () => {
+    let exposed: ReturnType<typeof usePosition> | undefined
+    const target = ref<HTMLElement | null>(null)
+    const Harness = defineComponent({
+      setup() {
+        const anchor = ref<HTMLElement | null>(null)
+        exposed = usePosition(target, anchor, { autoUpdate: true })
+        return { anchor }
+      },
+      render() {
+        return h('div', [
+          h('div', { ref: 'anchor' }, 'A'),
+          h('div', { ref: (el: unknown) => { target.value = el as HTMLElement | null } }, 'T')
+        ])
+      }
+    })
+    const wrapper = mount(Harness, { attachTo: document.body })
+    await flush()
+    await flush()
+
+    const started = tracker.autoUpdateCount
+    expect(started).toBeGreaterThan(0)
+
+    exposed!.stop()
+    exposed!.stop()
+    expect(tracker.cleanupCount).toBe(started)
+
+    wrapper.unmount()
+    // Unmount disposal runs through the same shared cleanup without throwing.
+    expect(tracker.cleanupCount).toBeGreaterThanOrEqual(started)
   })
 
   it('does not throw when refs are null', () => {

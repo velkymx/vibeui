@@ -166,10 +166,11 @@ export function usePosition(
       } else {
         void update()
       }
+      cleanup = localCleanup
       onCleanup(() => {
-        localCleanup?.()
-        localCleanup = null
+        cleanup?.()
         cleanup = null
+        localCleanup = null
       })
     },
     { flush: 'post' }
