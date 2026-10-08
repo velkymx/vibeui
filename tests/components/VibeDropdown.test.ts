@@ -140,4 +140,31 @@ describe('VibeDropdown', () => {
     const lis = wrapper.findAll('li')
     expect(lis).toHaveLength(2)
   })
+
+  // #196: empty items render a defined empty state; the toggle cannot open an
+  // empty menu.
+  describe('empty state (#196)', () => {
+    it('renders emptyText when items is empty', () => {
+      const wrapper = mount(VibeDropdown, { props: { items: [] } })
+      expect(wrapper.find('.dropdown-item-text').text()).toBe('No options')
+    })
+
+    it('disables the toggle when items is empty', () => {
+      const wrapper = mount(VibeDropdown, { props: { items: [] } })
+      expect(wrapper.find('.dropdown-toggle').attributes('disabled')).toBeDefined()
+    })
+
+    it('supports custom emptyText and showEmpty=false', () => {
+      const custom = mount(VibeDropdown, { props: { items: [], emptyText: 'Nothing here' } })
+      expect(custom.find('.dropdown-item-text').text()).toBe('Nothing here')
+      const off = mount(VibeDropdown, { props: { items: [], showEmpty: false } })
+      expect(off.find('.dropdown-item-text').exists()).toBe(false)
+    })
+
+    it('leaves the toggle enabled when items exist', () => {
+      const wrapper = mount(VibeDropdown, { props: { items: [{ text: 'One' }] } })
+      expect(wrapper.find('.dropdown-toggle').attributes('disabled')).toBeUndefined()
+      expect(wrapper.find('.dropdown-item-text').exists()).toBe(false)
+    })
+  })
 })

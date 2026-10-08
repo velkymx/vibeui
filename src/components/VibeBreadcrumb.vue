@@ -11,7 +11,11 @@ const props = defineProps({
   items: { type: Array as () => BreadcrumbItem[], default: () => [] },
   // Opt in to render the trail published on the bus `nav:breadcrumb-updated`
   // channel. Explicit `items` always take precedence.
-  busUpdates: { type: Boolean, default: false }
+  busUpdates: { type: Boolean, default: false },
+  // An empty trail conventionally renders nothing: opt-in empty state with an
+  // ellipsis rather than prose (see #196).
+  showEmpty: { type: Boolean, default: false },
+  emptyText: { type: String, default: '…' }
 })
 
 const emit = defineEmits<{
@@ -48,6 +52,9 @@ const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
 <template>
   <nav :aria-label="ariaLabel">
     <ol class="breadcrumb">
+      <li v-if="displayItems.length === 0 && showEmpty" class="breadcrumb-item text-body-secondary">
+        {{ emptyText }}
+      </li>
       <li
         v-for="(item, index) in displayItems"
         :key="item.href || item.text || String(index)"

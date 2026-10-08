@@ -165,4 +165,19 @@ describe('VibeBreadcrumb', () => {
     expect(wrapper.find('span').exists()).toBe(true)
     expect(wrapper.find('button').exists()).toBe(false)
   })
+
+  // #196: an empty trail renders nothing by default (opt-in empty state).
+  describe('empty state (#196)', () => {
+    it('renders no empty row by default', () => {
+      const wrapper = mount(VibeBreadcrumb, { props: { items: [] } })
+      expect(wrapper.find('.breadcrumb-item').exists()).toBe(false)
+    })
+
+    it('renders the ellipsis row when showEmpty is set', () => {
+      const wrapper = mount(VibeBreadcrumb, {
+        props: { items: [], showEmpty: true }
+      })
+      expect(wrapper.find('.breadcrumb-item').text()).toBe('\u2026')
+    })
+  })
 })

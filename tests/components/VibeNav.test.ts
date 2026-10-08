@@ -217,4 +217,21 @@ describe('VibeNav', () => {
     const lis = wrapper.findAll('li.nav-item')
     expect(lis).toHaveLength(2)
   })
+
+  // #196: empty items render a defined empty state.
+  describe('empty state (#196)', () => {
+    it('renders emptyText when items is empty', () => {
+      const wrapper = mount(VibeNav, { props: { items: [] } })
+      const empty = wrapper.find('li.nav-item')
+      expect(empty.exists()).toBe(true)
+      expect(empty.text()).toBe('No items')
+    })
+
+    it('supports custom emptyText and showEmpty=false', () => {
+      const custom = mount(VibeNav, { props: { items: [], emptyText: 'Nothing here' } })
+      expect(custom.find('li.nav-item').text()).toBe('Nothing here')
+      const off = mount(VibeNav, { props: { items: [], showEmpty: false } })
+      expect(off.find('li.nav-item').exists()).toBe(false)
+    })
+  })
 })
