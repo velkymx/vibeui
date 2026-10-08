@@ -47,6 +47,7 @@ const initPopover = async () => {
 
   if (bsPopover.value) {
     bsPopover.value.dispose()
+    bsPopover.value = null
   }
 
   try {
@@ -72,7 +73,14 @@ const initPopover = async () => {
     })
   } finally {
     initInFlight = false
-    if (pendingReinit) { pendingReinit = false; void initPopover() }
+    // A reinit queued while the import was in flight must not run after
+    // teardown: onBeforeUnmount already ran, so a new instance would leak.
+    if (!isUnmounted && pendingReinit) {
+      pendingReinit = false
+      void initPopover()
+    } else {
+      pendingReinit = false
+    }
   }
 }
 

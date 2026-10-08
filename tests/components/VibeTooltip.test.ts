@@ -193,4 +193,30 @@ describe('VibeTooltip', () => {
     // onBeforeUnmount must dispose and null the instance
     expect(vi.mocked(bootstrap.Tooltip).mock.results[0].value.dispose).toHaveBeenCalled()
   })
+
+  // #191: placement change leaves a reinit in flight, then unmount wins the race.
+  // The in-flight init must not dispose the live instance twice (once in its
+  // pre-amble, once in onBeforeUnmount) and must not construct again after.
+  it('#191 reinit in flight across unmount disposes once and never rebuilds', async () => {
+    const wrapper = mount(VibeTooltip, {
+      props: { text: 'Test', placement: 'top' },
+      slots: { default: '<button>x</button>' }
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const ctor = vi.mocked(bootstrap.Tooltip)
+    expect(ctor).toHaveBeenCalledTimes(1)
+    const first = ctor.mock.results[0].value as { dispose: ReturnType<typeof vi.fn> }
+
+    // Arm a reinit, let the watcher run so the new init is awaiting import,
+    // then unmount before the import resolves.
+    await wrapper.setProps({ placement: 'bottom' })
+    const builtAtUnmount = ctor.mock.calls.length
+    wrapper.unmount()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(ctor.mock.calls.length).toBe(builtAtUnmount)
+    expect(first.dispose).toHaveBeenCalledTimes(1)
+  })
 })
