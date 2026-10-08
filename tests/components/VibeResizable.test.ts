@@ -29,6 +29,8 @@ const fireResize = async (
     clientY: endY
   }))
   await Promise.resolve()
+  // Drag updates coalesce onto rAF: wait a frame so assertions observe them.
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 }
 
 describe('VibeResizable', () => {
@@ -100,7 +102,7 @@ describe('VibeResizable', () => {
     wrapper.unmount()
   })
 
-  it('emits resizestart, resize, resizeend in order', async () => {
+  it('emits resizestart, updates, resizeend in order (no per-move resize)', async () => {
     const wrapper = mount(VibeResizable, {
       props: { width: 100, height: 100 },
       attachTo: document.body
@@ -109,7 +111,10 @@ describe('VibeResizable', () => {
     await fireResize(handle, 0, 0, 20, 20)
 
     expect(wrapper.emitted('resizestart')).toBeTruthy()
-    expect(wrapper.emitted('resize')).toBeTruthy()
+    // Per-move `resize` is gone by design (coalesced drag): live updates ride
+    // update:width/update:height, the commit rides resizeend.
+    expect(wrapper.emitted('resize')).toBeUndefined()
+    expect(wrapper.emitted('update:width')).toBeTruthy()
     expect(wrapper.emitted('resizeend')).toBeTruthy()
     wrapper.unmount()
   })
@@ -170,6 +175,94 @@ describe('VibeResizable', () => {
       await wrapper.setProps({ width: 200 })
       // External change should NOT loop emit back through update:width
       expect(wrapper.emitted('update:width')).toBeFalsy()
+    })
+  })
+
+  // #227: pointermove bursts coalesce onto one frame (one emit set per frame,
+  // last event wins); release delivers the exact final size plus resizeend.
+  describe('drag coalescing (#227)', () => {
+    const stubRaf = () => {
+      const queue: FrameRequestCallback[] = []
+      const raf = window.requestAnimationFrame
+      const caf = window.cancelAnimationFrame
+      window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+        queue.push(cb)
+        return queue.length
+      }) as typeof window.requestAnimationFrame
+      window.cancelAnimationFrame = (() => {}) as typeof window.cancelAnimationFrame
+      return {
+        restore: () => {
+          window.requestAnimationFrame = raf
+          window.cancelAnimationFrame = caf
+        },
+        flushFrames: () => {
+          while (queue.length > 0) queue.shift()!(16)
+        }
+      }
+    }
+
+    const pid = 7
+    const move = (handle: HTMLElement, x: number, y: number) =>
+      handle.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: pid, clientX: x, clientY: y })
+      )
+
+    it('coalesces a burst of moves into one update per frame', async () => {
+      const raf = stubRaf()
+      try {
+        const wrapper = mount(VibeResizable, {
+          props: { width: 100, height: 100 },
+          attachTo: document.body
+        })
+        const handle = wrapper.find('[data-handle="se"]').element as HTMLElement
+        handle.dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, pointerId: pid, clientX: 0, clientY: 0 })
+        )
+        move(handle, 10, 10)
+        move(handle, 20, 20)
+        move(handle, 50, 30)
+        // Queued, nothing emitted yet.
+        expect(wrapper.emitted('update:width')).toBeUndefined()
+
+        raf.flushFrames()
+        await wrapper.vm.$nextTick()
+        const updates = wrapper.emitted('update:width') as number[][] | undefined
+        expect(updates).toBeDefined()
+        expect(updates!).toHaveLength(1)
+        // Last event wins: 100 + 50.
+        expect(updates![0][0]).toBe(150)
+        wrapper.unmount()
+      } finally {
+        raf.restore()
+      }
+    })
+
+    it('release delivers the exact final size with one resizeend and no drag resize', async () => {
+      const raf = stubRaf()
+      try {
+        const wrapper = mount(VibeResizable, {
+          props: { width: 100, height: 100 },
+          attachTo: document.body
+        })
+        const handle = wrapper.find('[data-handle="se"]').element as HTMLElement
+        handle.dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, pointerId: pid, clientX: 0, clientY: 0 })
+        )
+        move(handle, 50, 30)
+        handle.dispatchEvent(
+          new PointerEvent('pointerup', { bubbles: true, pointerId: pid, clientX: 50, clientY: 30 })
+        )
+        raf.flushFrames()
+        await wrapper.vm.$nextTick()
+
+        const updates = wrapper.emitted('update:width') as number[][]
+        expect(updates[updates.length - 1][0]).toBe(150)
+        expect(wrapper.emitted('resize')).toBeUndefined()
+        expect(wrapper.emitted('resizeend')).toHaveLength(1)
+        wrapper.unmount()
+      } finally {
+        raf.restore()
+      }
     })
   })
 })
