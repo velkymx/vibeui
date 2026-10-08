@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import VibeAutocomplete from '../../src/components/VibeAutocomplete.vue'
@@ -9,27 +8,37 @@ const flush = async (ms = 0) => {
   await nextTick()
 }
 
-// #150: stale-result handling uses the idiomatic watcher-cleanup API instead
-// of a manual token counter.
+// #150: stale-result handling is a BEHAVIORAL guarantee (last query wins, nothing
+// stale renders, nothing renders after unmount), so it is asserted only through
+// rendered output and emitted events.
+//
+// The previous version of this file also asserted the component's source text:
+//   expect(readFileSync('...').toContain('onWatcherCleanup'))
+//   expect(sourceText).not.toContain('queryToken')
+// That tested the implementation, not the behavior: it stayed green if the
+// stale-result logic were deleted outright, and it failed on any equally valid
+// alternative (request id, AbortController, active flag). Do not reintroduce
+// source-text assertions here.
 describe('VibeAutocomplete stale handling (#150)', () => {
-  // Read from the repo root (vitest runs with cwd at the package root).
-  const sourceText = readFileSync('src/components/VibeAutocomplete.vue', 'latin1')
+  const makeControllable = () => {
+    const calls: Array<{ query: string; resolve: (v: string[]) => void; reject: (e: unknown) => void }> = []
+    const source = (query: string) =>
+      new Promise<string[]>((resolve, reject) => {
+        calls.push({ query, resolve, reject })
+      })
+    return { source, calls }
+  }
 
-  it('routes invalidation through onWatcherCleanup, not a manual token', () => {
-    expect(sourceText).toContain('onWatcherCleanup')
-    expect(sourceText).not.toContain('queryToken')
-  })
+  const mountAC = (source: (q: string) => Promise<string[]>, props: Record<string, unknown> = {}) => {
+    const wrapper = mount(VibeAutocomplete, {
+      props: { source, minChars: 1, debounce: 0, ...props },
+    })
+    return { wrapper, input: wrapper.find('input') }
+  }
 
   it('last of three overlapping queries wins regardless of resolve order', async () => {
-    const calls: Array<{ query: string; resolve: (v: string[]) => void }> = []
-    const source = (query: string) =>
-      new Promise<string[]>((resolve) => {
-        calls.push({ query, resolve })
-      })
-    const wrapper = mount(VibeAutocomplete, {
-      props: { source, minChars: 1, debounce: 0 },
-    })
-    const input = wrapper.find('input')
+    const { source, calls } = makeControllable()
+    const { wrapper, input } = mountAC(source)
 
     await input.setValue('a')
     await flush(0)
@@ -50,5 +59,48 @@ describe('VibeAutocomplete stale handling (#150)', () => {
     expect(wrapper.findAll('.vibe-autocomplete-item').map((i) => i.text())).toEqual([
       'live-abc',
     ])
+    wrapper.unmount()
+  })
+
+  // Covers the invalidation the manual queryToken previously provided on the
+  // clear path: dropping below minChars must discard the in-flight result even
+  // though that query itself was scheduled.
+  it('discards an in-flight result when the input is cleared below minChars', async () => {
+    const { source, calls } = makeControllable()
+    const { wrapper, input } = mountAC(source, { minChars: 2 })
+
+    await input.setValue('ab')
+    await flush(0)
+    expect(calls).toHaveLength(1)
+
+    await input.setValue('a')
+    await flush(0)
+    expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
+
+    calls[0].resolve(['should-not-render'])
+    await flush(0)
+    expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
+    expect(wrapper.emitted('select')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  // Covers the unmount guard: a source that resolves after teardown must not
+  // write results or throw.
+  it('renders nothing when a source resolves after unmount', async () => {
+    const { source, calls } = makeControllable()
+    const { wrapper, input } = mountAC(source)
+
+    await input.setValue('lon')
+    await flush(0)
+    expect(calls).toHaveLength(1)
+
+    wrapper.unmount()
+    calls[0].resolve(['post-unmount'])
+    await flush(10)
+
+    // The wrapper is gone; the assertion is that nothing threw and no select
+    // event escaped. A stale-write regression surfaces here as an unhandled
+    // error or a stray emit.
+    expect(wrapper.emitted('select')).toBeUndefined()
   })
 })
