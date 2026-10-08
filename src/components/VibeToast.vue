@@ -189,13 +189,27 @@ const toastAttrs = computed(() => ({
 </script>
 
 <template>
-  <!-- Single Teleport: disabled when noContainer (VibeToastHost owns the wrapper)
-       or when the teleport prop is falsy (caller wants inline rendering). -->
+  <!-- noContainer renders a plain element root (no Teleport): VibeToastHost
+       places these inside a TransitionGroup, which can only track element
+       children. A (disabled) Teleport root would make Vue apply enter/leave
+       and FLIP classes to the invisible anchor instead of the .toast node
+       (see #218). -->
+  <div v-if="noContainer" ref="toastRef" v-bind="toastAttrs">
+    <div v-if="title || $slots.header" class="toast-header">
+      <slot name="header">
+        <strong class="me-auto">{{ title }}</strong>
+      </slot>
+      <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
+    </div>
+    <div class="toast-body"><slot /></div>
+  </div>
+  <!-- Single Teleport when the caller wants body-level rendering. -->
   <Teleport
+    v-else
     :to="resolvedTeleport === true ? 'body' : (resolvedTeleport || undefined)"
-    :disabled="noContainer || !resolvedTeleport"
+    :disabled="!resolvedTeleport"
   >
-    <div v-if="!noContainer" :class="containerClass" style="z-index: 1090">
+    <div :class="containerClass" style="z-index: 1090">
       <div ref="toastRef" v-bind="toastAttrs">
         <div v-if="title || $slots.header" class="toast-header">
           <slot name="header">
@@ -205,15 +219,6 @@ const toastAttrs = computed(() => ({
         </div>
         <div class="toast-body"><slot /></div>
       </div>
-    </div>
-    <div v-else ref="toastRef" v-bind="toastAttrs">
-      <div v-if="title || $slots.header" class="toast-header">
-        <slot name="header">
-          <strong class="me-auto">{{ title }}</strong>
-        </slot>
-        <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
-      </div>
-      <div class="toast-body"><slot /></div>
     </div>
   </Teleport>
 </template>

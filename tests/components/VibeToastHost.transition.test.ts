@@ -52,4 +52,26 @@ describe('VibeToastHost transitions (#149)', () => {
     expect(bodies).toEqual(['second', 'third'])
     wrapper.unmount()
   })
+
+  // #218: the TransitionGroup can only track element children. VibeToast must
+  // root at the .toast element (not a Teleport, whose anchor is a Text node)
+  // on the host path, otherwise Vue applies enter/leave/FLIP classes to an
+  // invisible anchor and the stack never animates.
+  it('hosts element-rooted toasts so the TransitionGroup can track them (#218)', async () => {
+    const host = mount(VibeToastHost, { attachTo: document.body })
+    const toast = useToast()
+    toast.show('one')
+    toast.show('two')
+    await flush()
+
+    const { default: VibeToast } = await import('../../src/components/VibeToast.vue')
+    const toasts = host.findAllComponents(VibeToast)
+    expect(toasts).toHaveLength(2)
+    for (const t of toasts) {
+      const root = (t.vm as unknown as { $el: unknown }).$el
+      expect(root).toBeInstanceOf(HTMLElement)
+      expect((root as HTMLElement).classList.contains('toast')).toBe(true)
+    }
+    host.unmount()
+  })
 })
