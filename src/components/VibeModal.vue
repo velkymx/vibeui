@@ -40,10 +40,13 @@ const props = defineProps({
   submitOnMetaEnter: { type: Boolean, default: true }
 })
 // #159: explicit prop wins, then the global default, then the builtin.
+// Declared before every resolver that closes over it: a computed getter is
+// lazy, so the old order happened to work, but it breaks the moment any
+// resolver is evaluated eagerly (see #199).
+const vibeDefaults = useVibeDefaults()
+
 const resolvedTeleport = computed(() => resolveProp(props.teleport, vibeDefaults.teleport, 'body'))
 
-// #159: explicit prop wins, then the global default, then the builtin.
-const vibeDefaults = useVibeDefaults()
 const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
 
 

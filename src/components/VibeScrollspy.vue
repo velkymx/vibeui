@@ -43,7 +43,7 @@ let initInFlight = false
 // a Bootstrap ScrollSpy instance on a detached element.
 let isUnmounted = false
 
-const onActivate = (event: any) => {
+const onActivate = (event: Event) => {
   emit('activate', event)
 }
 

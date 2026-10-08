@@ -237,4 +237,26 @@ describe('VibeListGroup', () => {
       expect(off.find('.list-group-item').exists()).toBe(false)
     })
   })
+
+  // #199: per-item tag resolves through <component :is>, so it is narrowed to
+  // inert elements. An arbitrary tag from runtime data falls back to the
+  // auto-chosen wrapper instead of rendering.
+  describe('item tag allowlist (#199)', () => {
+    it('renders an allowed tag override', () => {
+      const wrapper = mount(VibeListGroup, {
+        props: { items: [{ text: 'Act', tag: 'button' }] }
+      })
+      expect(wrapper.find('button.list-group-item').exists()).toBe(true)
+    })
+
+    it('falls back to li for a disallowed tag', () => {
+      // Runtime data bypasses the type union, so cast to simulate API input.
+      const hostile = { text: 'X', tag: 'script' } as unknown as ListGroupItem
+      const wrapper = mount(VibeListGroup, {
+        props: { items: [hostile] }
+      })
+      expect(wrapper.find('script').exists()).toBe(false)
+      expect(wrapper.find('li.list-group-item').exists()).toBe(true)
+    })
+  })
 })

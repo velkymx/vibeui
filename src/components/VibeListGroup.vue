@@ -45,8 +45,16 @@ const listGroupClass = computed(() => {
 
 // #34: resolve the wrapper element. An explicit item.tag wins (e.g. 'button'),
 // otherwise fall back to the href/to based anchor/router-link/li.
-const getItemTag = (item: ListGroupItem) =>
-  item.tag ? item.tag : safeHref(item.href) ? 'a' : item.to ? 'router-link' : 'li'
+// Runtime allowlist: the type union above covers TypeScript consumers, but list
+// config frequently arrives from an API at runtime (see #199).
+const ITEM_TAG_ALLOW = new Set(['li', 'button', 'div', 'span', 'a'])
+
+const getItemTag = (item: ListGroupItem) => {
+  if (item.tag && ITEM_TAG_ALLOW.has(item.tag)) return item.tag
+  if (safeHref(item.href)) return 'a'
+  if (item.to) return 'router-link'
+  return 'li'
+}
 
 const getItemClass = (item: ListGroupItem) => {
   const classes = ['list-group-item']

@@ -58,10 +58,10 @@ const navClass = computed(() => {
   return classes.join(' ')
 })
 
-const onShow = (event: any) => emit('show', event)
-const onShown = (event: any) => emit('shown', event)
-const onHide = (event: any) => emit('hide', event)
-const onHidden = (event: any) => emit('hidden', event)
+const onShow = (event: Event) => emit('show', event)
+const onShown = (event: Event) => emit('shown', event)
+const onHide = (event: Event) => emit('hide', event)
+const onHidden = (event: Event) => emit('hidden', event)
 
 const initTabs = async () => {
   if (!navRef.value || initInFlight) return

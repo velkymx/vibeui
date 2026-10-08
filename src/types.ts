@@ -193,7 +193,10 @@ export interface ListGroupItem {
   variant?: Variant
   // #34: override the auto-chosen wrapper element (e.g. 'button' for an
   // actionable row). Defaults to a/router-link/li based on href/to.
-  tag?: string
+  // Narrowed to inert elements: this value is resolved by `<component :is>`,
+  // so an arbitrary string from API data would let a caller pick any tag
+  // name (see #199).
+  tag?: 'li' | 'button' | 'div' | 'span' | 'a'
   // #34: extra classes merged onto the list-group-item element.
   class?: string
 }
