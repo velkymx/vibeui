@@ -93,6 +93,14 @@ const containerClassFor = (p: ToastPlacement): string => {
 .vibe-toast-leave-active {
   transition: opacity 0.25s ease, translate 0.25s ease;
 }
+/* FLIP: the leaving toast must leave normal flow at patch time, otherwise
+   survivors only reflow after the leave ends (no hook runs then) and jump
+   instantly. Absolute anchors it to the fixed container for the duration. */
+.vibe-toast-leave-active {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+}
 .vibe-toast-enter-from,
 .vibe-toast-leave-to {
   opacity: 0;
