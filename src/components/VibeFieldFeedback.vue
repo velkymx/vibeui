@@ -23,22 +23,41 @@ defineProps({
   showHelp: { type: Boolean, default: false },
   showFeedback: { type: Boolean, default: false }
 })
-
-// Multiple roots: the control decides where these land, so nothing should fall through.
-defineOptions({ inheritAttrs: false })
+// Single root, so consumer class/style/data-* inherit without an explicit
+// v-bind. (inheritAttrs: false with no $attrs binding silently discarded them.)
 </script>
 
 <template>
-  <div v-if="showHelp" :id="helpId" class="form-text">
-    <slot name="help">{{ helpText }}</slot>
+  <div class="vibe-field-feedback">
+    <div v-if="showHelp" :id="helpId" class="form-text">
+      <slot name="help">{{ helpText }}</slot>
+    </div>
+    <template v-if="showFeedback">
+      <div
+        v-if="validationState === 'valid'"
+        :id="feedbackId"
+        class="valid-feedback"
+        :style="{ display: 'block' }"
+      >
+        {{ validationMessage || 'Looks good!' }}
+      </div>
+      <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
+      <div
+        v-if="validationState === 'invalid'"
+        :id="feedbackId"
+        class="invalid-feedback"
+        role="alert"
+        :style="{ display: 'block' }"
+      >
+        {{ validationMessage || invalidMessage }}
+      </div>
+    </template>
   </div>
-  <template v-if="showFeedback">
-    <div v-if="validationState === 'valid'" :id="feedbackId" class="valid-feedback" :style="{ display: 'block' }">
-      {{ validationMessage || 'Looks good!' }}
-    </div>
-    <!-- role="alert" announces errors to SR users without requiring refocus (WCAG 4.1.3) -->
-    <div v-if="validationState === 'invalid'" :id="feedbackId" class="invalid-feedback" role="alert" :style="{ display: 'block' }">
-      {{ validationMessage || invalidMessage }}
-    </div>
-  </template>
 </template>
+
+<style scoped>
+/* Layout-transparent wrapper: exists only so consumer attrs inherit. */
+.vibe-field-feedback {
+  display: contents;
+}
+</style>

@@ -8,6 +8,10 @@ import { useFormField } from '../composables/useFormField'
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 const modelValue = defineModel<boolean | string | number | (string | number | boolean)[]>({ default: false })
 
+// The scalar half of the model union. handleChange narrows through this
+// instead of `any` so a mistyped assignment fails typecheck (see #199).
+type CheckboxValue = string | number | boolean
+
 // Consumer attributes (aria-label, name, data-*, class, …) belong on the native
 // checkbox <input>, not the .form-check wrapper <div> — otherwise a label
 // association or aria-label targets the wrapper, not the control (a11y regression).
@@ -78,16 +82,18 @@ const isChecked = computed(() => {
 
 const handleChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  let newValue: any
+  let newValue: CheckboxValue | CheckboxValue[]
   if (Array.isArray(modelValue.value)) {
-    newValue = [...modelValue.value]
+    const copy: CheckboxValue[] = [...modelValue.value]
     if (target.checked) {
-      newValue.push(props.value)
+      newValue = [...copy, props.value as CheckboxValue]
     } else {
-      newValue = newValue.filter((v: unknown) => v !== props.value)
+      newValue = copy.filter((v) => v !== props.value)
     }
   } else {
-    newValue = target.checked ? props.value : props.uncheckedValue
+    newValue = target.checked
+      ? (props.value as CheckboxValue)
+      : (props.uncheckedValue as CheckboxValue)
   }
   modelValue.value = newValue
   emit('change', event)

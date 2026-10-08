@@ -87,7 +87,9 @@ const onSlid = (event: Event) => {
 }
 
 let initInFlight = false
-const attachedEl = ref<HTMLElement | null>(null)
+// shallowRef: this holds a DOM element used only for listener attach/detach
+// and identity comparison. A deep ref would proxy the node itself (see #199).
+const attachedEl = shallowRef<HTMLElement | null>(null)
 
 const initCarousel = async () => {
   if (!carouselRef.value) return
