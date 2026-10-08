@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, onMounted, watch, computed } from 'vue'
 import type { TooltipPlacement, ComponentError } from '../types'
 
 interface BootstrapTooltip {
@@ -24,14 +25,6 @@ if (props.content !== undefined && props.text === undefined) {
   console.warn('[VibeTooltip] The `content` prop is deprecated and may be removed in a future version. Use `text` instead.')
 }
 
-const tooltipRef = useTemplateRef<HTMLElement>('tooltipRef')
-const bsTooltip = shallowRef<BootstrapTooltip | null>(null)
-
-// Tracks whether onBeforeUnmount has fired. The template ref (tooltipRef) may still be
-// non-null during the window between onBeforeUnmount and Vue removing the DOM element,
-// so a plain !tooltipRef.value check post-await is insufficient in all environments.
-let isUnmounted = false
-
 const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0))
 
 const computedTrigger = computed(() => {
@@ -41,61 +34,27 @@ const computedTrigger = computed(() => {
   return props.trigger
 })
 
-let initInFlight = false
-let pendingReinit = false
-
-const initTooltip = async () => {
-  if (!tooltipRef.value) return
-  if (initInFlight) { pendingReinit = true; return }
-  initInFlight = true
-
-  if (bsTooltip.value) {
-    bsTooltip.value.dispose()
-    bsTooltip.value = null
-  }
-
-  try {
-    const bootstrap = await import('bootstrap')
-    // Guard against race: component may have unmounted while the import was in-flight.
-    // isUnmounted is set in onBeforeUnmount (before Vue removes the DOM), so this check
-    // fires even when tooltipRef.value is still non-null during teardown.
-    if (!tooltipRef.value || isUnmounted) return
-    const Tooltip = bootstrap.Tooltip
-
-    bsTooltip.value = new Tooltip(tooltipRef.value, {
+// Instance lifecycle (lazy async construction, unmount-race guards, dispose)
+// is owned by the shared composable (see #230). The exposed ref stays live:
+// it reads the composable state, so queued reinits never leave it stale.
+const tooltipRef = useTemplateRef<HTMLElement>('tooltipRef')
+const { init: initTooltip, instance: bsTooltip } = useBootstrapInstance<BootstrapTooltip>({
+  // Template ref read at call time: it may be null during teardown, which the
+  // composable treats as a no-op instead of constructing on a detached node.
+  resolveElement: () => tooltipRef.value,
+  create: (el, bootstrap) =>
+    new bootstrap.Tooltip(el, {
       title: props.text || props.content || '',
       placement: props.placement,
       trigger: computedTrigger.value,
       html: false
-    }) as BootstrapTooltip
-  } catch (error) {
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Tooltip will use data attributes only.',
-      componentName: 'VibeTooltip',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-    // A reinit queued while the import was in flight must not run after
-    // teardown: onBeforeUnmount already ran, so a new instance would leak.
-    if (!isUnmounted && pendingReinit) {
-      pendingReinit = false
-      void initTooltip()
-    } else {
-      pendingReinit = false
-    }
-  }
-}
+    }) as unknown as BootstrapTooltip,
+  disposeInstance: (tooltip) => tooltip.dispose(),
+  componentName: 'VibeTooltip',
+  onError: (error) => reportComponentError(emit, error)
+})
 
 onMounted(initTooltip)
-
-onBeforeUnmount(() => {
-  isUnmounted = true
-  if (bsTooltip.value) {
-    bsTooltip.value.dispose()
-    bsTooltip.value = null
-  }
-})
 
 // Watch for content changes (can be updated without re-init)
 watch([() => props.content, () => props.text], () => {
