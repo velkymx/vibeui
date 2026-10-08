@@ -87,6 +87,10 @@ const onSlid = (event: Event) => {
 }
 
 let initInFlight = false
+// A re-init requested while one is in flight (e.g. items replaced during the
+// initial import). Honored in `finally` so the newest items always win, instead
+// of being dropped by the early return below.
+let pendingReinit = false
 // shallowRef: this holds a DOM element used only for listener attach/detach
 // and identity comparison. A deep ref would proxy the node itself (see #199).
 const attachedEl = shallowRef<HTMLElement | null>(null)
@@ -120,6 +124,9 @@ const initCarousel = async () => {
 
     // Guard: component may have unmounted while the import was in-flight.
     if (!carouselRef.value || isUnmounted) return
+    // Items may have been emptied while importing: never hand Bootstrap an
+    // empty inner (the pre-await early return above cannot see this).
+    if (!props.items.length) return
 
     const Carousel = bootstrap.Carousel
 
@@ -149,6 +156,14 @@ const initCarousel = async () => {
     })
   } finally {
     initInFlight = false
+    // A re-init queued while the import was in flight must not run after
+    // teardown: onBeforeUnmount already ran, so a new instance would leak.
+    if (!isUnmounted && pendingReinit) {
+      pendingReinit = false
+      void initCarousel()
+    } else {
+      pendingReinit = false
+    }
   }
 }
 
@@ -178,6 +193,10 @@ watch(() => props.modelValue, (newIndex) => {
 watch(() => props.items, async () => {
   activeIndex.value = 0
   await nextTick()
+  if (initInFlight) {
+    pendingReinit = true
+    return
+  }
   await initCarousel()
 }, { deep: false })
 
