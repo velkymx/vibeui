@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { emitEvent } from '../composables/useEventBus'
-import { computed, ref, onBeforeUnmount, onDeactivated, type PropType } from 'vue'
+import { computed, ref, onBeforeUnmount, onDeactivated, onActivated, type PropType } from 'vue'
 
 export interface StepperStep {
   label: string
@@ -45,9 +45,20 @@ const stepperClass = computed(() => {
 
 const transitioning = ref(false)
 
+// #188: two distinct states, deliberately not one flag.
+// - isUnmounted: the instance is destroyed, never write again.
+// - isDeactivated: the instance is cached by KeepAlive, suspend writes now but
+//   resume on activation. Conflating them wedged the stepper permanently after
+//   the first deactivate/activate cycle.
 let isUnmounted = false
+let isDeactivated = false
 onBeforeUnmount(() => { isUnmounted = true })
-onDeactivated(() => { isUnmounted = true })
+onDeactivated(() => { isDeactivated = true })
+onActivated(() => {
+  isDeactivated = false
+  // Release any lock left held by a guard that was suspended mid-flight.
+  transitioning.value = false
+})
 
 const isLast = computed(() => props.modelValue >= props.steps.length - 1)
 const isFirst = computed(() => props.modelValue <= 0)
@@ -95,7 +106,7 @@ const goNext = async () => {
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforeNext, 'next')
-    if (isUnmounted) return
+    if (isUnmounted || isDeactivated) return
     if (!allowed) return
     if (isLast.value) {
       emit('finish')
@@ -103,7 +114,7 @@ const goNext = async () => {
       emit('update:modelValue', props.modelValue + 1)
     }
   } finally {
-    if (!isUnmounted) transitioning.value = false
+    if (!isUnmounted && !isDeactivated) transitioning.value = false
   }
 }
 
@@ -113,11 +124,11 @@ const goPrev = async () => {
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforePrev, 'prev')
-    if (isUnmounted) return
+    if (isUnmounted || isDeactivated) return
     if (!allowed) return
     emit('update:modelValue', Math.max(0, props.modelValue - 1))
   } finally {
-    if (!isUnmounted) transitioning.value = false
+    if (!isUnmounted && !isDeactivated) transitioning.value = false
   }
 }
 
@@ -132,11 +143,11 @@ const jumpTo = async (idx: number) => {
     const direction: 'next' | 'prev' = idx > props.modelValue ? 'next' : 'prev'
     const guard = direction === 'next' ? props.beforeNext : props.beforePrev
     const allowed = await runGuard(guard, direction)
-    if (isUnmounted) return
+    if (isUnmounted || isDeactivated) return
     if (!allowed) return
     emit('update:modelValue', idx)
   } finally {
-    if (!isUnmounted) transitioning.value = false
+    if (!isUnmounted && !isDeactivated) transitioning.value = false
   }
 }
 
