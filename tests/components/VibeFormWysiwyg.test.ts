@@ -201,4 +201,30 @@ describe('VibeFormWysiwyg', () => {
 
     expect(wrapper.emitted('component-error')).toBeTruthy()
   })
+
+  // #197: while the loader is pending the component renders a loading branch
+  // (spinner, role=status, aria-busy), not an empty box.
+  describe('loading state (#197)', () => {
+    it('renders the loading branch before the loader resolves', async () => {
+      let resolveLoader!: (q: unknown) => void
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: {
+          id: 'w-loading',
+          quillLoader: () => new Promise((r) => { resolveLoader = r })
+        }
+      })
+      await nextTick()
+
+      const loading = wrapper.find('[role="status"]')
+      expect(loading.exists()).toBe(true)
+      expect(loading.attributes('aria-busy')).toBe('true')
+      expect(loading.find('.spinner-border').exists()).toBe(true)
+
+      resolveLoader(makeStubQuill())
+      await flush()
+      await nextTick()
+      expect(wrapper.find('[role="status"]').exists()).toBe(false)
+      wrapper.unmount()
+    })
+  })
 })
