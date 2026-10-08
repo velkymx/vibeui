@@ -54,4 +54,18 @@ describe('VibeSortable stable keys across reorder (#130)', () => {
     })
     expect(warn).not.toHaveBeenCalled()
   })
+
+  // #224: an itemKey field missing from the rows must fall back to identity,
+  // never to undefined keys (duplicate-key DOM reuse leaks row state).
+  it('falls back to identity when itemKey names a missing field', async () => {
+    const A = { id: 1, name: 'A' }
+    const B = { id: 2, name: 'B' }
+    const wrapper = mount(VibeSortable, {
+      props: { modelValue: [A, B], itemKey: 'nope' as 'id' },
+      slots: { default: ({ item }: { item: { name: string } }) => item.name },
+    })
+    const nodeA = nodeShowing(wrapper, 'A')
+    await wrapper.setProps({ modelValue: [B, A] })
+    expect(nodeShowing(wrapper, 'A')).toBe(nodeA)
+  })
 })

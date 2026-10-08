@@ -45,6 +45,7 @@ export interface TabsContext {
   unregister: (name: string) => void
   isActive: (name: string) => boolean
   hasBeenActive: (name: string) => boolean
+  update: (prevName: string, name: string, label: string, disabled: boolean) => void
   lazy: boolean
 }
 
