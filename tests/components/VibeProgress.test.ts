@@ -156,4 +156,47 @@ describe('VibeProgress', () => {
     expect(progressBars[0].attributes('style')).toContain('width: 0%')
     expect(progressBars[1].attributes('style')).toContain('width: 100%')
   })
+
+  // #194: NaN/Infinity and degenerate max must never reach the label or ARIA.
+  // Width was already guarded; the label and aria-valuenow were not.
+  describe('non-finite values and degenerate max (#194)', () => {
+    it('renders 0% label and aria-valuenow 0 for NaN value', () => {
+      const wrapper = mount(VibeProgress, {
+        props: { bars: [{ value: NaN, showValue: true }] }
+      })
+      const bar = wrapper.find('.progress-bar')
+      expect(bar.text()).toBe('0%')
+      expect(bar.attributes('aria-valuenow')).toBe('0')
+      expect((bar.element as HTMLElement).style.width).toBe('0%')
+    })
+
+    it('renders 0% label and aria-valuenow 0 for Infinity value', () => {
+      const wrapper = mount(VibeProgress, {
+        props: { bars: [{ value: Number.POSITIVE_INFINITY, showValue: true }] }
+      })
+      const bar = wrapper.find('.progress-bar')
+      expect(bar.text()).toBe('0%')
+      expect(bar.attributes('aria-valuenow')).toBe('0')
+    })
+
+    it('reports a non-degenerate aria range for max 0', () => {
+      const wrapper = mount(VibeProgress, {
+        props: { bars: [{ value: 50, max: 0, showValue: true }] }
+      })
+      const bar = wrapper.find('.progress-bar')
+      expect((bar.element as HTMLElement).style.width).toBe('0%')
+      expect(bar.attributes('aria-valuemax')).toBe('100')
+      expect(bar.attributes('aria-valuenow')).toBe('50')
+    })
+
+    it('clamps an over-max value consistently across width, label, and ARIA', () => {
+      const wrapper = mount(VibeProgress, {
+        props: { bars: [{ value: 250, showValue: true }] }
+      })
+      const bar = wrapper.find('.progress-bar')
+      expect((bar.element as HTMLElement).style.width).toBe('100%')
+      expect(bar.text()).toBe('100%')
+      expect(bar.attributes('aria-valuenow')).toBe('100')
+    })
+  })
 })

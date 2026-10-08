@@ -32,22 +32,33 @@ const getBarClass = (bar: ProgressBar) => {
   return classes.join(' ')
 }
 
+// Single normalization point for a consumer-supplied bar. Guards NaN/Infinity
+// values and a degenerate (zero or negative) max, so width, the visible label,
+// and the ARIA values can never disagree (see #194).
+interface NormalizedBar {
+  value: number
+  max: number
+  percentage: number
+}
+
+const normalizeBar = (bar: ProgressBar): NormalizedBar => {
+  const max = bar.max !== undefined && bar.max > 0 ? bar.max : 100
+  const finite = Number.isFinite(bar.value) ? bar.value : 0
+  const value = Math.min(max, Math.max(0, finite))
+  const percentage = Math.min(100, Math.max(0, (value / max) * 100))
+  return { value, max, percentage }
+}
+
 const getBarStyle = (bar: ProgressBar) => {
-  // Guard: explicit max of 0 or negative would produce NaN/Infinity
+  // An explicit non-positive max means "no measurable progress".
   if (bar.max !== undefined && bar.max <= 0) return { width: '0%' }
-  const max = bar.max || 100
-  // Guard NaN: bar.value=NaN → Math.max(0, NaN)=NaN → "width: NaN%" (invalid CSS, renders 0 silently)
-  const safeValue = Number.isFinite(bar.value) ? bar.value : 0
-  const percentage = Math.min(100, Math.max(0, (safeValue / max) * 100))
-  return { width: `${percentage}%` }
+  return { width: `${normalizeBar(bar).percentage}%` }
 }
 
 const getBarLabel = (bar: ProgressBar) => {
   if (bar.label) return bar.label
   if (bar.showValue) {
-    const max = bar.max || 100
-    const percentage = Math.min(100, Math.max(0, Math.round((bar.value / max) * 100)))
-    return `${percentage}%`
+    return `${Math.round(normalizeBar(bar).percentage)}%`
   }
   return ''
 }
@@ -62,9 +73,9 @@ const getBarLabel = (bar: ProgressBar) => {
       :style="getBarStyle(bar)"
       role="progressbar"
       :aria-label="bar.label || 'Progress'"
-      :aria-valuenow="bar.value"
+      :aria-valuenow="normalizeBar(bar).value"
       :aria-valuemin="0"
-      :aria-valuemax="bar.max || 100"
+      :aria-valuemax="normalizeBar(bar).max"
     >
       <!-- Scoped slot for custom label -->
       <slot name="label" :bar="bar" :index="index">
