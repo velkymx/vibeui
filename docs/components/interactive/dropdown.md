@@ -14,6 +14,8 @@ Data-driven toggleable contextual overlay for displaying lists of links.
 | `direction` | `Direction` | `'down'` | Direction: `'up'`, `'down'`, `'start'`, `'end'` |
 | `menuEnd` | `Boolean` | `false` | Align menu to the right |
 | `items` | `DropdownItem[]` | Required | Array of dropdown items |
+| `showEmpty` | `Boolean` | `true` | Show `emptyText` row when `items` is empty (toggle is disabled) |
+| `emptyText` | `String` | `'No options'` | Empty state message |
 | `autoClose` | `Boolean\|String` | `true` | Close behavior: `true`, `false`, `'inside'`, `'outside'` |
 
 ### DropdownItem Interface

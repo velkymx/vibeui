@@ -40,7 +40,9 @@ const props = defineProps({
   touch: { type: Boolean, default: true },
   dark: { type: Boolean, default: false },
   fade: { type: Boolean, default: false },
-  items: { type: Array as () => CarouselItem[], required: true }
+  items: { type: Array as () => CarouselItem[], required: true },
+  showEmpty: { type: Boolean, default: true },
+  emptyText: { type: String, default: 'No slides' }
 })
 
 const emit = defineEmits<{
@@ -202,7 +204,7 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
     :data-bs-touch="touch"
   >
     <!-- Indicators -->
-    <div v-if="indicators" class="carousel-indicators">
+    <div v-if="indicators && items.length > 0" class="carousel-indicators">
       <button
         v-for="(item, index) in items"
         :key="item.src ?? index"
@@ -217,6 +219,9 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
 
     <!-- Slides -->
     <div class="carousel-inner">
+      <div v-if="items.length === 0 && showEmpty" class="carousel-item active">
+        <p class="text-center text-body-secondary p-4">{{ emptyText }}</p>
+      </div>
       <div
         v-for="(item, index) in items"
         :key="item.src ?? index"
@@ -234,7 +239,7 @@ defineExpose({ refresh: initCarousel, _unsafe_bsInstance: bsCarousel })
     </div>
 
     <!-- Controls -->
-    <template v-if="controls">
+    <template v-if="controls && items.length > 0">
       <button class="carousel-control-prev" type="button" :data-bs-target="`#${computedId}`" data-bs-slide="prev">
         <span class="carousel-control-prev-icon" aria-hidden="true" />
         <span class="visually-hidden">Previous</span>

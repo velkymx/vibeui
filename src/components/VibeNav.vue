@@ -20,7 +20,9 @@ const props = defineProps({
   justified: { type: Boolean, default: false },
   fill: { type: Boolean, default: false },
   underline: { type: Boolean, default: false },
-  tag: { type: String, default: 'ul' }
+  tag: { type: String, default: 'ul' },
+  showEmpty: { type: Boolean, default: true },
+  emptyText: { type: String, default: 'No items' }
 })
 
 const emit = defineEmits<{
@@ -168,6 +170,7 @@ defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
 
 <template>
   <component :is="tag" ref="navRef" :class="navClass">
+    <li v-if="items.length === 0 && showEmpty" class="nav-item disabled">{{ emptyText }}</li>
     <li
       v-for="(item, index) in items"
       :key="item.href || routeKey(item.to) || item.text || String(index)"

@@ -11,6 +11,8 @@ Data-driven component for displaying flexible lists of content.
 | `numbered` | `Boolean` | `false` | Numbered list items |
 | `tag` | `String` | `'ul'` | HTML tag: `'ul'`, `'ol'`, or `'div'` |
 | `items` | `ListGroupItem[]` | Required | Array of list group items |
+| `showEmpty` | `Boolean` | `true` | Show `emptyText` row when `items` is empty |
+| `emptyText` | `String` | `'No items'` | Empty state message |
 
 ### ListGroupItem Interface
 

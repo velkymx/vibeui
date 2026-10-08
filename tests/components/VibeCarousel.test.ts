@@ -120,4 +120,22 @@ describe('VibeCarousel', () => {
 
     expect(bootstrap.Carousel).not.toHaveBeenCalled()
   })
+
+  // #196: zero slides render a placeholder and no interactive controls.
+  describe('empty state (#196)', () => {
+    it('renders the placeholder and hides indicators plus controls', () => {
+      const wrapper = mount(VibeCarousel, { props: { items: [] } })
+      expect(wrapper.find('.carousel-inner').text()).toContain('No slides')
+      expect(wrapper.find('.carousel-indicators').exists()).toBe(false)
+      expect(wrapper.find('.carousel-control-prev').exists()).toBe(false)
+      expect(wrapper.find('.carousel-control-next').exists()).toBe(false)
+    })
+
+    it('supports custom emptyText and showEmpty=false', () => {
+      const custom = mount(VibeCarousel, { props: { items: [], emptyText: 'Nothing to show' } })
+      expect(custom.find('.carousel-inner').text()).toContain('Nothing to show')
+      const off = mount(VibeCarousel, { props: { items: [], showEmpty: false } })
+      expect(off.find('.carousel-inner').text()).not.toContain('No slides')
+    })
+  })
 })

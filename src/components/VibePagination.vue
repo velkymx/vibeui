@@ -89,7 +89,7 @@ const isNextDisabled = computed(() => props.totalPages === 0 || props.currentPag
 </script>
 
 <template>
-  <nav :aria-label="ariaLabel">
+  <nav v-if="totalPages > 0" :aria-label="ariaLabel">
     <ul :class="paginationClass">
       <!-- Previous button -->
       <li v-if="showPrevNext" :class="['page-item', { disabled: isPrevDisabled }]">
