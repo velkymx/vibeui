@@ -77,6 +77,10 @@ const labelOf = (item: T): string => {
   return typeof item === 'string' ? item : String(item)
 }
 
+// Row labels computed once per results change instead of re-running labelOf
+// (plus its DEV warning check) three times per row on every render (see #198).
+const resultLabels = computed(() => new Map(results.value.map((item) => [item, labelOf(item)])))
+
 const filterArray = (arr: T[], query: string): T[] => {
   const q = query.toLowerCase()
   return arr.filter(item => labelOf(item).toLowerCase().includes(q)).slice(0, props.maxResults)
@@ -250,7 +254,7 @@ const showEmpty = computed(() => isOpen.value && inputValue.value.length >= prop
     <ul v-if="isOpen && results.length > 0" :id="listboxId" class="vibe-autocomplete-menu" role="listbox">
       <li
         v-for="(item, idx) in results"
-        :key="labelOf(item) + ' ' + idx"
+        :key="resultLabels.get(item) + ' ' + idx"
         :id="`${computedId}-option-${idx}`"
         :class="[
           'vibe-autocomplete-item',
@@ -261,8 +265,8 @@ const showEmpty = computed(() => isOpen.value && inputValue.value.length >= prop
         @mouseenter="highlightedIndex = idx"
         @click="selectItem(item)"
       >
-        <slot name="item" :item="item" :index="idx" :label="labelOf(item)">
-          {{ labelOf(item) }}
+        <slot name="item" :item="item" :index="idx" :label="resultLabels.get(item)">
+          {{ resultLabels.get(item) }}
         </slot>
       </li>
     </ul>

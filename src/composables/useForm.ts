@@ -1,4 +1,4 @@
-import { reactive, computed, ref, watch, type ComputedRef } from 'vue'
+import { reactive, computed, ref, watch, onScopeDispose, type ComputedRef } from 'vue'
 import type { ValidationRule, ValidatorFunction } from '../types'
 
 export type FormFieldRules<T> = Partial<Record<keyof T, ValidationRule[] | ValidatorFunction>>
@@ -72,15 +72,35 @@ export function useForm<T extends Record<string, unknown>>(
   for (const k of fieldKeys) {
     initialFieldJson[k] = JSON.stringify((initialSnapshot as Record<keyof T, unknown>)[k])
   }
-  watch(
-    fields,
-    (current) => {
-      dirtyFlag.value = fieldKeys.some(
-        (k) => JSON.stringify((current as Record<keyof T, unknown>)[k]) !== initialFieldJson[k]
-      )
-    },
-    { deep: true, immediate: true }
+  const isDirtyNow = (): boolean =>
+    fieldKeys.some(
+      (k) => JSON.stringify((fields as Record<keyof T, unknown>)[k]) !== initialFieldJson[k]
+    )
+
+  // Per-field watchers instead of one deep watcher: a deep watcher on `fields`
+  // fires for every nested leaf mutation and re-serializes every field until one
+  // differs. Each watcher only serializes its own field (see #198).
+  const stopFieldWatches = fieldKeys.map((k) =>
+    watch(
+      () => (fields as Record<keyof T, unknown>)[k],
+      (current) => {
+        const changed = JSON.stringify(current) !== initialFieldJson[k]
+        // Only fall back to the full comparison when this field reverted to its
+        // initial value; otherwise one dirty field is enough to stay dirty.
+        dirtyFlag.value = changed || isDirtyNow()
+      },
+      { deep: true }
+    )
   )
+
+  // Initial dirty state is false by construction (fields is a clone of the
+  // snapshot), computed once at setup rather than via immediate:true.
+  dirtyFlag.value = isDirtyNow()
+
+  // Keep the watchers disposed with the owning effect scope.
+  onScopeDispose(() => {
+    for (const stop of stopFieldWatches) stop()
+  })
 
   const isValid = computed(() => {
     if (!hasValidated.value) return false

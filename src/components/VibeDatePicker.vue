@@ -249,6 +249,14 @@ const cellClass = (cell: DayCell): string => {
   return c.join(' ')
 }
 
+// Grid classes computed once per grid change instead of re-running the join on
+// every render for all 42 cells (see #198).
+const cellClassMap = computed(() => {
+  const map = new Map<string, string>()
+  for (const cell of monthGrid.value) map.set(cell.iso, cellClass(cell))
+  return map
+})
+
 const setFocusedDate = async (iso: IsoDate) => {
   focusedIso.value = iso
   const d = fromIso(iso)
@@ -415,7 +423,7 @@ defineExpose({ open: () => { if (!isOpen.value) togglePopover() }, close: closeP
           v-for="cell in monthGrid"
           :key="cell.iso"
           type="button"
-          :class="cellClass(cell)"
+          :class="cellClassMap.get(cell.iso)"
           :data-iso="cell.iso"
           :disabled="cell.disabled"
           @click="selectDate(cell)"

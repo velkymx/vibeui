@@ -249,4 +249,103 @@ describe('VibeSlider', () => {
       expect(wrapper.emitted('update:modelValue')).toBeFalsy()
     })
   })
+
+  // #198: pointer drag coalesces onto one animation frame (one layout read and
+  // one model update per frame), and `change` fires once on release.
+  describe('drag coalescing (#198)', () => {
+    const fakeRect = {
+      left: 0, top: 0, width: 200, height: 20,
+      right: 200, bottom: 20, x: 0, y: 0, toJSON: () => ({})
+    } as DOMRect
+
+    const stubRaf = () => {
+      const queue: FrameRequestCallback[] = []
+      const raf = window.requestAnimationFrame
+      const caf = window.cancelAnimationFrame
+      let nextId = 1
+      const ids = new Map<number, FrameRequestCallback>()
+      window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+        const id = nextId++
+        ids.set(id, cb)
+        queue.push(cb)
+        return id
+      }) as typeof window.requestAnimationFrame
+      window.cancelAnimationFrame = ((id: number) => {
+        ids.delete(id)
+      }) as typeof window.cancelAnimationFrame
+      const flushFrames = () => {
+        while (queue.length > 0) {
+          const cb = queue.shift()!
+          cb(16)
+        }
+      }
+      return { restore: () => { window.requestAnimationFrame = raf; window.cancelAnimationFrame = caf }, flushFrames }
+    }
+
+    const pointerEvent = (type: string, init: { pointerId: number; clientX: number; clientY?: number }) => {
+      const event = new Event(type, { bubbles: true }) as Event & {
+        pointerId: number; clientX: number; clientY: number
+      }
+      event.pointerId = init.pointerId
+      event.clientX = init.clientX
+      event.clientY = init.clientY ?? 0
+      return event
+    }
+
+    it('coalesces a burst of pointermoves into one model update per frame', async () => {
+      const raf = stubRaf()
+      try {
+        const wrapper = mount(VibeSlider, { props: { modelValue: 0, min: 0, max: 100 } })
+        const track = wrapper.find('.vibe-slider-track').element as HTMLElement
+        track.getBoundingClientRect = () => fakeRect
+        const handle = wrapper.find('[role="slider"]').element as HTMLElement
+
+        handle.dispatchEvent(pointerEvent('pointerdown', { pointerId: 7, clientX: 10 }))
+        // The move/up listeners live on window; the test DOM is detached, so
+        // dispatch there directly (a detached track would never bubble up).
+        window.dispatchEvent(pointerEvent('pointermove', { pointerId: 7, clientX: 40 }))
+        window.dispatchEvent(pointerEvent('pointermove', { pointerId: 7, clientX: 80 }))
+        window.dispatchEvent(pointerEvent('pointermove', { pointerId: 7, clientX: 120 }))
+        // Moves are queued, nothing emitted yet.
+        expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+
+        raf.flushFrames()
+        await wrapper.vm.$nextTick()
+        const updates = wrapper.emitted('update:modelValue') as number[][] | undefined
+        expect(updates).toBeDefined()
+        expect(updates!).toHaveLength(1)
+        // Last event wins: 120/200 of [0,100].
+        expect(updates![0][0]).toBe(60)
+
+        // Release delivers change exactly once.
+        window.dispatchEvent(pointerEvent('pointerup', { pointerId: 7, clientX: 120 }))
+        raf.flushFrames()
+        await wrapper.vm.$nextTick()
+        expect(wrapper.emitted('change')).toHaveLength(1)
+        wrapper.unmount()
+      } finally {
+        raf.restore()
+      }
+    })
+
+    it('emits no change on release without movement', async () => {
+      const raf = stubRaf()
+      try {
+        const wrapper = mount(VibeSlider, { props: { modelValue: 50, min: 0, max: 100 } })
+        const track = wrapper.find('.vibe-slider-track').element as HTMLElement
+        track.getBoundingClientRect = () => fakeRect
+        const handle = wrapper.find('[role="slider"]').element as HTMLElement
+
+        handle.dispatchEvent(pointerEvent('pointerdown', { pointerId: 7, clientX: 100 }))
+        window.dispatchEvent(pointerEvent('pointerup', { pointerId: 7, clientX: 100 }))
+        raf.flushFrames()
+        await wrapper.vm.$nextTick()
+        expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+        expect(wrapper.emitted('change')).toBeUndefined()
+        wrapper.unmount()
+      } finally {
+        raf.restore()
+      }
+    })
+  })
 })

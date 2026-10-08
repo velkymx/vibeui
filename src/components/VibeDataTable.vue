@@ -314,14 +314,6 @@ const handleRowClick = (item: T, index: number) => {
   emit('row-clicked', item, (startRow.value - 1) + index)
 }
 
-const getCellValue = (item: T, column: DataTableColumn<T>) => {
-  const value = item[column.key]
-  if (column.formatter) {
-    return column.formatter(value, item)
-  }
-  return value
-}
-
 // Precompute sort icons once per sort-state/columns change instead of calling a function
 // per header cell on every render. Keyed by column (consistent with the style maps).
 const sortIconMap = computed(() => {
@@ -372,6 +364,23 @@ const tdStyleMap = computed(() => {
   const m = new Map<DataTableColumn<T>, Record<string, string>>()
   for (const column of props.columns) m.set(column, safeCssObject(column.tdStyle))
   return m
+})
+
+// Cell display values, computed once per data/columns change. Previously
+// getCellValue() ran (and invoked the consumer formatter) on every render for
+// every visible cell. Keyed by column then row so a row identity change
+// invalidates only its own entry.
+const cellValueMap = computed(() => {
+  const byColumn = new Map<DataTableColumn<T>, Map<T, unknown>>()
+  for (const column of props.columns) {
+    const byRow = new Map<T, unknown>()
+    for (const item of paginatedItems.value) {
+      const value = item[column.key]
+      byRow.set(item, column.formatter ? column.formatter(value, item) : value)
+    }
+    byColumn.set(column, byRow)
+  }
+  return byColumn
 })
 </script>
 
@@ -442,7 +451,7 @@ const tdStyleMap = computed(() => {
               :data-label="column.label"
             >
               <slot :name="`cell(${column.key})`" :item="item" :value="item[column.key]" :index="index">
-                {{ getCellValue(item, column) }}
+                {{ cellValueMap.get(column)?.get(item) }}
               </slot>
             </td>
           </tr>
