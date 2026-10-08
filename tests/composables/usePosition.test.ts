@@ -6,6 +6,13 @@ import { usePosition } from '../../src/composables/usePosition'
 // #187: track autoUpdate subscriptions. Real floating-ui listeners stay live,
 // the wrapper records subscribe/dispose so stop() disposal is observable.
 const tracker = vi.hoisted(() => ({ autoUpdateCount: 0, cleanupCount: 0 }))
+// #190: gate computePosition so an update can be left in flight across
+// stop()/unmount. Real compute resolves too fast to interleave deterministically.
+const computeGate = vi.hoisted(() => ({
+  calls: 0,
+  gated: false,
+  release: null as null | ((result: unknown) => void)
+}))
 
 vi.mock('@floating-ui/dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@floating-ui/dom')>()
@@ -18,9 +25,25 @@ vi.mock('@floating-ui/dom', async (importOriginal) => {
         tracker.cleanupCount += 1
         cleanup()
       }
+    },
+    computePosition: (...args: Parameters<typeof actual.computePosition>) => {
+      computeGate.calls += 1
+      if (!computeGate.gated) return actual.computePosition(...args)
+      return new Promise((resolve) => {
+        computeGate.release = resolve as (result: unknown) => void
+      })
     }
   }
 })
+
+const FAKE_RESULT = { x: 111, y: 222, placement: 'bottom' }
+
+const settleGate = async () => {
+  computeGate.release?.(FAKE_RESULT)
+  computeGate.release = null
+  await new Promise((r) => setTimeout(r, 0))
+  await nextTick()
+}
 
 const flush = async (ms = 20) => {
   await new Promise(r => setTimeout(r, ms))
@@ -31,6 +54,9 @@ describe('usePosition', () => {
   beforeEach(() => {
     tracker.autoUpdateCount = 0
     tracker.cleanupCount = 0
+    computeGate.calls = 0
+    computeGate.gated = false
+    computeGate.release = null
     document.body.innerHTML = ''
   })
   it('computes position and applies left/top styles to target', async () => {
@@ -218,6 +244,91 @@ describe('usePosition', () => {
     expect(() => mount(Harness)).not.toThrow()
   })
 
+  // #190: an update in flight across stop() must not write after it resolves.
+  // Without a post-await liveness check the late resolve re-applies computed
+  // styles, defeating restoreStyle().
+  describe('in-flight update across teardown (#190)', () => {
+    const makeHarness = () => {
+      let exposed: ReturnType<typeof usePosition> | undefined
+      const Harness = defineComponent({
+        setup() {
+          const anchor = ref<HTMLElement | null>(null)
+          const target = ref<HTMLElement | null>(null)
+          exposed = usePosition(target, anchor, { autoUpdate: false })
+          return { anchor, target, api: () => exposed }
+        },
+        render() {
+          return h('div', [
+            h('div', { ref: 'anchor', id: 'a190' }, 'A'),
+            h('div', { ref: 'target', id: 't190', style: 'position: relative; left: 5px; top: 10px;' }, 'T')
+          ])
+        }
+      })
+      return { Harness, exposed: () => exposed! }
+    }
+
+    it('stop() before resolve leaves pre-positioning styles and refs untouched', async () => {
+      computeGate.gated = true
+      const { Harness, exposed } = makeHarness()
+      const wrapper = mount(Harness, { attachTo: document.body })
+      await nextTick()
+      await nextTick()
+      expect(computeGate.calls).toBeGreaterThan(0)
+
+      const target = wrapper.find('#t190').element as HTMLElement
+      exposed().stop()
+      expect(target.style.position).toBe('relative')
+      await settleGate()
+
+      expect(target.style.position).toBe('relative')
+      expect(target.style.left).toBe('5px')
+      expect(target.style.top).toBe('10px')
+      expect(exposed().x.value).toBe(0)
+      expect(exposed().y.value).toBe(0)
+      wrapper.unmount()
+    })
+
+    it('a manual update() after stop() still positions (stop is not terminal)', async () => {
+      computeGate.gated = true
+      const { Harness, exposed } = makeHarness()
+      const wrapper = mount(Harness, { attachTo: document.body })
+      await nextTick()
+      await nextTick()
+
+      exposed().stop()
+      const pending = exposed().update()
+      await nextTick()
+      await settleGate()
+      await pending
+
+      const target = wrapper.find('#t190').element as HTMLElement
+      expect(target.style.position).toBe('absolute')
+      expect(target.style.left).toBe('111px')
+      expect(target.style.top).toBe('222px')
+      expect(exposed().x.value).toBe(111)
+      wrapper.unmount()
+    })
+
+    it('unmount before resolve performs no reactive or style writes', async () => {
+      computeGate.gated = true
+      const { Harness, exposed } = makeHarness()
+      const wrapper = mount(Harness, { attachTo: document.body })
+      await nextTick()
+      await nextTick()
+      expect(computeGate.calls).toBeGreaterThan(0)
+
+      const target = wrapper.find('#t190').element as HTMLElement
+      const api = exposed()
+      wrapper.unmount()
+      await settleGate()
+
+      expect(target.style.position).toBe('relative')
+      expect(target.style.left).toBe('5px')
+      expect(target.style.top).toBe('10px')
+      expect(api.x.value).toBe(0)
+      expect(api.y.value).toBe(0)
+    })
+  })
   describe('H17 reactive options getter', () => {
     it('re-computes when getter-returned my/at change', async () => {
       // Flip the entire pair so the table maps both states cleanly.
