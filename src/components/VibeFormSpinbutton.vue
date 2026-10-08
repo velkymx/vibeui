@@ -89,9 +89,23 @@ const inputGroupClass = computed(() => {
   return classes.join(' ')
 })
 
-const internalValue = ref(modelValue.value)
+// Any value arriving from the DOM or from the consumer can be non-finite or
+// out of range (see #195). Normalize once: NaN/undefined become 0 and the
+// result is clamped, so canIncrement/canDecrement never compare against NaN and
+// the buttons can never wedge.
+const toSafeNumber = (value: unknown, fallback = 0): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback
 
-watch(modelValue, (v) => { internalValue.value = v ?? 0 })
+const clampValue = (value: number): number => {
+  let clamped = value
+  if (props.min !== undefined && clamped < props.min) clamped = props.min
+  if (props.max !== undefined && clamped > props.max) clamped = props.max
+  return clamped
+}
+
+const internalValue = ref(clampValue(toSafeNumber(modelValue.value)))
+
+watch(modelValue, (v) => { internalValue.value = clampValue(toSafeNumber(v)) })
 
 const canDecrement = computed(() => {
   if (props.disabled || props.readonly) return false
@@ -107,16 +121,9 @@ const canIncrement = computed(() => {
   return internalValue.value < props.max
 })
 
-const clampValue = (value: number): number => {
-  let clamped = value
-  if (props.min !== undefined && clamped < props.min) clamped = props.min
-  if (props.max !== undefined && clamped > props.max) clamped = props.max
-  return clamped
-}
-
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const raw = target.value === '' ? 0 : Number(target.value)
+  const raw = toSafeNumber(target.value === '' ? 0 : Number(target.value))
   internalValue.value = raw
   // #148: .lazy defers the model commit to change; the stepper display stays live.
   if (!modelModifiers.lazy) modelValue.value = raw
@@ -126,7 +133,7 @@ const handleInput = (event: Event) => {
 
 const handleChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const raw = target.value === '' ? 0 : Number(target.value)
+  const raw = toSafeNumber(target.value === '' ? 0 : Number(target.value))
   const clamped = clampValue(raw)
   internalValue.value = clamped
   // #148: with .lazy the model was untouched on input, so always commit here.
@@ -137,7 +144,7 @@ const handleChange = (event: Event) => {
 
 const handleBlur = (event: FocusEvent) => {
   const target = event.target as HTMLInputElement
-  const raw = target.value === '' ? 0 : Number(target.value)
+  const raw = toSafeNumber(target.value === '' ? 0 : Number(target.value))
   const clamped = clampValue(raw)
   internalValue.value = clamped
   if (clamped !== raw) modelValue.value = clamped
