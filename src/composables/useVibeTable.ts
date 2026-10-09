@@ -10,6 +10,7 @@ import {
   createFacetedUniqueValues,
   columnFilteringFeature,
   columnFacetingFeature,
+  columnVisibilityFeature,
   globalFilteringFeature,
   rowSortingFeature,
   rowPaginationFeature,
@@ -65,6 +66,7 @@ const ascendingCompare = (a: unknown, b: unknown): number => {
 const features = tableFeatures({
   columnFilteringFeature,
   columnFacetingFeature,
+  columnVisibilityFeature,
   globalFilteringFeature,
   rowSortingFeature,
   rowPaginationFeature,
@@ -102,6 +104,9 @@ export interface UseVibeTableParams<T extends object> {
   // #283 Phase 2b: per-column filter state ({ id, value }); value is a string
   // (text/select) or a [min, max] tuple (range).
   columnFilters: Ref<{ id: string; value: unknown }[]>
+  // #283 Phase 3a: per-column visibility ({ id: false } = hidden). Owned by the
+  // engine's columnVisibility state; the component's v-model mirrors it.
+  columnVisibility: Ref<Record<string, boolean>>
 }
 
 export interface VibeTableFilters {
@@ -109,6 +114,11 @@ export interface VibeTableFilters {
   get: (id: string) => unknown
   set: (id: string, value: unknown) => void
   uniqueValues: (id: string) => string[]
+}
+
+export interface VibeTableVisibility {
+  isVisible: (id: string) => boolean
+  set: (id: string, visible: boolean) => void
 }
 
 export interface VibeTableSelection {
@@ -132,6 +142,8 @@ export interface UseVibeTableResult<T extends object> {
   selection: VibeTableSelection
   // Per-column filter surface, consumed by the filter row.
   filters: VibeTableFilters
+  // Column visibility surface (engine-owned), consumed by the chooser.
+  visibility: VibeTableVisibility
 }
 
 export function useVibeTable<T extends object>(
@@ -230,7 +242,8 @@ export function useVibeTable<T extends object>(
       acc[String(key)] = true
       return acc
     }, {}),
-    columnFilters: params.columnFilters.value
+    columnFilters: params.columnFilters.value,
+    columnVisibility: params.columnVisibility.value
   }))
 
   const selectionEnabled = computed(() => params.selectable() !== false)
@@ -286,6 +299,11 @@ export function useVibeTable<T extends object>(
       const prev = state.value.columnFilters
       const next = typeof updater === 'function' ? updater(prev) : updater
       params.columnFilters.value = next
+    },
+    onColumnVisibilityChange: (updater) => {
+      const prev = state.value.columnVisibility
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      params.columnVisibility.value = next
     }
   })
 
@@ -333,5 +351,12 @@ export function useVibeTable<T extends object>(
     }
   }
 
-  return { paginatedItems, filteredCount, selection, filters }
+  const visibility: VibeTableVisibility = {
+    isVisible: (id) => table.getColumn(id)?.getIsVisible() ?? true,
+    set: (id, visible) => {
+      table.getColumn(id)?.toggleVisibility(visible)
+    }
+  }
+
+  return { paginatedItems, filteredCount, selection, filters, visibility }
 }

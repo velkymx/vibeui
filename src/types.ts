@@ -149,6 +149,10 @@ export interface DataTableColumn<T extends object = Record<string, unknown>> {
   // 'text' (displayed-text contains), 'select' (equals a faceted unique value),
   // 'range' (numeric min/max). Omitted = no filter input for this column.
   filter?: 'text' | 'select' | 'range'
+  // #283 Phase 3a: cell/header text alignment (Bootstrap text-* utility) and a
+  // validated column width (number = px, string = any safe CSS length).
+  align?: 'start' | 'center' | 'end'
+  width?: string | number
 }
 
 export interface DataTableCellSlotProps<T extends object = Record<string, unknown>> {
