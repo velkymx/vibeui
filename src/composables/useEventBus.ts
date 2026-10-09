@@ -77,7 +77,6 @@ function dispatch(event: string, payload: unknown): void {
       handler(payload)
     } catch (originalError) {
       if (isDev()) {
-        // eslint-disable-next-line no-console
         console.error(`[VibeUI EventBus] a handler for "${event}" threw:`, originalError)
       }
       if (!isErrorChannel(event)) {
@@ -160,7 +159,6 @@ function emit(event: string, payload?: unknown): void {
     const message = `"${event}" was emitted but nothing is registered to handle it.`
     dispatch(ERROR_UNHANDLED, { event, message })
     if (isDev()) {
-      // eslint-disable-next-line no-console
       console.error(`[VibeUI EventBus] ${message}`)
     }
   }
