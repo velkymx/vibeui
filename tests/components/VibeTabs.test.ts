@@ -434,4 +434,62 @@ describe('VibeTabs lazy + v-model initial render (issue #67)', () => {
       wrapper.unmount()
     })
   })
+
+  // #235 W1: tabs own aria-controls, panes own aria-labelledby plus correct
+  // tabindex; ids stay unique across two strips sharing tab names.
+  describe('tab wiring (#235)', () => {
+    const twoTabs = `
+      <VibeTab name="a" label="Alpha">A body</VibeTab>
+      <VibeTab name="shared" label="Shared">S body</VibeTab>
+    `
+    it('links tabs to panes with matching ids', async () => {
+      const wrapper = mount(VibeTabs, {
+        slots: { default: twoTabs },
+        global: { components: { VibeTab } }
+      })
+      await nextTick()
+      const tabs = wrapper.findAll('[role="tab"]')
+      const panes = wrapper.findAll('[role="tabpanel"]')
+      expect(panes).toHaveLength(2)
+      for (const tab of tabs) {
+        const controls = tab.attributes('aria-controls')
+        expect(controls).toBeTruthy()
+        const pane = panes.find((pn) => pn.attributes('id') === controls)
+        expect(pane).toBeDefined()
+        expect(pane!.attributes('aria-labelledby')).toBe(tab.attributes('id'))
+      }
+      // Only the active pane is tabbable.
+      expect(panes[0].attributes('tabindex')).toBe('0')
+      expect(panes[1].attributes('tabindex')).toBe('-1')
+      wrapper.unmount()
+    })
+
+    it('keeps ids unique across two strips with the same tab names', async () => {
+      const Harness = defineComponent({
+        components: { VibeTabs, VibeTab },
+        setup: () => () =>
+          h('div', [
+            h(VibeTabs as never, null, {
+              default: () => [
+                h(VibeTab as never, { name: 'shared', label: 'One' }, () => 'one'),
+                h(VibeTab as never, { name: 'solo', label: 'Solo' }, () => 'solo')
+              ]
+            }),
+            h(VibeTabs as never, null, {
+              default: () => [
+                h(VibeTab as never, { name: 'shared', label: 'Two' }, () => 'two'),
+                h(VibeTab as never, { name: 'other', label: 'Other' }, () => 'other')
+              ]
+            })
+          ])
+      })
+      const wrapper = mount(Harness, { attachTo: document.body })
+      await nextTick()
+      const ids = wrapper.findAll('[role="tab"]').map((t) => t.attributes('id'))
+      const paneIds = wrapper.findAll('[role="tabpanel"]').map((t) => t.attributes('id'))
+      const all = [...ids, ...paneIds]
+      expect(new Set(all).size).toBe(all.length)
+      wrapper.unmount()
+    })
+  })
 })

@@ -108,4 +108,33 @@ describe('VibeHero variant contrast default', () => {
     expect(wrapper.classes()).toContain('text-light')
     expect(wrapper.classes()).not.toContain('text-bg-dark')
   })
+
+  // #238: bgImage lands inside url("..."), so it needs CSS-sink validation,
+  // not the href prefix check (which preserves quotes/parens/whitespace).
+  describe('bgImage css sink (#238)', () => {
+    const bgOf = (bgImage: string) => {
+      const wrapper = mount(VibeHero, { props: { bgImage } })
+      const style = wrapper.attributes('style') ?? ''
+      wrapper.unmount()
+      return style
+    }
+
+    it.each([
+      ['quote', 'https://x.com/a")'],
+      ['open paren', 'https://x.com/a(1'],
+      ['close paren', 'https://x.com/a)'],
+      ['whitespace', 'https://x.com/a b.jpg'],
+      ['backtick', 'https://x.com/a`b'],
+      ['backslash', 'https://x.com/a\\b'],
+      ['comma layers', 'https://x.com/a.jpg), url(https://evil.example/t'],
+      ['scheme bypass', 'javascript:alert(1)']
+    ])('renders no backgroundImage for %s payload', (_label, payload) => {
+      expect(bgOf(payload)).not.toContain('background-image')
+    })
+
+    it('still renders valid absolute plus root-relative paths', () => {
+      expect(bgOf('https://cdn.example/x/a.jpg')).toContain('https://cdn.example/x/a.jpg')
+      expect(bgOf('/img/hero.jpg')).toContain('/img/hero.jpg')
+    })
+  })
 })

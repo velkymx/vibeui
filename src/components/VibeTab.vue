@@ -53,9 +53,12 @@ const shouldRender = computed(() => {
   <div
     v-if="shouldRender"
     v-show="isActive"
+    :id="ctx?.panelId(props.name) ?? `vibe-panel-${props.name}`"
     class="tab-pane"
     :class="{ active: isActive, show: isActive }"
     role="tabpanel"
+    :aria-labelledby="ctx?.tabId(props.name) ?? `vibe-tab-${props.name}`"
+    :tabindex="isActive ? 0 : -1"
   >
     <slot />
   </div>

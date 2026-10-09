@@ -108,6 +108,8 @@ const accordionItems = [
 
 **Reactivity:** The `show` property in the `AccordionItem` objects is watched. Changing it in your parent state will trigger the corresponding Bootstrap transition.
 
+**Announcement:** `aria-expanded` follows live collapse state (synced from Bootstrap show/hide events), and `show: true` paints expanded in markup before Bootstrap loads, so SSR and pre-JS output agree with the announcement.
+
 **Item ids:** Each `item.id` (and the accordion `id`) must contain only alphanumeric characters, hyphens, and underscores — Bootstrap's internal `querySelector` breaks on CSS-special characters. In dev mode an unsafe id logs a console warning.
 
 **Escape Hatch:** The exposed `_unsafe_bsInstances` template ref is a `Map` of the underlying Bootstrap Collapse instances keyed by item id. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on them directly **will** break the component. To re-sync after manual DOM changes, call the exposed `refresh()` method instead.

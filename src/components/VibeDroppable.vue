@@ -46,6 +46,10 @@ const onDragEnter = (event: DragEvent) => {
 
 const onDragOver = (event: DragEvent) => {
   if (props.disabled) return
+  // Same guards as enter/drop: preventDefault on dragover is the signal that
+  // a drop is allowed, so OS files and wrong-group drags must not get it.
+  const active = readActiveDrag()
+  if (!active || !groupAccepted(active.group)) return
   event.preventDefault()
   if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
 }

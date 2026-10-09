@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, provide, reactive, ref, useTemplateRef, watch, type PropType } from 'vue'
 import { TABS_CONTEXT_KEY } from '../injectionKeys'
+import { useId } from '../composables/useId'
 
 type TabsVariant = 'tabs' | 'pills' | 'underline'
 
@@ -27,6 +28,11 @@ const emit = defineEmits<{
 const registry = reactive<TabRecord[]>([])
 const internalActive = ref<string | undefined>(props.modelValue)
 const visited = reactive(new Set<string>())
+// Strip-unique prefix for tab/panel ids: names are unique within a strip but
+// two strips can share names, so bare name-derived ids would collide.
+const stripId = useId('tabs')
+const tabId = (name: string): string => `vibe-tab-${stripId}-${name}`
+const panelId = (name: string): string => `vibe-panel-${stripId}-${name}`
 // Seed the initially-active tab (set via v-model at mount) so `lazy` renders it
 // immediately — otherwise it's never marked visited until the tab is switched.
 if (props.modelValue !== undefined) visited.add(props.modelValue)
@@ -129,6 +135,8 @@ provide(TABS_CONTEXT_KEY, {
   },
   isActive: (name: string) => internalActive.value === name,
   hasBeenActive: (name: string) => visited.has(name),
+  tabId,
+  panelId,
   // Sync a tab whose props changed after mount (label/disabled/name). Mutates
   // the existing entry in place so strip order is preserved; renames move the
   // active/visited markers so no ghost entry is left behind.
@@ -169,6 +177,8 @@ provide(TABS_CONTEXT_KEY, {
           :class="{ active: tab.name === activeName, disabled: tab.disabled }"
           :disabled="tab.disabled"
           :tabindex="tab.name === activeName ? 0 : -1"
+          :id="tabId(tab.name)"
+          :aria-controls="panelId(tab.name)"
           :aria-selected="tab.name === activeName"
           role="tab"
           @click="setActive(tab.name)"

@@ -401,4 +401,56 @@ describe('VibeDatePicker $attrs passthrough', () => {
     expect(wrapper.find('input').classes()).toContain('custom')
     expect(wrapper.find('input').classes()).toContain('form-control')
   })
+
+  // #235 W2: every close returns focus to the input (the popover is v-if, so
+  // the focused day unmounts); disabled days never receive focus.
+  describe('focus return (#235)', () => {
+    const openPicker = async (props: Record<string, unknown> = {}) => {
+      const wrapper = mount(VibeDatePicker, {
+        props,
+        attachTo: document.body
+      })
+      await wrapper.find('input').trigger('click')
+      return wrapper
+    }
+
+    it('Escape returns focus to the input', async () => {
+      const wrapper = await openPicker()
+      await wrapper.find('.vibe-datepicker-popover').trigger('keydown', { key: 'Escape' })
+      await wrapper.vm.$nextTick()
+      await wrapper.vm.$nextTick()
+      expect(document.activeElement).toBe(wrapper.find('input').element)
+      wrapper.unmount()
+    })
+
+    it('selecting a date returns focus to the input', async () => {
+      const wrapper = await openPicker({ modelValue: '2026-10-01' })
+      const days = wrapper.findAll('.vibe-datepicker-day:not(:disabled)')
+      expect(days.length).toBeGreaterThan(0)
+      await days[10].trigger('click')
+      await wrapper.vm.$nextTick()
+      await wrapper.vm.$nextTick()
+      expect(document.activeElement).toBe(wrapper.find('input').element)
+      wrapper.unmount()
+    })
+
+    it('outside mousedown returns focus to the input', async () => {
+      const wrapper = await openPicker()
+      document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+      await wrapper.vm.$nextTick()
+      expect(document.activeElement).toBe(wrapper.find('input').element)
+      wrapper.unmount()
+    })
+
+    it('arrowing onto a disabled day does not move focus there', async () => {
+      const wrapper = await openPicker({ min: '2026-10-15' })
+      const pop = wrapper.find('.vibe-datepicker-popover')
+      await pop.trigger('keydown', { key: 'ArrowRight' })
+      await wrapper.vm.$nextTick()
+      const active = document.activeElement as HTMLElement | null
+      expect(active?.getAttribute('disabled')).toBeNull()
+      wrapper.unmount()
+    })
+  })
 })

@@ -104,4 +104,34 @@ describe('VibeDroppable', () => {
       wrapper.unmount()
     })
   })
+
+  // #235 W4: dragover must not promise a drop the guards will reject (OS
+  // files, wrong-group drags get no drop affordance).
+  describe('dragover affordance (#235)', () => {
+    it('does not preventDefault for a wrong-group drag', () => {
+      startDrag('other')
+      const wrapper = mount(VibeDroppable, { props: { group: 'mine' } })
+      const event = new DragEvent('dragover', { bubbles: true, cancelable: true })
+      wrapper.find('.vibe-droppable').element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+      wrapper.unmount()
+    })
+
+    it('does not preventDefault with no active drag (OS file)', () => {
+      const wrapper = mount(VibeDroppable)
+      const event = new DragEvent('dragover', { bubbles: true, cancelable: true })
+      wrapper.find('.vibe-droppable').element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+      wrapper.unmount()
+    })
+
+    it('still allows drop for an accepted active drag', () => {
+      startDrag('default')
+      const wrapper = mount(VibeDroppable)
+      const event = new DragEvent('dragover', { bubbles: true, cancelable: true })
+      wrapper.find('.vibe-droppable').element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(true)
+      wrapper.unmount()
+    })
+  })
 })

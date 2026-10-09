@@ -63,6 +63,10 @@ export function useFormValidation<T extends FormFieldValue = string>(initialValu
   }
 
   const reset = () => {
+    // Invalidate in-flight validate() calls: without the bump, a pending
+    // async rule resolves against the pre-reset generation and commits
+    // invalid state plus a message onto a pristine form.
+    validateSeq += 1
     value.value = initialValue
     validationState.value = null
     validationMessage.value = ''

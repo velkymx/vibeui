@@ -20,11 +20,13 @@ export type TooltipBindingValue = string | TooltipOptions | undefined
 const INSTANCE_KEY: unique symbol = Symbol('vibeTooltipInstance')
 const PENDING_KEY: unique symbol = Symbol('vibeTooltipPending')
 const OPTS_KEY: unique symbol = Symbol('vibeTooltipOpts')
+const GEN_KEY: unique symbol = Symbol('vibeTooltipGen')
 
 interface AugmentedElement extends HTMLElement {
   [INSTANCE_KEY]?: BootstrapTooltipInstance | null
   [PENDING_KEY]?: boolean
   [OPTS_KEY]?: TooltipOptions
+  [GEN_KEY]?: number
 }
 
 const isTouchDevice = (): boolean =>
@@ -55,8 +57,14 @@ const create = async (el: AugmentedElement, opts: TooltipOptions): Promise<void>
   // Save the opts we're creating with so we can detect updates that arrived during the async gap
   const latestOpts = opts
   el[OPTS_KEY] = opts
+  // Generation token: unmount (or a newer create) invalidates this run, so a
+  // late import resolution cannot construct on a detached or stale element.
+  const generation = (el[GEN_KEY] ?? 0) + 1
+  el[GEN_KEY] = generation
   try {
     const bootstrap = await import('bootstrap')
+    // Unmounted or superseded while importing: never construct here.
+    if (el[GEN_KEY] !== generation) return
     el[INSTANCE_KEY] = new bootstrap.Tooltip(el, {
       title: opts.title || '',
       placement: opts.placement || 'top',
@@ -64,8 +72,17 @@ const create = async (el: AugmentedElement, opts: TooltipOptions): Promise<void>
       html: false
     }) as unknown as BootstrapTooltipInstance
     // Apply any opts that arrived during the async gap (updated hook stores them in OPTS_KEY)
-    if (el[OPTS_KEY] !== latestOpts && el[INSTANCE_KEY]) {
-      el[INSTANCE_KEY].setContent({ '.tooltip-inner': el[OPTS_KEY]?.title ?? '' })
+    const current = el[OPTS_KEY]
+    if (current && current !== latestOpts && el[INSTANCE_KEY]) {
+      if (structuralChanged(latestOpts, current)) {
+        // Placement/trigger changed mid-flight: rebuild rather than patching
+        // title onto a structurally stale instance.
+        destroy(el)
+        el[PENDING_KEY] = false
+        void create(el, current)
+        return
+      }
+      el[INSTANCE_KEY].setContent({ '.tooltip-inner': current.title ?? '' })
     }
   } catch {
     // Bootstrap JS not loaded; data attributes already set on el for fallback styling.
@@ -75,16 +92,19 @@ const create = async (el: AugmentedElement, opts: TooltipOptions): Promise<void>
 
 const destroy = (el: AugmentedElement): void => {
   const instance = el[INSTANCE_KEY]
-  if (!instance) return
-  try {
-    instance.dispose()
-  } catch {
-    // Bootstrap can throw disposing a tooltip whose tip is mid-transition or whose
-    // element is already detached (e.g. a v-if / route change unmounting the host).
-    // Swallow it so teardown never surfaces an error that breaks the page.
-  } finally {
-    el[INSTANCE_KEY] = null
+  if (instance) {
+    try {
+      instance.dispose()
+    } catch {
+      // Bootstrap can throw disposing a tooltip whose tip is mid-transition or whose
+      // element is already detached (e.g. a v-if / route change unmounting the host).
+      // Swallow it so teardown never surfaces an error that breaks the page.
+    } finally {
+      el[INSTANCE_KEY] = null
+    }
   }
+  el[PENDING_KEY] = false
+  el[OPTS_KEY] = undefined
 }
 
 const applyDataAttrs = (el: AugmentedElement, opts: TooltipOptions): void => {
@@ -123,6 +143,9 @@ export const vTooltip: Directive<AugmentedElement, TooltipBindingValue> = {
     }
   },
   beforeUnmount(el) {
+    // Invalidate any in-flight create() first: without the bump, a pending
+    // import resolution would construct on this detached element after destroy.
+    el[GEN_KEY] = (el[GEN_KEY] ?? 0) + 1
     destroy(el)
   }
 }
