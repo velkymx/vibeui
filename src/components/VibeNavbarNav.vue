@@ -31,10 +31,16 @@ defineSlots<{
 const navbarNavRef = useTemplateRef<HTMLElement>('navbarNavRef')
 const bsDropdowns = new Map<HTMLElement, BootstrapDropdown>()
 
+// Guards the post-await section: unmount during the in-flight import must not
+// construct on a detached node or report a spurious component-error.
+let isUnmounted = false
+
 const initDropdowns = async () => {
-  if (!navbarNavRef.value) return
+  if (!navbarNavRef.value || isUnmounted) return
   try {
     const bootstrap = await import('bootstrap')
+    // Guard: component may have unmounted while the import was in flight.
+    if (!navbarNavRef.value || isUnmounted) return
     const Dropdown = bootstrap.Dropdown
     const toggleEls = navbarNavRef.value.querySelectorAll<HTMLElement>('[data-bs-toggle="dropdown"]')
     toggleEls.forEach(el => {
@@ -43,6 +49,8 @@ const initDropdowns = async () => {
       }
     })
   } catch (error) {
+    // A teardown race is not a load failure: stay silent when unmounted.
+    if (isUnmounted) return
     reportComponentError(emit, {
       message: 'Bootstrap JS not loaded. Dropdowns will use data attributes only.',
       componentName: 'VibeNavbarNav',
@@ -54,6 +62,7 @@ const initDropdowns = async () => {
 onMounted(initDropdowns)
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   bsDropdowns.forEach(d => d.dispose())
   bsDropdowns.clear()
 })
