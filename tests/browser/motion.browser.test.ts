@@ -6,7 +6,7 @@ import VibeCollapse from '../../src/components/VibeCollapse.vue'
 import VibeAccordion from '../../src/components/VibeAccordion.vue'
 import VibeCarousel from '../../src/components/VibeCarousel.vue'
 import VibeScrollspy from '../../src/components/VibeScrollspy.vue'
-import { waitForSelector } from './helpers'
+import { waitForSelector, waitForGone, onceEvent } from './helpers'
 
 describe('VibeCollapse', () => {
   test('toggling modelValue runs the real show transition to .collapse.show', async () => {
@@ -16,6 +16,9 @@ describe('VibeCollapse', () => {
     })
     await screen.rerender({ modelValue: true })
     await waitForSelector('.collapse.show')
+    // Hide leg: the hide transition must also run to completion.
+    await screen.rerender({ modelValue: false })
+    await waitForGone('.collapse.show')
   })
 })
 
@@ -49,11 +52,16 @@ describe('VibeCarousel', () => {
       }
     })
     await waitForSelector('.carousel-item.active')
+    // Attach BEFORE the click: slid.bs.carousel fires only after the full
+    // slide transition completes, so awaiting it proves the transition ran
+    // end to end, not just the end-state class flip.
+    const slid = onceEvent(await waitForSelector('.carousel'), 'slid.bs.carousel')
     // Native click (not userEvent) — captionless slides collapse to ~0 height so the
     // control fails Playwright's actionability check, but Bootstrap's delegated
     // data-bs-slide handler still fires on a real DOM click. We're testing the slide
     // logic, not click actionability.
     ;(await waitForSelector('.carousel-control-next') as HTMLElement).click()
+    await slid
     await vi.waitFor(() => {
       const items = document.querySelectorAll('.carousel-item')
       expect(items[1].classList.contains('active'), 'second slide should be active').toBe(true)

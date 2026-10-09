@@ -60,6 +60,10 @@ describe('SSR isolation (#231)', () => {
     expect(colorMode.value).toBe('dark')
   })
 
+  // Structural CONTRACT (not behavioral): the unit harness defines
+  // import.meta.env via Vite, so a behavioral import under plain Node cannot
+  // run here. This sweep pins the invariant (every env read goes through the
+  // guarded isDev) that keeps plain-Node ESM imports crash-free.
   it('has no bare import.meta.env reads outside useEventBus (plain-Node ESM import safety)', () => {
     const hits: string[] = []
     const walk = (dir: string): void => {
