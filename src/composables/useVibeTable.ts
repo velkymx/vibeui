@@ -15,6 +15,9 @@ import {
   rowSortingFeature,
   rowPaginationFeature,
   rowSelectionFeature,
+  columnPinningFeature,
+  columnSizingFeature,
+  columnResizingFeature,
   type ColumnDef,
   type Row,
   type SortFn
@@ -37,6 +40,18 @@ const readField = <T extends object>(row: T, key: string): unknown =>
 // direction-independent, so mapping null -> undefined in the accessor reproduces
 // the original null-last-both-directions behavior exactly.
 const normalizeForSort = (value: unknown): unknown => (value == null ? undefined : value)
+
+// Numeric column width in px for the engine size model (drives pin offsets
+// and resize state). Numbers pass through; px strings parse; anything else
+// falls back to the engine default.
+const numericWidth = (width: string | number | undefined): number | undefined => {
+  if (typeof width === 'number') return width
+  if (typeof width === 'string') {
+    const match = /^(-?\d+(?:\.\d+)?)px$/.exec(width.trim())
+    if (match) return Number(match[1])
+  }
+  return undefined
+}
 
 // Ascending comparator for defined values only (undefined is handled by
 // sortUndefined). Table reverses this for descending, so return ascending order
@@ -67,6 +82,9 @@ const features = tableFeatures({
   columnFilteringFeature,
   columnFacetingFeature,
   columnVisibilityFeature,
+  columnPinningFeature,
+  columnSizingFeature,
+  columnResizingFeature,
   globalFilteringFeature,
   rowSortingFeature,
   rowPaginationFeature,
@@ -107,6 +125,9 @@ export interface UseVibeTableParams<T extends object> {
   // #283 Phase 3a: per-column visibility ({ id: false } = hidden). Owned by the
   // engine's columnVisibility state; the component's v-model mirrors it.
   columnVisibility: Ref<Record<string, boolean>>
+  // #283 Phase 3b: per-column sizes in px ({ id: px }). Owned by the engine's
+  // columnSizing state; the component's v-model mirrors it.
+  columnSizing: Ref<Record<string, number>>
 }
 
 export interface VibeTableFilters {
@@ -119,6 +140,13 @@ export interface VibeTableFilters {
 export interface VibeTableVisibility {
   isVisible: (id: string) => boolean
   set: (id: string, visible: boolean) => void
+}
+
+export interface VibeTableLayout {
+  pinSide: (id: string) => 'start' | 'end' | false
+  pinOffset: (id: string) => number | undefined
+  size: (id: string) => number
+  resizeHandler: (id: string) => ((event: unknown) => void) | undefined
 }
 
 export interface VibeTableSelection {
@@ -144,6 +172,8 @@ export interface UseVibeTableResult<T extends object> {
   filters: VibeTableFilters
   // Column visibility surface (engine-owned), consumed by the chooser.
   visibility: VibeTableVisibility
+  // Pin/size/resize surface (engine-owned), consumed by header and cells.
+  layout: VibeTableLayout
 }
 
 export function useVibeTable<T extends object>(
@@ -174,7 +204,11 @@ export function useVibeTable<T extends object>(
         accessorFn: (row: T) => normalizeForSort(readField(row, column.key)),
         sortUndefined: 'last',
         sortFn,
-        enableColumnFilter: !!column.filter
+        enableColumnFilter: !!column.filter,
+        // #283 Phase 3b: numeric widths seed the engine size (drives pin
+        // offsets); resizing is opt-in per column.
+        size: numericWidth(column.width),
+        enableResizing: column.resizable === true
       }
       // Per-column filter functions (#283 Phase 2b).
       if (column.filter === 'text') {
@@ -243,7 +277,14 @@ export function useVibeTable<T extends object>(
       return acc
     }, {}),
     columnFilters: params.columnFilters.value,
-    columnVisibility: params.columnVisibility.value
+    columnVisibility: params.columnVisibility.value,
+    // #283 Phase 3b: pinning is config-driven (columns' pinned fields); no
+    // v-model, so no change handler needed.
+    columnPinning: {
+      start: params.columns().filter((c) => c.pinned === 'start').map((c) => c.key),
+      end: params.columns().filter((c) => c.pinned === 'end').map((c) => c.key)
+    },
+    columnSizing: params.columnSizing.value
   }))
 
   const selectionEnabled = computed(() => params.selectable() !== false)
@@ -304,6 +345,11 @@ export function useVibeTable<T extends object>(
       const prev = state.value.columnVisibility
       const next = typeof updater === 'function' ? updater(prev) : updater
       params.columnVisibility.value = next
+    },
+    onColumnSizingChange: (updater) => {
+      const prev = state.value.columnSizing
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      params.columnSizing.value = next
     }
   })
 
@@ -358,5 +404,18 @@ export function useVibeTable<T extends object>(
     }
   }
 
-  return { paginatedItems, filteredCount, selection, filters, visibility }
+  const layout: VibeTableLayout = {
+    pinSide: (id) => table.getColumn(id)?.getIsPinned() ?? false,
+    pinOffset: (id) => {
+      const column = table.getColumn(id)
+      const side = column?.getIsPinned()
+      if (!column || !side) return undefined
+      return column.getStart(side)
+    },
+    size: (id) => table.getColumn(id)?.getSize() ?? 0,
+    resizeHandler: (id) =>
+      table.getLeafHeaders().find((header) => header.column.id === id)?.getResizeHandler()
+  }
+
+  return { paginatedItems, filteredCount, selection, filters, visibility, layout }
 }
