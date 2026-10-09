@@ -107,13 +107,41 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
     }
   }
 
+  // #271: disposing a Bootstrap instance mid-transition nulls the props its
+  // queued emulated-duration callback still dereferences, throwing on the
+  // detached element. Skipping dispose entirely leaks: Bootstrap keeps
+  // instances in a strong element Map (dom/data.js) that only dispose() clears.
+  // So defer dispose until the transition settles (poll its own flag), with a
+  // capped fallback so a flag that never clears cannot leak forever.
+  const DISPOSE_POLL_MS = 25
+  const DISPOSE_MAX_WAIT_MS = 1000
+  let disposeTimer: ReturnType<typeof setInterval> | null = null
+
+  const isTransitioning = (inst: TInstance): boolean =>
+    (inst as unknown as { _isTransitioning?: unknown })._isTransitioning === true
+
   const destroy = (): void => {
     pendingReinit = false
     detach()
-    if (instance.value) {
-      options.disposeInstance(instance.value)
-      instance.value = null
+    const live = instance.value
+    if (!live) return
+    // Drop our reference immediately so get()/exposes reflect teardown.
+    instance.value = null
+    if (!isTransitioning(live)) {
+      options.disposeInstance(live)
+      return
     }
+    if (disposeTimer) return
+    let waited = 0
+    disposeTimer = setInterval(() => {
+      waited += DISPOSE_POLL_MS
+      if (isTransitioning(live) && waited < DISPOSE_MAX_WAIT_MS) return
+      if (disposeTimer) {
+        clearInterval(disposeTimer)
+        disposeTimer = null
+      }
+      options.disposeInstance(live)
+    }, DISPOSE_POLL_MS)
   }
 
   // Manual teardown for non-component owners (see manualTeardown): flags
