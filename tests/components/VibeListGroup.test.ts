@@ -259,4 +259,26 @@ describe('VibeListGroup', () => {
       expect(wrapper.find('li.list-group-item').exists()).toBe(true)
     })
   })
+
+  // #224: duplicate href/text must not produce duplicate keys (wrong DOM
+  // reuse). Keys stay unique via the index-suffixed helper.
+  describe('duplicate keys (#224)', () => {
+    it('renders distinct rows for duplicate hrefs with correct state', () => {
+      // Characterization: rows render correctly. Uniqueness itself is pinned
+      // by the dropdownItemKey unit test (this build emits no duplicate-key
+      // warnings, so a warn assertion would pass vacuously).
+      const wrapper = mount(VibeListGroup, {
+        props: {
+          items: [
+            { text: 'A', href: '#', active: true },
+            { text: 'B', href: '#' }
+          ]
+        }
+      })
+      const rows = wrapper.findAll('.list-group-item')
+      expect(rows).toHaveLength(2)
+      expect(rows[0].classes()).toContain('active')
+      expect(rows[1].classes()).not.toContain('active')
+    })
+  })
 })

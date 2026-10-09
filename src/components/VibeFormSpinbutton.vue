@@ -186,9 +186,13 @@ const increment = () => {
     newValue = props.wrap ? props.min ?? 0 : props.max
   }
   internalValue.value = newValue
+  // A stepper click is an explicit commit gesture (like change on a text
+  // input): the value is final on press, so the model commits per click even
+  // under .lazy, which defers typing commits only. Validation still follows
+  // validateOn like every other path in this file.
   modelValue.value = newValue
   emit('increment', newValue)
-  emit('validate')
+  if (props.validateOn === 'change') emit('validate')
 }
 
 const decrement = () => {
@@ -198,9 +202,10 @@ const decrement = () => {
     newValue = props.wrap ? props.max ?? 0 : props.min
   }
   internalValue.value = newValue
+  // See increment: explicit commit gesture, validation follows validateOn.
   modelValue.value = newValue
   emit('decrement', newValue)
-  emit('validate')
+  if (props.validateOn === 'change') emit('validate')
 }
 </script>
 

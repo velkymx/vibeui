@@ -35,7 +35,7 @@ Numeric input flanked by increment and decrement buttons, with clamping, steppin
 | `change` | `Event` | Native change event. |
 | `blur` | `FocusEvent` | Emitted on blur. |
 | `focus` | `FocusEvent` | Emitted on focus. |
-| `validate` | — | Emitted on each button press and on the `validateOn` typing trigger. |
+| `validate` | — | Emitted on stepper clicks only when `validateOn` is `'change'`, plus on the `validateOn` typing trigger. |
 
 ## Slots
 
@@ -85,7 +85,7 @@ const onIncrement = (value: number) => console.log('new value', value)
 - **Clamping:** typed values are clamped to `min`/`max` on `change` and `blur`; an empty field is treated as `0`.
 - **`increment` / `decrement` payload:** both events carry the resulting numeric value, so you do not need to read `modelValue` separately.
 - **Number model only:** when using a validation composable, bind to `.value` (a dev-mode warning fires if an object is passed).
-- **v-model modifiers:** `.lazy` defers the model commit from `input` to `change` (the stepper display stays live); `.number`/`.trim` are meaningless here, the model is already numeric.
+- **v-model modifiers:** `.lazy` defers the model commit from `input` to `change` (the stepper display stays live); `.number`/`.trim` are meaningless here, the model is already numeric. Stepper clicks are explicit commit gestures and update the model immediately even under `.lazy` (validation still gated by `validateOn`).
 
 ## Bootstrap CSS Classes
 
