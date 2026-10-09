@@ -217,15 +217,23 @@ describe('VibeSkeleton', () => {
   })
 
   // #228: the text loop must bind stable computed models, not fresh call
-  // results plus object literals per line per render. Structural contract:
-  // the template loop contains no function calls.
+  // results plus object literals per line per render. Structural CONTRACT
+  // (not behavioral): memoization is performance-only by design, the output
+  // is byte-identical either way, so no DOM assert can observe it. Counting
+  // computed evaluations would need src instrumentation, and timing asserts
+  // would be flaky, so the source grep pins the contract while the
+  // output-equality test below pins the rendered behavior.
   describe('text loop memoization (#228)', () => {
     const textLoopOf = (): string => {
       const src = readFileSync('src/components/VibeSkeleton.vue', 'utf8')
       const start = src.indexOf('<template>')
       const end = src.indexOf('</template>')
       const tpl = src.slice(start, end)
-      return tpl.slice(tpl.indexOf('v-for="i in lineCount"'))
+      // Guard the anchor: a rename of the loop must fail loudly here instead
+      // of silently slicing from -1 (which asserts against one character).
+      const anchor = tpl.indexOf('v-for="(line, index) in lineModels"')
+      expect(anchor).toBeGreaterThan(-1)
+      return tpl.slice(anchor)
     }
 
     it('binds precomputed line models instead of per-line calls', () => {

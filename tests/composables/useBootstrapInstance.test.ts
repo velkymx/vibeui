@@ -428,5 +428,155 @@ describe('useBootstrapInstance', () => {
       }
       wrapper.unmount()
     })
+
+    it('reinit waits out the transition, then replaces the instance', async () => {
+      const { wrapper, api, created } = setupTransitioning()
+      await api.init()
+      await settle()
+      const old = created[0]
+      old._isTransitioning = true
+
+      vi.useFakeTimers()
+      try {
+        const second = api.init()
+        // The reinit suspends on the settle wait: nothing created or disposed
+        // synchronously (no setTimeout-based settle() under fake timers here;
+        // the async preamble runs sync up to the first await).
+        await Promise.resolve()
+        expect(created).toHaveLength(1)
+        expect(old.dispose).not.toHaveBeenCalled()
+
+        // Transition settles: old disposed once, then the new instance lands.
+        old._isTransitioning = false
+        vi.advanceTimersByTime(50)
+        await second
+        expect(old.dispose).toHaveBeenCalledTimes(1)
+        expect(created).toHaveLength(2)
+        expect(api.get()).toBe(created[1])
+      } finally {
+        vi.useRealTimers()
+      }
+      wrapper.unmount()
+    })
+
+    // #271 follow-up: most Bootstrap components queue transition callbacks
+    // with NO flag (Toast/Offcanvas/Tooltip/Tab set nothing; Carousel sets
+    // _isSliding, not _isTransitioning). The composable tracks transition
+    // event pairs from its own listeners instead.
+    describe('flagless transition tracking', () => {
+      const setupTracked = (events: Record<string, 'show' | 'shown'>) => {
+        const el = document.createElement('div')
+        const created: FakeInstance[] = []
+        const seen: string[] = []
+        let api!: ReturnType<typeof useBootstrapInstance<FakeInstance>>
+        const Comp = defineComponent({
+          setup() {
+            const listeners: Record<string, EventListener> = {}
+            for (const [type, mark] of Object.entries(events)) {
+              listeners[type] = (() => {
+                seen.push(mark)
+              }) as EventListener
+            }
+            api = useBootstrapInstance<FakeInstance>({
+              resolveElement: () => el,
+              create: (_el: HTMLElement) => {
+                const inst: FakeInstance = { el: _el, dispose: vi.fn() }
+                created.push(inst)
+                return inst
+              },
+              disposeInstance: (inst) => inst.dispose(),
+              events: listeners,
+              componentName: 'Tracked',
+              onError: vi.fn()
+            })
+            return () => h('div')
+          }
+        })
+        const wrapper = mount(Comp)
+        return { wrapper, api, created, el, seen }
+      }
+
+      it('defers destroy between show and shown with no flag at all', async () => {
+        const { wrapper, api, created, el } = setupTracked({
+          'show.bs.widget': 'show',
+          'shown.bs.widget': 'shown'
+        })
+        await api.init()
+        await settle()
+
+        el.dispatchEvent(new Event('show.bs.widget'))
+        vi.useFakeTimers()
+        try {
+          api.destroy()
+          expect(created[0].dispose).not.toHaveBeenCalled()
+          el.dispatchEvent(new Event('shown.bs.widget'))
+          vi.advanceTimersByTime(50)
+          expect(created[0].dispose).toHaveBeenCalledTimes(1)
+        } finally {
+          vi.useRealTimers()
+        }
+        wrapper.unmount()
+      })
+
+      it('tracks slide/slid pairs the same way', async () => {
+        const { wrapper, api, created, el } = setupTracked({
+          'slide.bs.carousel': 'show',
+          'slid.bs.carousel': 'shown'
+        })
+        await api.init()
+        await settle()
+
+        el.dispatchEvent(new Event('slide.bs.carousel'))
+        vi.useFakeTimers()
+        try {
+          api.destroy()
+          expect(created[0].dispose).not.toHaveBeenCalled()
+          el.dispatchEvent(new Event('slid.bs.carousel'))
+          vi.advanceTimersByTime(50)
+          expect(created[0].dispose).toHaveBeenCalledTimes(1)
+        } finally {
+          vi.useRealTimers()
+        }
+        wrapper.unmount()
+      })
+
+      it('defers on the carousel _isSliding flag directly', async () => {
+        const el = document.createElement('div')
+        const created: Array<FakeInstance & { _isSliding?: boolean }> = []
+        let api!: ReturnType<typeof useBootstrapInstance<FakeInstance>>
+        const Comp = defineComponent({
+          setup() {
+            api = useBootstrapInstance<FakeInstance>({
+              resolveElement: () => el,
+              create: (_el: HTMLElement) => {
+                const inst = { el: _el, dispose: vi.fn() }
+                created.push(inst)
+                return inst
+              },
+              disposeInstance: (inst) => inst.dispose(),
+              componentName: 'Sliding',
+              onError: vi.fn()
+            })
+            return () => h('div')
+          }
+        })
+        const wrapper = mount(Comp)
+        await api.init()
+        await settle()
+        ;(created[0] as { _isSliding?: boolean })._isSliding = true
+
+        vi.useFakeTimers()
+        try {
+          api.destroy()
+          expect(created[0].dispose).not.toHaveBeenCalled()
+          ;(created[0] as { _isSliding?: boolean })._isSliding = false
+          vi.advanceTimersByTime(50)
+          expect(created[0].dispose).toHaveBeenCalledTimes(1)
+        } finally {
+          vi.useRealTimers()
+        }
+        wrapper.unmount()
+      })
+    })
   })
 })

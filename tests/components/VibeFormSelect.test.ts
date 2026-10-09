@@ -614,7 +614,9 @@ describe('VibeFormSelect updates on change (issue #73)', () => {
   })
 
   // #237 P1: multiple plus placeholder maps options 1:1 (the placeholder
-  // option is not rendered under multiple, so no offset applies).
+  // option is not rendered under multiple, so no offset applies). GUARD, not
+  // a regression test: the reported mis-offset did not reproduce, so these
+  // pin the correct mapping against future placeholder-handling changes.
   describe('multiple plus placeholder (#237)', () => {
     const ab = [
       { value: 'a', text: 'A' },

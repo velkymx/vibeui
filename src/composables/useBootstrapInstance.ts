@@ -51,14 +51,30 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
   let initInFlight = false
   let pendingReinit = false
   let isUnmounted = false
+  // #271 follow-up: Bootstrap sets _isTransitioning on Modal/Collapse only
+  // (Carousel sets _isSliding; Toast/Offcanvas/Tooltip/Tab set nothing) while
+  // all of them queue transition callbacks. So the composable also tracks
+  // in-flight transitions from the event pairs it already listens to.
+  let transitionPending = false
+  const attachedWrappers = new Map<string, EventListener>()
+
+  const markTransitionEvent = (type: string): void => {
+    const local = type.split('.')[0]
+    if (local === 'show' || local === 'hide' || local === 'slide') {
+      transitionPending = true
+    } else if (local === 'shown' || local === 'hidden' || local === 'slid') {
+      transitionPending = false
+    }
+  }
 
   const detach = (): void => {
     if (attachedEl && options.events) {
       for (const [type, handler] of Object.entries(options.events)) {
-        attachedEl.removeEventListener(type, handler)
+        attachedEl.removeEventListener(type, attachedWrappers.get(type) ?? handler)
       }
     }
     attachedEl = null
+    attachedWrappers.clear()
   }
 
   const init = async (): Promise<TInstance | null> => {
@@ -70,10 +86,19 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
     }
     initInFlight = true
     try {
-      detach()
       if (instance.value) {
-        options.disposeInstance(instance.value)
+        // A reinit must replace, not duplicate, the registry entry: wait out
+        // any in-flight transition (listeners stay attached so the completion
+        // event clears the pending mark), then detach and dispose
+        // synchronously BEFORE the new instance is created (a deferred
+        // dispose would clear the new entry).
+        const live = instance.value
         instance.value = null
+        await settleLive(live)
+        detach()
+        options.disposeInstance(live)
+      } else {
+        detach()
       }
       const bootstrap = await loadBootstrap()
       const target = options.resolveElement()
@@ -81,9 +106,15 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
       if (!target || isUnmounted) return null
       instance.value = options.create(target, bootstrap)
       attachedEl = target
+      transitionPending = false
       if (options.events) {
         for (const [type, handler] of Object.entries(options.events)) {
-          attachedEl.addEventListener(type, handler)
+          const wrapped: EventListener = (event) => {
+            markTransitionEvent(type)
+            handler(event)
+          }
+          attachedWrappers.set(type, wrapped)
+          attachedEl.addEventListener(type, wrapped)
         }
       }
       return instance.value
@@ -117,29 +148,59 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
   const DISPOSE_MAX_WAIT_MS = 1000
   let disposeTimer: ReturnType<typeof setInterval> | null = null
 
-  const isTransitioning = (inst: TInstance): boolean =>
-    (inst as unknown as { _isTransitioning?: unknown })._isTransitioning === true
+  const isTransitioning = (inst: TInstance): boolean => {
+    const flags = inst as unknown as { _isTransitioning?: unknown; _isSliding?: unknown }
+    return flags._isTransitioning === true || flags._isSliding === true
+  }
+
+  // A transition is in flight when Bootstrap says so (Modal/Collapse flag,
+  // Carousel slide flag) or when our own listeners saw an opening event
+  // without its completion (covers the flagless Toast/Offcanvas/Tooltip/Tab).
+  const transitionInFlight = (inst: TInstance): boolean =>
+    isTransitioning(inst) || transitionPending
+
+  // Promise version of the settle wait for paths that must dispose
+  // synchronously afterwards (reinit replaces the registry entry, so the old
+  // dispose must land before the new instance is created).
+  const settleLive = (live: TInstance): Promise<void> => {
+    if (!transitionInFlight(live)) return Promise.resolve()
+    return new Promise((resolve) => {
+      let waited = 0
+      const timer = setInterval(() => {
+        waited += DISPOSE_POLL_MS
+        if (transitionInFlight(live) && waited < DISPOSE_MAX_WAIT_MS) return
+        clearInterval(timer)
+        resolve()
+      }, DISPOSE_POLL_MS)
+    })
+  }
 
   const destroy = (): void => {
     pendingReinit = false
-    detach()
     const live = instance.value
-    if (!live) return
+    if (!live) {
+      detach()
+      return
+    }
     // Drop our reference immediately so get()/exposes reflect teardown.
     instance.value = null
-    if (!isTransitioning(live)) {
+    if (!transitionInFlight(live)) {
+      detach()
       options.disposeInstance(live)
       return
     }
+    // Deferred: keep our listeners attached until dispose lands, so the
+    // completion event clears transitionPending promptly. Detach then.
     if (disposeTimer) return
     let waited = 0
     disposeTimer = setInterval(() => {
       waited += DISPOSE_POLL_MS
-      if (isTransitioning(live) && waited < DISPOSE_MAX_WAIT_MS) return
+      if (transitionInFlight(live) && waited < DISPOSE_MAX_WAIT_MS) return
       if (disposeTimer) {
         clearInterval(disposeTimer)
         disposeTimer = null
       }
+      detach()
       options.disposeInstance(live)
     }, DISPOSE_POLL_MS)
   }

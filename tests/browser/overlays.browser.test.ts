@@ -30,6 +30,11 @@ describe('VibeModal', () => {
     // Clicking focuses the trigger; Bootstrap captures it as the pre-open activeElement.
     await userEvent.click(screen.getByRole('button', { name: 'Open' }))
     await shown
+    // The shown event fires only after the fade transition completes: the
+    // dialog plus the backdrop must both carry .show (proves the open
+    // transition ran, not just the v-model flip).
+    await waitForSelector('.modal.show')
+    await waitForSelector('.modal-backdrop.show')
     await userEvent.keyboard('{Escape}')
     await waitForGone('.modal.show')
     await waitForGone('.modal-backdrop')
