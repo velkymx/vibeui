@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useTemplateRef, computed, onMounted, onBeforeUnmount, watch, nextTick, ref } from 'vue'
 import type { AccordionItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { isDev } from '../composables/useEventBus'
@@ -84,9 +84,23 @@ interface CollapseHandlers {
 }
 const collapseHandlers = new Map<string, CollapseHandlers>()
 
-const onShow = (id: string) => emit('show', id)
+// Live expanded state per entry id. Seeded from the prop so SSR and pre-JS
+// paint agree with the announcement; flipped by the Bootstrap show/hide
+// events after init (reactive Set membership is tracked in render).
+const expandedIds = ref(new Set<string>())
+for (const entry of resolvedItems.value) {
+  if (entry.item.show) expandedIds.value.add(entry.id)
+}
+
+const onShow = (id: string) => {
+  expandedIds.value.add(id)
+  emit('show', id)
+}
 const onShown = (id: string) => emit('shown', id)
-const onHide = (id: string) => emit('hide', id)
+const onHide = (id: string) => {
+  expandedIds.value.delete(id)
+  emit('hide', id)
+}
 const onHidden = (id: string) => emit('hidden', id)
 
 const disposeItem = (id: string) => {
@@ -239,7 +253,7 @@ defineExpose({ refresh: initItems, _unsafe_bsInstances: bsCollapses })
           type="button"
           data-bs-toggle="collapse"
           :data-bs-target="`#${entry.id}`"
-          :aria-expanded="entry.item.show"
+          :aria-expanded="expandedIds.has(entry.id)"
           :aria-controls="entry.id"
           @click="handleItemClick(entry.item, index)"
         >
@@ -250,7 +264,7 @@ defineExpose({ refresh: initItems, _unsafe_bsInstances: bsCollapses })
       </h2>
       <div
         :id="entry.id"
-        :class="['accordion-collapse', 'collapse']"
+        :class="['accordion-collapse', 'collapse', { show: expandedIds.has(entry.id) }]"
         :data-bs-parent="alwaysOpen ? undefined : `#${computedId}`"
       >
         <div class="accordion-body">

@@ -43,10 +43,11 @@ interface ToastShowOptions {
   placement?: ToastPlacement   // 'top-end' (default) etc.
   autohide?: boolean      // default true
   delay?: number          // ms, default 5000
+  max?: number            // retained cap, oldest evicted first, default 10
 }
 ```
 
-Each call returns the resolved `ToastSpec`, including the assigned `id` if you didn't provide one. Use it later to `dismiss(id)`.
+Each call returns the resolved `ToastSpec`, including the assigned `id` if you didn't provide one. Use it later to `dismiss(id)`. The store never retains more than `max` toasts (default 10): beyond the cap the oldest are evicted first, so a `show()` loop cannot grow the store forever.
 
 ## Examples
 

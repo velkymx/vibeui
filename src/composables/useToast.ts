@@ -23,6 +23,8 @@ export interface ToastShowOptions {
   placement?: ToastPlacement
   autohide?: boolean
   delay?: number
+  /** Maximum retained toasts; oldest evicted first. Defaults to 10. */
+  max?: number
 }
 
 interface ToastStore {
@@ -32,6 +34,11 @@ interface ToastStore {
 const store = reactive<ToastStore>({ toasts: [] })
 const toastMap = new Map<string, ToastSpec>()
 let counter = 0
+
+// Unbounded growth guard: each toast renders a component plus a Bootstrap
+// instance, so an accidental show() loop must not grow the store forever.
+// Oldest-first eviction keeps the newest (most relevant) toasts visible.
+const DEFAULT_MAX_TOASTS = 10
 
 // The store is a module-level singleton. In SSR (one module instance shared across all
 // requests) that leaks toasts between users unless reset per request. Warn in DEV-SSR so
@@ -73,6 +80,11 @@ const push = (body: string, options: ToastShowOptions): ToastSpec => {
   }
   toastMap.set(id, spec)
   store.toasts.push(spec)
+  const max = options.max ?? DEFAULT_MAX_TOASTS
+  while (store.toasts.length > max) {
+    const evicted = store.toasts.shift()
+    if (evicted) toastMap.delete(evicted.id)
+  }
   emitEvent('notification:shown', { id })
   return spec
 }
