@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { safeLength, safeColor, safeCssObject, SAFE_COLUMN_STYLE_PROPS } from '../../src/utils/safeCss'
+import { safeLength, safeColor, safeCssObject, safeCssUrl, SAFE_COLUMN_STYLE_PROPS } from '../../src/utils/safeCss'
 
 describe('safeLength', () => {
   it('allows auto', () => expect(safeLength('auto')).toBe('auto'))
@@ -72,5 +72,39 @@ describe('safeCssObject', () => {
     expect(SAFE_COLUMN_STYLE_PROPS.has('backgroundImage')).toBe(false)
     expect(SAFE_COLUMN_STYLE_PROPS.has('animation')).toBe(false)
     expect(SAFE_COLUMN_STYLE_PROPS.has('content')).toBe(false)
+  })
+
+  // #238: url()-sink validator (stricter than the href prefix check: no
+  // quotes, parens, whitespace, backslash, or backtick).
+  describe('safeCssUrl', () => {
+    it.each([
+      ['https://x.com/a")', 'quote'],
+      ['https://x.com/a(1', 'open paren'],
+      ['https://x.com/a)', 'close paren'],
+      ['https://x.com/a b.jpg', 'whitespace'],
+      ['https://x.com/a`b', 'backtick'],
+      ['https://x.com/a\\b', 'backslash'],
+      ['https://x.com/a.jpg), url(https://evil.example/t', 'layer injection'],
+      ['javascript:alert(1)', 'scheme'],
+      ['data:image/png;base64,AA', 'data url'],
+      ['', 'empty']
+    ])('rejects %s', (value, _label) => {
+      expect(safeCssUrl(value)).toBeUndefined()
+    })
+
+    it.each([
+      ['https://cdn.example/x/a.jpg'],
+      ['http://cdn.example/x/a.jpg'],
+      ['/img/hero.jpg'],
+      ['  /img/hero.jpg  ']
+    ])('accepts %s', (value) => {
+      expect(safeCssUrl(value)).toBe(value.trim())
+    })
+
+    it('rejects non-strings', () => {
+      expect(safeCssUrl(undefined)).toBeUndefined()
+      expect(safeCssUrl(null as unknown as string)).toBeUndefined()
+      expect(safeCssUrl(42 as unknown as string)).toBeUndefined()
+    })
   })
 })
