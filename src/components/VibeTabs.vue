@@ -74,7 +74,10 @@ const onTabKeydown = (event: KeyboardEvent, name: string): void => {
   event.preventDefault()
   setActive(next)
   // Roving tabindex moves focus with activation (automatic activation, like click).
-  const target = order.indexOf(next)
+  // Index into the FULL strip: `order` skips disabled tabs, but the DOM
+  // querySelectorAll does not, so an order index would land on the wrong
+  // button whenever a disabled tab precedes the destination.
+  const target = registry.findIndex(t => t.name === next)
   nextTick(() => {
     const el = tablistRef.value?.querySelectorAll('[role="tab"]')?.[target] as HTMLElement | undefined
     el?.focus()

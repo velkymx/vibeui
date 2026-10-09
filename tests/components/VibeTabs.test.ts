@@ -430,6 +430,7 @@ describe('VibeTabs lazy + v-model initial render (issue #67)', () => {
       await nextTick()
       expect(tabs()[2].attributes('tabindex')).toBe('0')
       expect(tabs()[2].text()).toBe('Gamma')
+      expect(document.activeElement).toBe(tabs()[2].element)
       wrapper.unmount()
     })
   })
