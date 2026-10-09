@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, computed, watch, ref, inject, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, watch, ref, inject, nextTick, onMounted } from 'vue'
 import type { Tag, ComponentError } from '../types'
 import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 import { useId } from '../composables/useId'
@@ -38,13 +39,8 @@ const navbar = inject(NAVBAR_COLLAPSE_KEY, null)
 const computedId = computed(() => props.id || _generatedId)
 
 const collapseRef = useTemplateRef<HTMLElement>('collapseRef')
-const bsCollapse = shallowRef<BootstrapCollapse | null>(null)
 const isVisible = ref(false)
 const bsInitialized = ref(false)
-// Explicit unmount flag — set in onBeforeUnmount so the async initCollapse
-// continuation can bail out even if Vue hasn't yet nulled the template ref
-// (refs are cleared after onBeforeUnmount runs, not before).
-let isUnmounted = false
 // Stores the last desired state requested before Bootstrap finishes initializing.
 // Only the last state is preserved (last-wins); intermediate open/close calls
 // before bsInitialized are intentionally discarded. Applied once bsInitialized = true.
@@ -70,72 +66,54 @@ const onHidden = () => {
   emit('update:modelValue', false)
 }
 
-onMounted(async () => {
+// Instance lifecycle owned by the shared composable (#247): lazy async
+// construction, per-instance collapse listeners, dispose plus nulling, and
+// unmount-race guards. Initial-state resolution plus the pre-boot fallback
+// handoff stay here.
+const { init: initInstance, instance: bsCollapse } = useBootstrapInstance<BootstrapCollapse>({
+  // Template ref read at call time: it may be null during teardown, which the
+  // composable treats as a no-op instead of constructing on a detached node.
+  resolveElement: () => collapseRef.value,
+  create: (el, bootstrap) =>
+    new bootstrap.Collapse(el, {
+      toggle: false
+    }) as unknown as BootstrapCollapse,
+  disposeInstance: (collapse) => collapse.dispose(),
+  events: {
+    'show.bs.collapse': onShow as EventListener,
+    'shown.bs.collapse': onShown as EventListener,
+    'hide.bs.collapse': onHide as EventListener,
+    'hidden.bs.collapse': onHidden as EventListener
+  },
+  componentName: 'VibeCollapse',
+  onError: (error) => reportComponentError(emit, error)
+})
+
+const initCollapse = async (): Promise<void> => {
+  if (!collapseRef.value) return
+  await initInstance()
   if (!collapseRef.value) return
 
-  try {
-    const bootstrap = await import('bootstrap')
-    const Collapse = bootstrap.Collapse
+  // Determine desired initial state (navbar state takes precedence).
+  // Also honour any state change queued by the watcher during the async gap.
+  const initialState = pendingState !== null
+    ? pendingState
+    : (navbar && computedId.value in navbar.collapseStates
+        ? navbar.collapseStates[computedId.value]
+        : props.modelValue)
+  pendingState = null
 
-    // Guard: component may have unmounted while the import was in flight.
-    // isUnmounted is set synchronously in onBeforeUnmount — a more reliable
-    // check than collapseRef.value, which Vue nulls *after* onBeforeUnmount.
-    if (isUnmounted || !collapseRef.value) return
+  // Signal pre-boot fallback to stop; let Vue flush before calling show()
+  // so Bootstrap doesn't see our fallback 'show' class and short-circuit.
+  bsInitialized.value = true
+  await nextTick()
 
-    bsCollapse.value = new Collapse(collapseRef.value, {
-      toggle: false
-    }) as BootstrapCollapse
-
-    collapseRef.value.addEventListener('show.bs.collapse', onShow)
-    collapseRef.value.addEventListener('shown.bs.collapse', onShown)
-    collapseRef.value.addEventListener('hide.bs.collapse', onHide)
-    collapseRef.value.addEventListener('hidden.bs.collapse', onHidden)
-
-    // Determine desired initial state (navbar state takes precedence).
-    // Also honour any state change queued by the watcher during the async gap.
-    const initialState = pendingState !== null
-      ? pendingState
-      : (navbar && computedId.value in navbar.collapseStates
-          ? navbar.collapseStates[computedId.value]
-          : props.modelValue)
-    pendingState = null
-
-    // Signal pre-boot fallback to stop; let Vue flush before calling show()
-    // so Bootstrap doesn't see our fallback 'show' class and short-circuit.
-    bsInitialized.value = true
-    await nextTick()
-
-    // Guard: component may have unmounted during nextTick
-    if (!bsCollapse.value) return
-
-    if (initialState) {
-      bsCollapse.value.show()
-    }
-  } catch (error) {
-    bsInitialized.value = true
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Collapse will use CSS classes only.',
-      componentName: 'VibeCollapse',
-      originalError: error
-    })
+  if (initialState) {
+    bsCollapse.value?.show()
   }
-})
+}
 
-onBeforeUnmount(() => {
-  isUnmounted = true
-
-  if (collapseRef.value) {
-    collapseRef.value.removeEventListener('show.bs.collapse', onShow)
-    collapseRef.value.removeEventListener('shown.bs.collapse', onShown)
-    collapseRef.value.removeEventListener('hide.bs.collapse', onHide)
-    collapseRef.value.removeEventListener('hidden.bs.collapse', onHidden)
-  }
-
-  if (bsCollapse.value) {
-    bsCollapse.value.dispose()
-    bsCollapse.value = null
-  }
-})
+onMounted(initCollapse)
 
 // Combined state from navbar or local modelValue
 const targetState = computed(() => {
