@@ -1,6 +1,21 @@
 import { onBeforeUnmount, shallowRef, type ShallowRef } from 'vue'
 import type { ComponentError } from '../types'
 
+// One shared module load: per-owner imports would serialize multi-instance
+// init (accordion panels, nav toggles) across separate load windows, staggering
+// construction and leaking across test isolation boundaries. A rejection resets
+// the cache so a later retry re-imports instead of replaying the failure.
+let bootstrapPromise: Promise<typeof import('bootstrap')> | null = null
+const loadBootstrap = (): Promise<typeof import('bootstrap')> => {
+  if (!bootstrapPromise) {
+    bootstrapPromise = import('bootstrap').catch((error: unknown) => {
+      bootstrapPromise = null
+      throw error
+    })
+  }
+  return bootstrapPromise
+}
+
 export interface UseBootstrapInstanceOptions<TInstance> {
   /** Resolves the target element at call time (template refs go null during teardown). */
   resolveElement: () => HTMLElement | null
@@ -60,7 +75,7 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
         options.disposeInstance(instance.value)
         instance.value = null
       }
-      const bootstrap = await import('bootstrap')
+      const bootstrap = await loadBootstrap()
       const target = options.resolveElement()
       // Guard: unmounted (or element swapped) while the import was in flight.
       if (!target || isUnmounted) return null
