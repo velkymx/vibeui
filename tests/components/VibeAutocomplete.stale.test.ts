@@ -103,4 +103,21 @@ describe('VibeAutocomplete stale handling (#150)', () => {
     // error or a stray emit.
     expect(wrapper.emitted('select')).toBeUndefined()
   })
+
+  // #226: a rejecting source emits error (silent close is indistinguishable
+  // from no matches, so the consumer needs the signal for retry UI).
+  it('emits error when the source rejects', async () => {
+    const failing = (_query: string): Promise<string[]> =>
+      Promise.reject(new Error('backend 500'))
+    const { wrapper, input } = mountAC(failing)
+
+    await input.setValue('abc')
+    await flush(10)
+
+    const emitted = wrapper.emitted('error')
+    expect(emitted).toBeDefined()
+    expect((emitted as unknown[][])[0][0]).toBeInstanceOf(Error)
+    expect(wrapper.findAll('.vibe-autocomplete-item')).toHaveLength(0)
+    wrapper.unmount()
+  })
 })

@@ -43,6 +43,7 @@ const props = defineProps({
   // Display
   showEmpty: { type: Boolean, default: true },
   emptyText: { type: String, default: 'No data available' },
+  loading: { type: Boolean, default: false },
   showPerPage: { type: Boolean, default: true },
   showInfo: { type: Boolean, default: true },
   infoText: { type: String, default: 'Showing {start} to {end} of {total} entries' },
@@ -455,7 +456,13 @@ const cellValueMap = computed(() => {
               </slot>
             </td>
           </tr>
-          <tr v-if="paginatedItems.length === 0 && showEmpty">
+          <tr v-if="props.loading">
+            <td :colspan="columns?.length || 1" class="text-center text-body-secondary">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+              Loading...
+            </td>
+          </tr>
+          <tr v-else-if="paginatedItems.length === 0 && showEmpty">
             <td :colspan="columns?.length || 1" class="text-center">
               {{ emptyText }}
             </td>
