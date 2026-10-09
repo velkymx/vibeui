@@ -145,6 +145,10 @@ export interface DataTableColumn<T extends object = Record<string, unknown>> {
   headerClass?: string
   thStyle?: Record<string, string>
   tdStyle?: Record<string, string>
+  // #283 Phase 2b: per-column filter control rendered in the filter row.
+  // 'text' (displayed-text contains), 'select' (equals a faceted unique value),
+  // 'range' (numeric min/max). Omitted = no filter input for this column.
+  filter?: 'text' | 'select' | 'range'
 }
 
 export interface DataTableCellSlotProps<T extends object = Record<string, unknown>> {
