@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useBootstrapInstanceMap } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, onMounted, watch, nextTick } from 'vue'
 import type { NavItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 import { linkBindings } from '../utils/linkBindings'
@@ -40,12 +41,6 @@ defineSlots<{
 }>()
 
 const navRef = useTemplateRef<HTMLElement>('navRef')
-const bsTabs = new Map<HTMLElement, BootstrapTab>()
-
-// Guards concurrent initTabs calls and post-unmount Bootstrap construction.
-let initInFlight = false
-let reinitGuard = false
-let isUnmounted = false
 
 const navClass = computed(() => {
   const classes = ['nav']
@@ -63,75 +58,41 @@ const onShown = (event: Event) => emit('shown', event)
 const onHide = (event: Event) => emit('hide', event)
 const onHidden = (event: Event) => emit('hidden', event)
 
-const initTabs = async () => {
-  if (!navRef.value || initInFlight) return
-  initInFlight = true
+// One Bootstrap Tab per trigger element, owned by the shared keyed map (#247):
+// lazy construction, per-element tab listeners, dispose-all on teardown and
+// on items change, unmount-race guards. The escape-hatch expose reads the
+// live instances map.
+const tabOwners = useBootstrapInstanceMap<BootstrapTab>({
+  create: (el, bootstrap) => new bootstrap.Tab(el) as unknown as BootstrapTab,
+  disposeInstance: (tab) => tab.dispose(),
+  events: {
+    'show.bs.tab': onShow as EventListener,
+    'shown.bs.tab': onShown as EventListener,
+    'hide.bs.tab': onHide as EventListener,
+    'hidden.bs.tab': onHidden as EventListener
+  },
+  componentName: 'VibeNav',
+  onError: (error) => reportComponentError(emit, error)
+})
 
-  try {
-    const bootstrap = await import('bootstrap')
-    const Tab = bootstrap.Tab
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!navRef.value || isUnmounted) return
-
-    const tabTriggerEls = navRef.value.querySelectorAll('[data-bs-toggle="tab"], [data-bs-toggle="pill"]')
-    tabTriggerEls.forEach((el) => {
-      const htmlEl = el as HTMLElement
-      // Only initialize if not already tracked
-      if (!bsTabs.has(htmlEl)) {
-        const bsTab = new Tab(htmlEl) as BootstrapTab
-        bsTabs.set(htmlEl, bsTab)
-
-        htmlEl.addEventListener('show.bs.tab', onShow)
-        htmlEl.addEventListener('shown.bs.tab', onShown)
-        htmlEl.addEventListener('hide.bs.tab', onHide)
-        htmlEl.addEventListener('hidden.bs.tab', onHidden)
-      }
-    })
-  } catch (error) {
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Nav will use basic Vue logic.',
-      componentName: 'VibeNav',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
+const initTabs = async (): Promise<void> => {
+  if (!navRef.value) return
+  const tabTriggerEls = navRef.value.querySelectorAll<HTMLElement>(
+    '[data-bs-toggle="tab"], [data-bs-toggle="pill"]'
+  )
+  // Only initialize untracked triggers; ensure() reuses live entries.
+  for (const el of tabTriggerEls) {
+    if (!tabOwners.has(el)) void tabOwners.ensure(el)
   }
 }
 
 onMounted(initTabs)
 
-onBeforeUnmount(() => {
-  isUnmounted = true
-
-  bsTabs.forEach((bsTab, el) => {
-    el.removeEventListener('show.bs.tab', onShow)
-    el.removeEventListener('shown.bs.tab', onShown)
-    el.removeEventListener('hide.bs.tab', onHide)
-    el.removeEventListener('hidden.bs.tab', onHidden)
-    bsTab.dispose()
-  })
-  bsTabs.clear()
-})
-
 // Watch for items changes to re-initialize tabs
 watch(() => props.items, async () => {
-  if (reinitGuard) return
-  reinitGuard = true
-  try {
-    bsTabs.forEach((bsTab, el) => {
-      el.removeEventListener('show.bs.tab', onShow)
-      el.removeEventListener('shown.bs.tab', onShown)
-      el.removeEventListener('hide.bs.tab', onHide)
-      el.removeEventListener('hidden.bs.tab', onHidden)
-      bsTab.dispose()
-    })
-    bsTabs.clear()
-    await nextTick()
-    await initTabs()
-  } finally {
-    reinitGuard = false
-  }
+  tabOwners.disposeAll()
+  await nextTick()
+  await initTabs()
 }, { deep: false })
 
 const getTabTarget = (item: NavItem): string | undefined => {
@@ -151,21 +112,14 @@ const handleItemClick = (item: NavItem, index: number, event: Event) => {
 }
 
 const refresh = async () => {
-  bsTabs.forEach((bsTab, el) => {
-    el.removeEventListener('show.bs.tab', onShow)
-    el.removeEventListener('shown.bs.tab', onShown)
-    el.removeEventListener('hide.bs.tab', onHide)
-    el.removeEventListener('hidden.bs.tab', onHidden)
-    bsTab.dispose()
-  })
-  bsTabs.clear()
+  tabOwners.disposeAll()
   await nextTick()
   await initTabs()
 }
 
 // _unsafe_bsInstances is an escape hatch, NOT part of the stable API.
 // Calling dispose()/other lifecycle methods on these directly WILL break this component.
-defineExpose({ refresh, _unsafe_bsInstances: bsTabs })
+defineExpose({ refresh, _unsafe_bsInstances: tabOwners.instances })
 </script>
 
 <template>

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { useBootstrapInstance } from '../../src/composables/useBootstrapInstance'
+import { useBootstrapInstance, useBootstrapInstanceMap } from '../../src/composables/useBootstrapInstance'
 
 interface FakeInstance {
   el: HTMLElement
@@ -170,5 +170,162 @@ describe('useBootstrapInstance', () => {
     expect(create).toHaveBeenCalledTimes(2)
     expect(api.get()).not.toBeNull()
     wrapper.unmount()
+  })
+
+  // #247 multi-owner follow-ups: manual teardown plus a keyed map.
+  describe('manual teardown (#247)', () => {
+    const setupManual = () => {
+      const el = document.createElement('div')
+      const created: FakeInstance[] = []
+      const create = vi.fn((_el: HTMLElement) => {
+        const inst: FakeInstance = { el: _el, dispose: vi.fn() }
+        created.push(inst)
+        return inst
+      })
+      const onError = vi.fn()
+      let api!: ReturnType<typeof useBootstrapInstance<FakeInstance>>
+      const Comp = defineComponent({
+        setup() {
+          api = useBootstrapInstance<FakeInstance>({
+            resolveElement: () => el,
+            create,
+            disposeInstance: (inst) => inst.dispose(),
+            componentName: 'Manual',
+            onError,
+            manualTeardown: true
+          })
+          return () => h('div')
+        }
+      })
+      const wrapper = mount(Comp)
+      return { wrapper, api, el, create, created, onError }
+    }
+
+    it('skips the automatic unmount teardown, teardown() disposes', async () => {
+      const { wrapper, api, created } = setupManual()
+      await api.init()
+      await settle()
+      wrapper.unmount()
+      expect(created[0].dispose).not.toHaveBeenCalled()
+      api.teardown()
+      expect(created[0].dispose).toHaveBeenCalledTimes(1)
+      expect(api.get()).toBeNull()
+    })
+
+    it('teardown() invalidates an in-flight init', async () => {
+      const { wrapper, api, create, onError } = setupManual()
+      const pending = api.init()
+      api.teardown()
+      await pending
+      await settle()
+      expect(create).not.toHaveBeenCalled()
+      expect(onError).not.toHaveBeenCalled()
+      // Post-teardown init stays dead (owner spent).
+      expect(await api.init()).toBeNull()
+      wrapper.unmount()
+    })
+  })
+
+  describe('useBootstrapInstanceMap (#247)', () => {
+    const setupMap = () => {
+      const created: FakeInstance[] = []
+      const create = vi.fn((_el: HTMLElement) => {
+        const inst: FakeInstance = { el: _el, dispose: vi.fn() }
+        created.push(inst)
+        return inst
+      })
+      const onError = vi.fn()
+      const handler = vi.fn()
+      let api!: ReturnType<typeof useBootstrapInstanceMap<FakeInstance>>
+      const Comp = defineComponent({
+        setup() {
+          api = useBootstrapInstanceMap<FakeInstance>({
+            create,
+            disposeInstance: (inst) => inst.dispose(),
+            events: { 'test.bs.event': handler as EventListener },
+            componentName: 'Map',
+            onError
+          })
+          return () => h('div')
+        }
+      })
+      const wrapper = mount(Comp)
+      return { wrapper, api, create, created, onError, handler }
+    }
+
+    it('constructs one instance per element, reuses live ones', async () => {
+      const { wrapper, api, create, created } = setupMap()
+      const a = document.createElement('div')
+      const b = document.createElement('div')
+      const first = await api.ensure(a)
+      const same = await api.ensure(a)
+      const second = await api.ensure(b)
+      await settle()
+      expect(create).toHaveBeenCalledTimes(2)
+      expect(first).toBe(created[0])
+      expect(same).toBe(created[0])
+      expect(second).toBe(created[1])
+      expect(api.get(a)).toBe(created[0])
+      expect(api.has(b)).toBe(true)
+      expect(api.instances.size).toBe(2)
+      wrapper.unmount()
+    })
+
+    it('returns null for a null element', async () => {
+      const { wrapper, api, create } = setupMap()
+      expect(await api.ensure(null)).toBeNull()
+      expect(create).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
+    it('attaches events per element and detaches on disposeEl', async () => {
+      const { wrapper, api, handler } = setupMap()
+      const a = document.createElement('div')
+      await api.ensure(a)
+      await settle()
+      a.dispatchEvent(new Event('test.bs.event'))
+      expect(handler).toHaveBeenCalledTimes(1)
+      api.disposeEl(a)
+      expect(api.has(a)).toBe(false)
+      a.dispatchEvent(new Event('test.bs.event'))
+      expect(handler).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+
+    it('disposeAll clears everything but stays usable', async () => {
+      const { wrapper, api, create, created } = setupMap()
+      const a = document.createElement('div')
+      await api.ensure(a)
+      await settle()
+      api.disposeAll()
+      expect(created[0].dispose).toHaveBeenCalledTimes(1)
+      expect(api.instances.size).toBe(0)
+      await api.ensure(a)
+      await settle()
+      expect(create).toHaveBeenCalledTimes(2)
+      wrapper.unmount()
+    })
+
+    it('unmount tears down all entries and blocks later ensure', async () => {
+      const { wrapper, api, create, created } = setupMap()
+      const a = document.createElement('div')
+      await api.ensure(a)
+      await settle()
+      wrapper.unmount()
+      expect(created[0].dispose).toHaveBeenCalledTimes(1)
+      expect(await api.ensure(a)).toBeNull()
+      expect(create).toHaveBeenCalledTimes(1)
+    })
+
+    it('teardown mid-flight constructs nothing', async () => {
+      const { wrapper, api, create, onError } = setupMap()
+      const a = document.createElement('div')
+      const pending = api.ensure(a)
+      wrapper.unmount()
+      await pending
+      await settle()
+      expect(create).not.toHaveBeenCalled()
+      expect(onError).not.toHaveBeenCalled()
+    })
   })
 })
