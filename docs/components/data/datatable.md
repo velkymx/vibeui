@@ -1,6 +1,8 @@
 # VibeDataTable
 
-Powerful data table component with search, sorting, and pagination - similar to DataTables.net but built for Vue 3 and Bootstrap 5.3.
+Powerful data table component with search, sorting, and pagination - similar to DataTables.net but built for Vue 3 and Bootstrap 5.3. The row-model math (filter, sort, paginate, and everything below) is powered by TanStack Table; VibeDataTable is its Bootstrap renderer plus a11y owner.
+
+Two tiers, one engine. The simple props (`items`, `columns`, `searchable`, `sortable`, `paginated`, server mode) are the easy 80% and keep working exactly as documented. Every advanced feature below is opt-in and powered by the same engine. Nothing here changes default rendering.
 
 ## Features
 
@@ -12,6 +14,13 @@ Powerful data table component with search, sorting, and pagination - similar to 
 - **Custom Cell Rendering** - Slots for custom cell content
 - **Formatters** - Custom data formatters per column
 - **TypeScript** - Fully typed with comprehensive interfaces
+- **Row selection** - Single/multi checkbox column with select-all (indeterminate)
+- **Multi-sort** - Shift-click appends; `sort` array model
+- **Column filters** - Per-column text/select/range filter row with faceted options
+- **Column presentation** - Align, width, visibility chooser, sticky pinning, resize handles
+- **Expansion** - Detail rows plus sub-rows
+- **Grouping** - Group headers with aggregation plus footer row
+- **Virtualization** - Windowed rendering for large datasets
 
 ## Props
 
@@ -21,7 +30,7 @@ Powerful data table component with search, sorting, and pagination - similar to 
 |------|------|---------|-------------|
 | `items` | `T[]` | `[]` | Array of data objects to display |
 | `columns` | `DataTableColumn<T>[]` | `[]` | Column definitions. Defaults to an empty array, so an unset/loading state renders an empty table rather than erroring. |
-| `rowKey` | `String` | `'id'` | Property name used as the unique key for each row. **Recommended** — set it to a unique field in your data (e.g. `'id'`, `'uuid'`) so Vue tracks rows correctly across sorting, filtering, and pagination. Falls back to a positional key (with a DEV warning) when missing. |
+| `rowKey` | `String` | `'id'` | Property name used as the unique key for each row. **Recommended** — set it to a unique field in your data (e.g. `'id'`, `'uuid'`) so selection, expansion, and sorting track rows correctly. Falls back to the positional index when missing. |
 
 > **Typing tip**: `DataTableColumn` is generic over your row type. For full slot-prop / formatter typing, annotate the column array:
 >
@@ -59,6 +68,21 @@ Powerful data table component with search, sorting, and pagination - similar to 
 | `clickable` | `Boolean` | `false` | Show a pointer cursor on rows to signal they are interactive (pair with a `@row-clicked` listener) |
 | `serverMode` | `Boolean` | `false` | Server-side mode: disable all local filtering, sorting, and paging. `items` is rendered as-is (the current page from your backend) |
 | `totalRows` | `Number` | `undefined` | Total row count from the backend; drives pagination in `serverMode` |
+| `selectable` | `Boolean \| 'single' \| 'multiple'` | `false` | Row selection. `true` equals `'multiple'`. Adds a checkbox column; selection lives in the `selectedRows` model |
+| `selectedRows` | `(String \| Number)[]` | `[]` | Two-way: keys (rowKey values) of the selected rows |
+| `multiSort` | `Boolean` | `false` | Multi-column sort. Shift-click appends; state lives in the `sort` model (`sortBy`/`sortDesc` mirror the first entry) |
+| `sort` | `{ id, desc }[]` | `[]` | Two-way: ordered multi-sort state |
+| `showColumnToggle` | `Boolean` | `false` | Column-visibility chooser (dropdown of checkboxes) |
+| `columnVisibility` | `Record<String, Boolean>` | `{}` | Two-way: `{ key: false }` hides a column |
+| `expandable` | `Boolean` | `false` | Row expansion toggle column. Per-row opt-out via `expandableRow`, children via `subRowsKey`, state in `expandedRows` |
+| `expandableRow` | `(item) => Boolean` | `undefined` | Predicate; rows failing it render no toggle (default: every row) |
+| `subRowsKey` | `String` | `'children'` | Item field holding child rows, rendered when the parent expands |
+| `expandedRows` | `(String \| Number)[]` | `[]` | Two-way: engine row ids of expanded rows (and groups) |
+| `groupBy` | `String \| String[]` | `[]` | Group rows by column keys. Renders collapsible group headers with leaf counts; aggregates show in `aggregate` columns |
+| `virtualized` | `Boolean` | `false` | Windowed rendering for large datasets. Bypasses `paginated` (one windowing source); see estimates below |
+| `virtualEstimateSize` | `Number` | `48` | Estimated row height in px until measured |
+| `virtualOverscan` | `Number` | `3` | Extra rows rendered above/below the viewport |
+| `virtualHeight` | `String \| Number` | `400` | Scroll container max-height (number = px) |
 
 ### Search Props
 
@@ -110,6 +134,14 @@ interface DataTableColumn {
   headerClass?: string          // CSS class for th
   thStyle?: Record<string, string>  // Inline styles for th (sanitized — see note)
   tdStyle?: Record<string, string>  // Inline styles for td (sanitized — see note)
+  filter?: 'text' | 'select' | 'range'  // Filter control in the filter row (omit = none)
+  align?: 'start' | 'center' | 'end'    // Text alignment (Bootstrap text-* utility)
+  width?: string | number       // Column width (number = px; string = any safe CSS length)
+  pinned?: 'start' | 'end'      // Sticky edge column (offsets from the engine)
+  resizable?: boolean            // Resize handle (drag plus arrow keys; state in columnSizing)
+  aggregate?: 'sum' | 'mean' | 'min' | 'max' | 'count' | ((values: unknown[]) => unknown)
+                                // Group-row aggregation for this column
+  footer?: string               // Footer cell text (overridden by the footer(key) slot)
 }
 ```
 
@@ -136,6 +168,13 @@ const columns = [
 | `update:perPage` | `Number` | Emitted when per-page changes |
 | `update:sortBy` | `String` | Emitted when sort column changes |
 | `update:sortDesc` | `Boolean` | Emitted when sort direction changes |
+| `update:sort` | `{ id, desc }[]` | Multi-sort state changes |
+| `update:selectedRows` | `(String \| Number)[]` | Selection changes |
+| `update:columnFilters` | `{ id, value }[]` | Per-column filter changes |
+| `update:columnVisibility` | `Record<String, Boolean>` | Visibility changes (chooser or model) |
+| `update:columnSizing` | `Record<String, Number>` | Resize changes (px per column) |
+| `update:expandedRows` | `(String \| Number)[]` | Expansion changes (rows and groups) |
+| `row-selected` | `(item, selected)` | Emitted when a row's selection flips |
 | `row-clicked` | `(item, globalIndex)` | Emitted when a row is clicked. `globalIndex` is the index within the full filtered/sorted dataset, not the current page. Only emitted when a `@row-clicked` listener is attached (rows show a pointer cursor in that case). |
 | `search` | `String` | Emitted (debounced) with the search query. Use it in `serverMode` to fetch the matching page. |
 | `component-error` | `ComponentError` | Emitted if an internal error occurs |
@@ -177,6 +216,8 @@ watch([page, sortBy, sortDesc, query], async () => {
 | Slot | Props | Description |
 |------|-------|-------------|
 | `cell({columnKey})` | `{ item, value, index }` | Custom cell rendering for specific column |
+| `expanded` | `{ item, index }` | Detail content for an expanded row |
+| `footer({columnKey})` | `{ column }` | Custom footer cell for specific column |
 
 ## Usage
 
@@ -413,6 +454,99 @@ const columns = [
   />
 </template>
 ```
+
+## Advanced Features (Tier 2)
+
+Opt-in, engine-powered, composable with each other. Everything below also works
+in `serverMode` except where noted (virtualization bypasses pagination;
+grouping aggregates local rows).
+
+### Row selection
+
+```vue
+<VibeDataTable
+  :columns="columns"
+  :items="users"
+  selectable="multiple"
+  v-model:selected-rows="selected"
+  @row-selected="(item, on) => console.log(item.id, on)"
+/>
+```
+
+`selectable` accepts `false` (default), `'single'`, `'multiple'`, or `true`
+(equals `'multiple'`). A checkbox column is injected with a select-all header
+(indeterminate state included); checkboxes are labelled for screen readers.
+
+### Multi-sort plus column filters
+
+```vue
+<VibeDataTable
+  :columns="filterCols"
+  :items="users"
+  multi-sort
+  v-model:sort="sort"
+  v-model:column-filters="filters"
+/>
+```
+
+Shift-click appends to the sort (plain click replaces). `sortBy`/`sortDesc`
+mirror the first entry, so single-sort consumers keep working. Per-column
+`filter: 'text' | 'select' | 'range'` renders a filter row; select options come
+from faceted values. Filters compose with global search, which still uses the
+`searchValue` > `formatter` > raw precedence.
+
+### Expansion and sub-rows
+
+```vue
+<VibeDataTable
+  :columns="columns"
+  :items="orders"
+  expandable
+  v-model:expanded-rows="expanded"
+>
+  <template #expanded="{ item }">
+    <OrderDetail :order="item" />
+  </template>
+</VibeDataTable>
+```
+
+Children under `subRowsKey` (default `'children'`) render as nested rows when
+the parent expands. `expandableRow` limits which rows get a toggle.
+
+### Grouping, aggregation, footer
+
+```vue
+<VibeDataTable
+  :columns="[
+    { key: 'dept', label: 'Dept' },
+    { key: 'salary', label: 'Salary', aggregate: 'sum', footer: 'Total' },
+  ]"
+  :items="staff"
+  group-by="dept"
+/>
+```
+
+Group headers show value plus leaf count and collapse by default; `aggregate`
+accepts `sum`, `mean`, `min`, `max`, `count`, or a function over the leaf
+values. The footer row renders `footer` text or the matching `footer(key)`
+slot per column.
+
+### Virtualization
+
+```vue
+<VibeDataTable
+  :columns="columns"
+  :items="bigList"
+  virtualized
+  :virtual-estimate-size="48"
+  virtual-height="60vh"
+/>
+```
+
+Only the visible window renders (plus overscan), with spacer rows preserving
+scroll height. Pagination is bypassed while on. Rows measure on render, so
+`virtualEstimateSize` only affects the pre-measure estimate; keep it close to
+the real height to avoid scroll drift.
 
 ## Advanced Features
 
