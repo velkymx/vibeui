@@ -103,6 +103,22 @@ describe('VibeNavbarNav', () => {
     })
   })
 
+  // #224: duplicate hrefs must not produce duplicate keys.
+  describe('duplicate keys (#224)', () => {
+    it('renders distinct items for duplicate hrefs', () => {
+      // Characterization; see the ListGroup note above on warn assertions.
+      const wrapper = mount(VibeNavbarNav, {
+        props: {
+          items: [
+            { text: 'A', href: '#' },
+            { text: 'B', href: '#' }
+          ]
+        }
+      })
+      expect(wrapper.findAll('.nav-item')).toHaveLength(2)
+    })
+  })
+
   // #223: unmount during the in-flight Bootstrap import must construct nothing
   // and report nothing (no isUnmounted guard existed; the post-await deref threw
   // and surfaced a spurious component-error on healthy teardown).

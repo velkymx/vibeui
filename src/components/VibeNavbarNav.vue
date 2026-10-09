@@ -147,7 +147,7 @@ const linkMeta = computed(() => {
   <component :is="tag" ref="navbarNavRef" class="navbar-nav">
     <!-- Data-driven mode: generate from items array -->
     <template v-if="items && items.length > 0">
-      <li v-for="(item, index) in items" :key="item.href || item.text || String(index)" :class="linkMeta.itemCls.get(item)">
+      <li v-for="(item, index) in items" :key="dropdownItemKey(item, index, 'VibeNavbarNav')" :class="linkMeta.itemCls.get(item)">
 
         <!-- Dropdown item -->
         <template v-if="item.children?.length">

@@ -279,4 +279,81 @@ describe('VibeTabs lazy + v-model initial render (issue #67)', () => {
     expect(wrapper.text()).toContain('B body')
     expect(wrapper.text()).not.toContain('A body')
   })
+  // #224: the registry snapshot must follow prop changes, and a rename must
+  // not orphan the old entry on unmount.
+  describe('registry sync (#224)', () => {
+    const syncHarness = (initial: Record<string, Record<string, unknown>>) =>
+      defineComponent({
+        components: { VibeTabs, VibeTab },
+        data() {
+          return { tabs: initial as Record<string, Record<string, unknown>>, showA: true }
+        },
+        render() {
+          const vm = this as unknown as {
+            tabs: Record<string, Record<string, unknown>>
+            showA: boolean
+          }
+          const entries = Object.entries(vm.tabs).filter(
+            ([, tabProps]) => (tabProps.name as string) !== 'a2' || vm.showA
+          )
+          return h(VibeTabs as never, null, {
+            default: () =>
+              entries.map(([key, tabProps]) =>
+                h(VibeTab as never, {
+                  key,
+                  name: tabProps.name,
+                  label: tabProps.label,
+                  disabled: tabProps.disabled
+                })
+              )
+          })
+        }
+      })
+
+    it('reflects label changes in the strip', async () => {
+      const wrapper = mount(
+        syncHarness({
+          a: { name: 'a', label: 'Alpha' },
+          b: { name: 'b', label: 'Beta' }
+        })
+      )
+      await nextTick()
+      expect(wrapper.findAll('.nav-link')[1].text()).toBe('Beta')
+      const vm = wrapper.vm as unknown as { tabs: Record<string, Record<string, unknown>> }
+      vm.tabs = {
+        a: { name: 'a', label: 'Alpha' },
+        b: { name: 'b', label: 'Beta2' }
+      }
+      await nextTick()
+      expect(wrapper.findAll('.nav-link')[1].text()).toBe('Beta2')
+      wrapper.unmount()
+    })
+
+    it('rename plus removal leaves no ghost tab', async () => {
+      const wrapper = mount(
+        syncHarness({
+          a: { name: 'a', label: 'Alpha' },
+          b: { name: 'b', label: 'Beta' }
+        })
+      )
+      await nextTick()
+      const vm = wrapper.vm as unknown as {
+        tabs: Record<string, Record<string, unknown>>
+        showA: boolean
+      }
+      // Rename a to a2 with a new label: the strip must show the new label,
+      // proving the registry entry moved rather than duplicated.
+      vm.tabs = {
+        a2: { name: 'a2', label: 'Alpha2' },
+        b: { name: 'b', label: 'Beta' }
+      }
+      await nextTick()
+      expect(wrapper.findAll('.nav-link').map((l) => l.text()).sort()).toEqual(['Alpha2', 'Beta'])
+      // Remove the renamed tab: nothing of it may remain.
+      vm.showA = false
+      await nextTick()
+      expect(wrapper.findAll('.nav-link').map((l) => l.text())).toEqual(['Beta'])
+      wrapper.unmount()
+    })
+  })
 })

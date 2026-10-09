@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Tag, ListGroupItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 import { linkBindings } from '../utils/linkBindings'
+import { dropdownItemKey } from '../utils/dropdownItemKey'
 
 const props = defineProps({
   flush: { type: Boolean, default: false },
@@ -94,7 +95,7 @@ const handleItemClick = (item: ListGroupItem, index: number, event: Event) => {
     <div v-if="items.length === 0 && showEmpty" class="list-group-item text-body-secondary">
       {{ emptyText }}
     </div>
-    <template v-for="(item, index) in items" :key="item.href ?? item.text ?? index">
+    <template v-for="(item, index) in items" :key="dropdownItemKey(item, index, 'VibeListGroup')">
     <component
       :is="itemMeta.tag.get(item)"
       :class="itemMeta.cls.get(item)"
