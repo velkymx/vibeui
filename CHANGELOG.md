@@ -6,6 +6,50 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
+## [1.3.0] - 2026-10-09
+
+A minor release: the event-bus system, error boundaries, global defaults, full keyboard operability, ARIA hardening, async-data resilience, and a unified Bootstrap instance lifecycle. No required-prop changes; behavior changes are listed explicitly below.
+
+### Added
+
+- **Event bus system.** Module-singleton pub/sub (`useEventBus`, `emitEvent`, `onPersistent`) with command channels for notifications, modals, theme, layout/offcanvas, and navigation, plus error channels (`error:component`, `error:unhandled`) and a custom-events guide with recipes. (#104–#113)
+- **Error boundaries.** `VibeErrorBoundary` with fallback slot and bus reporting, plus opt-in `errorHandler` routing into the bus. (#157, #154)
+- **Global defaults.** `app.use(VibeUI, {...})` options with provide/inject (`useVibeDefaults`, `resolveProp`). (#159)
+- **Async data resilience.** Charts render empty on shape-incomplete data instead of throwing; Autocomplete emits `error` when an async source rejects; DataTable gains a `loading` row for serverMode fetches. (#226)
+- **Keyboard operability (WCAG 2.1.1).** Dropzone button-equivalent; Sortable Space-grab plus arrow reorder with exposed `move()`; Draggable arm plus Droppable Enter-drop; Tabs APG roving tabindex with arrows/Home/End. (#234)
+- **ARIA and focus (WCAG 4.1.2 / 2.4.3).** Tab wiring (`aria-controls`/`aria-labelledby`, active-only panes); datepicker focus return plus disabled-day skip; accordion live `aria-expanded` with pre-JS paint; guarded dragover affordance. (#235)
+- **Toast store cap.** Bounded at 10 with oldest-first eviction plus per-call `max`. (#233)
+- **`useBootstrapInstance` lifecycle.** One tested lazy-init/event/dispose/race-guard implementation, adopted by Tooltip, Popover, Alert, Toast, Scrollspy, Modal, Offcanvas, Dropdown, Carousel, Collapse, plus a keyed multi-owner map for Nav, NavbarNav, Accordion, and per-element owners for the vTooltip directive. (#230, #247)
+- **Per-component sub-path entries** for heavy components (ESM-only, single-entry UMD untouched). (#180)
+- **Lazy hydration recipe** for heavy components. (#152)
+- **Form features.** Async action state on Button (#94); debounced search mirrors (#158); `.lazy` support on inputs, textarea, spinbutton (#148); validation rules in the `useForm` constructor (#138).
+
+### Changed
+
+- **`VibeLink`: usable `href` now wins over `to`** (was the reverse), matching `linkBindings` and `VibeButton`; new `target`/`rel` props with automatic `noopener` under `_blank`. Dual-prop consumers should confirm their intent. (#237)
+- **One-call SSR reset** now also clears modal/offcanvas registries (plus sidebar id) and theme state; all `import.meta.env` reads go through a guarded `isDev`. (#231)
+- **Spinbutton stepper clicks validate only under `validate-on="change"`**; clicks still commit per press, including under `.lazy`. (#229)
+- **Resizable drag coalesces onto one animation frame** (last event wins) with the exact final size flushed on release; per-frame `resize` kept. (#227)
+- **`VibeFormSelect` multiple plus placeholder** maps options 1:1 with no offset. (#237)
+- **`VibeCol` `false` means no opinion**: default `col` kept, no `col-sm-false` literals. (#237)
+- **Teardown skips Bootstrap `dispose()` while transitioning** (detach only), fixing uncaught transition-callback throws on mid-transition unmounts. (#271)
+- **`useEventBus().once()` is cancellable** via `off(event, originalHandler)`. (#232)
+- **`useFormValidation.reset()` invalidates in-flight `validate()`** via a generation bump. (#233)
+- **VibeHero `bgImage` is validated for the CSS `url()` sink** (`safeCssUrl`), not the href prefix check. (#238)
+
+### Fixed
+
+- Sanitizer hardening: de-obfuscated schemes, tightened `data:`, style allowlist, enforced `noopener` (#222); WYSIWYG safe-by-default fallback (#186).
+- Async init races: NavbarNav liveness guard, Carousel queued re-init plus post-await checks (#223); Tooltip/Popover reinit drop on unmount (#191); vTooltip directive generation guard plus structural rebuild (#236).
+- Identity: unique index-suffixed list keys, Sortable identity fallback, tab registry sync (#224); stable Sortable row keys (#130).
+- Render-path memoization across DataTable, Autocomplete, DatePicker, ListGroup, NavbarNav, Slider, Skeleton, charts, plus per-field dirty watchers (#198, #228).
+- Position/Popper lifecycle: shared cleanup, alive-plus-epoch guards, KeepAlive flag split (#187, #188, #190).
+- Form field group-id consumption, chart NaN guards, spinbutton numeric normalization, list empty-state parity, stepper busy states (#225, #194, #195, #196, #197).
+- Collapse, modal, offcanvas, accordion, tooltip, popover, toast, dropdown, carousel, datepicker, sortable, datatable, and resizable lifecycle plus styling corrections from the review rounds (#189, #193, #199, #218, #221 and others).
+- Packaging: per-component entries, type-declaration entry fixes, manifest export map (#180, #64, #87).
+
+---
+
 ## [1.2.2] - 2026-09-28
 
 A patch release fixing a `VibeListGroup` rendering bug. No API changes.
