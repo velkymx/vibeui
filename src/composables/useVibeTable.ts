@@ -85,6 +85,10 @@ export interface UseVibeTableParams<T extends object> {
   perPage: Ref<number>
   sortBy: Ref<string | undefined>
   sortDesc: Ref<boolean>
+  // #283 Phase 2a: when multiSort is on, `sort` (ordered ColumnSort[]) is the
+  // sort source; otherwise the single sortBy/sortDesc pair is (unchanged).
+  multiSort: () => boolean
+  sort: Ref<{ id: string; desc: boolean }[]>
   // #283 Phase 1: false (off), 'single', 'multiple', or true (= multiple).
   selectable: () => boolean | 'single' | 'multiple'
   selectedRows: Ref<(string | number)[]>
@@ -161,10 +165,13 @@ export function useVibeTable<T extends object>(
       pageIndex: Math.max(0, params.currentPage.value - 1),
       pageSize: Math.max(1, params.perPage.value)
     },
-    sorting:
-      params.sortable() && params.sortBy.value
-        ? [{ id: params.sortBy.value, desc: params.sortDesc.value }]
-        : [],
+    sorting: !params.sortable()
+      ? []
+      : params.multiSort()
+        ? params.sort.value
+        : params.sortBy.value
+          ? [{ id: params.sortBy.value, desc: params.sortDesc.value }]
+          : [],
     globalFilter: params.searchable() ? params.search.value : '',
     // Selection is id-keyed; mirror the selectedRows model (ids are stringified
     // by getRowId, so normalize here too).
@@ -199,6 +206,7 @@ export function useVibeTable<T extends object>(
     manualSorting: params.serverMode(),
     manualPagination: params.serverMode(),
     rowCount: params.serverMode() ? params.totalRows() : undefined,
+    enableMultiSort: computed(() => params.multiSort()),
     enableRowSelection: selectionEnabled,
     enableMultiRowSelection: selectionMultiple,
     onRowSelectionChange: (updater) => {
@@ -217,6 +225,7 @@ export function useVibeTable<T extends object>(
     onSortingChange: (updater) => {
       const prev = state.value.sorting
       const next = typeof updater === 'function' ? updater(prev) : updater
+      params.sort.value = next
       const first = next[0]
       params.sortBy.value = first ? first.id : undefined
       params.sortDesc.value = first ? first.desc : false

@@ -33,6 +33,9 @@ const props = defineProps({
   // #283 Phase 1: row selection. false (off), 'single', 'multiple', or true
   // (= multiple). Renders an opt-in leading checkbox column.
   selectable: { type: [Boolean, String] as PropType<boolean | 'single' | 'multiple'>, default: false },
+  // #283 Phase 2a: enable multi-column sort (shift-click appends). Off = the
+  // existing single-column sort.
+  multiSort: { type: Boolean, default: false },
 
   // #124: server-side (manual) mode. When true, the table does no local
   // filtering/sorting/paging: `items` is rendered as-is (the current page from
@@ -66,6 +69,8 @@ const currentPage = defineModel<number>('currentPage', { default: 1 })
 const perPage = defineModel<number>('perPage', { default: 10 })
 const sortBy = defineModel<string | undefined>('sortBy', { default: undefined })
 const sortDesc = defineModel<boolean>('sortDesc', { default: false })
+// #283 Phase 2a: ordered multi-sort state (source of truth when multiSort is on).
+const sort = defineModel<{ id: string; desc: boolean }[]>('sort', { default: () => [] })
 // #283 Phase 1: selected row keys (ids per rowKey). Two-way for controlled use.
 const selectedRows = defineModel<(string | number)[]>('selectedRows', { default: () => [] })
 
@@ -157,6 +162,8 @@ const { paginatedItems, filteredCount, selection } = useVibeTable<T>({
   perPage,
   sortBy,
   sortDesc,
+  multiSort: () => props.multiSort,
+  sort,
   selectable: () => props.selectable,
   selectedRows
 })
@@ -238,16 +245,45 @@ const tableClass = computed(() => {
 })
 
 // Methods
-const handleSort = (column: DataTableColumn<T>) => {
+const handleSort = (column: DataTableColumn<T>, event?: MouseEvent) => {
   if (!props.sortable || column.sortable === false) return
+  const key = column.key
+  const additive = props.multiSort && !!event?.shiftKey
+  const current = [...sort.value]
+  const idx = current.findIndex((s) => s.id === key)
 
-  if (sortBy.value === column.key) {
-    sortDesc.value = !sortDesc.value
+  if (additive) {
+    // Shift-click cycles the column: absent -> asc -> desc -> removed.
+    if (idx === -1) current.push({ id: key, desc: false })
+    else if (!current[idx].desc) current[idx] = { id: key, desc: true }
+    else current.splice(idx, 1)
+    sort.value = current
+  } else if (current.length === 1 && current[0].id === key) {
+    // Sole sort on this column: toggle direction (unchanged single behavior).
+    sort.value = [{ id: key, desc: !current[0].desc }]
   } else {
-    sortBy.value = column.key
-    sortDesc.value = false
+    // New or collapsing click: single ascending sort on this column.
+    sort.value = [{ id: key, desc: false }]
   }
+
+  // sortBy/sortDesc track the primary sort for back-compat consumers.
+  const primary = sort.value[0]
+  sortBy.value = primary ? primary.id : undefined
+  sortDesc.value = primary ? primary.desc : false
 }
+
+// Effective sort list drives the header icons/aria: the multi-sort array when
+// enabled, otherwise the single sortBy/sortDesc pair (identical to before).
+const effectiveSort = computed<{ id: string; desc: boolean }[]>(() => {
+  if (!props.sortable) return []
+  if (props.multiSort) return sort.value
+  return sortBy.value ? [{ id: sortBy.value, desc: sortDesc.value }] : []
+})
+const sortByKey = computed(() => {
+  const m = new Map<string, boolean>()
+  for (const s of effectiveSort.value) m.set(s.id, s.desc)
+  return m
+})
 
 watch(totalPages, (newTotal) => {
   if (newTotal > 0 && currentPage.value > newTotal) {
@@ -291,10 +327,10 @@ const sortIconMap = computed(() => {
   for (const column of props.columns) {
     if (!props.sortable || column.sortable === false) {
       m.set(column, '')
-    } else if (sortBy.value !== column.key) {
+    } else if (!sortByKey.value.has(column.key)) {
       m.set(column, 'sort-none')
     } else {
-      m.set(column, sortDesc.value ? 'sort-desc' : 'sort-asc')
+      m.set(column, sortByKey.value.get(column.key) ? 'sort-desc' : 'sort-asc')
     }
   }
   return m
@@ -307,10 +343,10 @@ const ariaSortMap = computed(() => {
   for (const column of props.columns) {
     if (!props.sortable || column.sortable === false) {
       m.set(column, undefined)
-    } else if (sortBy.value !== column.key) {
+    } else if (!sortByKey.value.has(column.key)) {
       m.set(column, 'none')
     } else {
-      m.set(column, sortDesc.value ? 'descending' : 'ascending')
+      m.set(column, sortByKey.value.get(column.key) ? 'descending' : 'ascending')
     }
   }
   return m
@@ -406,7 +442,7 @@ const cellValueMap = computed(() => {
               :class="column.headerClass"
               :style="thStyleMap.get(column)"
               :aria-sort="ariaSortMap.get(column)"
-              @click="handleSort(column)"
+              @click="handleSort(column, $event)"
             >
               {{ column.label }}
               <span
