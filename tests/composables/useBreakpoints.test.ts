@@ -21,7 +21,7 @@ function withSetup<T>(composable: () => T): { result: T; unmount: () => void } {
 
 describe('useBreakpoints', () => {
   // Store mutable mock MQL objects so tests can flip .matches and fire listeners
-  const mqMocks: Record<string, { matches: boolean; listeners: Function[] }> = {}
+  const mqMocks: Record<string, { matches: boolean; listeners: Array<() => void> }> = {}
 
   beforeEach(() => {
     vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => {
@@ -31,7 +31,7 @@ describe('useBreakpoints', () => {
       const mock = mqMocks[query]
       return {
         get matches() { return mock.matches },
-        addEventListener: (_event: string, cb: Function) => {
+        addEventListener: (_event: string, cb: () => void) => {
           mock.listeners.push(cb)
         },
         removeEventListener: vi.fn(),

@@ -57,6 +57,7 @@
     "test:browser": "vitest run --project browser",
     "test:all": "vitest run",
     "test:examples": "npm run build && playwright test",
+    "lint": "eslint src tests eslint-plugin",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -83,6 +84,7 @@
     "@floating-ui/dom": "^1.7.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@types/dompurify": "^3.0.5",
     "@vitejs/plugin-vue": "^6.0.4",
@@ -96,10 +98,12 @@
     "bootstrap": "^5.3.8",
     "dompurify": "^3.4.7",
     "eslint": "^10.12.0",
+    "globals": "^17.13.0",
     "happy-dom": "^20.1.0",
     "playwright": "^1.60.0",
     "quill": "^2.0.3",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
     "vite": "^8.0.14",
     "vite-plugin-dts": "^5.0.1",
     "vitest": "^4.0.16",
