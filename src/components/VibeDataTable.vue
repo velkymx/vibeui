@@ -654,7 +654,17 @@ const cellValueMap = computed(() => {
               :aria-sort="ariaSortMap.get(column)"
               @click="handleSort(column, $event)"
             >
-              {{ column.label }}
+              <!-- #283 Phase 0 a11y baseline: the sort control is a real
+              button (keyboard-operable); the th click stays so pointer and
+              existing behavior are unchanged. -->
+              <button
+                v-if="sortable && column.sortable !== false"
+                type="button"
+                class="vibe-sort-button"
+                :aria-label="`Sort by ${column.label}`"
+                @click.stop="handleSort(column, $event)"
+              >{{ column.label }}</button>
+              <template v-else>{{ column.label }}</template>
               <span
                 v-if="sortable && column.sortable !== false"
                 :class="['ms-1', 'vibe-sort-icon', sortIconMap.get(column)]"
@@ -914,6 +924,16 @@ opaque background, and stacking. Scoped to internally generated cells. */
 }
 .vibe-datatable :deep(.vibe-expand-icon-open) {
   transform: rotate(90deg);
+}
+
+/* Sort button: inherit header typography; the th keeps its click target. */
+.vibe-datatable :deep(.vibe-sort-button) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
 }
 
 /* Resize handle: slim button at the header's trailing edge. */
