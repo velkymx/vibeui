@@ -55,7 +55,12 @@ export function useFormField(
 ): FormField {
   const formGroup = inject(FORM_GROUP_KEY, null)
 
-  const groupId = formGroup?.consumeId()
+  // Consume the group id only when this control does not bring its own: an
+  // explicit :id wins in computedId below, so consuming first would burn the
+  // group's single-use token for nothing and leave the group label pointing
+  // at an id no control owns. (A :id added after mount keeps the consumed or
+  // generated id; id stability across the control lifetime matters more.)
+  const groupId = props.id ? undefined : formGroup?.consumeId()
   const generatedId = useId(prefix)
 
   const computedId = computed(() => props.id || groupId || generatedId)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, onBeforeUnmount } from 'vue'
+import { computed, inject, onMounted, onBeforeUnmount, watch } from 'vue'
 import { TABS_CONTEXT_KEY } from '../injectionKeys'
 
 const props = defineProps({
@@ -17,13 +17,29 @@ if (!ctx) {
   console.error('[VibeTab] must be a descendant of <VibeTabs>')
 }
 
+// The name under which this tab is currently registered. Tracked separately
+// from props.name so a rename unregisters the OLD entry instead of orphaning
+// it (unmount after a rename would otherwise remove the new name and leave a
+// ghost button behind).
+let registeredName = props.name
+
 onMounted(() => {
+  registeredName = props.name
   ctx?.register(props.name, props.label, props.disabled)
 })
 
 onBeforeUnmount(() => {
-  ctx?.unregister(props.name)
+  ctx?.unregister(registeredName)
 })
+
+watch(
+  () => [props.name, props.label, props.disabled] as const,
+  ([name, label, disabled]) => {
+    if (!ctx) return
+    ctx.update(registeredName, name, label, disabled)
+    registeredName = name
+  }
+)
 
 const isActive = computed(() => ctx?.isActive(props.name) ?? false)
 const shouldRender = computed(() => {

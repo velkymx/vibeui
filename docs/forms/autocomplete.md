@@ -23,6 +23,7 @@ Search-as-you-type input backed by an array or async source, with keyboard navig
 |-------|---------|-------------|
 | `update:modelValue` | `string` | Emitted as the user types and when an item is selected. |
 | `select` | `T` | Emitted with the chosen item when a result is selected. |
+| `error` | `unknown` | Emitted with the rejection value when an async `source` fails (menu still closes). |
 
 ## Slots
 

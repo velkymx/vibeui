@@ -38,6 +38,13 @@ const canvasContainerStyle = computed(() => {
 // It stays a ref (not a local) so the reactive legend swatches update when it changes.
 const resolvedColors = ref<string[]>([])
 
+// Shape-incomplete data (async load in flight) normalizes to empty arrays so
+// render, redraw, and hit-testing never dereference undefined (see #226).
+const safeData = computed((): ChartData => ({
+  labels: props.data?.labels ?? [],
+  datasets: props.data?.datasets ?? []
+}))
+
 function updateColors() {
   resolvedColors.value = containerEl.value
     ? resolveSliceColors(props.data.labels?.length ?? 0, containerEl.value)
@@ -60,7 +67,7 @@ function redraw() {
     canvas.height = ph
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  drawPie(ctx, props.data, currentW, currentH, resolvedColors.value)
+  drawPie(ctx, safeData.value, currentW, currentH, resolvedColors.value)
 }
 
 useChartResize(containerEl, (w, h) => {
@@ -77,7 +84,7 @@ onMounted(() => {
     cleanupTooltip = bindTooltip(
       containerEl.value,
       canvasEl.value,
-      (x, y) => hitTestPie(x, y, props.data, currentW, currentH)
+      (x, y) => hitTestPie(x, y, safeData.value, currentW, currentH)
     )
   }
 })
@@ -93,7 +100,7 @@ onUnmounted(() => {
 })
 
 const legendItems = computed(() =>
-  props.data.labels.map((label, i) => ({ label, color: resolvedColors.value[i] }))
+  safeData.value.labels.map((label, i) => ({ label, color: resolvedColors.value[i] }))
 )
 </script>
 

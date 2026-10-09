@@ -99,6 +99,26 @@ provide(TABS_CONTEXT_KEY, {
   },
   isActive: (name: string) => internalActive.value === name,
   hasBeenActive: (name: string) => visited.has(name),
+  // Sync a tab whose props changed after mount (label/disabled/name). Mutates
+  // the existing entry in place so strip order is preserved; renames move the
+  // active/visited markers so no ghost entry is left behind.
+  update: (prevName: string, name: string, label: string, disabled: boolean) => {
+    const existing = registry.find(t => t.name === prevName)
+    if (existing) {
+      existing.name = name
+      existing.label = label
+      existing.disabled = disabled
+      if (internalActive.value === prevName) internalActive.value = name
+      if (visited.has(prevName)) {
+        visited.delete(prevName)
+        visited.add(name)
+      }
+    } else {
+      if (!registry.find(t => t.name === name)) {
+        registry.push({ name, label, disabled })
+      }
+    }
+  },
   // Reading via getter so child VibeTab re-evaluates when props.lazy changes.
   get lazy() { return props.lazy }
 })

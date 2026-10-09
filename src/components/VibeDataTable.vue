@@ -43,6 +43,7 @@ const props = defineProps({
   // Display
   showEmpty: { type: Boolean, default: true },
   emptyText: { type: String, default: 'No data available' },
+  loading: { type: Boolean, default: false },
   showPerPage: { type: Boolean, default: true },
   showInfo: { type: Boolean, default: true },
   infoText: { type: String, default: 'Showing {start} to {end} of {total} entries' },
@@ -314,6 +315,22 @@ const handleRowClick = (item: T, index: number) => {
   emit('row-clicked', item, (startRow.value - 1) + index)
 }
 
+// Hoisted: a fresh object literal in :style defeats Vue's reference-based
+// style patch check on every render (same as VibeListGroup CLICKABLE_STYLE).
+const CLICKABLE_ROW_STYLE = { cursor: 'pointer' }
+
+// Row keys computed once per page/sort/filter change instead of re-running
+// the key resolution per row on every render. Keyed by row object so an
+// identity change invalidates only its own entry.
+const rowKeyMap = computed(() => {
+  const map = new Map<T, string | number>()
+  const page = paginatedItems.value
+  for (let index = 0; index < page.length; index++) {
+    map.set(page[index], getRowKey(page[index], index))
+  }
+  return map
+})
+
 // Precompute sort icons once per sort-state/columns change instead of calling a function
 // per header cell on every render. Keyed by column (consistent with the style maps).
 const sortIconMap = computed(() => {
@@ -439,8 +456,8 @@ const cellValueMap = computed(() => {
         <tbody>
           <tr
             v-for="(item, index) in paginatedItems"
-            :key="getRowKey(item, index)"
-            :style="clickable ? { cursor: 'pointer' } : undefined"
+            :key="rowKeyMap.get(item)"
+            :style="clickable ? CLICKABLE_ROW_STYLE : undefined"
             @click="handleRowClick(item, index)"
           >
             <td
@@ -455,7 +472,13 @@ const cellValueMap = computed(() => {
               </slot>
             </td>
           </tr>
-          <tr v-if="paginatedItems.length === 0 && showEmpty">
+          <tr v-if="props.loading">
+            <td :colspan="columns?.length || 1" class="text-center text-body-secondary">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+              Loading...
+            </td>
+          </tr>
+          <tr v-else-if="paginatedItems.length === 0 && showEmpty">
             <td :colspan="columns?.length || 1" class="text-center">
               {{ emptyText }}
             </td>
