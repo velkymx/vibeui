@@ -1,0 +1,202 @@
+import { computed, type ComputedRef, type Ref } from 'vue'
+import {
+  useTable,
+  tableFeatures,
+  createCoreRowModel,
+  createFilteredRowModel,
+  createSortedRowModel,
+  createPaginatedRowModel,
+  columnFilteringFeature,
+  globalFilteringFeature,
+  rowSortingFeature,
+  rowPaginationFeature,
+  type ColumnDef,
+  type Row,
+  type SortFn
+} from '@tanstack/vue-table'
+import type { DataTableColumn } from '../types'
+
+// #283 Phase 0: translate the VibeUI DataTable surface (props + models) into a
+// TanStack Table v9 instance. The component keeps its own markup and v-models;
+// this layer only owns the row-model math (filter/sort/paginate), replacing the
+// hand-rolled pipeline. Semantics are preserved exactly so the existing suite is
+// the characterization gate (see the sort/filter notes below).
+
+// `object` rows are read by a runtime string key (rowKey, column.key); `object`
+// is not indexable, so those reads go through this cast.
+const readField = <T extends object>(row: T, key: string): unknown =>
+  (row as Record<string, unknown>)[key]
+
+// Sort normalization: compareValues pushed null AND undefined to the end in BOTH
+// directions. v9's `sortUndefined: 'last'` does that for undefined only and is
+// direction-independent, so mapping null -> undefined in the accessor reproduces
+// the original null-last-both-directions behavior exactly.
+const normalizeForSort = (value: unknown): unknown => (value == null ? undefined : value)
+
+// Ascending comparator for defined values only (undefined is handled by
+// sortUndefined). Table reverses this for descending, so return ascending order
+// exactly as the old compareValues did for its non-null branches; non-comparable
+// or mixed types compare equal.
+const ascendingCompare = (a: unknown, b: unknown): number => {
+  if (typeof a === 'string' && typeof b === 'string') {
+    const al = a.toLowerCase()
+    const bl = b.toLowerCase()
+    return al < bl ? -1 : al > bl ? 1 : 0
+  }
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a < b ? -1 : a > b ? 1 : 0
+  }
+  if (typeof a === 'boolean' && typeof b === 'boolean') {
+    return a === b ? 0 : a ? 1 : -1
+  }
+  if (a instanceof Date && b instanceof Date) {
+    return a.getTime() - b.getTime()
+  }
+  return 0
+}
+
+// Static feature set: filtering (global reuses the column-filter pipeline),
+// sorting, pagination, plus their row models. Stable module-level reference so
+// the table is not reconstructed per render.
+const features = tableFeatures({
+  columnFilteringFeature,
+  globalFilteringFeature,
+  rowSortingFeature,
+  rowPaginationFeature,
+  coreRowModel: createCoreRowModel(),
+  filteredRowModel: createFilteredRowModel(),
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel()
+})
+
+export interface UseVibeTableParams<T extends object> {
+  items: () => T[]
+  columns: () => DataTableColumn<T>[]
+  rowKey: () => string
+  searchable: () => boolean
+  sortable: () => boolean
+  paginated: () => boolean
+  serverMode: () => boolean
+  totalRows: () => number | undefined
+  search: Ref<string>
+  currentPage: Ref<number>
+  perPage: Ref<number>
+  sortBy: Ref<string | undefined>
+  sortDesc: Ref<boolean>
+}
+
+export interface UseVibeTableResult<T extends object> {
+  // The visible rows' original data, after filter/sort/paginate (or as-is in
+  // server mode), matching the previous `paginatedItems` contract.
+  paginatedItems: ComputedRef<T[]>
+  // Count the pagination reflects locally: the filtered row count (client) so
+  // the info line and "filtered from N" check behave identically.
+  filteredCount: ComputedRef<number>
+}
+
+export function useVibeTable<T extends object>(
+  params: UseVibeTableParams<T>
+): UseVibeTableResult<T> {
+  // Per-column id -> VibeUI column, for the global filter's displayed-text rule.
+  const columnsById = computed(() => {
+    const map = new Map<string, DataTableColumn<T>>()
+    for (const column of params.columns()) map.set(column.key, column)
+    return map
+  })
+
+  const columnDefs = computed<ColumnDef<typeof features, T>[]>(() =>
+    params.columns().map((column) => {
+      const sortFn: SortFn<typeof features, T> = (rowA: Row<typeof features, T>, rowB: Row<typeof features, T>, columnId: string) =>
+        ascendingCompare(rowA.getValue(columnId), rowB.getValue(columnId))
+      return {
+        id: column.key,
+        accessorFn: (row: T) => normalizeForSort(readField(row, column.key)),
+        sortUndefined: 'last',
+        sortFn
+      }
+    })
+  )
+
+  // Displayed-text global filter: searchValue hook wins, then formatter output,
+  // then the raw value (#70). A row matches if ANY eligible column matches.
+  const globalFilterFn = (row: Row<typeof features, T>, columnId: string, filterValue: unknown): boolean => {
+    const query = String(filterValue ?? '').toLowerCase()
+    if (!query) return true
+    const column = columnsById.value.get(columnId)
+    if (!column) return false
+    const item = row.original
+    const value = column.searchValue
+      ? column.searchValue(item)
+      : column.formatter
+        ? column.formatter(item[column.key], item)
+        : item[column.key]
+    if (value == null) return false
+    return String(value).toLowerCase().includes(query)
+  }
+
+  const data = computed(() => params.items() || [])
+
+  // Controlled state mirrors the component's v-models. Search and sort are gated
+  // by the feature flags so toggling them off restores the unfiltered/unsorted
+  // order exactly as the old computeds did.
+  const state = computed(() => ({
+    pagination: {
+      pageIndex: Math.max(0, params.currentPage.value - 1),
+      pageSize: Math.max(1, params.perPage.value)
+    },
+    sorting:
+      params.sortable() && params.sortBy.value
+        ? [{ id: params.sortBy.value, desc: params.sortDesc.value }]
+        : [],
+    globalFilter: params.searchable() ? params.search.value : ''
+  }))
+
+  const table = useTable({
+    features,
+    data,
+    columns: columnDefs,
+    state,
+    // Component owns page reset (search watch + totalPages clamp); do not let the
+    // table also reset the index.
+    autoResetPageIndex: false,
+    globalFilterFn,
+    getColumnCanGlobalFilter: (column) => columnsById.value.get(column.id)?.searchable !== false,
+    getRowId: (row: T, index: number) => {
+      const key = readField(row, params.rowKey())
+      return key != null ? String(key) : String(index)
+    },
+    // #124 server mode: the backend already filtered/sorted/paged; trust `items`
+    // as the current page and drive the count from totalRows.
+    manualFiltering: params.serverMode(),
+    manualSorting: params.serverMode(),
+    manualPagination: params.serverMode(),
+    rowCount: params.serverMode() ? params.totalRows() : undefined,
+    // Callbacks accept a value or an updater of the previous value. State is
+    // owned by the v-models; these keep the table in sync if it ever sets state.
+    onPaginationChange: (updater) => {
+      const prev = state.value.pagination
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      params.currentPage.value = next.pageIndex + 1
+      params.perPage.value = next.pageSize
+    },
+    onSortingChange: (updater) => {
+      const prev = state.value.sorting
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      const first = next[0]
+      params.sortBy.value = first ? first.id : undefined
+      params.sortDesc.value = first ? first.desc : false
+    }
+  })
+
+  const paginatedItems = computed<T[]>(() => {
+    // Server mode: manual flags make getRowModel return `items` unmodified.
+    if (params.serverMode()) return table.getRowModel().rows.map((r) => r.original)
+    // Pagination off: render every filtered/sorted row (pre-slice).
+    if (!params.paginated()) return table.getSortedRowModel().rows.map((r) => r.original)
+    return table.getRowModel().rows.map((r) => r.original)
+  })
+
+  const filteredCount = computed(() => table.getFilteredRowModel().rows.length)
+
+  return { paginatedItems, filteredCount }
+}

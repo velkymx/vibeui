@@ -31,12 +31,17 @@ export default defineConfig({
         'chart-bar': path.resolve(__dirname, 'src/chart-bar.ts'),
         'chart-pie': path.resolve(__dirname, 'src/chart-pie.ts'),
         wysiwyg: path.resolve(__dirname, 'src/wysiwyg.ts'),
+        // #283: DataTable ships its own entry so lazy loaders pull just the
+        // component (and its @tanstack/table engine), not the whole library.
+        datatable: path.resolve(__dirname, 'src/datatable.ts'),
       },
       formats: ['es'],
       fileName: (format, entryName) => `${entryName}.${format}.js`,
     },
     rollupOptions: {
-      external: ['vue', /^quill/, /^bootstrap/, /^dompurify/],
+      // @tanstack/* stays external so the datatable entry references the engine
+      // as a peer import rather than inlining it per entry build.
+      external: ['vue', /^quill/, /^bootstrap/, /^dompurify/, /^@tanstack\//],
     },
   },
 })

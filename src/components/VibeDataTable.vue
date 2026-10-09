@@ -5,6 +5,7 @@ import type { DataTableColumn, ComponentError, Variant } from '../types'
 import { safeCssObject } from '../utils/safeCss'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
 import { isDev } from '../composables/useEventBus'
+import { useVibeTable } from '../composables/useVibeTable'
 
 const props = defineProps({
   // Data
@@ -131,101 +132,24 @@ watch(() => [debouncedSearchQuery.value], ([newVal]) => {
   emit('search', newVal)
 })
 
-// Filtered items (based on search)
-const filteredItems = computed(() => {
-  // #124: in server mode the backend already filtered; render items as-is.
-  if (props.serverMode) return props.items || []
-  if (!props.searchable || !debouncedSearchQuery.value) {
-    return props.items || []
-  }
-
-  const query = debouncedSearchQuery.value.toLowerCase()
-  return (props.items || []).filter((item) => {
-    return (props.columns || []).some((column) => {
-      if (column.searchable === false) return false
-      // #70: search the DISPLAYED text. searchValue (explicit hook, e.g. for
-      // #cell slots) wins, then formatter output, then the raw value.
-      const value = column.searchValue
-        ? column.searchValue(item)
-        : column.formatter
-          ? column.formatter(item[column.key], item)
-          : item[column.key]
-      if (value == null) return false
-      return String(value).toLowerCase().includes(query)
-    })
-  })
-})
-
-/**
- * Compare two values for sorting, handling unknown types safely.
- * Supports strings, numbers, booleans, and Dates.
- * Non-comparable types (objects, arrays, symbols) are treated as equal.
- */
-const compareValues = (a: unknown, b: unknown, desc: boolean): number => {
-  // Handle null/undefined - push to end
-  if (a == null) return 1
-  if (b == null) return -1
-
-  // Handle strings
-  if (typeof a === 'string' && typeof b === 'string') {
-    const aLower = a.toLowerCase()
-    const bLower = b.toLowerCase()
-    if (aLower < bLower) return desc ? 1 : -1
-    if (aLower > bLower) return desc ? -1 : 1
-    return 0
-  }
-
-  // Handle numbers
-  if (typeof a === 'number' && typeof b === 'number') {
-    if (a < b) return desc ? 1 : -1
-    if (a > b) return desc ? -1 : 1
-    return 0
-  }
-
-  // Handle booleans (false < true)
-  if (typeof a === 'boolean' && typeof b === 'boolean') {
-    if (a === b) return 0
-    return (a ? 1 : -1) * (desc ? -1 : 1)
-  }
-
-  // Handle Dates
-  if (a instanceof Date && b instanceof Date) {
-    const aTime = a.getTime()
-    const bTime = b.getTime()
-    if (aTime < bTime) return desc ? 1 : -1
-    if (aTime > bTime) return desc ? -1 : 1
-    return 0
-  }
-
-  // Non-comparable types (objects, arrays, symbols, mixed types) - treat as equal
-  return 0
-}
-
-// Sorted items
-const sortedItems = computed(() => {
-  // #124: in server mode the backend already sorted; do not reorder.
-  if (props.serverMode || !props.sortable || !sortBy.value) {
-    return filteredItems.value
-  }
-
-  const items = [...filteredItems.value]
-  const sortKey = sortBy.value
-
-  items.sort((a, b) => compareValues(readField(a, sortKey), readField(b, sortKey), sortDesc.value))
-
-  return items
-})
-
-// Paginated items
-const paginatedItems = computed(() => {
-  // #124: in server mode `items` is already the current page; render as-is.
-  if (props.serverMode || !props.paginated) {
-    return sortedItems.value
-  }
-
-  const start = (currentPage.value - 1) * perPage.value
-  const end = start + perPage.value
-  return sortedItems.value.slice(start, end)
+// #283: the filter/sort/paginate pipeline is owned by TanStack Table v9 via
+// useVibeTable. `paginatedItems` (visible rows) and `filteredCount` (local
+// filtered total) preserve the previous contracts exactly; the component keeps
+// its own markup, v-models, and per-cell maps.
+const { paginatedItems, filteredCount } = useVibeTable<T>({
+  items: () => props.items,
+  columns: () => props.columns,
+  rowKey: () => props.rowKey,
+  searchable: () => props.searchable,
+  sortable: () => props.sortable,
+  paginated: () => props.paginated,
+  serverMode: () => props.serverMode,
+  totalRows: () => props.totalRows,
+  search: debouncedSearchQuery,
+  currentPage,
+  perPage,
+  sortBy,
+  sortDesc
 })
 
 // Pagination info
@@ -234,7 +158,7 @@ const clientTotalRows = computed(() => props.items.length)
 // #124: the total the pagination reflects. Server mode uses the external totalRows
 // prop (the backend's full count); client mode uses the locally filtered count.
 const totalFilteredRows = computed(() =>
-  props.serverMode ? (props.totalRows ?? clientTotalRows.value) : filteredItems.value.length
+  props.serverMode ? (props.totalRows ?? clientTotalRows.value) : filteredCount.value
 )
 const totalPages = computed(() => Math.ceil(totalFilteredRows.value / Math.max(1, perPage.value)))
 const startRow = computed(() => {
