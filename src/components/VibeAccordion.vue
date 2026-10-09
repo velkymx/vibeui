@@ -3,6 +3,7 @@ import { reportComponentError } from '../utils/reportComponentError'
 import { useTemplateRef, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import type { AccordionItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
+import { isDev } from '../composables/useEventBus'
 
 interface BootstrapCollapse {
   show: () => void
@@ -38,7 +39,7 @@ const CSS_SPECIAL_CHARS = /[ .:#[\](){}+~>,|^$*?=]/
 // DEV-only: warn for ids that will break Bootstrap's querySelector. Covers both the
 // accordion container id and every item.id (used in data-bs-target / data-bs-parent).
 const warnUnsafeIds = () => {
-  if (!import.meta.env.DEV) return
+  if (!isDev()) return
   if (props.id && CSS_SPECIAL_CHARS.test(props.id)) {
     console.warn(`[VibeAccordion] id "${props.id}" contains CSS-special characters. Bootstrap's querySelector will fail. Use only alphanumeric characters, hyphens, and underscores.`)
   }

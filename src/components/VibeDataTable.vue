@@ -4,6 +4,7 @@ import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { DataTableColumn, ComponentError, Variant } from '../types'
 import { safeCssObject } from '../utils/safeCss'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
+import { isDev } from '../composables/useEventBus'
 
 const props = defineProps({
   // Data
@@ -101,7 +102,7 @@ const getRowKey = (item: T, index: number): string | number => {
   }
 
   // Warn in development if no rowKey is found
-  if (import.meta.env.DEV && index === 0) {
+  if (isDev() && index === 0) {
     console.warn(
       `[VibeDataTable] No unique key found for rows. ` +
       `For better performance and correct behavior during sorting/filtering, ` +

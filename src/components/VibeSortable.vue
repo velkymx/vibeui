@@ -3,6 +3,7 @@
      Use VibeDraggable + VibeDroppable for cross-list or free-form drag-drop scenarios. -->
 <script setup lang="ts" generic="T extends object">
 import { ref, onMounted, onBeforeUnmount, onActivated, type PropType } from 'vue'
+import { isDev } from '../composables/useEventBus'
 
 const props = defineProps({
   modelValue: { type: Array as PropType<T[]>, required: true },
@@ -48,7 +49,7 @@ const resolveKey = (item: T): string | number => {
   // splice reorder, which keeps the same object references). WeakMap keeps this
   // type-safe and leak-free. Warn once, since the id is not stable across
   // immutable replacement of items.
-  if (import.meta.env.DEV && !warnedNoKey) {
+  if (isDev() && !warnedNoKey) {
     warnedNoKey = true
     console.warn(
       '[VibeSortable] No `itemKey` prop set for object rows. Rows are keyed by item ' +

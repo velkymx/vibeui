@@ -5,7 +5,7 @@ import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
-import { emitEvent } from '../composables/useEventBus'
+import { emitEvent, isDev } from '../composables/useEventBus'
 import { registerOffcanvas } from '../composables/offcanvasChannel'
 
 interface BootstrapOffcanvas {
@@ -204,7 +204,7 @@ const hide = () => bsOffcanvas.value?.hide()
 // capture it at setup (getCurrentInstance() is null in the bus controller below).
 const vModelBound = getCurrentInstance()?.vnode.props?.['onUpdate:modelValue'] != null
 const warnIfVModel = () => {
-  if (import.meta.env.DEV && vModelBound) {
+  if (isDev() && vModelBound) {
     console.warn(
       `[VibeOffcanvas] "${computedId.value}" received a bus command while bound with v-model. ` +
       'Use either v-model or the bus command channel for one instance, not both (#121).'

@@ -1,4 +1,4 @@
-import { onPersistent, emitEvent } from './useEventBus'
+import { onPersistent, emitEvent, isDev, registerSSRReset } from './useEventBus'
 
 /**
  * Modal command routing for the event bus (#98).
@@ -39,7 +39,7 @@ onPersistent('modal:close', ({ id }) => {
 export function registerModal(id: string, controller: ModalController): () => void {
   // Ids must be unique: the registry is last-wins, so a duplicate silently hides
   // the first modal from the bus. Warn in development to surface the mistake.
-  if (import.meta.env.DEV && registry.has(id)) {
+  if (isDev() && registry.has(id)) {
     console.warn(`[VibeUI] A modal with id "${id}" is already registered on the event bus; the later one overrides it. Use unique ids.`)
   }
   registry.set(id, controller)
@@ -48,7 +48,14 @@ export function registerModal(id: string, controller: ModalController): () => vo
   }
 }
 
+/** Request boundary: drop registrations from a render that never unmounted (SSR). */
+export function resetModalRegistryForSSR(): void {
+  registry.clear()
+}
+
+registerSSRReset(resetModalRegistryForSSR)
+
 /** Test-only: clear the id registry. */
 export function __resetModalRegistry(): void {
-  registry.clear()
+  resetModalRegistryForSSR()
 }

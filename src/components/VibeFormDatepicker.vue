@@ -5,13 +5,14 @@ import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
+import { isDev } from '../composables/useEventBus'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 // The validator option still forwards to the underlying prop.
 const modelValue = defineModel<string>({
   default: '',
   validator: (value: unknown) => {
-    if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+    if (isDev() && value !== null && typeof value === 'object') {
       console.error(
         `[VibeFormDatepicker] Invalid prop: modelValue must be a string, received object. ` +
         `If you're using useFormValidation(), bind to the .value property: ` +

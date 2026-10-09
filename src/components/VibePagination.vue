@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Size, ComponentError } from '../types'
+import { isDev } from '../composables/useEventBus'
 
 const props = defineProps({
   size: { type: String as () => Size, default: undefined },
@@ -11,7 +12,7 @@ const props = defineProps({
     type: Number,
     default: 1,
     validator: (v: number) => {
-      if (import.meta.env.DEV && (!Number.isInteger(v) || v < 1)) {
+      if (isDev() && (!Number.isInteger(v) || v < 1)) {
         console.warn(`[VibePagination] currentPage must be a positive integer, got ${v}`)
       }
       return true
@@ -50,7 +51,7 @@ const paginationClass = computed(() => {
 const visibleItems = computed((): (number | null)[] => {
   const total = props.totalPages
   if (total === 0) return []
-  if (import.meta.env.DEV && props.maxVisiblePages < 5) {
+  if (isDev() && props.maxVisiblePages < 5) {
     console.warn('[VibePagination] maxVisiblePages must be at least 5. Got:', props.maxVisiblePages)
   }
   const max = Math.max(5, props.maxVisiblePages)

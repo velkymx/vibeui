@@ -1,6 +1,6 @@
 import { reactive, readonly, type DeepReadonly } from 'vue'
 import type { Variant, ToastPlacement } from '../types'
-import { emitEvent, registerSupportedEvent } from './useEventBus'
+import { emitEvent, isDev, registerSupportedEvent } from './useEventBus'
 
 // The notification command events require a target (a mounted VibeToastHost),
 // so register them for the bus unhandled-event guard.
@@ -37,7 +37,7 @@ let counter = 0
 // requests) that leaks toasts between users unless reset per request. Warn in DEV-SSR so
 // the requirement to call resetToastStoreForSSR() per request is not silently missed.
 if (
-  import.meta.env.DEV &&
+  isDev() &&
   typeof window === 'undefined' &&
   // Detect Node without pulling in @types/node (this is a browser-first library):
   // read process off globalThis rather than the bare global name.

@@ -51,7 +51,12 @@ const ERROR_COMPONENT = 'error:component'
 const ERROR_UNHANDLED = 'error:unhandled'
 const isErrorChannel = (event: string): boolean => event.startsWith('error:')
 
-const isDev = (): boolean => {
+/**
+ * Guarded development check: the only `import.meta.env` read in `src/`.
+ * Every other module routes through this so a plain-Node ESM import (where
+ * `import.meta` has no `env`) never throws at module scope (see #231).
+ */
+export const isDev = (): boolean => {
   try {
     return !!import.meta.env && import.meta.env.DEV
   } catch {
@@ -197,6 +202,9 @@ export function registerSupportedEvent(...events: string[]): void {
  * leaking handlers across requests (the bus is a module singleton). Persistent
  * library subscriptions (see `onPersistent`) and the static supported-event
  * registry are kept, so the built-in channels keep working after a reset.
+ * Channel plus theme modules register their own per-request clearers via
+ * `registerSSRReset`, so this one call also drops modal/offcanvas
+ * registrations and restores theme isolation (see #231).
  */
 export function resetEventBusForSSR(): void {
   for (const [event, set] of handlers) {
@@ -205,6 +213,20 @@ export function resetEventBusForSSR(): void {
     }
     if (set.size === 0) handlers.delete(event)
   }
+  // Channel registries are keyed by component id, not by subscription: they
+  // must be cleared on the same boundary or request B routes into request
+  // A's disposed controllers.
+  for (const resetter of [...ssrResets]) resetter()
+}
+
+/**
+ * Module-level per-request clearers (channel registries, theme state) run by
+ * `resetEventBusForSSR`. A hook instead of direct imports: the channel modules
+ * already import this module, so importing them back would cycle (see #231).
+ */
+const ssrResets = new Set<() => void>()
+export function registerSSRReset(resetter: () => void): void {
+  ssrResets.add(resetter)
 }
 
 /** Test-only: reset handlers, the supported-event registry, and persistents. */

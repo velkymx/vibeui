@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, type PropType } from 'vue'
+import { isDev } from '../composables/useEventBus'
 
 type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
@@ -61,7 +62,7 @@ const containerStyle = computed(() => ({
 }))
 
 const validHandles = computed(() => {
-  if (import.meta.env.DEV) {
+  if (isDev()) {
     const invalid = props.handles.filter(h => !ALL_HANDLES.includes(h))
     if (invalid.length) console.warn(`[VibeResizable] Invalid handle values: ${invalid.join(', ')}. Valid: ${ALL_HANDLES.join(', ')}`)
   }

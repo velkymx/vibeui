@@ -1,5 +1,6 @@
 import { routeKey } from './routeKey'
 import type { DropdownItem } from '../types'
+import { isDev } from '../composables/useEventBus'
 
 /**
  * #133: shared v-for keying for DropdownItem lists (VibeDropdown and the
@@ -13,7 +14,7 @@ export function dropdownItemKey(item: DropdownItem, index: number, component: st
   const key = item.text || item.href || routeKey(item.to)
   if (key) return key
   if (item.divider || item.header) return `__sep-${index}`
-  if (import.meta.env.DEV) {
+  if (isDev()) {
     console.warn(
       `[${component}] A dropdown item has no text, href, or to, so its list key ` +
       'falls back to the array index. Index keys can cause incorrect DOM reuse if the ' +
