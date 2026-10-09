@@ -9,6 +9,8 @@ const props = defineProps({
   tag: { type: String as PropType<Tag | 'a'>, default: 'a' },
   href: { type: String, default: undefined },
   to: { type: [String, Object], default: undefined },
+  target: { type: String, default: undefined },
+  rel: { type: String, default: undefined },
   variant: { type: String as PropType<Variant>, default: undefined },
   underline: { type: [Boolean, String] as PropType<boolean | '0'>, default: true },
   underlineVariant: { type: String as PropType<Variant>, default: undefined },
@@ -22,16 +24,27 @@ const vibeDefaults = useVibeDefaults()
 const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
 
 
-const isRouterLink = computed(() => !!props.to)
+// An href that fails sanitizing is dropped entirely rather than rendered as a
+// dead anchor, so the element falls through to `to` or to the plain tag.
+const sanitizedHref = computed(() => safeHref(props.href))
+const isRouterLink = computed(() => !sanitizedHref.value && !!props.to)
 const componentTag = computed(() => {
   if (isRouterLink.value) return 'router-link'
-  return props.tag
+  return sanitizedHref.value ? 'a' : props.tag
 })
 
-// `to` takes precedence here, matching componentTag above.
-const linkAttrs = computed(() =>
-  linkBindings(isRouterLink.value ? undefined : safeHref(props.href), props.to)
-)
+// target="_blank" without an explicit rel is a tabnabbing vector: default to
+// noopener. Keys omitted when undefined so router-link fallthrough never sees
+// undefined values (same discipline as linkBindings).
+const rootAttrs = computed(() => {
+  const out: Record<string, unknown> = {
+    ...linkBindings(sanitizedHref.value, isRouterLink.value ? props.to : undefined)
+  }
+  if (props.target !== undefined) out.target = props.target
+  const rel = props.rel ?? (props.target === '_blank' ? 'noopener' : undefined)
+  if (rel !== undefined) out.rel = rel
+  return out
+})
 
 const linkClass = computed(() => {
   const classes: string[] = []
@@ -72,7 +85,7 @@ const linkClass = computed(() => {
   <component
     :is="componentTag"
     :class="linkClass"
-    v-bind="linkAttrs"
+    v-bind="rootAttrs"
   >
     <slot />
   </component>

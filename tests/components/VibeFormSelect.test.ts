@@ -612,4 +612,35 @@ describe('VibeFormSelect updates on change (issue #73)', () => {
     expect(emitted).toBeTruthy()
     expect(emitted[emitted.length - 1][0]).toBe('b')
   })
+
+  // #237 P1: multiple plus placeholder maps options 1:1 (the placeholder
+  // option is not rendered under multiple, so no offset applies).
+  describe('multiple plus placeholder (#237)', () => {
+    const ab = [
+      { value: 'a', text: 'A' },
+      { value: 'b', text: 'B' }
+    ]
+    const selectedOf = (wrapper: { find: (s: string) => { element: unknown } }) =>
+      Array.from((wrapper.find('select').element as HTMLSelectElement).options).map(
+        (o) => `${o.text}:${o.selected}`
+      )
+
+    it('selects the correct option for an array model', async () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: { options: ab, multiple: true, placeholder: 'Pick', modelValue: ['a'] }
+      })
+      await wrapper.vm.$nextTick()
+      expect(selectedOf(wrapper)).toEqual(['A:true', 'B:false'])
+      wrapper.unmount()
+    })
+
+    it('deselects everything for an unmatched model', async () => {
+      const wrapper = mount(VibeFormSelect, {
+        props: { options: ab, multiple: true, placeholder: 'Pick', modelValue: ['zzz'] }
+      })
+      await wrapper.vm.$nextTick()
+      expect(selectedOf(wrapper)).toEqual(['A:false', 'B:false'])
+      wrapper.unmount()
+    })
+  })
 })

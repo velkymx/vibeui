@@ -36,8 +36,12 @@ const props = defineProps({
 const colClass = computed(() => {
   const classes: string[] = []
 
-  // Default to 'col' if no sizing props provided (auto-layout)
-  const hasAnyColProp = props.cols !== undefined || props.sm !== undefined || props.md !== undefined || props.lg !== undefined || props.xl !== undefined || props.xxl !== undefined
+  // Default to 'col' if no sizing props provided (auto-layout).
+  // `false` means "no opinion", same as absent: it must neither suppress the
+  // default 'col' nor emit a class.
+  const hasAnyColProp = [props.cols, props.sm, props.md, props.lg, props.xl, props.xxl].some(
+    (v) => v !== undefined && v !== false
+  )
 
   if (!hasAnyColProp) {
     classes.push('col')
@@ -45,7 +49,7 @@ const colClass = computed(() => {
     // Base column classes
     if (props.cols === true) classes.push('col')
     else if (props.cols === 'auto') classes.push('col-auto')
-    else if (props.cols) classes.push(`col-${props.cols}`)
+    else if (props.cols !== undefined && props.cols !== false) classes.push(`col-${props.cols}`)
 
     // Responsive breakpoints
     const breakpoints = [
@@ -59,7 +63,7 @@ const colClass = computed(() => {
     breakpoints.forEach(({ name, value }) => {
       if (value === true) classes.push(`col-${name}`)
       else if (value === 'auto') classes.push(`col-${name}-auto`)
-      else if (value !== undefined) classes.push(`col-${name}-${value}`)
+      else if (value !== undefined && value !== false) classes.push(`col-${name}-${value}`)
     })
   }
 

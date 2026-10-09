@@ -78,6 +78,7 @@ const viewMonth = ref(todayDate().getMonth())
 const focusedIso = ref<IsoDate | null>(null)
 const rootRef = useTemplateRef<HTMLElement>('rootRef')
 const popoverRef = useTemplateRef<HTMLElement>('popoverRef')
+const inputEl = useTemplateRef<HTMLElement>('inputEl')
 
 const lowDate = computed<DateValue>(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue[0]
@@ -194,6 +195,11 @@ const closePopover = () => {
   if (isOpen.value) {
     isOpen.value = false
     emit('close')
+    // The popover is v-if: the focused day button unmounts. Return focus to
+    // the input that opened it, or Tab resumes from the top of the page.
+    nextTick(() => {
+      inputEl.value?.focus()
+    })
   }
 }
 
@@ -259,12 +265,18 @@ const cellClassMap = computed(() => {
 })
 
 const setFocusedDate = async (iso: IsoDate) => {
-  focusedIso.value = iso
   const d = fromIso(iso)
   if (d.getFullYear() !== viewYear.value || d.getMonth() !== viewMonth.value) {
     viewYear.value = d.getFullYear()
     viewMonth.value = d.getMonth()
   }
+  // Never move focus onto a non-selectable day: focusing a disabled button is
+  // a no-op that strands focus on a node about to re-render. Look up after
+  // the view sync so callers that change months (PageUp/PageDown) resolve
+  // against the fresh grid.
+  const cell = monthGrid.value.find(c => c.iso === iso)
+  if (!cell || cell.disabled) return
+  focusedIso.value = iso
   await nextTick()
   const el = popoverRef.value?.querySelector<HTMLElement>(`[data-iso="${iso}"]`)
   el?.focus()
@@ -381,6 +393,7 @@ defineExpose({ open: () => { if (!isOpen.value) togglePopover() }, close: closeP
     <input
       v-bind="$attrs"
       :id="computedId"
+      ref="inputEl"
       type="text"
       readonly
       class="form-control"

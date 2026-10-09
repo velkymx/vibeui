@@ -145,6 +145,29 @@ describe('useFormValidation', () => {
       expect(field.isTouched.value).toBe(false)
       expect(field.isValidating.value).toBe(false)
     })
+
+    // #233 S2: an async rule in flight across reset() must commit nothing.
+    it('invalidates an in-flight async validate', async () => {
+      const field = useFormValidation('ok')
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const pending = field.validate([
+        {
+          validator: async () => {
+            await gate
+            return 'too slow'
+          }
+        }
+      ])
+      field.reset()
+      release()
+      await pending
+      expect(field.validationState.value).toBeNull()
+      expect(field.validationMessage.value).toBe('')
+      expect(field.isDirty.value).toBe(false)
+    })
   })
 
   describe('markAsTouched / markAsDirty', () => {

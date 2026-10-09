@@ -75,4 +75,4 @@ The first click sets `[start, null]`. The second click adds the end date and clo
 
 **Read-only input:** The text input is read-only; dates are chosen through the calendar popover, which closes on outside click or `Escape`.
 
-**Keyboard navigation:** The grid supports arrow keys (day), `PageUp`/`PageDown` (month), `Home`/`End` (week), and `Enter`/`Space` to select.
+**Keyboard navigation:** The grid supports arrow keys (day), `PageUp`/`PageDown` (month), `Home`/`End` (week), and `Enter`/`Space` to select. Arrow navigation never moves focus onto a disabled day. Every close (select, `Escape`, outside click) returns focus to the input.
