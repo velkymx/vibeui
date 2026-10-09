@@ -40,8 +40,13 @@ let warnedNoKey = false
 const readField = (row: T, key: string): unknown => (row as Record<string, unknown>)[key]
 const resolveKey = (item: T): string | number => {
   const isObject = item !== null && typeof item === 'object'
-  // Objects with an explicit key field: use it.
-  if (isObject && props.itemKey) return readField(item, props.itemKey) as string | number
+  // Objects with an explicit key field: use it when it yields a usable key.
+  // A missing field (typo'd item-key, heterogeneous rows) yields undefined,
+  // which must NOT become the v-for key: fall through to identity below.
+  if (isObject && props.itemKey) {
+    const keyed = readField(item, props.itemKey)
+    if (typeof keyed === 'string' || typeof keyed === 'number') return keyed
+  }
   // Primitives: the value is the identity, stable across reorder.
   if (!isObject) return item as unknown as string | number
   // Objects without itemKey: assign a stable id per reference (survives the
