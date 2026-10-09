@@ -31,6 +31,10 @@
       "types": "./dist/wysiwyg.d.ts",
       "import": "./dist/wysiwyg.es.js"
     },
+    "./datatable": {
+      "types": "./dist/datatable.d.ts",
+      "import": "./dist/datatable.es.js"
+    },
     "./style.css": "./dist/vibeui.css",
     "./dist/vibeui.css": "./dist/vibeui.css",
     "./dist/style.css": "./dist/vibeui.css",
@@ -81,7 +85,8 @@
   },
   "homepage": "https://github.com/velkymx/vibeui#readme",
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6"
+    "@floating-ui/dom": "^1.7.6",
+    "@tanstack/vue-table": "^9.2.8"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
