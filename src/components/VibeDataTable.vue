@@ -73,6 +73,8 @@ const sortDesc = defineModel<boolean>('sortDesc', { default: false })
 const sort = defineModel<{ id: string; desc: boolean }[]>('sort', { default: () => [] })
 // #283 Phase 1: selected row keys (ids per rowKey). Two-way for controlled use.
 const selectedRows = defineModel<(string | number)[]>('selectedRows', { default: () => [] })
+// #283 Phase 2b: per-column filter state ({ id, value }).
+const columnFilters = defineModel<{ id: string; value: unknown }[]>('columnFilters', { default: () => [] })
 
 const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
@@ -148,7 +150,7 @@ watch(() => [debouncedSearchQuery.value], ([newVal]) => {
 // useVibeTable. `paginatedItems` (visible rows) and `filteredCount` (local
 // filtered total) preserve the previous contracts exactly; the component keeps
 // its own markup, v-models, and per-cell maps.
-const { paginatedItems, filteredCount, selection } = useVibeTable<T>({
+const { paginatedItems, filteredCount, selection, filters } = useVibeTable<T>({
   items: () => props.items,
   columns: () => props.columns,
   rowKey: () => props.rowKey,
@@ -165,8 +167,25 @@ const { paginatedItems, filteredCount, selection } = useVibeTable<T>({
   multiSort: () => props.multiSort,
   sort,
   selectable: () => props.selectable,
-  selectedRows
+  selectedRows,
+  columnFilters
 })
+
+// #283 Phase 2b: filter row helpers (unwrapped for the template).
+const filtersEnabled = computed(() => filters.enabled.value)
+const filterText = (column: DataTableColumn<T>): string => String(filters.get(column.key) ?? '')
+const filterOptions = (column: DataTableColumn<T>): string[] => filters.uniqueValues(column.key)
+const setFilter = (column: DataTableColumn<T>, value: unknown) => filters.set(column.key, value)
+// Range tuple read/write: [min, max] as strings for the number inputs.
+const filterRange = (column: DataTableColumn<T>): [string, string] => {
+  const value = filters.get(column.key)
+  return Array.isArray(value) ? [String(value[0] ?? ''), String(value[1] ?? '')] : ['', '']
+}
+const setFilterRange = (column: DataTableColumn<T>, index: 0 | 1, value: string) => {
+  const next = filterRange(column)
+  next[index] = value
+  filters.set(column.key, next)
+}
 
 // Selection key for a row, matching the engine's getRowId (rowKey value).
 const selectKey = (item: T): string => String(readField(item, props.rowKey))
@@ -450,6 +469,45 @@ const cellValueMap = computed(() => {
                 :class="['ms-1', 'vibe-sort-icon', sortIconMap.get(column)]"
                 aria-hidden="true"
               ></span>
+            </th>
+          </tr>
+          <tr v-if="filtersEnabled" class="vibe-filter-row">
+            <th v-if="selectEnabled" class="vibe-select-cell"></th>
+            <th v-for="column in columns" :key="column.key" :class="column.headerClass">
+              <input
+                v-if="column.filter === 'text'"
+                type="search"
+                class="form-control form-control-sm vibe-filter-text"
+                :aria-label="`Filter ${column.label}`"
+                :value="filterText(column)"
+                @input="setFilter(column, ($event.target as HTMLInputElement).value)"
+              />
+              <select
+                v-else-if="column.filter === 'select'"
+                class="form-select form-select-sm vibe-filter-select"
+                :aria-label="`Filter ${column.label}`"
+                :value="filterText(column)"
+                @change="setFilter(column, ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="">All</option>
+                <option v-for="opt in filterOptions(column)" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              <div v-else-if="column.filter === 'range'" class="d-flex gap-1">
+                <input
+                  type="number"
+                  class="form-control form-control-sm vibe-filter-range"
+                  :aria-label="`Filter ${column.label} minimum`"
+                  :value="filterRange(column)[0]"
+                  @input="setFilterRange(column, 0, ($event.target as HTMLInputElement).value)"
+                />
+                <input
+                  type="number"
+                  class="form-control form-control-sm vibe-filter-range"
+                  :aria-label="`Filter ${column.label} maximum`"
+                  :value="filterRange(column)[1]"
+                  @input="setFilterRange(column, 1, ($event.target as HTMLInputElement).value)"
+                />
+              </div>
             </th>
           </tr>
         </thead>

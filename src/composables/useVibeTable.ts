@@ -6,7 +6,10 @@ import {
   createFilteredRowModel,
   createSortedRowModel,
   createPaginatedRowModel,
+  createFacetedRowModel,
+  createFacetedUniqueValues,
   columnFilteringFeature,
+  columnFacetingFeature,
   globalFilteringFeature,
   rowSortingFeature,
   rowPaginationFeature,
@@ -61,6 +64,7 @@ const ascendingCompare = (a: unknown, b: unknown): number => {
 // the table is not reconstructed per render.
 const features = tableFeatures({
   columnFilteringFeature,
+  columnFacetingFeature,
   globalFilteringFeature,
   rowSortingFeature,
   rowPaginationFeature,
@@ -68,7 +72,10 @@ const features = tableFeatures({
   coreRowModel: createCoreRowModel(),
   filteredRowModel: createFilteredRowModel(),
   sortedRowModel: createSortedRowModel(),
-  paginatedRowModel: createPaginatedRowModel()
+  paginatedRowModel: createPaginatedRowModel(),
+  // Faceting feeds the select filter's option list (unique values per column).
+  facetedRowModel: createFacetedRowModel(),
+  facetedUniqueValues: createFacetedUniqueValues()
 })
 
 export interface UseVibeTableParams<T extends object> {
@@ -92,6 +99,16 @@ export interface UseVibeTableParams<T extends object> {
   // #283 Phase 1: false (off), 'single', 'multiple', or true (= multiple).
   selectable: () => boolean | 'single' | 'multiple'
   selectedRows: Ref<(string | number)[]>
+  // #283 Phase 2b: per-column filter state ({ id, value }); value is a string
+  // (text/select) or a [min, max] tuple (range).
+  columnFilters: Ref<{ id: string; value: unknown }[]>
+}
+
+export interface VibeTableFilters {
+  enabled: ComputedRef<boolean>
+  get: (id: string) => unknown
+  set: (id: string, value: unknown) => void
+  uniqueValues: (id: string) => string[]
 }
 
 export interface VibeTableSelection {
@@ -113,6 +130,8 @@ export interface UseVibeTableResult<T extends object> {
   filteredCount: ComputedRef<number>
   // Row selection surface (engine-owned), consumed by the checkbox column.
   selection: VibeTableSelection
+  // Per-column filter surface, consumed by the filter row.
+  filters: VibeTableFilters
 }
 
 export function useVibeTable<T extends object>(
@@ -125,16 +144,53 @@ export function useVibeTable<T extends object>(
     return map
   })
 
+  // Displayed value for a column (searchValue hook, then formatter, then raw),
+  // shared by global search and the per-column text filter.
+  const displayedText = (column: DataTableColumn<T>, item: T): unknown =>
+    column.searchValue
+      ? column.searchValue(item)
+      : column.formatter
+        ? column.formatter(item[column.key], item)
+        : item[column.key]
+
   const columnDefs = computed<ColumnDef<typeof features, T>[]>(() =>
     params.columns().map((column) => {
       const sortFn: SortFn<typeof features, T> = (rowA: Row<typeof features, T>, rowB: Row<typeof features, T>, columnId: string) =>
         ascendingCompare(rowA.getValue(columnId), rowB.getValue(columnId))
-      return {
+      const def: ColumnDef<typeof features, T> = {
         id: column.key,
         accessorFn: (row: T) => normalizeForSort(readField(row, column.key)),
         sortUndefined: 'last',
-        sortFn
+        sortFn,
+        enableColumnFilter: !!column.filter
       }
+      // Per-column filter functions (#283 Phase 2b).
+      if (column.filter === 'text') {
+        def.filterFn = (row, _columnId, value) => {
+          const query = String(value ?? '').toLowerCase()
+          if (!query) return true
+          const text = displayedText(column, row.original)
+          return text != null && String(text).toLowerCase().includes(query)
+        }
+      } else if (column.filter === 'select') {
+        def.filterFn = (row, columnId, value) => {
+          if (value === '' || value == null) return true
+          return String(row.getValue(columnId) ?? '') === String(value)
+        }
+      } else if (column.filter === 'range') {
+        def.filterFn = (row, columnId, value) => {
+          const [rawMin, rawMax] = Array.isArray(value) ? value : []
+          const hasMin = rawMin !== '' && rawMin != null
+          const hasMax = rawMax !== '' && rawMax != null
+          if (!hasMin && !hasMax) return true
+          const v = row.getValue(columnId)
+          if (typeof v !== 'number') return false
+          const lo = hasMin ? Number(rawMin) : -Infinity
+          const hi = hasMax ? Number(rawMax) : Infinity
+          return v >= lo && v <= hi
+        }
+      }
+      return def
     })
   )
 
@@ -145,12 +201,7 @@ export function useVibeTable<T extends object>(
     if (!query) return true
     const column = columnsById.value.get(columnId)
     if (!column) return false
-    const item = row.original
-    const value = column.searchValue
-      ? column.searchValue(item)
-      : column.formatter
-        ? column.formatter(item[column.key], item)
-        : item[column.key]
+    const value = displayedText(column, row.original)
     if (value == null) return false
     return String(value).toLowerCase().includes(query)
   }
@@ -178,7 +229,8 @@ export function useVibeTable<T extends object>(
     rowSelection: params.selectedRows.value.reduce<Record<string, true>>((acc, key) => {
       acc[String(key)] = true
       return acc
-    }, {})
+    }, {}),
+    columnFilters: params.columnFilters.value
   }))
 
   const selectionEnabled = computed(() => params.selectable() !== false)
@@ -229,6 +281,11 @@ export function useVibeTable<T extends object>(
       const first = next[0]
       params.sortBy.value = first ? first.id : undefined
       params.sortDesc.value = first ? first.desc : false
+    },
+    onColumnFiltersChange: (updater) => {
+      const prev = state.value.columnFilters
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      params.columnFilters.value = next
     }
   })
 
@@ -255,5 +312,26 @@ export function useVibeTable<T extends object>(
     toggleAll: (event) => table.getToggleAllRowsSelectedHandler()(event)
   }
 
-  return { paginatedItems, filteredCount, selection }
+  const filters: VibeTableFilters = {
+    enabled: computed(() => params.columns().some((column) => !!column.filter)),
+    get: (id) => params.columnFilters.value.find((filter) => filter.id === id)?.value,
+    set: (id, value) => {
+      const others = params.columnFilters.value.filter((filter) => filter.id !== id)
+      const empty =
+        value === '' ||
+        value == null ||
+        (Array.isArray(value) && value.every((v) => v === '' || v == null))
+      params.columnFilters.value = empty ? others : [...others, { id, value }]
+    },
+    uniqueValues: (id) => {
+      const map = table.getColumn(id)?.getFacetedUniqueValues()
+      if (!map) return []
+      return Array.from(map.keys())
+        .filter((value) => value != null && value !== '')
+        .map((value) => String(value))
+        .sort()
+    }
+  }
+
+  return { paginatedItems, filteredCount, selection, filters }
 }
