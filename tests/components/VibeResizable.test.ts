@@ -102,7 +102,7 @@ describe('VibeResizable', () => {
     wrapper.unmount()
   })
 
-  it('emits resizestart, updates, resizeend in order (no per-move resize)', async () => {
+  it('emits resizestart, updates, resize, resizeend in order (coalesced per frame)', async () => {
     const wrapper = mount(VibeResizable, {
       props: { width: 100, height: 100 },
       attachTo: document.body
@@ -111,9 +111,11 @@ describe('VibeResizable', () => {
     await fireResize(handle, 0, 0, 20, 20)
 
     expect(wrapper.emitted('resizestart')).toBeTruthy()
-    // Per-move `resize` is gone by design (coalesced drag): live updates ride
-    // update:width/update:height, the commit rides resizeend.
-    expect(wrapper.emitted('resize')).toBeUndefined()
+    // `resize` rides the coalesced frame (not each pointermove): live drag
+    // signal with the handle payload, the commit rides resizeend.
+    const resizes = wrapper.emitted('resize') as { width: number; height: number; handle: string }[][]
+    expect(resizes).toBeDefined()
+    expect(resizes[resizes.length - 1][0]).toEqual({ width: 120, height: 120, handle: 'se' })
     expect(wrapper.emitted('update:width')).toBeTruthy()
     expect(wrapper.emitted('resizeend')).toBeTruthy()
     wrapper.unmount()
@@ -231,13 +233,17 @@ describe('VibeResizable', () => {
         expect(updates!).toHaveLength(1)
         // Last event wins: 100 + 50.
         expect(updates![0][0]).toBe(150)
+        // One coalesced frame carries exactly one live resize with the handle.
+        const resizes = wrapper.emitted('resize') as unknown[][] | undefined
+        expect(resizes).toHaveLength(1)
+        expect(resizes![0][0]).toEqual({ width: 150, height: 130, handle: 'se' })
         wrapper.unmount()
       } finally {
         raf.restore()
       }
     })
 
-    it('release delivers the exact final size with one resizeend and no drag resize', async () => {
+    it('release delivers the exact final size with resize plus one resizeend', async () => {
       const raf = stubRaf()
       try {
         const wrapper = mount(VibeResizable, {
@@ -257,7 +263,10 @@ describe('VibeResizable', () => {
 
         const updates = wrapper.emitted('update:width') as number[][]
         expect(updates[updates.length - 1][0]).toBe(150)
-        expect(wrapper.emitted('resize')).toBeUndefined()
+        // The release flush is the drag final frame: one resize, then the commit.
+        const resizes = wrapper.emitted('resize') as unknown[][]
+        expect(resizes).toHaveLength(1)
+        expect(resizes[0][0]).toEqual({ width: 150, height: 130, handle: 'se' })
         expect(wrapper.emitted('resizeend')).toHaveLength(1)
         wrapper.unmount()
       } finally {

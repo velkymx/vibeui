@@ -147,6 +147,9 @@ const flushResize = (): void => {
     currentHeight.value = nextH
     emit('update:height', nextH)
   }
+  // Live per-frame resize (coalesced, not per pointermove): keeps the
+  // documented public contract while dragging. The commit rides resizeend.
+  emit('resize', { width: currentWidth.value, height: currentHeight.value, handle })
 }
 
 const onPointerMove = (event: PointerEvent) => {
