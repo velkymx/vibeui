@@ -2,7 +2,7 @@
      with dndStore / VibeDraggable / VibeDroppable — mixing them causes undefined behavior.
      Use VibeDraggable + VibeDroppable for cross-list or free-form drag-drop scenarios. -->
 <script setup lang="ts" generic="T extends object">
-import { ref, onMounted, onBeforeUnmount, onActivated, type PropType } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount, onActivated, useTemplateRef, type PropType } from 'vue'
 import { isDev } from '../composables/useEventBus'
 
 const props = defineProps({
@@ -103,6 +103,61 @@ const onDragEnd = () => {
   draggingIndex.value = null
 }
 
+// Keyboard reorder (WCAG 2.1.1): the row is focusable; Space/Enter grabs,
+// arrows move the grabbed row, Escape cancels. Commits through the same
+// splice plus emits as the pointer drop so watchers behave identically.
+const grabbedIndex = ref<number | null>(null)
+
+const moveRow = (from: number, to: number): void => {
+  if (from === to) return
+  const next = [...props.modelValue]
+  const [moved] = next.splice(from, 1)
+  next.splice(to, 0, moved)
+  emit('update:modelValue', next)
+  emit('reorder', { from, to, item: moved })
+}
+
+const onRowKeydown = (event: KeyboardEvent, index: number): void => {
+  if (props.disabled) return
+  if (event.key === ' ' || event.key === 'Enter') {
+    event.preventDefault()
+    grabbedIndex.value = grabbedIndex.value === index ? null : index
+  } else if (event.key === 'Escape') {
+    grabbedIndex.value = null
+  } else if (grabbedIndex.value !== null && event.key === 'ArrowUp') {
+    event.preventDefault()
+    const from = grabbedIndex.value
+    const to = Math.max(0, from - 1)
+    moveRow(from, to)
+    grabbedIndex.value = to
+    focusRow(to)
+  } else if (grabbedIndex.value !== null && event.key === 'ArrowDown') {
+    event.preventDefault()
+    const from = grabbedIndex.value
+    const to = Math.min(props.modelValue.length - 1, from + 1)
+    moveRow(from, to)
+    grabbedIndex.value = to
+    focusRow(to)
+  }
+}
+
+// Programmatic reorder for consumers and keyboard-AT shims.
+defineExpose({ move: moveRow })
+
+const listRef = useTemplateRef<HTMLElement>('listRef')
+
+// Focus follows the grabbed row across keyboard moves: keyed reorder moves
+// the DOM node, but focus retention is not guaranteed (verify per
+// environment), so re-focus by index after paint.
+const focusRow = (at: number): void => {
+  nextTick(() => {
+    const el = listRef.value?.querySelectorAll('[data-vibe-sortable-item]')?.[at] as
+      | HTMLElement
+      | undefined
+    el?.focus()
+  })
+}
+
 // Unified handlers read the row index from the element's data-sortable-index attribute,
 // so the template binds one stable function reference instead of allocating a new inline
 // arrow per item per render.
@@ -110,6 +165,7 @@ const indexOf = (event: Event): number =>
   Number((event.currentTarget as HTMLElement).dataset.sortableIndex)
 const onDragStartEvt = (event: DragEvent) => onDragStart(event, indexOf(event))
 const onDropEvt = (event: DragEvent) => onDrop(event, indexOf(event))
+const onRowKeydownEvt = (event: KeyboardEvent) => onRowKeydown(event, indexOf(event))
 
 const clearDrag = () => { draggingIndex.value = null }
 onMounted(() => {
@@ -122,7 +178,7 @@ onActivated(() => { draggingIndex.value = null })
 </script>
 
 <template>
-  <component :is="tag" class="vibe-sortable">
+  <component :is="tag" ref="listRef" class="vibe-sortable">
     <component
       :is="itemTag"
       v-for="(item, index) in modelValue"
@@ -130,12 +186,16 @@ onActivated(() => { draggingIndex.value = null })
       class="vibe-sortable-item"
       :class="{ 'vibe-sortable-dragging': draggingIndex === index }"
       :draggable="!disabled"
+      :tabindex="disabled ? undefined : 0"
+      role="listitem"
+      :aria-grabbed="grabbedIndex === index || undefined"
       data-vibe-sortable-item
       :data-sortable-index="index"
       @dragstart="onDragStartEvt"
       @dragover="onDragOver"
       @drop="onDropEvt"
       @dragend="onDragEnd"
+      @keydown="onRowKeydownEvt"
     >
       <slot :item="item" :index="index" />
     </component>
