@@ -282,9 +282,24 @@ describe('v-vibe-tooltip unmount safety (issue #66)', () => {
       expect(bootstrap.Tooltip).toHaveBeenCalledTimes(1)
     })
 
-    it('placement change mid-import rebuilds with the new placement', async () => {
+    it('placement change mid-flight builds once with the latest placement', async () => {
       const el = freshEl()
       vTooltip.mounted!(el, bind({ title: 'A', placement: 'top' }))
+      vTooltip.updated!(el, bind({ title: 'A', placement: 'bottom' }))
+      await flushAsync()
+      await flushAsync()
+      // Construction reads the latest stored opts post-import: no stale
+      // build, so no dispose-plus-rebuild cycle (see #236 history).
+      const calls = vi.mocked(bootstrap.Tooltip).mock.calls
+      expect(calls.length).toBe(1)
+      expect((calls[0][1] as { placement: string }).placement).toBe('bottom')
+    })
+
+    it('placement change after settle rebuilds with the new placement', async () => {
+      const el = freshEl()
+      vTooltip.mounted!(el, bind({ title: 'A', placement: 'top' }))
+      await flushAsync()
+      expect(bootstrap.Tooltip).toHaveBeenCalledTimes(1)
       vTooltip.updated!(el, bind({ title: 'A', placement: 'bottom' }))
       await flushAsync()
       await flushAsync()
@@ -293,15 +308,29 @@ describe('v-vibe-tooltip unmount safety (issue #66)', () => {
       expect((calls[1][1] as { placement: string }).placement).toBe('bottom')
     })
 
-    it('title-only change mid-import patches instead of rebuilding', async () => {
+    it('title-only change after settle patches via setContent', async () => {
       const el = freshEl()
       vTooltip.mounted!(el, bind({ title: 'A', placement: 'top' }))
+      await flushAsync()
+      expect(bootstrap.Tooltip).toHaveBeenCalledTimes(1)
       vTooltip.updated!(el, bind({ title: 'B', placement: 'top' }))
       await flushAsync()
       expect(bootstrap.Tooltip).toHaveBeenCalledTimes(1)
       const results = vi.mocked(bootstrap.Tooltip).mock.results
       const instance = results[results.length - 1].value as { setContent: ReturnType<typeof vi.fn> }
       expect(instance.setContent).toHaveBeenCalledWith({ '.tooltip-inner': 'B' })
+    })
+
+    it('title-only change mid-flight builds with the latest title', async () => {
+      const el = freshEl()
+      vTooltip.mounted!(el, bind({ title: 'A', placement: 'top' }))
+      vTooltip.updated!(el, bind({ title: 'B', placement: 'top' }))
+      await flushAsync()
+      // Construction consumes the latest stored opts: one build with B, no
+      // patch-up needed afterwards.
+      expect(bootstrap.Tooltip).toHaveBeenCalledTimes(1)
+      const calls = vi.mocked(bootstrap.Tooltip).mock.calls
+      expect((calls[0][1] as { title: string }).title).toBe('B')
     })
   })
 })
