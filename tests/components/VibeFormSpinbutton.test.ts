@@ -369,4 +369,46 @@ describe('VibeFormSpinbutton $attrs passthrough', () => {
       expect((wrapper.find('input').element as HTMLInputElement).value).toBe('10')
     })
   })
+
+  // #229: stepper clicks are explicit commits (model updates per click), but
+  // validation must follow validateOn like every other path in the file.
+  describe('stepper validation gating (#229)', () => {
+    const clickIncrement = async (props: Record<string, unknown> = {}) => {
+      const wrapper = mount(VibeFormSpinbutton, {
+        props: { modelValue: 5, ...props }
+      })
+      await wrapper.findAll('button')[1].trigger('click')
+      return wrapper
+    }
+
+    it('does not emit validate on click under the default validate-on blur', async () => {
+      const wrapper = await clickIncrement()
+      expect(wrapper.emitted('increment')).toHaveLength(1)
+      expect(wrapper.emitted('validate')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('does not emit validate on decrement under validate-on blur', async () => {
+      const wrapper = mount(VibeFormSpinbutton, {
+        props: { modelValue: 5, validateOn: 'blur' }
+      })
+      await wrapper.findAll('button')[0].trigger('click')
+      expect(wrapper.emitted('decrement')).toHaveLength(1)
+      expect(wrapper.emitted('validate')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('emits validate on click when validate-on is change', async () => {
+      const wrapper = await clickIncrement({ validateOn: 'change' })
+      expect(wrapper.emitted('increment')).toHaveLength(1)
+      expect(wrapper.emitted('validate')).toHaveLength(1)
+      wrapper.unmount()
+    })
+
+    it('still commits the model per click (explicit commit gesture)', async () => {
+      const wrapper = await clickIncrement({ modelModifiers: { lazy: true } })
+      expect(wrapper.emitted('update:modelValue')).toHaveLength(1)
+      wrapper.unmount()
+    })
+  })
 })
