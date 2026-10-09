@@ -30,6 +30,12 @@ const props = defineProps({
   searchable: { type: Boolean, default: true },
   sortable: { type: Boolean, default: true },
   paginated: { type: Boolean, default: true },
+  // #283 Phase 1: row selection. false (off), 'single', 'multiple', or true
+  // (= multiple). Renders an opt-in leading checkbox column.
+  selectable: { type: [Boolean, String] as PropType<boolean | 'single' | 'multiple'>, default: false },
+  // #283 Phase 2a: enable multi-column sort (shift-click appends). Off = the
+  // existing single-column sort.
+  multiSort: { type: Boolean, default: false },
 
   // #124: server-side (manual) mode. When true, the table does no local
   // filtering/sorting/paging: `items` is rendered as-is (the current page from
@@ -63,12 +69,18 @@ const currentPage = defineModel<number>('currentPage', { default: 1 })
 const perPage = defineModel<number>('perPage', { default: 10 })
 const sortBy = defineModel<string | undefined>('sortBy', { default: undefined })
 const sortDesc = defineModel<boolean>('sortDesc', { default: false })
+// #283 Phase 2a: ordered multi-sort state (source of truth when multiSort is on).
+const sort = defineModel<{ id: string; desc: boolean }[]>('sort', { default: () => [] })
+// #283 Phase 1: selected row keys (ids per rowKey). Two-way for controlled use.
+const selectedRows = defineModel<(string | number)[]>('selectedRows', { default: () => [] })
 
 const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
   (e: 'component-error', error: ComponentError): void
   // #124: emitted with the (debounced) search query so a server-mode consumer can fetch.
   (e: 'search', query: string): void
+  // #283: emitted when a row's selection toggles (the row and its new state).
+  (e: 'row-selected', item: T, selected: boolean): void
 }>()
 
 // #147: type the per-column cell slots to the row type T. A `cell(<key>)` slot
@@ -136,7 +148,7 @@ watch(() => [debouncedSearchQuery.value], ([newVal]) => {
 // useVibeTable. `paginatedItems` (visible rows) and `filteredCount` (local
 // filtered total) preserve the previous contracts exactly; the component keeps
 // its own markup, v-models, and per-cell maps.
-const { paginatedItems, filteredCount } = useVibeTable<T>({
+const { paginatedItems, filteredCount, selection } = useVibeTable<T>({
   items: () => props.items,
   columns: () => props.columns,
   rowKey: () => props.rowKey,
@@ -149,8 +161,31 @@ const { paginatedItems, filteredCount } = useVibeTable<T>({
   currentPage,
   perPage,
   sortBy,
-  sortDesc
+  sortDesc,
+  multiSort: () => props.multiSort,
+  sort,
+  selectable: () => props.selectable,
+  selectedRows
 })
+
+// Selection key for a row, matching the engine's getRowId (rowKey value).
+const selectKey = (item: T): string => String(readField(item, props.rowKey))
+
+const onToggleRow = (event: Event, item: T) => {
+  const key = selectKey(item)
+  selection.toggleRow(event, key)
+  emit('row-selected', item, selection.isSelected(key))
+}
+
+// Unwrapped for the template (selection holds ComputedRefs, not auto-unwrapped
+// as nested object properties).
+const selectEnabled = computed(() => selection.enabled.value)
+const selectMultiple = computed(() => selection.multiple.value)
+const selectAllChecked = computed(() => selection.isAllSelected.value)
+const selectAllIndeterminate = computed(() => selection.isIndeterminate.value)
+const isRowSelected = (item: T): boolean => selection.isSelected(selectKey(item))
+// Colspan for the loading/empty rows, including the select column when shown.
+const colspanCount = computed(() => (props.columns?.length || 1) + (selectEnabled.value ? 1 : 0))
 
 // Pagination info
 // Rows loaded in the browser. In server mode this is just the current page slice.
@@ -210,16 +245,45 @@ const tableClass = computed(() => {
 })
 
 // Methods
-const handleSort = (column: DataTableColumn<T>) => {
+const handleSort = (column: DataTableColumn<T>, event?: MouseEvent) => {
   if (!props.sortable || column.sortable === false) return
+  const key = column.key
+  const additive = props.multiSort && !!event?.shiftKey
+  const current = [...sort.value]
+  const idx = current.findIndex((s) => s.id === key)
 
-  if (sortBy.value === column.key) {
-    sortDesc.value = !sortDesc.value
+  if (additive) {
+    // Shift-click cycles the column: absent -> asc -> desc -> removed.
+    if (idx === -1) current.push({ id: key, desc: false })
+    else if (!current[idx].desc) current[idx] = { id: key, desc: true }
+    else current.splice(idx, 1)
+    sort.value = current
+  } else if (current.length === 1 && current[0].id === key) {
+    // Sole sort on this column: toggle direction (unchanged single behavior).
+    sort.value = [{ id: key, desc: !current[0].desc }]
   } else {
-    sortBy.value = column.key
-    sortDesc.value = false
+    // New or collapsing click: single ascending sort on this column.
+    sort.value = [{ id: key, desc: false }]
   }
+
+  // sortBy/sortDesc track the primary sort for back-compat consumers.
+  const primary = sort.value[0]
+  sortBy.value = primary ? primary.id : undefined
+  sortDesc.value = primary ? primary.desc : false
 }
+
+// Effective sort list drives the header icons/aria: the multi-sort array when
+// enabled, otherwise the single sortBy/sortDesc pair (identical to before).
+const effectiveSort = computed<{ id: string; desc: boolean }[]>(() => {
+  if (!props.sortable) return []
+  if (props.multiSort) return sort.value
+  return sortBy.value ? [{ id: sortBy.value, desc: sortDesc.value }] : []
+})
+const sortByKey = computed(() => {
+  const m = new Map<string, boolean>()
+  for (const s of effectiveSort.value) m.set(s.id, s.desc)
+  return m
+})
 
 watch(totalPages, (newTotal) => {
   if (newTotal > 0 && currentPage.value > newTotal) {
@@ -263,10 +327,10 @@ const sortIconMap = computed(() => {
   for (const column of props.columns) {
     if (!props.sortable || column.sortable === false) {
       m.set(column, '')
-    } else if (sortBy.value !== column.key) {
+    } else if (!sortByKey.value.has(column.key)) {
       m.set(column, 'sort-none')
     } else {
-      m.set(column, sortDesc.value ? 'sort-desc' : 'sort-asc')
+      m.set(column, sortByKey.value.get(column.key) ? 'sort-desc' : 'sort-asc')
     }
   }
   return m
@@ -279,10 +343,10 @@ const ariaSortMap = computed(() => {
   for (const column of props.columns) {
     if (!props.sortable || column.sortable === false) {
       m.set(column, undefined)
-    } else if (sortBy.value !== column.key) {
+    } else if (!sortByKey.value.has(column.key)) {
       m.set(column, 'none')
     } else {
-      m.set(column, sortDesc.value ? 'descending' : 'ascending')
+      m.set(column, sortByKey.value.get(column.key) ? 'descending' : 'ascending')
     }
   }
   return m
@@ -361,13 +425,24 @@ const cellValueMap = computed(() => {
       <table :class="tableClass">
         <thead>
           <tr>
+            <th v-if="selectEnabled" class="vibe-select-cell" scope="col">
+              <input
+                v-if="selectMultiple"
+                type="checkbox"
+                class="form-check-input"
+                aria-label="Select all rows"
+                :checked="selectAllChecked"
+                :indeterminate.prop="selectAllIndeterminate"
+                @click="selection.toggleAll($event)"
+              />
+            </th>
             <th
               v-for="column in columns"
               :key="column.key"
               :class="column.headerClass"
               :style="thStyleMap.get(column)"
               :aria-sort="ariaSortMap.get(column)"
-              @click="handleSort(column)"
+              @click="handleSort(column, $event)"
             >
               {{ column.label }}
               <span
@@ -385,6 +460,15 @@ const cellValueMap = computed(() => {
             :style="clickable ? CLICKABLE_ROW_STYLE : undefined"
             @click="handleRowClick(item, index)"
           >
+            <td v-if="selectEnabled" class="vibe-select-cell">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                aria-label="Select row"
+                :checked="isRowSelected(item)"
+                @click.stop="onToggleRow($event, item)"
+              />
+            </td>
             <td
               v-for="column in columns"
               :key="column.key"
@@ -398,13 +482,13 @@ const cellValueMap = computed(() => {
             </td>
           </tr>
           <tr v-if="props.loading">
-            <td :colspan="columns?.length || 1" class="text-center text-body-secondary">
+            <td :colspan="colspanCount" class="text-center text-body-secondary">
               <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
               Loading...
             </td>
           </tr>
           <tr v-else-if="paginatedItems.length === 0 && showEmpty">
-            <td :colspan="columns?.length || 1" class="text-center">
+            <td :colspan="colspanCount" class="text-center">
               {{ emptyText }}
             </td>
           </tr>

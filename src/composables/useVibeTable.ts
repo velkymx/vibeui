@@ -10,6 +10,7 @@ import {
   globalFilteringFeature,
   rowSortingFeature,
   rowPaginationFeature,
+  rowSelectionFeature,
   type ColumnDef,
   type Row,
   type SortFn
@@ -63,6 +64,7 @@ const features = tableFeatures({
   globalFilteringFeature,
   rowSortingFeature,
   rowPaginationFeature,
+  rowSelectionFeature,
   coreRowModel: createCoreRowModel(),
   filteredRowModel: createFilteredRowModel(),
   sortedRowModel: createSortedRowModel(),
@@ -83,6 +85,23 @@ export interface UseVibeTableParams<T extends object> {
   perPage: Ref<number>
   sortBy: Ref<string | undefined>
   sortDesc: Ref<boolean>
+  // #283 Phase 2a: when multiSort is on, `sort` (ordered ColumnSort[]) is the
+  // sort source; otherwise the single sortBy/sortDesc pair is (unchanged).
+  multiSort: () => boolean
+  sort: Ref<{ id: string; desc: boolean }[]>
+  // #283 Phase 1: false (off), 'single', 'multiple', or true (= multiple).
+  selectable: () => boolean | 'single' | 'multiple'
+  selectedRows: Ref<(string | number)[]>
+}
+
+export interface VibeTableSelection {
+  enabled: ComputedRef<boolean>
+  multiple: ComputedRef<boolean>
+  isAllSelected: ComputedRef<boolean>
+  isIndeterminate: ComputedRef<boolean>
+  isSelected: (key: string | number) => boolean
+  toggleRow: (event: Event, key: string | number) => void
+  toggleAll: (event: Event) => void
 }
 
 export interface UseVibeTableResult<T extends object> {
@@ -92,6 +111,8 @@ export interface UseVibeTableResult<T extends object> {
   // Count the pagination reflects locally: the filtered row count (client) so
   // the info line and "filtered from N" check behave identically.
   filteredCount: ComputedRef<number>
+  // Row selection surface (engine-owned), consumed by the checkbox column.
+  selection: VibeTableSelection
 }
 
 export function useVibeTable<T extends object>(
@@ -144,12 +165,26 @@ export function useVibeTable<T extends object>(
       pageIndex: Math.max(0, params.currentPage.value - 1),
       pageSize: Math.max(1, params.perPage.value)
     },
-    sorting:
-      params.sortable() && params.sortBy.value
-        ? [{ id: params.sortBy.value, desc: params.sortDesc.value }]
-        : [],
-    globalFilter: params.searchable() ? params.search.value : ''
+    sorting: !params.sortable()
+      ? []
+      : params.multiSort()
+        ? params.sort.value
+        : params.sortBy.value
+          ? [{ id: params.sortBy.value, desc: params.sortDesc.value }]
+          : [],
+    globalFilter: params.searchable() ? params.search.value : '',
+    // Selection is id-keyed; mirror the selectedRows model (ids are stringified
+    // by getRowId, so normalize here too).
+    rowSelection: params.selectedRows.value.reduce<Record<string, true>>((acc, key) => {
+      acc[String(key)] = true
+      return acc
+    }, {})
   }))
+
+  const selectionEnabled = computed(() => params.selectable() !== false)
+  const selectionMultiple = computed(
+    () => params.selectable() === true || params.selectable() === 'multiple'
+  )
 
   const table = useTable({
     features,
@@ -171,6 +206,14 @@ export function useVibeTable<T extends object>(
     manualSorting: params.serverMode(),
     manualPagination: params.serverMode(),
     rowCount: params.serverMode() ? params.totalRows() : undefined,
+    enableMultiSort: computed(() => params.multiSort()),
+    enableRowSelection: selectionEnabled,
+    enableMultiRowSelection: selectionMultiple,
+    onRowSelectionChange: (updater) => {
+      const prev = state.value.rowSelection
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      params.selectedRows.value = Object.keys(next).filter((key) => next[key])
+    },
     // Callbacks accept a value or an updater of the previous value. State is
     // owned by the v-models; these keep the table in sync if it ever sets state.
     onPaginationChange: (updater) => {
@@ -182,6 +225,7 @@ export function useVibeTable<T extends object>(
     onSortingChange: (updater) => {
       const prev = state.value.sorting
       const next = typeof updater === 'function' ? updater(prev) : updater
+      params.sort.value = next
       const first = next[0]
       params.sortBy.value = first ? first.id : undefined
       params.sortDesc.value = first ? first.desc : false
@@ -198,5 +242,18 @@ export function useVibeTable<T extends object>(
 
   const filteredCount = computed(() => table.getFilteredRowModel().rows.length)
 
-  return { paginatedItems, filteredCount }
+  const selection: VibeTableSelection = {
+    enabled: selectionEnabled,
+    multiple: selectionMultiple,
+    isAllSelected: computed(() => table.getIsAllRowsSelected()),
+    isIndeterminate: computed(() => table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()),
+    isSelected: (key) => params.selectedRows.value.map(String).includes(String(key)),
+    toggleRow: (event, key) => {
+      const row = table.getRowModel().rowsById[String(key)] ?? table.getCoreRowModel().rowsById[String(key)]
+      row?.getToggleSelectedHandler()(event)
+    },
+    toggleAll: (event) => table.getToggleAllRowsSelectedHandler()(event)
+  }
+
+  return { paginatedItems, filteredCount, selection }
 }
