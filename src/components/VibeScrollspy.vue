@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, watch, nextTick, onMounted, onBeforeUnmount, onActivated, computed } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, watch, onMounted, onActivated, computed } from 'vue'
 import type { Tag, ComponentError } from '../types'
 import { safeLength } from '../utils/safeCss'
 
@@ -36,80 +37,47 @@ const emit = defineEmits<{
 }>()
 
 const scrollspyRef = useTemplateRef<HTMLElement>('scrollspyRef')
-const bsScrollspy = shallowRef<BootstrapScrollSpy | null>(null)
-let initInFlight = false
-
-// Set first in onBeforeUnmount — guards post-await section against constructing
-// a Bootstrap ScrollSpy instance on a detached element.
-let isUnmounted = false
 
 const onActivate = (event: Event) => {
   emit('activate', event)
 }
 
-const initScrollspy = async () => {
-  if (!scrollspyRef.value || initInFlight) return
-  initInFlight = true
-
-  try {
-    const bootstrap = await import('bootstrap')
-    const ScrollSpy = bootstrap.ScrollSpy
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!scrollspyRef.value || isUnmounted) return
-
+// Instance lifecycle owned by the shared composable (#247): lazy async
+// construction, per-instance activate listener, dispose plus nulling, and
+// unmount-race guards. The exposed refresh reads the live ref.
+const { init: initScrollspy, instance: bsScrollspy } = useBootstrapInstance<BootstrapScrollSpy>({
+  // Template ref read at call time: it may be null during teardown, which the
+  // composable treats as a no-op instead of constructing on a detached node.
+  resolveElement: () => scrollspyRef.value,
+  create: (el, bootstrap) => {
     if (props.offset !== undefined) {
       console.warn('[VibeScrollspy] The `offset` prop is deprecated (Bootstrap 5.2+). Use `rootMargin` instead.')
     }
-
     const scrollSpyOpts: ScrollSpyOptions = {
       target: props.target,
       rootMargin: props.rootMargin,
       method: props.method,
       smoothScroll: props.smoothScroll
     }
-    bsScrollspy.value = new (ScrollSpy as unknown as new (el: HTMLElement, opts: ScrollSpyOptions) => BootstrapScrollSpy)(
-      scrollspyRef.value,
+    const ScrollSpy = bootstrap.ScrollSpy
+    return new (ScrollSpy as unknown as new (el: HTMLElement, opts: ScrollSpyOptions) => BootstrapScrollSpy)(
+      el,
       scrollSpyOpts
     )
-
-    scrollspyRef.value.addEventListener('activate.bs.scrollspy', onActivate)
-  } catch (error) {
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. ScrollSpy will use data attributes only.',
-      componentName: 'VibeScrollspy',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-  }
-}
+  },
+  disposeInstance: (scrollspy) => scrollspy.dispose(),
+  events: {
+    'activate.bs.scrollspy': onActivate as EventListener
+  },
+  componentName: 'VibeScrollspy',
+  onError: (error) => reportComponentError(emit, error)
+})
 
 onMounted(initScrollspy)
 
 // Re-init when configuration props change after mount
-watch([() => props.target, () => props.rootMargin, () => props.method, () => props.smoothScroll], async () => {
-  if (scrollspyRef.value) {
-    scrollspyRef.value.removeEventListener('activate.bs.scrollspy', onActivate)
-  }
-  bsScrollspy.value?.dispose()
-  bsScrollspy.value = null
-  await nextTick()
-  if (!scrollspyRef.value) return
-  await initScrollspy()
-})
-
-onBeforeUnmount(() => {
-  isUnmounted = true
-
-  if (scrollspyRef.value) {
-    scrollspyRef.value.removeEventListener('activate.bs.scrollspy', onActivate)
-  }
-
-  if (bsScrollspy.value) {
-    bsScrollspy.value.dispose()
-    bsScrollspy.value = null
-  }
+watch([() => props.target, () => props.rootMargin, () => props.method, () => props.smoothScroll], () => {
+  void initScrollspy()
 })
 
 const safeHeight = computed(() => safeLength(props.height) ?? '100%')
