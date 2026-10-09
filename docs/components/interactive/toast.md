@@ -49,7 +49,7 @@ function save() {
 | `clear` | `() => void` | Remove all queued toasts |
 | `toasts` | `readonly ToastSpec[]` | Reactive readonly snapshot of the queue |
 
-`ToastShowOptions`: `{ id?, title?, variant?, placement?, autohide?, delay? }`. Passing an existing `id` updates that toast in place instead of adding a new one. The variant shorthands (`success`, `error`, `warn`, `info`) accept the same options minus `variant`.
+`ToastShowOptions`: `{ id?, title?, variant?, placement?, autohide?, delay?, max? }`. Passing an existing `id` updates that toast in place instead of adding a new one. The variant shorthands (`success`, `error`, `warn`, `info`) accept the same options minus `variant`. The store retains at most `max` toasts (default 10), oldest evicted first.
 
 ### `<VibeToastHost />` Props
 

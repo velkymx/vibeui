@@ -234,4 +234,47 @@ describe('VibeAccordion', () => {
       warnSpy.mockRestore()
     })
   })
+
+  // #235 W3: aria-expanded follows live state, and show:true paints expanded
+  // in markup (pre-JS/SSR), not only after the async Bootstrap show().
+  describe('live expanded state (#235)', () => {
+    const twoItems = [
+      { id: 'w3-a', title: 'A', content: 'CA', show: true },
+      { id: 'w3-b', title: 'B', content: 'CB', show: false }
+    ]
+
+    it('paints show:true expanded before Bootstrap init', async () => {
+      const wrapper = mount(VibeAccordion, {
+        props: { id: 'w3-accordion', items: twoItems }
+      })
+      const panels = wrapper.findAll('.accordion-collapse')
+      expect(panels[0].classes()).toContain('show')
+      expect(panels[1].classes()).not.toContain('show')
+      const buttons = wrapper.findAll('.accordion-button')
+      expect(buttons[0].attributes('aria-expanded')).toBe('true')
+      expect(buttons[1].attributes('aria-expanded')).toBe('false')
+      wrapper.unmount()
+    })
+
+    it('announcement follows Bootstrap show/hide events, not the initial prop', async () => {
+      const wrapper = mount(VibeAccordion, {
+        props: { id: 'w3-accordion-live', items: twoItems }
+      })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      const buttons = () => wrapper.findAll('.accordion-button')
+      // Simulate Bootstrap confirming the second panel opened. Raw dispatch:
+      // test-utils trigger() parses dots as key modifiers.
+      const fire = (type: string) =>
+        wrapper
+          .find('#w3-b')
+          .element.dispatchEvent(new Event(type, { bubbles: true }))
+      fire('show.bs.collapse')
+      await wrapper.vm.$nextTick()
+      expect(buttons()[1].attributes('aria-expanded')).toBe('true')
+      fire('hide.bs.collapse')
+      await wrapper.vm.$nextTick()
+      expect(buttons()[1].attributes('aria-expanded')).toBe('false')
+      wrapper.unmount()
+    })
+  })
 })

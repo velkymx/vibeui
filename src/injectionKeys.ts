@@ -47,6 +47,10 @@ export interface TabsContext {
   hasBeenActive: (name: string) => boolean
   update: (prevName: string, name: string, label: string, disabled: boolean) => void
   lazy: boolean
+  /** Strip-unique tab button id (aria-controls target). */
+  tabId: (name: string) => string
+  /** Strip-unique panel id (tab aria-controls target). */
+  panelId: (name: string) => string
 }
 
 export const TABS_CONTEXT_KEY: InjectionKey<TabsContext | null> = Symbol('vibeTabsContext')

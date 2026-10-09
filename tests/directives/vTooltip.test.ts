@@ -260,4 +260,48 @@ describe('v-vibe-tooltip unmount safety (issue #66)', () => {
     wrapper.unmount()
     expect(errorHandler).not.toHaveBeenCalled()
   })
+
+  // #236: generation-guarded gap (unmount mid-import constructs nothing;
+  // structural changes mid-import rebuild instead of being lost).
+  describe('async gap races (#236)', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+    const bind = (value: unknown) => ({ value }) as Parameters<NonNullable<typeof vTooltip.mounted>>[1]
+    const freshEl = () => document.createElement('button')
+
+    it('unmount mid-import constructs nothing and clears pending state', async () => {
+      const el = freshEl()
+      vTooltip.mounted!(el, bind('Tip'))
+      vTooltip.beforeUnmount!(el)
+      await flushAsync()
+      expect(bootstrap.Tooltip).not.toHaveBeenCalled()
+      // Pending flag cleared: a later bind on the node constructs exactly once.
+      vTooltip.mounted!(el, bind('Tip'))
+      await flushAsync()
+      expect(bootstrap.Tooltip).toHaveBeenCalledTimes(1)
+    })
+
+    it('placement change mid-import rebuilds with the new placement', async () => {
+      const el = freshEl()
+      vTooltip.mounted!(el, bind({ title: 'A', placement: 'top' }))
+      vTooltip.updated!(el, bind({ title: 'A', placement: 'bottom' }))
+      await flushAsync()
+      await flushAsync()
+      const calls = vi.mocked(bootstrap.Tooltip).mock.calls
+      expect(calls.length).toBe(2)
+      expect((calls[1][1] as { placement: string }).placement).toBe('bottom')
+    })
+
+    it('title-only change mid-import patches instead of rebuilding', async () => {
+      const el = freshEl()
+      vTooltip.mounted!(el, bind({ title: 'A', placement: 'top' }))
+      vTooltip.updated!(el, bind({ title: 'B', placement: 'top' }))
+      await flushAsync()
+      expect(bootstrap.Tooltip).toHaveBeenCalledTimes(1)
+      const results = vi.mocked(bootstrap.Tooltip).mock.results
+      const instance = results[results.length - 1].value as { setContent: ReturnType<typeof vi.fn> }
+      expect(instance.setContent).toHaveBeenCalledWith({ '.tooltip-inner': 'B' })
+    })
+  })
 })
