@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import VibeNavbarNav from '../../src/components/VibeNavbarNav.vue'
 import * as bootstrap from 'bootstrap'
+import { useEventBus } from '../../src/composables/useEventBus'
 
 describe('VibeNavbarNav', () => {
   const itemsWithDropdown = [
@@ -17,6 +19,7 @@ describe('VibeNavbarNav', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    document.body.innerHTML = ''
   })
 
   it('renders navbar nav items', () => {
@@ -97,6 +100,53 @@ describe('VibeNavbarNav', () => {
 
       expect(wrapper.find('.dropdown-item').element.tagName).not.toBe('A')
       expect(wrapper.html()).not.toContain('javascript:alert(1)')
+    })
+  })
+
+  // #223: unmount during the in-flight Bootstrap import must construct nothing
+  // and report nothing (no isUnmounted guard existed; the post-await deref threw
+  // and surfaced a spurious component-error on healthy teardown).
+  // The dynamic import resolves slower than a microtask flush in this env;
+  // teardown races need a generous settle, and the error surfaces on the bus
+  // (test-utils does not record emits after unmount).
+  describe('init liveness (#223)', () => {
+    it('constructs dropdowns for rendered toggles when mounted', async () => {
+      const wrapper = mount(VibeNavbarNav, {
+        props: {
+          items: [
+            { text: 'Menu', children: [{ text: 'One', href: '/one' }] },
+            { text: 'Plain', href: '/plain' }
+          ]
+        },
+        attachTo: document.body
+      })
+      await nextTick()
+      await new Promise((r) => setTimeout(r, 150))
+      await nextTick()
+      expect(vi.mocked(bootstrap.Dropdown)).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+
+    it('unmount mid-import constructs nothing and emits no error', async () => {
+      const busSpy = vi.fn()
+      useEventBus().on('error:component', busSpy)
+      try {
+        const wrapper = mount(VibeNavbarNav, {
+          props: {
+            items: [{ text: 'Menu', children: [{ text: 'One', href: '/one' }] }]
+          },
+          attachTo: document.body
+        })
+        // No flush: the dynamic import is still in flight here.
+        wrapper.unmount()
+        await new Promise((r) => setTimeout(r, 150))
+        await nextTick()
+
+        expect(vi.mocked(bootstrap.Dropdown)).not.toHaveBeenCalled()
+        expect(busSpy).not.toHaveBeenCalled()
+      } finally {
+        useEventBus().off('error:component', busSpy)
+      }
     })
   })
 })
