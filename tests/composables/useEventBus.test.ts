@@ -212,4 +212,45 @@ describe('useEventBus', () => {
     bus.emit('x', 2)
     expect(b).toHaveBeenCalledTimes(1) // and removed for subsequent emits
   })
+
+  // #232: off(event, original) must cancel a once() registration even when the
+  // caller discarded the returned closure; the set holds the wrapper.
+  describe('once() cancellation (#232)', () => {
+    it('off(event, originalHandler) removes an unfired once() registration', () => {
+      const bus = useEventBus()
+      const fn = vi.fn()
+      bus.once('leak', fn)
+      bus.off('leak', fn)
+      bus.emit('leak', 1)
+      expect(fn).not.toHaveBeenCalled()
+    })
+
+    it('off(event, originalHandler) leaves sibling handlers alone', () => {
+      const bus = useEventBus()
+      const onceFn = vi.fn()
+      const plain = vi.fn()
+      bus.once('x', onceFn)
+      bus.on('x', plain)
+      bus.off('x', onceFn)
+      bus.emit('x', 1)
+      expect(onceFn).not.toHaveBeenCalled()
+      expect(plain).toHaveBeenCalledTimes(1)
+    })
+
+    it('a fired once() does not strand wrapper state (repeated once/fire cycles stay clean)', () => {
+      const bus = useEventBus()
+      for (let i = 0; i < 5; i++) {
+        const fn = vi.fn()
+        bus.once('cycle', fn)
+        bus.emit('cycle', i)
+        expect(fn).toHaveBeenCalledTimes(1)
+      }
+      // Nothing left registered: a later emit reaches nobody and off() is a no-op.
+      const probe = vi.fn()
+      bus.on('cycle', probe)
+      bus.off('cycle', probe)
+      bus.emit('cycle', 'late')
+      expect(probe).not.toHaveBeenCalled()
+    })
+  })
 })

@@ -114,18 +114,36 @@ function on(event: string, handler: Handler): () => void {
   return off
 }
 
+// Maps an original once() handler to its stored wrapper, so off(event, h)
+// removes the wrapper even when the caller discarded the returned closure.
+const onceWrappers = new Map<Handler, () => void>()
+
 function once(event: string, handler: Handler): () => void {
   const off = on(event, (payload) => {
     off()
+    onceWrappers.delete(handler)
     handler(payload)
   })
-  return off
+  onceWrappers.set(handler, off)
+  const unsubscribe = () => {
+    off()
+    onceWrappers.delete(handler)
+  }
+  return unsubscribe
 }
 
 function off(event: string, handler: Handler): void {
   const set = handlers.get(event)
   if (!set) return
-  set.delete(handler)
+  // Unwrap once() registrations: callers hold the original reference, but the
+  // set holds the wrapper. Invoke the stored unsubscribe closure (which deletes
+  // the wrapper and clears the map entry) instead of deleting by reference.
+  const unsubscribe = onceWrappers.get(handler)
+  if (unsubscribe) {
+    unsubscribe()
+  } else {
+    set.delete(handler)
+  }
   if (set.size === 0) handlers.delete(event)
 }
 
@@ -217,6 +235,9 @@ export function resetEventBusForSSR(): void {
   // must be cleared on the same boundary or request B routes into request
   // A's disposed controllers.
   for (const resetter of [...ssrResets]) resetter()
+  // once() wrappers removed from the sets above would otherwise strand their
+  // original-to-wrapper entries across requests.
+  onceWrappers.clear()
 }
 
 /**
@@ -234,4 +255,5 @@ export function __resetEventBusForTests(): void {
   handlers.clear()
   supported.clear()
   persistentHandlers.clear()
+  onceWrappers.clear()
 }
