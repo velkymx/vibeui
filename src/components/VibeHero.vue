@@ -3,8 +3,7 @@ import { computed } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { Variant, Tag, ContainerType } from '../types'
-import { safeHref } from '../utils/safeHref'
-import { safeLength, safeColor } from '../utils/safeCss'
+import { safeLength, safeColor, safeCssUrl } from '../utils/safeCss'
 
 const props = defineProps({
   // Background / text color — same vocabulary as VibeCard.
@@ -64,7 +63,9 @@ const containerClass = computed(() => {
 
 const heroStyle = computed(() => {
   const style: Record<string, string> = {}
-  const img = safeHref(props.bgImage)
+  // bgImage lands inside url("..."), not in an href attribute: validate for
+  // the CSS sink (see safeCssUrl), not with the href prefix check.
+  const img = safeCssUrl(props.bgImage)
   const grad = safeGradient(props.gradient)
 
   const layers: string[] = []
