@@ -328,4 +328,105 @@ describe('useBootstrapInstance', () => {
       expect(onError).not.toHaveBeenCalled()
     })
   })
+
+  // #271: disposing a Bootstrap instance mid-transition nulls props its queued
+  // emulated-duration callback still dereferences (uncaught throw on the
+  // detached element). Skipping dispose entirely leaks, Bootstrap keeps
+  // instances in a strong element Map that only dispose() clears. So teardown
+  // defers dispose until the transition settles.
+  describe('transition-aware dispose (#271)', () => {
+    interface TransitioningInstance extends FakeInstance {
+      _isTransitioning: boolean
+    }
+    const setupTransitioning = () => {
+      const el = document.createElement('div')
+      const created: TransitioningInstance[] = []
+      const create = vi.fn((_el: HTMLElement) => {
+        const inst: TransitioningInstance = {
+          el: _el,
+          dispose: vi.fn(),
+          _isTransitioning: false
+        }
+        created.push(inst)
+        return inst
+      })
+      let api!: ReturnType<typeof useBootstrapInstance<TransitioningInstance>>
+      const Comp = defineComponent({
+        setup() {
+          api = useBootstrapInstance<TransitioningInstance>({
+            resolveElement: () => el,
+            create,
+            disposeInstance: (inst) => inst.dispose(),
+            componentName: 'Transition',
+            onError: vi.fn()
+          })
+          return () => h('div')
+        }
+      })
+      const wrapper = mount(Comp)
+      return { wrapper, api, created }
+    }
+
+    it('disposes synchronously when the instance is not transitioning', async () => {
+      const { wrapper, api, created } = setupTransitioning()
+      await api.init()
+      await settle()
+
+      api.destroy()
+      expect(created[0].dispose).toHaveBeenCalledTimes(1)
+      expect(api.get()).toBeNull()
+      wrapper.unmount()
+    })
+
+    it('defers dispose while transitioning, then disposes once it settles', async () => {
+      const { wrapper, api, created } = setupTransitioning()
+      await api.init()
+      await settle()
+      const inst = created[0]
+      inst._isTransitioning = true
+
+      vi.useFakeTimers()
+      try {
+        api.destroy()
+        // Detached and dropped from our ref, but NOT disposed mid-transition.
+        expect(inst.dispose).not.toHaveBeenCalled()
+        expect(api.get()).toBeNull()
+
+        // Transition completes: dispose now runs so Data.remove clears the registry.
+        inst._isTransitioning = false
+        vi.advanceTimersByTime(50)
+        expect(inst.dispose).toHaveBeenCalledTimes(1)
+
+        // Timer cleared, no further disposes.
+        vi.advanceTimersByTime(2000)
+        expect(inst.dispose).toHaveBeenCalledTimes(1)
+      } finally {
+        vi.useRealTimers()
+      }
+      wrapper.unmount()
+    })
+
+    it('disposes at the capped fallback if the transition never settles', async () => {
+      const { wrapper, api, created } = setupTransitioning()
+      await api.init()
+      await settle()
+      const inst = created[0]
+      inst._isTransitioning = true
+
+      vi.useFakeTimers()
+      try {
+        api.destroy()
+        expect(inst.dispose).not.toHaveBeenCalled()
+
+        // Flag never clears, but the cap forces a single dispose so nothing leaks.
+        vi.advanceTimersByTime(1000)
+        expect(inst.dispose).toHaveBeenCalledTimes(1)
+        vi.advanceTimersByTime(2000)
+        expect(inst.dispose).toHaveBeenCalledTimes(1)
+      } finally {
+        vi.useRealTimers()
+      }
+      wrapper.unmount()
+    })
+  })
 })
