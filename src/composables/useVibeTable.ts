@@ -13,6 +13,7 @@ import {
   aggregationFns,
   rowAggregationFeature,
   constructAggregationFn,
+  columnOrderingFeature,
   columnFilteringFeature,
   columnFacetingFeature,
   columnVisibilityFeature,
@@ -99,6 +100,7 @@ const features = tableFeatures({
   rowExpandingFeature,
   columnGroupingFeature,
   rowAggregationFeature,
+  columnOrderingFeature,
   // Built-in aggregation registry (sum, mean, count, ...) resolvable by name.
   aggregationFns,
   coreRowModel: createCoreRowModel(),
@@ -144,6 +146,9 @@ export interface UseVibeTableParams<T extends object> {
   // #283 Phase 3b: per-column sizes in px ({ id: px }). Owned by the engine's
   // columnSizing state; the component's v-model mirrors it.
   columnSizing: Ref<Record<string, number>>
+  // #283 Phase 3c: column id order. Owned by the engine's columnOrder state;
+  // unknown ids are ignored and unlisted columns keep props order.
+  columnOrder: Ref<string[]>
   // #283 Phase 4a: expanded row keys. Owned by the engine's expanded state;
   // the component's v-model mirrors it.
   expandedRows: Ref<(string | number)[]>
@@ -221,6 +226,9 @@ export interface UseVibeTableResult<T extends object> {
   visibility: VibeTableVisibility
   // Pin/size/resize surface (engine-owned), consumed by header and cells.
   layout: VibeTableLayout
+  // Engine-ordered columns (unknown model ids dropped, unlisted keep props
+  // order), consumed for rendering.
+  orderedColumns: ComputedRef<DataTableColumn<T>[]>
   // Expansion surface (engine-owned), consumed by the toggle column.
   expansion: VibeTableExpansion
   // Flattened rows for rendering (sub-rows included when expanded).
@@ -347,6 +355,7 @@ export function useVibeTable<T extends object>(
       end: params.columns().filter((c) => c.pinned === 'end').map((c) => c.key)
     },
     columnSizing: params.columnSizing.value,
+    columnOrder: params.columnOrder.value,
     grouping: params.groupBy(),
     // Selection and expansion are key arrays on the component side.
     expanded: params.expandedRows.value.reduce<Record<string, true>>((acc, key) => {
@@ -428,6 +437,11 @@ export function useVibeTable<T extends object>(
       const prev = state.value.columnSizing
       const next = typeof updater === 'function' ? updater(prev) : updater
       params.columnSizing.value = next
+    },
+    onColumnOrderChange: (updater) => {
+      const prev = state.value.columnOrder
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      params.columnOrder.value = next
     },
     onExpandedChange: (updater) => {
       // ExpandedState is `true | Record<string, boolean>`; normalize the
@@ -545,5 +559,24 @@ export function useVibeTable<T extends object>(
     })
   })
 
-  return { paginatedItems, filteredCount, selection, filters, visibility, layout, expansion, displayedRows }
+  // #283 Phase 3c: props columns in model order. Model ids that match no
+  // column are dropped; columns absent from the model keep props order. Read
+  // from the model (which mirrors engine state) since v9 exposes no getState.
+  const orderedColumns = computed<DataTableColumn<T>[]>(() => {
+    const byKey = new Map<string, DataTableColumn<T>>(params.columns().map((column) => [column.key, column]))
+    const ordered: DataTableColumn<T>[] = []
+    for (const id of params.columnOrder.value) {
+      const column = byKey.get(id)
+      if (column !== undefined) {
+        ordered.push(column)
+        byKey.delete(id)
+      }
+    }
+    for (const column of params.columns()) {
+      if (byKey.has(column.key)) ordered.push(column)
+    }
+    return ordered
+  })
+
+  return { paginatedItems, filteredCount, selection, filters, visibility, layout, expansion, displayedRows, orderedColumns }
 }

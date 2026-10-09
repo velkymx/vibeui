@@ -97,6 +97,8 @@ const columnVisibility = defineModel<Record<string, boolean>>('columnVisibility'
 const columnSizing = defineModel<Record<string, number>>('columnSizing', { default: () => ({}) })
 // #283 Phase 4a: expanded row keys (engine row ids). Two-way.
 const expandedRows = defineModel<(string | number)[]>('expandedRows', { default: () => [] })
+// #283 Phase 3c: column id order. Two-way; unknown ids ignored on render.
+const columnOrder = defineModel<string[]>('columnOrder', { default: () => [] })
 
 const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
@@ -160,7 +162,7 @@ watch(() => [debouncedSearchQuery.value], ([newVal]) => {
 // useVibeTable. `paginatedItems` (visible rows) and `filteredCount` (local
 // filtered total) preserve the previous contracts exactly; the component keeps
 // its own markup, v-models, and per-cell maps.
-const { paginatedItems, filteredCount, selection, filters, visibility, layout, expansion, displayedRows } = useVibeTable<T>({
+const { paginatedItems, filteredCount, selection, filters, visibility, layout, expansion, displayedRows, orderedColumns } = useVibeTable<T>({
   items: () => props.items,
   columns: () => props.columns,
   rowKey: () => props.rowKey,
@@ -186,7 +188,8 @@ const { paginatedItems, filteredCount, selection, filters, visibility, layout, e
   expandable: () => props.expandable,
   expandableRow: (item: T) => props.expandableRow?.(item) ?? true,
   subRowsKey: () => props.subRowsKey,
-  groupBy: () => (Array.isArray(props.groupBy) ? props.groupBy : props.groupBy ? [props.groupBy] : [])
+  groupBy: () => (Array.isArray(props.groupBy) ? props.groupBy : props.groupBy ? [props.groupBy] : []),
+  columnOrder
 })
 
 // #283 Phase 5: row virtualizer over the displayed rows. Always constructed
@@ -275,7 +278,16 @@ const setFilterRange = (column: DataTableColumn<T>, index: 0 | 1, value: string)
 // state); the component reads it for rendering and the chooser writes it.
 const isColumnVisible = (column: DataTableColumn<T>): boolean =>
   visibility.isVisible(column.key)
-const visibleColumns = computed(() => props.columns.filter(isColumnVisible))
+const visibleColumns = computed(() => orderedColumns.value.filter(isColumnVisible))
+
+// #283 Phase 3c: programmatic reorder. Moves key to toIndex within the full
+// ordered key list (hidden columns included, so hiding never loses position).
+const moveColumn = (key: string, toIndex: number): void => {
+  const keys: string[] = orderedColumns.value.map((column) => column.key).filter((k) => k !== key)
+  keys.splice(Math.max(0, Math.min(toIndex, keys.length)), 0, key)
+  columnOrder.value = keys
+}
+defineExpose({ moveColumn })
 const setColumnVisible = (column: DataTableColumn<T>, visible: boolean) => {
   visibility.set(column.key, visible)
 }
