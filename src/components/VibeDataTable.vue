@@ -30,6 +30,9 @@ const props = defineProps({
   searchable: { type: Boolean, default: true },
   sortable: { type: Boolean, default: true },
   paginated: { type: Boolean, default: true },
+  // #283 Phase 1: row selection. false (off), 'single', 'multiple', or true
+  // (= multiple). Renders an opt-in leading checkbox column.
+  selectable: { type: [Boolean, String] as PropType<boolean | 'single' | 'multiple'>, default: false },
 
   // #124: server-side (manual) mode. When true, the table does no local
   // filtering/sorting/paging: `items` is rendered as-is (the current page from
@@ -63,12 +66,16 @@ const currentPage = defineModel<number>('currentPage', { default: 1 })
 const perPage = defineModel<number>('perPage', { default: 10 })
 const sortBy = defineModel<string | undefined>('sortBy', { default: undefined })
 const sortDesc = defineModel<boolean>('sortDesc', { default: false })
+// #283 Phase 1: selected row keys (ids per rowKey). Two-way for controlled use.
+const selectedRows = defineModel<(string | number)[]>('selectedRows', { default: () => [] })
 
 const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
   (e: 'component-error', error: ComponentError): void
   // #124: emitted with the (debounced) search query so a server-mode consumer can fetch.
   (e: 'search', query: string): void
+  // #283: emitted when a row's selection toggles (the row and its new state).
+  (e: 'row-selected', item: T, selected: boolean): void
 }>()
 
 // #147: type the per-column cell slots to the row type T. A `cell(<key>)` slot
@@ -136,7 +143,7 @@ watch(() => [debouncedSearchQuery.value], ([newVal]) => {
 // useVibeTable. `paginatedItems` (visible rows) and `filteredCount` (local
 // filtered total) preserve the previous contracts exactly; the component keeps
 // its own markup, v-models, and per-cell maps.
-const { paginatedItems, filteredCount } = useVibeTable<T>({
+const { paginatedItems, filteredCount, selection } = useVibeTable<T>({
   items: () => props.items,
   columns: () => props.columns,
   rowKey: () => props.rowKey,
@@ -149,8 +156,29 @@ const { paginatedItems, filteredCount } = useVibeTable<T>({
   currentPage,
   perPage,
   sortBy,
-  sortDesc
+  sortDesc,
+  selectable: () => props.selectable,
+  selectedRows
 })
+
+// Selection key for a row, matching the engine's getRowId (rowKey value).
+const selectKey = (item: T): string => String(readField(item, props.rowKey))
+
+const onToggleRow = (event: Event, item: T) => {
+  const key = selectKey(item)
+  selection.toggleRow(event, key)
+  emit('row-selected', item, selection.isSelected(key))
+}
+
+// Unwrapped for the template (selection holds ComputedRefs, not auto-unwrapped
+// as nested object properties).
+const selectEnabled = computed(() => selection.enabled.value)
+const selectMultiple = computed(() => selection.multiple.value)
+const selectAllChecked = computed(() => selection.isAllSelected.value)
+const selectAllIndeterminate = computed(() => selection.isIndeterminate.value)
+const isRowSelected = (item: T): boolean => selection.isSelected(selectKey(item))
+// Colspan for the loading/empty rows, including the select column when shown.
+const colspanCount = computed(() => (props.columns?.length || 1) + (selectEnabled.value ? 1 : 0))
 
 // Pagination info
 // Rows loaded in the browser. In server mode this is just the current page slice.
@@ -361,6 +389,17 @@ const cellValueMap = computed(() => {
       <table :class="tableClass">
         <thead>
           <tr>
+            <th v-if="selectEnabled" class="vibe-select-cell" scope="col">
+              <input
+                v-if="selectMultiple"
+                type="checkbox"
+                class="form-check-input"
+                aria-label="Select all rows"
+                :checked="selectAllChecked"
+                :indeterminate.prop="selectAllIndeterminate"
+                @click="selection.toggleAll($event)"
+              />
+            </th>
             <th
               v-for="column in columns"
               :key="column.key"
@@ -385,6 +424,15 @@ const cellValueMap = computed(() => {
             :style="clickable ? CLICKABLE_ROW_STYLE : undefined"
             @click="handleRowClick(item, index)"
           >
+            <td v-if="selectEnabled" class="vibe-select-cell">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                aria-label="Select row"
+                :checked="isRowSelected(item)"
+                @click.stop="onToggleRow($event, item)"
+              />
+            </td>
             <td
               v-for="column in columns"
               :key="column.key"
@@ -398,13 +446,13 @@ const cellValueMap = computed(() => {
             </td>
           </tr>
           <tr v-if="props.loading">
-            <td :colspan="columns?.length || 1" class="text-center text-body-secondary">
+            <td :colspan="colspanCount" class="text-center text-body-secondary">
               <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
               Loading...
             </td>
           </tr>
           <tr v-else-if="paginatedItems.length === 0 && showEmpty">
-            <td :colspan="columns?.length || 1" class="text-center">
+            <td :colspan="colspanCount" class="text-center">
               {{ emptyText }}
             </td>
           </tr>
