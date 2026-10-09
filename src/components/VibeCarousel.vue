@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, ref, onMounted, watch, nextTick } from 'vue'
 import type { CarouselItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
@@ -58,15 +59,10 @@ defineSlots<{
 }>()
 
 const carouselRef = useTemplateRef<HTMLElement>('carouselRef')
-const bsCarousel = shallowRef<BootstrapCarousel | null>(null)
 const activeIndex = ref(props.modelValue)
 
 // Consumer-supplied id wins; otherwise the stable generated id.
 const computedId = computed(() => props.id || _generatedId)
-
-// Set in onBeforeUnmount before dispose — guards the post-await section of initCarousel
-// against constructing a Bootstrap instance on a detached element.
-let isUnmounted = false
 
 const carouselClass = computed(() => {
   const classes = ['carousel', 'slide']
@@ -86,103 +82,47 @@ const onSlid = (event: Event) => {
   emit('slid', event)
 }
 
-let initInFlight = false
-// A re-init requested while one is in flight (e.g. items replaced during the
-// initial import). Honored in `finally` so the newest items always win, instead
-// of being dropped by the early return below.
-let pendingReinit = false
-// shallowRef: this holds a DOM element used only for listener attach/detach
-// and identity comparison. A deep ref would proxy the node itself (see #199).
-const attachedEl = shallowRef<HTMLElement | null>(null)
-
-const initCarousel = async () => {
-  if (!carouselRef.value) return
-  // In-flight guard: prevent concurrent initCarousel calls
-  if (initInFlight) return
-  initInFlight = true
-
-  try {
-    // Detach listeners from previously attached element before disposing
-    if (attachedEl.value) {
-      attachedEl.value.removeEventListener('slide.bs.carousel', onSlide)
-      attachedEl.value.removeEventListener('slid.bs.carousel', onSlid)
-      attachedEl.value = null
-    }
-
-    // Dispose existing instance before re-initializing
-    if (bsCarousel.value) {
-      bsCarousel.value.dispose()
-      bsCarousel.value = null
-    }
-
-    // No slides → nothing to initialize. Any prior instance was disposed above,
-    // so an items-emptied carousel is left cleanly torn down rather than handing
-    // Bootstrap an empty `.carousel-inner` (which errors internally).
-    if (!props.items.length) return
-
-    const bootstrap = await import('bootstrap')
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!carouselRef.value || isUnmounted) return
-    // Items may have been emptied while importing: never hand Bootstrap an
-    // empty inner (the pre-await early return above cannot see this).
-    if (!props.items.length) return
-
-    const Carousel = bootstrap.Carousel
-
-    bsCarousel.value = new Carousel(carouselRef.value, {
+// Instance lifecycle owned by the shared composable (#247): lazy async
+// construction, per-instance slide listeners, dispose plus nulling, and
+// unmount-race guards (queued reinits served internally). Empty-items
+// teardown plus the post-construction slide-to stay in the wrapper.
+const { init: initInstance, destroy, instance: bsCarousel } = useBootstrapInstance<BootstrapCarousel>({
+  // No slides, or a torn-down ref, means nothing to construct: resolve null
+  // (covers both the pre-await and the emptied-mid-import cases) so Bootstrap
+  // is never handed an empty inner.
+  resolveElement: () => (props.items.length > 0 ? carouselRef.value : null),
+  create: (el, bootstrap) =>
+    new bootstrap.Carousel(el, {
       interval: props.interval,
       keyboard: props.keyboard,
       pause: props.pause,
       ride: props.ride === true ? 'carousel' : props.ride,
       wrap: props.wrap,
       touch: props.touch
-    }) as BootstrapCarousel
+    }) as unknown as BootstrapCarousel,
+  disposeInstance: (carousel) => carousel.dispose(),
+  events: {
+    'slide.bs.carousel': onSlide as EventListener,
+    'slid.bs.carousel': onSlid as EventListener
+  },
+  componentName: 'VibeCarousel',
+  onError: (error) => reportComponentError(emit, error)
+})
 
-    // Attach listeners and record element ref
-    attachedEl.value = carouselRef.value
-    attachedEl.value.addEventListener('slide.bs.carousel', onSlide)
-    attachedEl.value.addEventListener('slid.bs.carousel', onSlid)
-
-    if (props.modelValue !== 0) {
-      bsCarousel.value.to(props.modelValue)
-    }
-  } catch (error) {
-    attachedEl.value = null
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Carousel will use data attributes only.',
-      componentName: 'VibeCarousel',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-    // A re-init queued while the import was in flight must not run after
-    // teardown: onBeforeUnmount already ran, so a new instance would leak.
-    if (!isUnmounted && pendingReinit) {
-      pendingReinit = false
-      void initCarousel()
-    } else {
-      pendingReinit = false
-    }
+const initCarousel = async (): Promise<void> => {
+  // No slides: tear down any live instance (the composable no-ops on a null
+  // element without disposing) rather than handing Bootstrap an empty inner.
+  if (!props.items.length) {
+    destroy()
+    return
+  }
+  await initInstance()
+  if (props.modelValue !== 0) {
+    bsCarousel.value?.to(props.modelValue)
   }
 }
 
 onMounted(initCarousel)
-
-onBeforeUnmount(() => {
-  isUnmounted = true
-
-  if (attachedEl.value) {
-    attachedEl.value.removeEventListener('slide.bs.carousel', onSlide)
-    attachedEl.value.removeEventListener('slid.bs.carousel', onSlid)
-    attachedEl.value = null
-  }
-
-  if (bsCarousel.value) {
-    bsCarousel.value.dispose()
-    bsCarousel.value = null
-  }
-})
 
 watch(() => props.modelValue, (newIndex) => {
   if (bsCarousel.value && newIndex !== activeIndex.value) {
@@ -193,10 +133,7 @@ watch(() => props.modelValue, (newIndex) => {
 watch(() => props.items, async () => {
   activeIndex.value = 0
   await nextTick()
-  if (initInFlight) {
-    pendingReinit = true
-    return
-  }
+  // Queued reinits are served inside the composable; no manual flags needed.
   await initCarousel()
 }, { deep: false })
 
