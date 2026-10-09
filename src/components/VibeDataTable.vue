@@ -4,7 +4,7 @@ import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { DataTableColumn, ComponentError, Variant } from '../types'
 import { safeCssObject, safeLength } from '../utils/safeCss'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
-import { useVibeTable } from '../composables/useVibeTable'
+import { useVibeTable, type VibeTableRow } from '../composables/useVibeTable'
 
 const props = defineProps({
   // Data
@@ -42,6 +42,8 @@ const props = defineProps({
   expandable: { type: Boolean, default: false },
   expandableRow: { type: Function as PropType<(item: T) => boolean>, default: undefined },
   subRowsKey: { type: String, default: 'children' },
+  // #283 Phase 4b: group rows by these column keys (engine grouping state).
+  groupBy: { type: [String, Array] as PropType<string | string[]>, default: () => [] },
 
   // #124: server-side (manual) mode. When true, the table does no local
   // filtering/sorting/paging: `items` is rendered as-is (the current page from
@@ -102,7 +104,14 @@ const emit = defineEmits<{
 // receives the typed row, the typed cell value, and the row index, so consumers
 // get autocomplete and type-checking instead of `any`.
 defineSlots<{
-  [K in keyof T & string as `cell(${K})`]?: (props: { item: T; value: T[K]; index: number }) => unknown
+  // #147: per-column cell slots plus #283 Phase 4b per-column footer slots.
+  // One mapped member covers both families (two `as` remaps in one literal
+  // break the SFC parser); props are the union of both shapes.
+  [K in keyof T & string as `cell(${K})` | `footer(${K})`]?: (
+    props:
+      | { item: T; value: T[K]; index: number }
+      | { column: DataTableColumn<T> }
+  ) => unknown
 } & {
   // #283 Phase 4a: expanded-row detail content for an expanded row.
   expanded?: (props: { item: T; index: number }) => unknown
@@ -168,7 +177,8 @@ const { paginatedItems, filteredCount, selection, filters, visibility, layout, e
   expandedRows,
   expandable: () => props.expandable,
   expandableRow: (item: T) => props.expandableRow?.(item) ?? true,
-  subRowsKey: () => props.subRowsKey
+  subRowsKey: () => props.subRowsKey,
+  groupBy: () => (Array.isArray(props.groupBy) ? props.groupBy : props.groupBy ? [props.groupBy] : [])
 })
 
 // #283 Phase 2b: filter row helpers (unwrapped for the template).
@@ -258,11 +268,33 @@ const colspanCount = computed(
   () =>
     (visibleColumns.value.length || 1) +
     (selectEnabled.value ? 1 : 0) +
-    (props.expandable ? 1 : 0)
+    (props.expandable || grouped.value ? 1 : 0)
 )
 // The expanded-row detail slot, when provided.
 const slots = useSlots()
 const hasExpandedSlot = computed(() => slots.expanded !== undefined)
+// #283 Phase 4b: group header cell text. The grouping column shows the value
+// plus leaf count; aggregated columns show the engine aggregation; the rest
+// stay blank so the group label reads cleanly.
+const groupCellText = (row: Extract<VibeTableRow<T>, { group: object }>, column: DataTableColumn<T>): string => {
+  if (!row.group) return ''
+  if (column.key === row.group.columnId) {
+    return `${String(row.group.value)} (${row.group.leafCount})`
+  }
+  if (column.aggregate !== undefined) {
+    const value = row.group.values[column.key]
+    return value === undefined || value === null ? '' : String(value)
+  }
+  return ''
+}
+// #283 Phase 4b: grouping active when groupBy names at least one column.
+const grouped = computed(() => (Array.isArray(props.groupBy) ? props.groupBy.length > 0 : !!props.groupBy))
+// Footer renders when any column carries footer text or a footer slot.
+const footEnabled = computed(
+  () =>
+    props.columns.some((column) => column.footer !== undefined) ||
+    Object.keys(slots).some((name) => name.startsWith('footer('))
+)
 
 // Pagination info
 // Rows loaded in the browser. In server mode this is just the current page slice.
@@ -451,7 +483,10 @@ const cellValueMap = computed(() => {
   for (const column of props.columns) {
     const byRow = new Map<T, unknown>()
     // Displayed rows (not just the page slice) so expanded sub-rows resolve.
+    // Group header rows carry no item and are skipped here; their cells render
+    // from the engine aggregated values instead.
     for (const { item } of displayedRows.value) {
+      if (item === null) continue
       const value = item[column.key]
       byRow.set(item, column.formatter ? column.formatter(value, item) : value)
     }
@@ -532,7 +567,7 @@ const cellValueMap = computed(() => {
                 @click="selection.toggleAll($event)"
               />
             </th>
-            <th v-if="expandable" class="vibe-expand-cell" scope="col">
+            <th v-if="expandable || grouped" class="vibe-expand-cell" scope="col">
               <span class="visually-hidden">Expand rows</span>
             </th>
             <th
@@ -563,7 +598,7 @@ const cellValueMap = computed(() => {
           </tr>
           <tr v-if="filtersEnabled" class="vibe-filter-row">
             <th v-if="selectEnabled" class="vibe-select-cell"></th>
-            <th v-if="expandable" class="vibe-expand-cell"></th>
+            <th v-if="expandable || grouped" class="vibe-expand-cell"></th>
             <th v-for="column in visibleColumns" :key="column.key" :class="column.headerClass">
               <input
                 v-if="column.filter === 'text'"
@@ -604,7 +639,36 @@ const cellValueMap = computed(() => {
         </thead>
         <tbody>
           <template v-for="(row, index) in displayedRows" :key="row.key">
+            <!-- #283 Phase 4b: group header row (toggle plus aggregate cells). -->
+            <tr v-if="row.group" class="vibe-group-row">
+              <td v-if="selectEnabled" class="vibe-select-cell"></td>
+              <td class="vibe-expand-cell">
+                <button
+                  v-if="expansion.canExpand(row.key)"
+                  type="button"
+                  class="btn btn-sm btn-link vibe-expand-toggle p-0"
+                  :aria-expanded="expansion.isExpanded(row.key)"
+                  :aria-label="expansion.isExpanded(row.key) ? 'Collapse group' : 'Expand group'"
+                  @click.stop="expansion.toggle(row.key)"
+                >
+                  <span
+                    class="vibe-expand-icon"
+                    :class="{ 'vibe-expand-icon-open': expansion.isExpanded(row.key) }"
+                    aria-hidden="true"
+                  >&#8250;</span>
+                </button>
+              </td>
+              <td
+                v-for="column in visibleColumns"
+                :key="column.key"
+                :class="[column.class, alignClass(column)]"
+                :data-label="column.label"
+              >
+                {{ groupCellText(row, column) }}
+              </td>
+            </tr>
             <tr
+              v-else
               :class="{ 'vibe-sub-row': row.depth > 0 }"
               :style="clickable ? CLICKABLE_ROW_STYLE : undefined"
               @click="handleRowClick(row.item, index)"
@@ -647,7 +711,7 @@ const cellValueMap = computed(() => {
             </td>
           </tr>
           <tr
-            v-if="expandable && hasExpandedSlot && expansion.isExpanded(row.key)"
+            v-if="!row.group && expandable && hasExpandedSlot && expansion.isExpanded(row.key)"
             class="vibe-expanded-row"
           >
             <td :colspan="colspanCount">
@@ -667,6 +731,20 @@ const cellValueMap = computed(() => {
             </td>
           </tr>
         </tbody>
+        <!-- #283 Phase 4b: footer row from column footer text or footer slots. -->
+        <tfoot v-if="footEnabled">
+          <tr>
+            <td v-if="selectEnabled" class="vibe-select-cell"></td>
+            <td v-if="expandable || grouped" class="vibe-expand-cell"></td>
+            <td
+              v-for="column in visibleColumns"
+              :key="column.key"
+              :class="[column.class, alignClass(column)]"
+            >
+              <slot :name="`footer(${column.key})`" :column="column">{{ column.footer }}</slot>
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
 

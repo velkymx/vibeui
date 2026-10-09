@@ -9,6 +9,10 @@ import {
   createFacetedRowModel,
   createFacetedUniqueValues,
   createExpandedRowModel,
+  createGroupedRowModel,
+  aggregationFns,
+  rowAggregationFeature,
+  constructAggregationFn,
   columnFilteringFeature,
   columnFacetingFeature,
   columnVisibilityFeature,
@@ -20,6 +24,7 @@ import {
   columnSizingFeature,
   columnResizingFeature,
   rowExpandingFeature,
+  columnGroupingFeature,
   type ColumnDef,
   type Row,
   type SortFn
@@ -92,6 +97,10 @@ const features = tableFeatures({
   rowPaginationFeature,
   rowSelectionFeature,
   rowExpandingFeature,
+  columnGroupingFeature,
+  rowAggregationFeature,
+  // Built-in aggregation registry (sum, mean, count, ...) resolvable by name.
+  aggregationFns,
   coreRowModel: createCoreRowModel(),
   filteredRowModel: createFilteredRowModel(),
   sortedRowModel: createSortedRowModel(),
@@ -100,7 +109,9 @@ const features = tableFeatures({
   facetedRowModel: createFacetedRowModel(),
   facetedUniqueValues: createFacetedUniqueValues(),
   // Expansion flattens sub-rows into view when parents expand.
-  expandedRowModel: createExpandedRowModel()
+  expandedRowModel: createExpandedRowModel(),
+  // Grouping inserts group header rows ahead of their leaves.
+  groupedRowModel: createGroupedRowModel()
 })
 
 export interface UseVibeTableParams<T extends object> {
@@ -141,6 +152,8 @@ export interface UseVibeTableParams<T extends object> {
   expandable: () => boolean
   expandableRow: (item: T) => boolean
   subRowsKey: () => string
+  // #283 Phase 4b: grouped column ids (engine grouping state, prop-driven).
+  groupBy: () => string[]
 }
 
 export interface VibeTableFilters {
@@ -162,11 +175,19 @@ export interface VibeTableExpansion {
   toggle: (key: string) => void
 }
 
-export interface VibeTableRow<T> {
-  key: string
-  item: T
-  depth: number
-}
+export type VibeTableRow<T extends object> =
+  | { key: string; item: T; depth: number; group: null }
+  | {
+      key: string
+      item: null
+      depth: number
+      group: {
+        columnId: string
+        value: unknown
+        leafCount: number
+        values: Record<string, unknown>
+      }
+    }
 
 export interface VibeTableLayout {
   pinSide: (id: string) => 'start' | 'end' | false
@@ -227,6 +248,7 @@ export function useVibeTable<T extends object>(
 
   const columnDefs = computed<ColumnDef<typeof features, T>[]>(() =>
     params.columns().map((column) => {
+      const customAggregate = column.aggregate
       const sortFn: SortFn<typeof features, T> = (rowA: Row<typeof features, T>, rowB: Row<typeof features, T>, columnId: string) =>
         ascendingCompare(rowA.getValue(columnId), rowB.getValue(columnId))
       const def: ColumnDef<typeof features, T> = {
@@ -238,7 +260,17 @@ export function useVibeTable<T extends object>(
         // #283 Phase 3b: numeric widths seed the engine size (drives pin
         // offsets); resizing is opt-in per column.
         size: numericWidth(column.width),
-        enableResizing: column.resizable === true
+        enableResizing: column.resizable === true,
+        // #283 Phase 4b: named aggregations resolve via the registry above; a
+        // custom function receives the leaf values through an adapter def.
+        aggregationFn:
+          typeof customAggregate === 'function'
+            ? constructAggregationFn({
+                aggregate: (context) =>
+                  customAggregate(context.rows.map((row) => context.getValue(row)))
+              })
+            : // Named aggregations resolve via the registry in the feature set.
+              (customAggregate as 'sum' | 'mean' | 'min' | 'max' | 'count' | undefined)
       }
       // Per-column filter functions (#283 Phase 2b).
       if (column.filter === 'text') {
@@ -315,6 +347,7 @@ export function useVibeTable<T extends object>(
       end: params.columns().filter((c) => c.pinned === 'end').map((c) => c.key)
     },
     columnSizing: params.columnSizing.value,
+    grouping: params.groupBy(),
     // Selection and expansion are key arrays on the component side.
     expanded: params.expandedRows.value.reduce<Record<string, true>>((acc, key) => {
       acc[String(key)] = true
@@ -348,7 +381,9 @@ export function useVibeTable<T extends object>(
       return Array.isArray(children) ? (children as T[]) : []
     },
     getRowCanExpand: (row) =>
-      params.expandable() && params.expandableRow(row.original),
+      // Group header rows always expand (their leaves); data rows follow the
+      // expansion switch plus predicate.
+      row.getIsGrouped() || (params.expandable() && params.expandableRow(row.original)),
     // #124 server mode: the backend already filtered/sorted/paged; trust `items`
     // as the current page and drive the count from totalRows.
     manualFiltering: params.serverMode(),
@@ -484,11 +519,24 @@ export function useVibeTable<T extends object>(
   }
 
   const displayedRows = computed<VibeTableRow<T>[]>(() =>
-    table.getRowModel().rows.map((row) => ({
-      key: row.id,
-      item: row.original as T,
-      depth: row.depth
-    }))
+    table.getRowModel().rows.map((row) => {
+      if (row.getIsGrouped()) {
+        const values: Record<string, unknown> = {}
+        for (const column of params.columns()) values[column.key] = row.getValue(column.key)
+        return {
+          key: row.id,
+          item: null,
+          depth: row.depth,
+          group: {
+            columnId: row.groupingColumnId ?? '',
+            value: row.groupingValue,
+            leafCount: row.getLeafRows().length,
+            values
+          }
+        }
+      }
+      return { key: row.id, item: row.original as T, depth: row.depth, group: null }
+    })
   )
 
   return { paginatedItems, filteredCount, selection, filters, visibility, layout, expansion, displayedRows }
