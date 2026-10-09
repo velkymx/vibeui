@@ -74,6 +74,7 @@ Two tiers, one engine. The simple props (`items`, `columns`, `searchable`, `sort
 | `sort` | `{ id, desc }[]` | `[]` | Two-way: ordered multi-sort state |
 | `showColumnToggle` | `Boolean` | `false` | Column-visibility chooser (dropdown of checkboxes) |
 | `columnVisibility` | `Record<String, Boolean>` | `{}` | Two-way: `{ key: false }` hides a column |
+| `columnOrder` | `String[]` | `[]` | Two-way: column id order. Unknown ids are ignored; unlisted columns keep props order. Programmatic moves via the exposed `moveColumn(key, toIndex)` template-ref method |
 | `expandable` | `Boolean` | `false` | Row expansion toggle column. Per-row opt-out via `expandableRow`, children via `subRowsKey`, state in `expandedRows` |
 | `expandableRow` | `(item) => Boolean` | `undefined` | Predicate; rows failing it render no toggle (default: every row) |
 | `subRowsKey` | `String` | `'children'` | Item field holding child rows, rendered when the parent expands |
