@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
 import VibeSkeleton from '../../src/components/VibeSkeleton.vue'
 
 describe('VibeSkeleton', () => {
@@ -212,6 +213,41 @@ describe('VibeSkeleton', () => {
         await line.trigger('click')
       }
       expect(calls).toBe(1)
+    })
+  })
+
+  // #228: the text loop must bind stable computed models, not fresh call
+  // results plus object literals per line per render. Structural contract:
+  // the template loop contains no function calls.
+  describe('text loop memoization (#228)', () => {
+    const textLoopOf = (): string => {
+      const src = readFileSync('src/components/VibeSkeleton.vue', 'utf8')
+      const start = src.indexOf('<template>')
+      const end = src.indexOf('</template>')
+      const tpl = src.slice(start, end)
+      return tpl.slice(tpl.indexOf('v-for="i in lineCount"'))
+    }
+
+    it('binds precomputed line models instead of per-line calls', () => {
+      const loop = textLoopOf()
+      expect(loop).not.toContain('lineAttrs(')
+      expect(loop).not.toContain('toCss(')
+    })
+
+    it('renders identical output for multi-line text with attrs', () => {
+      const props = { lines: 3, width: 200, height: 14, animated: true }
+      const attrs = { class: 'extra', 'data-x': '1', id: 'sk1' }
+      const a = mount(VibeSkeleton, { props, attrs })
+      const b = mount(VibeSkeleton, { props, attrs })
+      expect(a.html()).toBe(b.html())
+      const lines = a.findAll('.vibe-skeleton-text')
+      expect(lines).toHaveLength(3)
+      expect(lines[2].classes()).toContain('vibe-skeleton-text-last')
+      expect(lines[0].attributes('id')).toBe('sk1')
+      expect(lines[0].attributes('data-x')).toBe('1')
+      expect(lines[1].attributes('id')).toBeUndefined()
+      a.unmount()
+      b.unmount()
     })
   })
 })

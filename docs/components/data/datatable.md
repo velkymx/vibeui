@@ -88,6 +88,7 @@ Powerful data table component with search, sorting, and pagination - similar to 
 |------|------|---------|-------------|
 | `showEmpty` | `Boolean` | `true` | Show message when no data |
 | `emptyText` | `String` | `'No data available'` | Empty state message |
+| `loading` | `Boolean` | `false` | Show pending row instead of stale or empty content (serverMode fetches) |
 | `showPerPage` | `Boolean` | `true` | Show per-page selector |
 | `showInfo` | `Boolean` | `true` | Show info text (X to Y of Z entries) |
 | `infoText` | `String` | `'Showing {start} to {end} of {total} entries'` | Info text template |

@@ -28,6 +28,7 @@ const props = defineProps({
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
   (e: 'select', item: T): void
+  (e: 'error', error: unknown): void
 }>()
 
 // Consumer attributes (aria-label, name, data-*) belong on the native combobox
@@ -110,12 +111,14 @@ const runQuery = async (query: string, isStale: () => boolean = () => false) => 
       const out = await (props.source as SourceFn<T>)(query)
       if (isStale() || isUnmounted) return
       results.value = out.slice(0, props.maxResults)
-    } catch {
-      // Source function rejected — clear stale results and close so the user
-      // isn't left looking at outdated suggestions from the previous query.
+    } catch (error) {
+      // Source function rejected: clear stale results and close so the user
+      // isn't left looking at outdated suggestions, but emit so the consumer
+      // can show a retry (silent close is indistinguishable from no matches).
       if (isStale() || isUnmounted) return
       results.value = []
       isOpen.value = false
+      emit('error', error)
       return
     }
   } else {

@@ -44,7 +44,7 @@ const resolvedColors = ref<string[]>([])
 
 function updateColors() {
   resolvedColors.value = containerEl.value
-    ? resolveColors(props.data.datasets, containerEl.value)
+    ? resolveColors(props.data?.datasets ?? [], containerEl.value)
     : []
 }
 
@@ -56,6 +56,9 @@ function redraw() {
   // Refresh colors before the dimension guard so the legend populates even if the
   // canvas has not been sized yet.
   updateColors()
+  // Shape-incomplete data (async load in flight): render the empty chart
+  // rather than throwing inside render (see #226).
+  if (!Array.isArray(props.data?.datasets) || !Array.isArray(props.data?.labels)) return
   hitExtent = getLineExtent(props.data)
   if (!canvasEl.value || !currentW || !currentH) return
   const canvas = canvasEl.value
@@ -92,6 +95,9 @@ onMounted(() => {
   // One-time color resolution at mount so the legend has colors before the first
   // ResizeObserver callback. Subsequent refreshes happen inside redraw().
   updateColors()
+  // Shape-incomplete data (async load in flight): render the empty chart
+  // rather than throwing inside render (see #226).
+  if (!Array.isArray(props.data?.datasets) || !Array.isArray(props.data?.labels)) return
   hitExtent = getLineExtent(props.data)
   if (containerEl.value && canvasEl.value) {
     cleanupTooltip = bindTooltip(
@@ -114,7 +120,7 @@ onUnmounted(() => {
 })
 
 const legendItems = computed(() =>
-  props.data.datasets.map((ds, i) => ({ label: ds.label, color: resolvedColors.value[i] }))
+  (props.data?.datasets ?? []).map((ds, i) => ({ label: ds.label, color: resolvedColors.value[i] }))
 )
 </script>
 

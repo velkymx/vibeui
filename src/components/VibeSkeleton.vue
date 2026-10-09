@@ -53,9 +53,40 @@ const firstOnlyAttrs = () => {
   }
   return out
 }
-const lineAttrs = (first: boolean) => ({
-  ...sharedLineAttrs(),
-  ...(first ? firstOnlyAttrs() : {})
+
+interface SkeletonLine {
+  cls: string[]
+  style: { width: string | undefined; height: string | undefined }
+  bind: Record<string, unknown>
+  role: 'status' | undefined
+  busy: 'true' | undefined
+}
+
+// Per-line render data, computed once per lines/animated/height/width/attrs
+// change instead of allocating call results plus object literals per line on
+// every render (see #198 for the same treatment in VibeDataTable).
+const lineModels = computed<SkeletonLine[]>(() => {
+  const count = lineCount.value
+  const shared = sharedLineAttrs()
+  const firstOnly = firstOnlyAttrs()
+  const height = toCss(props.height)
+  const models: SkeletonLine[] = []
+  for (let i = 1; i <= count; i++) {
+    const last = i === count && count > 1
+    models.push({
+      cls: [
+        'vibe-skeleton',
+        'vibe-skeleton-text',
+        props.animated ? 'vibe-skeleton-animated' : '',
+        last ? 'vibe-skeleton-text-last' : ''
+      ],
+      style: { width: last ? '60%' : textWidth.value, height },
+      bind: i === 1 ? { ...shared, ...firstOnly } : { ...shared },
+      role: i === 1 ? 'status' : undefined,
+      busy: i === 1 ? 'true' : undefined
+    })
+  }
+  return models
 })
 
 // Circle width: explicit width wins, otherwise CSS default (.vibe-skeleton-circle).
@@ -84,21 +115,13 @@ defineOptions({ inheritAttrs: false })
 <template>
   <template v-if="variant === 'text'">
     <div
-      v-for="i in lineCount"
-      :key="i"
-      :class="[
-        'vibe-skeleton',
-        'vibe-skeleton-text',
-        animated ? 'vibe-skeleton-animated' : '',
-        i === lineCount && lineCount > 1 ? 'vibe-skeleton-text-last' : ''
-      ]"
-      :style="{
-        width: i === lineCount && lineCount > 1 ? '60%' : textWidth,
-        height: toCss(height)
-      }"
-      v-bind="lineAttrs(i === 1)"
-      :role="i === 1 ? 'status' : undefined"
-      :aria-busy="i === 1 ? 'true' : undefined"
+      v-for="(line, index) in lineModels"
+      :key="index + 1"
+      :class="line.cls"
+      :style="line.style"
+      v-bind="line.bind"
+      :role="line.role"
+      :aria-busy="line.busy"
     />
   </template>
 
