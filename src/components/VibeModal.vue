@@ -5,7 +5,7 @@ import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Size, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
-import { emitEvent } from '../composables/useEventBus'
+import { emitEvent, isDev } from '../composables/useEventBus'
 import { registerModal } from '../composables/modalChannel'
 
 interface BootstrapModal {
@@ -401,7 +401,7 @@ const handleUpdate = () => bsModal.value?.handleUpdate()
 // bus controller below reads this captured flag, not a fresh lookup).
 const vModelBound = getCurrentInstance()?.vnode.props?.['onUpdate:modelValue'] != null
 const warnIfVModel = () => {
-  if (import.meta.env.DEV && vModelBound) {
+  if (isDev() && vModelBound) {
     console.warn(
       `[VibeModal] "${computedId.value}" received a bus command while bound with v-model. ` +
       'Use either v-model or the bus command channel for one instance, not both (#121).'

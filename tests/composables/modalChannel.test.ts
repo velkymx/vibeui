@@ -45,12 +45,20 @@ describe('modalChannel registry + dispatcher (#98)', () => {
     expect(onUnhandled).toHaveBeenCalledTimes(1)
   })
 
-  it('the dispatcher survives resetEventBusForSSR (#115)', () => {
+  // #231 overrides the old #115 expectation: the registry is per-request
+  // state, so the SSR reset clears it. The persistent dispatcher survives and
+  // reports error:unhandled for the now-unknown id instead of routing into a
+  // disposed controller from a previous request.
+  it('resetEventBusForSSR clears the registry; the dispatcher reports unhandled (#231)', () => {
     const open = vi.fn()
     registerModal('m1', { open, close: vi.fn() })
     resetEventBusForSSR()
+    const onUnhandled = vi.fn()
+    const off = useEventBus().on('error:unhandled', onUnhandled)
     emitEvent('modal:open', { id: 'm1' })
-    expect(open).toHaveBeenCalledTimes(1)
+    off()
+    expect(open).not.toHaveBeenCalled()
+    expect(onUnhandled).toHaveBeenCalledTimes(1)
   })
 
   it('warns when registering a duplicate id (#117)', () => {

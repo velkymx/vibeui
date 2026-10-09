@@ -5,6 +5,7 @@ import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
+import { isDev } from '../composables/useEventBus'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 // The validator option still forwards to the underlying prop.
@@ -13,7 +14,7 @@ import { useFormField } from '../composables/useFormField'
 const [modelValue, modelModifiers] = defineModel<number>({
   default: 0,
   validator: (value: unknown) => {
-    if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+    if (isDev() && value !== null && typeof value === 'object') {
       console.error(
         `[VibeFormSpinbutton] Invalid prop: modelValue must be a number, received object. ` +
         `If you're using useFormValidation(), bind to the .value property: ` +
@@ -161,7 +162,7 @@ const handleFocus = (event: FocusEvent) => {
 // invalid values to the default of 1 so arithmetic and precision stay well-defined.
 const safeStep = computed(() => {
   if (Number.isFinite(props.step) && props.step > 0) return props.step
-  if (import.meta.env.DEV) {
+  if (isDev()) {
     console.warn(
       `[VibeFormSpinbutton] step must be a positive number; received ${props.step}. Falling back to 1.`
     )

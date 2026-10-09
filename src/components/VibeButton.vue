@@ -7,6 +7,7 @@ import { linkBindings } from '../utils/linkBindings'
 import { safeHref } from '../utils/safeHref'
 import { reportComponentError } from '../utils/reportComponentError'
 import VibeSpinner from './VibeSpinner.vue'
+import { isDev } from '../composables/useEventBus'
 
 const props = defineProps({
   variant: { type: String as () => ButtonVariant, default: undefined },
@@ -45,7 +46,7 @@ const emit = defineEmits<{
 // #140: DEV-only guard against the common Bootstrap habit of variant="outline-*".
 // VibeUI models outline as a boolean prop, so an "outline-primary" variant is not
 // a valid value; point the consumer at the correct form.
-if (import.meta.env.DEV && typeof resolvedVariant.value === 'string' && resolvedVariant.value.startsWith('outline-')) {
+if (isDev() && typeof resolvedVariant.value === 'string' && resolvedVariant.value.startsWith('outline-')) {
   const base = resolvedVariant.value.slice('outline-'.length)
   console.warn(
     `[VibeButton] variant="${resolvedVariant.value}" is not valid. ` +
@@ -68,7 +69,7 @@ const rootRef = useTemplateRef<HTMLElement | { $el?: HTMLElement }>('rootRef')
 // render function" warning and skips slot dependency tracking. Reading the final DOM also
 // catches text nested inside wrapper elements, which the vnode scan missed.
 onMounted(() => {
-  if (!import.meta.env.DEV) return
+  if (!isDev()) return
   const el = (rootRef.value && '$el' in rootRef.value ? rootRef.value.$el : rootRef.value) as HTMLElement | null
   if (!el) return
   // el.children (elements only) — ignores the comment anchor Vue leaves for an empty slot.

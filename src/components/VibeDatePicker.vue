@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useTemplateRef, computed, nextTick, onBeforeUnmount, ref, watch, type PropType } from 'vue'
 import { useId } from '../composables/useId'
+import { isDev } from '../composables/useEventBus'
 
 type IsoDate = string // YYYY-MM-DD
 type DateValue = IsoDate | null
@@ -45,7 +46,7 @@ const ISO_FORMAT = /^\d{4}-\d{2}-\d{2}$/
 const fromIso = (iso: IsoDate): Date => {
   // Guard: empty or malformed ISO strings produce NaN dates (e.g. fromIso("") → new Date(0,-1,0))
   if (!ISO_FORMAT.test(iso)) {
-    if (import.meta.env.DEV) {
+    if (isDev()) {
       console.warn(`[VibeDatePicker] fromIso received non-ISO string: "${iso}". Falling back to today.`)
     }
     return new Date()
@@ -57,7 +58,7 @@ const validateIsoString = (value: string | undefined, propName: string): void =>
   // DEV-only, and the raw value is not logged — min/max can be derived from user data
   // (birth/medical/financial dates); echoing it to the console is a PII-leak vector in
   // shared-screen or remote-debug sessions.
-  if (import.meta.env.DEV && value !== undefined && !ISO_FORMAT.test(value)) {
+  if (isDev() && value !== undefined && !ISO_FORMAT.test(value)) {
     console.warn(
       `[VibeDatePicker] Invalid ${propName} prop. Expected zero-padded YYYY-MM-DD; comparisons are lexical and will be wrong otherwise.`
     )

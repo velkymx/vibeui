@@ -1,4 +1,5 @@
 import { routeKey } from './routeKey'
+import { isDev } from '../composables/useEventBus'
 
 /**
  * #133: shared v-for keying for item lists. Stable part from text/href/to,
@@ -16,7 +17,7 @@ export function dropdownItemKey(
   const stable = item.text || item.href || routeKey(item.to)
   if (stable) return `${stable}::${index}`
   if (item.divider || item.header) return `__sep-${index}`
-  if (import.meta.env.DEV) {
+  if (isDev()) {
     console.warn(
       `[${component}] An item has no text, href, or to, so its list key ` +
       'falls back to the array index. Index keys can cause incorrect DOM reuse if the ' +

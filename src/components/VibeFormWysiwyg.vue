@@ -10,6 +10,7 @@ import { VIBE_WYSIWYG_KEY } from '../composables/wysiwygConfig'
 import type { QuillLoader, Sanitizer } from '../types'
 import { safeLength } from '../utils/safeCss'
 import { fallbackSanitizeHtml } from '../utils/sanitizeHtml'
+import { isDev } from '../composables/useEventBus'
 
 interface QuillInstance {
   root: HTMLElement
@@ -97,7 +98,7 @@ let warnedNoSanitizer = false
 const resolveSanitizer = (): Sanitizer => {
   const s = props.sanitizer ?? injectedWysiwyg?.sanitizer
   if (s) return s
-  if (import.meta.env.DEV && !warnedNoSanitizer) {
+  if (isDev() && !warnedNoSanitizer) {
     warnedNoSanitizer = true
     console.warn(
       '[VibeFormWysiwyg] No sanitizer provided, using the built-in minimal fallback ' +
@@ -325,7 +326,7 @@ const initQuill = async () => {
     // visible alert below and the component-error emit already carry the signal, so
     // this stays a DEV-only warning rather than console.error noise in production.
     // Matches how loadDOMPurify() reports its own optional peer.
-    if (import.meta.env.DEV) {
+    if (isDev()) {
       console.warn('[VibeFormWysiwyg] Failed to load Quill editor:', error)
     }
     loadError.value =

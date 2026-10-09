@@ -1,4 +1,4 @@
-import { onPersistent, emitEvent } from './useEventBus'
+import { onPersistent, emitEvent, isDev, registerSSRReset } from './useEventBus'
 
 /**
  * Offcanvas + layout command routing for the event bus (#100).
@@ -50,7 +50,7 @@ onPersistent('layout:sidebar-toggle', () => {
 export function registerOffcanvas(id: string, controller: OffcanvasController, isSidebar: boolean): () => void {
   // Ids must be unique: the registry is last-wins, so a duplicate silently hides
   // the first offcanvas from the bus. Warn in development to surface the mistake.
-  if (import.meta.env.DEV && registry.has(id)) {
+  if (isDev() && registry.has(id)) {
     console.warn(`[VibeUI] An offcanvas with id "${id}" is already registered on the event bus; the later one overrides it. Use unique ids.`)
   }
   registry.set(id, controller)
@@ -61,8 +61,15 @@ export function registerOffcanvas(id: string, controller: OffcanvasController, i
   }
 }
 
-/** Test-only: clear the registry and sidebar designation. */
-export function __resetOffcanvasRegistry(): void {
+/** Request boundary: drop registrations plus the captured sidebar id (SSR). */
+export function resetOffcanvasRegistryForSSR(): void {
   registry.clear()
   sidebarId = null
+}
+
+registerSSRReset(resetOffcanvasRegistryForSSR)
+
+/** Test-only: clear the registry and sidebar designation. */
+export function __resetOffcanvasRegistry(): void {
+  resetOffcanvasRegistryForSSR()
 }

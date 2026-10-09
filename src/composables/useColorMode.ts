@@ -1,6 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import type { ColorMode } from '../types'
-import { emitEvent, onPersistent } from './useEventBus'
+import { emitEvent, onPersistent, registerSSRReset } from './useEventBus'
 
 const STORAGE_KEY = 'vibe-color-mode'
 
@@ -186,6 +186,20 @@ export function useColorMode() {
     onColorModeChange
   }
 }
+
+/**
+ * Request boundary: restore per-request theme isolation (SSR). Resets exactly
+ * the mutable mode, the init latch, and pending callbacks; the module watch
+ * and the persistent `theme:set` handler are process-wide on purpose. Runs as
+ * part of `resetEventBusForSSR`, so one call covers bus, channels, and theme.
+ */
+export function resetColorModeForSSR(): void {
+  initialized = false
+  callbacks.length = 0
+  colorMode.value = 'auto'
+}
+
+registerSSRReset(resetColorModeForSSR)
 
 /**
  * For testing only — not re-exported from the package index.

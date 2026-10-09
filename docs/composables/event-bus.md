@@ -186,3 +186,13 @@ import { resetEventBusForSSR } from '@velkymx/vibeui'
 // per request, on the server
 resetEventBusForSSR()
 ```
+
+That one call clears bus subscriptions, modal/offcanvas channel registrations (plus the sidebar designation), and theme state, so no per-request data leaks across requests sharing one Node process. The toast store is a separate singleton with its own reset, call both per request when toasts render on the server:
+
+```ts
+import { resetEventBusForSSR, resetToastStoreForSSR } from '@velkymx/vibeui'
+
+// per request, on the server
+resetEventBusForSSR()
+resetToastStoreForSSR()
+```
