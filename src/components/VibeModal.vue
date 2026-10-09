@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Size, ComponentError } from '../types'
 import { useId } from '../composables/useId'
@@ -69,7 +70,6 @@ defineSlots<{
 const computedId = computed(() => props.id || _generatedId)
 
 const modalRef = useTemplateRef<HTMLElement>('modalRef')
-const bsModal = shallowRef<BootstrapModal | null>(null)
 const isVisible = ref(false)
 // Payload delivered by a `modal:open` bus command, exposed to the default slot.
 const busPayload = ref<unknown>(undefined)
@@ -152,7 +152,8 @@ function removeInert() {
 }
 
 // Bug 1: in-flight guard to prevent concurrent async init races
-let initInFlight = false
+// (now owned by the composable, which serves queued reinits instead of
+// dropping them).
 
 // Bug 4: track whether listeners are attached to prevent stacking
 let listenersAttached = false
@@ -275,21 +276,14 @@ const onHidden = () => {
   settleTransition()
 }
 
-// Bug 4: listener attach/detach helpers
-// The element listeners were attached to. Cached at attach time so teardown
-// does not depend on the template ref still being populated: on the
-// staticBackdrop re-init path the ref can be transiently null while
-// listenersAttached is true, which would skip the document.removeEventListener
-// below and leak a document keydown listener.
+// Keydown wiring stays manual: the document-level Escape catcher and the
+// element trap are transition-window semantics the shared instance lifecycle
+// does not own. The four Bootstrap show/hide events ride the composable.
 let listenersEl: HTMLElement | null = null
 
-function attachListeners() {
+function attachKeydownListeners() {
   if (listenersAttached || !modalRef.value) return
   listenersEl = modalRef.value
-  listenersEl.addEventListener('show.bs.modal', onShow)
-  listenersEl.addEventListener('shown.bs.modal', onShown)
-  listenersEl.addEventListener('hide.bs.modal', onHide)
-  listenersEl.addEventListener('hidden.bs.modal', onHidden)
   // Keyboard events bubble up from children to the modal root.
   listenersEl.addEventListener('keydown', onModalKeydown)
   // #183: element-level keydown misses Escape while focus sits outside the
@@ -305,13 +299,9 @@ function onDocumentKeydown(e: KeyboardEvent) {
   requestHide()
 }
 
-function detachListeners() {
+function detachKeydownListeners() {
   if (!listenersAttached) return
   if (listenersEl) {
-    listenersEl.removeEventListener('show.bs.modal', onShow)
-    listenersEl.removeEventListener('shown.bs.modal', onShown)
-    listenersEl.removeEventListener('hide.bs.modal', onHide)
-    listenersEl.removeEventListener('hidden.bs.modal', onHidden)
     listenersEl.removeEventListener('keydown', onModalKeydown)
     listenersEl = null
   }
@@ -321,66 +311,56 @@ function detachListeners() {
 
 // Bug 1: async init with in-flight guard
 // Bug 4: detach old listeners before dispose, attach after new instance
-const initModal = async () => {
-  if (!modalRef.value) return
-
-  // Bug 1: prevent concurrent init races
-  if (initInFlight) return
-  initInFlight = true
-
-  try {
-    // Cleanup existing instance
-    if (bsModal.value) {
-      detachListeners()
-      bsModal.value.dispose()
-      bsModal.value = null
-    }
-    // Fresh instance, fresh transition tracking. The init-time show below
-    // re-arms the flag through requestShow.
-    transitioning = false
-    pendingDesired = null
-
-    const bootstrap = await import('bootstrap')
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!modalRef.value || isUnmounted) return
-
-    const Modal = bootstrap.Modal
-
-    bsModal.value = new Modal(modalRef.value, {
+// Instance construction owned by the shared composable (#247); the transition
+// state reset plus keydown wiring stay here (composable does not own them).
+const { init: initInstance, instance: bsModal } = useBootstrapInstance<BootstrapModal>({
+  // Template ref read at call time: it may be null during teardown, which the
+  // composable treats as a no-op instead of constructing on a detached node.
+  resolveElement: () => modalRef.value,
+  create: (el, bootstrap) =>
+    new bootstrap.Modal(el, {
       backdrop: props.staticBackdrop ? 'static' : true,
       keyboard: !props.staticBackdrop,
       focus: true
-    }) as BootstrapModal
+    }) as unknown as BootstrapModal,
+  disposeInstance: (modal) => modal.dispose(),
+  events: {
+    'show.bs.modal': onShow as EventListener,
+    'shown.bs.modal': onShown as EventListener,
+    'hide.bs.modal': onHide as EventListener,
+    'hidden.bs.modal': onHidden as EventListener
+  },
+  componentName: 'VibeModal',
+  onError: (error) => reportComponentError(emit, error)
+})
 
-    attachListeners()
+const initModal = async (): Promise<void> => {
+  if (!modalRef.value) return
 
-    if (props.modelValue) {
-      requestShow()
-    }
-  } catch (error) {
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Modal will use data attributes only.',
-      componentName: 'VibeModal',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
+  detachKeydownListeners()
+  // Fresh instance, fresh transition tracking. The init-time show below
+  // re-arms the flag through requestShow.
+  transitioning = false
+  pendingDesired = null
+
+  await initInstance()
+  attachKeydownListeners()
+
+  if (props.modelValue) {
+    requestShow()
   }
 }
 
 onMounted(initModal)
 
 // Bug 2: just call dispose() directly — Bootstrap handles backdrop cleanup internally
-// Bug 4: detach listeners before dispose
+// (dispose itself is owned by the composable; this hook keeps the rest).
 onBeforeUnmount(() => {
   isUnmounted = true
   pendingDesired = null
   // WCAG 2.1.2: must clear inert even if the modal was never formally closed.
   removeInert()
-  detachListeners()
-  bsModal.value?.dispose()
-  bsModal.value = null
+  detachKeydownListeners()
 })
 
 watch(() => props.modelValue, (newValue) => {
