@@ -23,6 +23,10 @@ Drag-and-drop reorderable list. Generic over the row type; binds an ordered arra
 
 The default slot is scoped per item with `{ item, index }`.
 
+### Keyboard reorder
+
+Rows are focusable (`role="listitem"`). `Space`/`Enter` grabs the focused row (`aria-grabbed`), `ArrowUp`/`ArrowDown` moves it through the same commit as a pointer drop (`update:modelValue` plus `reorder`), `Escape` cancels. Focus follows the grabbed row. `move(from, to)` is exposed for programmatic reorder.
+
 ## Examples
 
 ```vue

@@ -15,7 +15,7 @@ Generic drag-and-drop primitives for kanban boards, builders, palette UIs. Commu
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `dragstart` | `{ payload, group, event }` | Emitted on dragstart |
+| `dragstart` | `{ payload, group, event }` | Emitted on dragstart (pointer) or keyboard arm (`event` is a `KeyboardEvent`) |
 | `dragend` | `{ payload, group, event }` | Emitted on dragend, regardless of drop success |
 
 ### Slots
@@ -35,13 +35,17 @@ Default slot scope: `{ isDragging }`.
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `drop` | `{ payload, group, event }` | Successful drop, only emitted when group matches |
+| `drop` | `{ payload, group, event }` | Successful drop, only emitted when group matches (`event` is a `KeyboardEvent` for keyboard drops) |
 | `dragenter` | `DragEvent` | |
 | `dragleave` | `DragEvent` | |
 
 ### Slots
 
 Default slot scope: `{ isOver }`.
+
+### Keyboard drag and drop
+
+The source is focusable (`aria-grabbed` reflects the armed state): `Space`/`Enter` arms the payload into the shared store, `Escape` cancels. A focused target commits the armed payload with `Enter` through the same group checks and `drop` emit as a pointer drop, then disarms. Flow: `Space` on the source, `Tab` to the target, `Enter` to drop. After a keyboard drop the source still reports grabbed until `Space`/`Escape` realigns it; the store itself is disarmed immediately so nothing double-commits.
 
 ## Examples
 

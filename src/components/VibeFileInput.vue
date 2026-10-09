@@ -195,11 +195,17 @@ onBeforeUnmount(() => {
     <div
       v-if="dragDrop"
       :class="dropzoneClass"
+      role="button"
+      :tabindex="disabled ? undefined : 0"
+      :aria-disabled="disabled || undefined"
+      :aria-label="dropzoneText"
       @drop="handleDrop"
       @dragenter="handleDragEnter"
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
       @click="openFileBrowser"
+      @keydown.enter.prevent="openFileBrowser"
+      @keydown.space.prevent="openFileBrowser"
     >
       <slot name="dropzone">
         <p class="mb-0">{{ dropzoneText }}</p>
