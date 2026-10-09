@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, watch, onMounted } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
@@ -63,14 +64,6 @@ defineSlots<{
 const computedId = computed(() => props.id || _generatedId)
 
 const dropdownRef = useTemplateRef<HTMLElement>('dropdownRef')
-const bsDropdown = shallowRef<BootstrapDropdown | null>(null)
-let toggleEl: HTMLElement | null = null
-let reinitGuard = false
-let initInFlight = false
-
-// Set first in onBeforeUnmount — guards post-await section against constructing
-// a Bootstrap Dropdown instance on a detached element.
-let isUnmounted = false
 
 const dropdownClass = computed(() => {
   if (props.direction === 'up') return 'dropup'
@@ -103,71 +96,31 @@ const onShown = () => emit('shown')
 const onHide = () => emit('hide')
 const onHidden = () => emit('hidden')
 
-const initDropdown = async () => {
-  if (!dropdownRef.value || initInFlight) return
-  initInFlight = true
-
-  try {
-    const bootstrap = await import('bootstrap')
-    const Dropdown = bootstrap.Dropdown
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!dropdownRef.value || isUnmounted) return
-
-    toggleEl = dropdownRef.value.querySelector('.dropdown-toggle') as HTMLElement | null
-    if (toggleEl) {
-      bsDropdown.value = new Dropdown(toggleEl, {
-        autoClose: props.autoClose
-      }) as BootstrapDropdown
-
-      toggleEl.addEventListener('show.bs.dropdown', onShow)
-      toggleEl.addEventListener('shown.bs.dropdown', onShown)
-      toggleEl.addEventListener('hide.bs.dropdown', onHide)
-      toggleEl.addEventListener('hidden.bs.dropdown', onHidden)
-    }
-  } catch (error) {
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Dropdown will use data attributes only.',
-      componentName: 'VibeDropdown',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-  }
-}
-
-const destroyDropdown = () => {
-  if (toggleEl) {
-    toggleEl.removeEventListener('show.bs.dropdown', onShow)
-    toggleEl.removeEventListener('shown.bs.dropdown', onShown)
-    toggleEl.removeEventListener('hide.bs.dropdown', onHide)
-    toggleEl.removeEventListener('hidden.bs.dropdown', onHidden)
-    toggleEl = null
-  }
-
-  if (bsDropdown.value) {
-    bsDropdown.value.dispose()
-    bsDropdown.value = null
-  }
-}
+// Instance lifecycle owned by the shared composable (#247). The Bootstrap
+// instance attaches to the .dropdown-toggle child (queried at call time, so a
+// re-rendered toggle resolves fresh); listeners ride the attached element.
+const { init: initDropdown, instance: bsDropdown } = useBootstrapInstance<BootstrapDropdown>({
+  resolveElement: () => dropdownRef.value?.querySelector('.dropdown-toggle') ?? null,
+  create: (el, bootstrap) =>
+    new bootstrap.Dropdown(el, {
+      autoClose: props.autoClose
+    }) as unknown as BootstrapDropdown,
+  disposeInstance: (dropdown) => dropdown.dispose(),
+  events: {
+    'show.bs.dropdown': onShow as EventListener,
+    'shown.bs.dropdown': onShown as EventListener,
+    'hide.bs.dropdown': onHide as EventListener,
+    'hidden.bs.dropdown': onHidden as EventListener
+  },
+  componentName: 'VibeDropdown',
+  onError: (error) => reportComponentError(emit, error)
+})
 
 onMounted(initDropdown)
 
-onBeforeUnmount(() => {
-  isUnmounted = true
-  destroyDropdown()
-})
-
 // Re-init when autoClose changes so the Bootstrap instance reflects the new config
-watch(() => props.autoClose, async () => {
-  if (reinitGuard) return
-  reinitGuard = true
-  try {
-    destroyDropdown()
-    await initDropdown()
-  } finally {
-    reinitGuard = false
-  }
+watch(() => props.autoClose, () => {
+  void initDropdown()
 })
 
 const handleItemClick = (item: DropdownItem, index: number, event: Event) => {
@@ -176,7 +129,6 @@ const handleItemClick = (item: DropdownItem, index: number, event: Event) => {
   }
 }
 
-// Programmatic control
 const show = () => bsDropdown.value?.show()
 const hide = () => bsDropdown.value?.hide()
 const toggle = () => bsDropdown.value?.toggle()
