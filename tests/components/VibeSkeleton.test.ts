@@ -229,7 +229,11 @@ describe('VibeSkeleton', () => {
       const start = src.indexOf('<template>')
       const end = src.indexOf('</template>')
       const tpl = src.slice(start, end)
-      return tpl.slice(tpl.indexOf('v-for="i in lineCount"'))
+      // Guard the anchor: a rename of the loop must fail loudly here instead
+      // of silently slicing from -1 (which asserts against one character).
+      const anchor = tpl.indexOf('v-for="(line, index) in lineModels"')
+      expect(anchor).toBeGreaterThan(-1)
+      return tpl.slice(anchor)
     }
 
     it('binds precomputed line models instead of per-line calls', () => {
