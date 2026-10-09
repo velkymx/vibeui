@@ -153,6 +153,9 @@ export interface DataTableColumn<T extends object = Record<string, unknown>> {
   // validated column width (number = px, string = any safe CSS length).
   align?: 'start' | 'center' | 'end'
   width?: string | number
+  // #283 Phase 3b: pin to the logical start/end (sticky) and allow resizing.
+  pinned?: 'start' | 'end'
+  resizable?: boolean
 }
 
 export interface DataTableCellSlotProps<T extends object = Record<string, unknown>> {

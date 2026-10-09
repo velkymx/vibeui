@@ -79,6 +79,9 @@ const selectedRows = defineModel<(string | number)[]>('selectedRows', { default:
 const columnFilters = defineModel<{ id: string; value: unknown }[]>('columnFilters', { default: () => [] })
 // #283 Phase 3a: per-column visibility (false = hidden). Two-way for the chooser.
 const columnVisibility = defineModel<Record<string, boolean>>('columnVisibility', { default: () => ({}) })
+// #283 Phase 3b: per-column sizes in px. Two-way so consumers can read and
+// drive resize state.
+const columnSizing = defineModel<Record<string, number>>('columnSizing', { default: () => ({}) })
 
 const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
@@ -154,7 +157,7 @@ watch(() => [debouncedSearchQuery.value], ([newVal]) => {
 // useVibeTable. `paginatedItems` (visible rows) and `filteredCount` (local
 // filtered total) preserve the previous contracts exactly; the component keeps
 // its own markup, v-models, and per-cell maps.
-const { paginatedItems, filteredCount, selection, filters, visibility } = useVibeTable<T>({
+const { paginatedItems, filteredCount, selection, filters, visibility, layout } = useVibeTable<T>({
   items: () => props.items,
   columns: () => props.columns,
   rowKey: () => props.rowKey,
@@ -173,7 +176,8 @@ const { paginatedItems, filteredCount, selection, filters, visibility } = useVib
   selectable: () => props.selectable,
   selectedRows,
   columnFilters,
-  columnVisibility
+  columnVisibility,
+  columnSizing
 })
 
 // #283 Phase 2b: filter row helpers (unwrapped for the template).
@@ -210,6 +214,36 @@ const columnWidth = (column: DataTableColumn<T>): string | undefined => {
   return typeof column.width === 'number'
     ? `${column.width}px`
     : safeLength(String(column.width))
+}
+// #283 Phase 3b: resizable columns render at the engine size so drags and
+// keyboard steps show immediately; other columns keep the explicit width.
+const renderWidth = (column: DataTableColumn<T>): string | undefined =>
+  column.resizable === true ? `${layout.size(column.key)}px` : columnWidth(column)
+// Sticky class plus the engine offset for pinned columns.
+const pinClass = (column: DataTableColumn<T>): string => {
+  const side = layout.pinSide(column.key)
+  return side === false ? '' : `vibe-pinned-${side}`
+}
+const pinOffset = (column: DataTableColumn<T>): Record<string, string> => {
+  const side = layout.pinSide(column.key)
+  if (side === false) return {}
+  const offset = layout.pinOffset(column.key) ?? 0
+  return side === 'start' ? { left: `${offset}px` } : { right: `${offset}px` }
+}
+// Keyboard resize: arrows step 10px (shift = 50px). Pointer drags go straight
+// to the engine handler; both write the columnSizing model.
+const stepSize = (column: DataTableColumn<T>, delta: number) => {
+  columnSizing.value = { ...columnSizing.value, [column.key]: layout.size(column.key) + delta }
+}
+const onResizeKey = (column: DataTableColumn<T>, event: KeyboardEvent) => {
+  const step = event.shiftKey ? 50 : 10
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+    event.preventDefault()
+    stepSize(column, -step)
+  } else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    stepSize(column, step)
+  }
 }
 
 // Selection key for a row, matching the engine's getRowId (rowKey value).
@@ -405,8 +439,9 @@ const thStyleMap = computed(() => {
   for (const column of props.columns) {
     const style = safeCssObject(column.thStyle)
     if (props.sortable && column.sortable !== false) style.cursor = 'pointer'
-    const width = columnWidth(column)
+    const width = renderWidth(column)
     if (width) style.width = width
+    Object.assign(style, pinOffset(column))
     m.set(column, style)
   }
   return m
@@ -414,7 +449,9 @@ const thStyleMap = computed(() => {
 
 const tdStyleMap = computed(() => {
   const m = new Map<DataTableColumn<T>, Record<string, string>>()
-  for (const column of props.columns) m.set(column, safeCssObject(column.tdStyle))
+  for (const column of props.columns) {
+    m.set(column, { ...safeCssObject(column.tdStyle), ...pinOffset(column) })
+  }
   return m
 })
 
@@ -510,7 +547,7 @@ const cellValueMap = computed(() => {
             <th
               v-for="column in visibleColumns"
               :key="column.key"
-              :class="[column.headerClass, alignClass(column)]"
+              :class="[column.headerClass, alignClass(column), pinClass(column), column.resizable === true ? 'position-relative' : '']"
               :style="thStyleMap.get(column)"
               :aria-sort="ariaSortMap.get(column)"
               @click="handleSort(column, $event)"
@@ -521,6 +558,16 @@ const cellValueMap = computed(() => {
                 :class="['ms-1', 'vibe-sort-icon', sortIconMap.get(column)]"
                 aria-hidden="true"
               ></span>
+              <button
+                v-if="column.resizable === true"
+                type="button"
+                class="vibe-resize-handle"
+                :aria-label="`Resize ${column.label} column`"
+                @mousedown="layout.resizeHandler(column.key)?.($event)"
+                @touchstart="layout.resizeHandler(column.key)?.($event)"
+                @keydown="onResizeKey(column, $event)"
+                @click.stop
+              ></button>
             </th>
           </tr>
           <tr v-if="filtersEnabled" class="vibe-filter-row">
@@ -582,7 +629,7 @@ const cellValueMap = computed(() => {
             <td
               v-for="column in visibleColumns"
               :key="column.key"
-              :class="[column.class, alignClass(column)]"
+              :class="[column.class, alignClass(column), pinClass(column)]"
               :style="tdStyleMap.get(column)"
               :data-label="column.label"
             >
@@ -667,6 +714,29 @@ const cellValueMap = computed(() => {
 <style scoped>
 .vibe-datatable {
   width: 100%;
+}
+
+/* #283 Phase 3b: pinned columns stick within the scroll container. Offsets
+come from the engine (inline left/right); the class only supplies position,
+opaque background, and stacking. Scoped to internally generated cells. */
+.vibe-datatable :deep(.vibe-pinned-start),
+.vibe-datatable :deep(.vibe-pinned-end) {
+  position: sticky;
+  background-color: var(--bs-body-bg);
+  z-index: 1;
+}
+
+/* Resize handle: slim button at the header's trailing edge. */
+.vibe-datatable :deep(.vibe-resize-handle) {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
 }
 
 /* Sort icon — CSS border triangles avoid font/emoji rendering issues with Unicode arrows */
