@@ -156,6 +156,11 @@ export interface DataTableColumn<T extends object = Record<string, unknown>> {
   // #283 Phase 3b: pin to the logical start/end (sticky) and allow resizing.
   pinned?: 'start' | 'end'
   resizable?: boolean
+  // #283 Phase 4b: aggregation for group header cells ('sum' etc. use the
+  // built-in aggregationFns; a function receives the leaf values) and static
+  // footer text (overridden by the footer(key) slot).
+  aggregate?: 'sum' | 'mean' | 'min' | 'max' | 'count' | ((values: unknown[]) => unknown)
+  footer?: string
 }
 
 export interface DataTableCellSlotProps<T extends object = Record<string, unknown>> {
