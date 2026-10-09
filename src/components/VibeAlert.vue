@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant } from '../types'
 
@@ -32,13 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const alertRef = useTemplateRef<HTMLElement>('alertRef')
-const bsAlert = shallowRef<BootstrapAlert | null>(null)
 const isVisible = ref(props.modelValue)
-
-let alertListenersAttached = false
-let initInFlight = false
-let pendingReinit = false
-let isUnmounted = false
 
 const onClose = () => {
   emit('close')
@@ -51,58 +46,25 @@ const onClosed = () => {
   emit('closed')
 }
 
-const attachAlertListeners = () => {
-  if (alertListenersAttached || !alertRef.value) return
-  alertRef.value.addEventListener('close.bs.alert', onClose)
-  alertRef.value.addEventListener('closed.bs.alert', onClosed)
-  alertListenersAttached = true
-}
-
-const detachAlertListeners = () => {
-  if (!alertListenersAttached || !alertRef.value) return
-  alertRef.value.removeEventListener('close.bs.alert', onClose)
-  alertRef.value.removeEventListener('closed.bs.alert', onClosed)
-  alertListenersAttached = false
-}
-
-const setupBootstrap = async () => {
-  if (initInFlight) { pendingReinit = true; return }
-  initInFlight = true
-  detachAlertListeners()
-  try {
-    if (!alertRef.value) return
-    if (bsAlert.value) {
-      bsAlert.value.dispose()
-      bsAlert.value = null
-    }
-    const bootstrap = await import('bootstrap')
-    if (!alertRef.value || isUnmounted) return
-    bsAlert.value = new bootstrap.Alert(alertRef.value) as BootstrapAlert
-    attachAlertListeners()
-  } catch (error) {
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Alert will use basic Vue logic.',
-      componentName: 'VibeAlert',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-    if (pendingReinit) { pendingReinit = false; void setupBootstrap() }
-  }
-}
+// Instance lifecycle owned by the shared composable (#247): lazy async
+// construction, per-instance close/closed listeners, dispose plus nulling,
+// and unmount-race guards. The exposed ref stays live through reinits.
+const { init: setupBootstrap, instance: bsAlert } = useBootstrapInstance<BootstrapAlert>({
+  // Template ref read at call time: v-if toggles null it, which the
+  // composable treats as a no-op instead of constructing on nothing.
+  resolveElement: () => alertRef.value,
+  create: (el, bootstrap) => new bootstrap.Alert(el) as unknown as BootstrapAlert,
+  disposeInstance: (alert) => alert.dispose(),
+  events: {
+    'close.bs.alert': onClose as EventListener,
+    'closed.bs.alert': onClosed as EventListener
+  },
+  componentName: 'VibeAlert',
+  onError: (error) => reportComponentError(emit, error)
+})
 
 onMounted(() => {
   if (isVisible.value) void setupBootstrap()
-})
-
-onBeforeUnmount(() => {
-  isUnmounted = true
-  detachAlertListeners()
-
-  if (bsAlert.value) {
-    bsAlert.value.dispose()
-    bsAlert.value = null
-  }
 })
 
 watch(() => props.modelValue, async (newVal) => {
