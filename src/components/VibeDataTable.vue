@@ -2,7 +2,7 @@
 import { ref, computed, watch, type PropType } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { DataTableColumn, ComponentError, Variant } from '../types'
-import { safeCssObject } from '../utils/safeCss'
+import { safeCssObject, safeLength } from '../utils/safeCss'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
 import { isDev } from '../composables/useEventBus'
 import { useVibeTable } from '../composables/useVibeTable'
@@ -36,6 +36,8 @@ const props = defineProps({
   // #283 Phase 2a: enable multi-column sort (shift-click appends). Off = the
   // existing single-column sort.
   multiSort: { type: Boolean, default: false },
+  // #283 Phase 3a: render a column-visibility chooser (dropdown of checkboxes).
+  showColumnToggle: { type: Boolean, default: false },
 
   // #124: server-side (manual) mode. When true, the table does no local
   // filtering/sorting/paging: `items` is rendered as-is (the current page from
@@ -75,6 +77,8 @@ const sort = defineModel<{ id: string; desc: boolean }[]>('sort', { default: () 
 const selectedRows = defineModel<(string | number)[]>('selectedRows', { default: () => [] })
 // #283 Phase 2b: per-column filter state ({ id, value }).
 const columnFilters = defineModel<{ id: string; value: unknown }[]>('columnFilters', { default: () => [] })
+// #283 Phase 3a: per-column visibility (false = hidden). Two-way for the chooser.
+const columnVisibility = defineModel<Record<string, boolean>>('columnVisibility', { default: () => ({}) })
 
 const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
@@ -150,7 +154,7 @@ watch(() => [debouncedSearchQuery.value], ([newVal]) => {
 // useVibeTable. `paginatedItems` (visible rows) and `filteredCount` (local
 // filtered total) preserve the previous contracts exactly; the component keeps
 // its own markup, v-models, and per-cell maps.
-const { paginatedItems, filteredCount, selection, filters } = useVibeTable<T>({
+const { paginatedItems, filteredCount, selection, filters, visibility } = useVibeTable<T>({
   items: () => props.items,
   columns: () => props.columns,
   rowKey: () => props.rowKey,
@@ -168,7 +172,8 @@ const { paginatedItems, filteredCount, selection, filters } = useVibeTable<T>({
   sort,
   selectable: () => props.selectable,
   selectedRows,
-  columnFilters
+  columnFilters,
+  columnVisibility
 })
 
 // #283 Phase 2b: filter row helpers (unwrapped for the template).
@@ -185,6 +190,26 @@ const setFilterRange = (column: DataTableColumn<T>, index: 0 | 1, value: string)
   const next = filterRange(column)
   next[index] = value
   filters.set(column.key, next)
+}
+
+// #283 Phase 3a: column visibility is engine-owned (core columnVisibility
+// state); the component reads it for rendering and the chooser writes it.
+const isColumnVisible = (column: DataTableColumn<T>): boolean =>
+  visibility.isVisible(column.key)
+const visibleColumns = computed(() => props.columns.filter(isColumnVisible))
+const setColumnVisible = (column: DataTableColumn<T>, visible: boolean) => {
+  visibility.set(column.key, visible)
+}
+const chooserOpen = ref(false)
+
+// align -> Bootstrap text utility; width -> validated CSS length (number = px).
+const alignClass = (column: DataTableColumn<T>): string =>
+  column.align ? `text-${column.align}` : ''
+const columnWidth = (column: DataTableColumn<T>): string | undefined => {
+  if (column.width === undefined) return undefined
+  return typeof column.width === 'number'
+    ? `${column.width}px`
+    : safeLength(String(column.width))
 }
 
 // Selection key for a row, matching the engine's getRowId (rowKey value).
@@ -204,7 +229,7 @@ const selectAllChecked = computed(() => selection.isAllSelected.value)
 const selectAllIndeterminate = computed(() => selection.isIndeterminate.value)
 const isRowSelected = (item: T): boolean => selection.isSelected(selectKey(item))
 // Colspan for the loading/empty rows, including the select column when shown.
-const colspanCount = computed(() => (props.columns?.length || 1) + (selectEnabled.value ? 1 : 0))
+const colspanCount = computed(() => (visibleColumns.value.length || 1) + (selectEnabled.value ? 1 : 0))
 
 // Pagination info
 // Rows loaded in the browser. In server mode this is just the current page slice.
@@ -380,6 +405,8 @@ const thStyleMap = computed(() => {
   for (const column of props.columns) {
     const style = safeCssObject(column.thStyle)
     if (props.sortable && column.sortable !== false) style.cursor = 'pointer'
+    const width = columnWidth(column)
+    if (width) style.width = width
     m.set(column, style)
   }
   return m
@@ -439,6 +466,31 @@ const cellValueMap = computed(() => {
       </div>
     </div>
 
+    <!-- #283 Phase 3a: column visibility chooser -->
+    <div v-if="showColumnToggle" class="dropdown mb-2 vibe-column-toggle">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm dropdown-toggle"
+        :aria-expanded="chooserOpen"
+        @click="chooserOpen = !chooserOpen"
+      >
+        Columns
+      </button>
+      <ul class="dropdown-menu" :class="{ show: chooserOpen }">
+        <li v-for="column in columns" :key="column.key">
+          <label class="dropdown-item d-flex align-items-center gap-2">
+            <input
+              type="checkbox"
+              class="form-check-input mt-0"
+              :checked="isColumnVisible(column)"
+              @change="setColumnVisible(column, ($event.target as HTMLInputElement).checked)"
+            />
+            {{ column.label }}
+          </label>
+        </li>
+      </ul>
+    </div>
+
     <!-- Table -->
     <div :class="{ 'table-responsive': responsive }">
       <table :class="tableClass">
@@ -456,9 +508,9 @@ const cellValueMap = computed(() => {
               />
             </th>
             <th
-              v-for="column in columns"
+              v-for="column in visibleColumns"
               :key="column.key"
-              :class="column.headerClass"
+              :class="[column.headerClass, alignClass(column)]"
               :style="thStyleMap.get(column)"
               :aria-sort="ariaSortMap.get(column)"
               @click="handleSort(column, $event)"
@@ -473,7 +525,7 @@ const cellValueMap = computed(() => {
           </tr>
           <tr v-if="filtersEnabled" class="vibe-filter-row">
             <th v-if="selectEnabled" class="vibe-select-cell"></th>
-            <th v-for="column in columns" :key="column.key" :class="column.headerClass">
+            <th v-for="column in visibleColumns" :key="column.key" :class="column.headerClass">
               <input
                 v-if="column.filter === 'text'"
                 type="search"
@@ -528,9 +580,9 @@ const cellValueMap = computed(() => {
               />
             </td>
             <td
-              v-for="column in columns"
+              v-for="column in visibleColumns"
               :key="column.key"
-              :class="column.class"
+              :class="[column.class, alignClass(column)]"
               :style="tdStyleMap.get(column)"
               :data-label="column.label"
             >
