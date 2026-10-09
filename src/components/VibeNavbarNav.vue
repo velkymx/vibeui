@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { computed, useTemplateRef, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useBootstrapInstanceMap } from '../composables/useBootstrapInstance'
+import { computed, useTemplateRef, watch, onMounted, nextTick } from 'vue'
 import type { NavItem, DropdownItem, ComponentError } from '../types'
 import { linkBindings } from '../utils/linkBindings'
 import { safeHref } from '../utils/safeHref'
@@ -29,51 +30,33 @@ defineSlots<{
 }>()
 
 const navbarNavRef = useTemplateRef<HTMLElement>('navbarNavRef')
-const bsDropdowns = new Map<HTMLElement, BootstrapDropdown>()
 
-// Guards the post-await section: unmount during the in-flight import must not
-// construct on a detached node or report a spurious component-error.
-let isUnmounted = false
+// One Bootstrap Dropdown per toggle element, owned by the shared keyed map
+// (#247). No listeners to manage; unmount-race guards plus dispose-all on
+// teardown and on items change come from the map.
+const dropdownOwners = useBootstrapInstanceMap<BootstrapDropdown>({
+  create: (el, bootstrap) => new bootstrap.Dropdown(el) as unknown as BootstrapDropdown,
+  disposeInstance: (dropdown) => dropdown.dispose(),
+  componentName: 'VibeNavbarNav',
+  onError: (error) => reportComponentError(emit, error)
+})
 
-const initDropdowns = async () => {
-  if (!navbarNavRef.value || isUnmounted) return
-  try {
-    const bootstrap = await import('bootstrap')
-    // Guard: component may have unmounted while the import was in flight.
-    if (!navbarNavRef.value || isUnmounted) return
-    const Dropdown = bootstrap.Dropdown
-    const toggleEls = navbarNavRef.value.querySelectorAll<HTMLElement>('[data-bs-toggle="dropdown"]')
-    toggleEls.forEach(el => {
-      if (!bsDropdowns.has(el)) {
-        bsDropdowns.set(el, new Dropdown(el) as BootstrapDropdown)
-      }
-    })
-  } catch (error) {
-    // A teardown race is not a load failure: stay silent when unmounted.
-    if (isUnmounted) return
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Dropdowns will use data attributes only.',
-      componentName: 'VibeNavbarNav',
-      originalError: error
-    })
+const initDropdowns = async (): Promise<void> => {
+  if (!navbarNavRef.value) return
+  const toggleEls = navbarNavRef.value.querySelectorAll<HTMLElement>('[data-bs-toggle="dropdown"]')
+  for (const el of toggleEls) {
+    if (!dropdownOwners.has(el)) void dropdownOwners.ensure(el)
   }
 }
 
 onMounted(initDropdowns)
-
-onBeforeUnmount(() => {
-  isUnmounted = true
-  bsDropdowns.forEach(d => d.dispose())
-  bsDropdowns.clear()
-})
 
 // deep: false — dropdown presence depends on items array identity, not leaf values.
 // Replacing the items array (the data-driven update pattern) changes identity and
 // triggers a rebuild; deep traversal only added cost for leaf mutations that do not
 // affect dropdown structure.
 watch(() => props.items, async () => {
-  bsDropdowns.forEach(d => d.dispose())
-  bsDropdowns.clear()
+  dropdownOwners.disposeAll()
   await nextTick()
   await initDropdowns()
 }, { deep: false })
