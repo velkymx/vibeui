@@ -61,4 +61,46 @@ describe('VibeLink', () => {
     })
     expect(wrapper.attributes('href')).toBe('https://example.com')
   })
+
+  // #237 P3: href wins over to (matching linkBindings plus VibeButton);
+  // target blank gets automatic noopener.
+  describe('href precedence (#237)', () => {
+    it('href plus to renders the external anchor, not router-link', () => {
+      const wrapper = mount(VibeLink, {
+        props: { href: 'https://external.example/x', to: '/internal' },
+        slots: { default: 'go' }
+      })
+      expect(wrapper.element.tagName).toBe('A')
+      expect(wrapper.attributes('href')).toBe('https://external.example/x')
+      expect(wrapper.attributes('to')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('to-only still renders router-link', () => {
+      const wrapper = mount(VibeLink, {
+        props: { to: '/internal' },
+        slots: { default: 'go' }
+      })
+      expect(wrapper.element.tagName).toBe('ROUTER-LINK')
+      wrapper.unmount()
+    })
+
+    it('target blank adds noopener unless rel is explicit', () => {
+      const wrapper = mount(VibeLink, {
+        props: { href: 'https://external.example/x', target: '_blank' },
+        slots: { default: 'go' }
+      })
+      expect(wrapper.attributes('rel')).toBe('noopener')
+      wrapper.unmount()
+    })
+
+    it('explicit rel wins over the automatic noopener', () => {
+      const wrapper = mount(VibeLink, {
+        props: { href: 'https://external.example/x', target: '_blank', rel: 'opener' },
+        slots: { default: 'go' }
+      })
+      expect(wrapper.attributes('rel')).toBe('opener')
+      wrapper.unmount()
+    })
+  })
 })

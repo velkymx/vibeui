@@ -136,7 +136,9 @@ const syncSelection = () => {
 
   // The placeholder occupies DOM index 0 and is not part of `props.options`. An
   // unmatched model falls back to it, mirroring a native unselected select.
-  const placeholderOffset = props.placeholder ? 1 : 0
+  // The offset exists only when the placeholder option is rendered (single
+  // mode): under `multiple` the template omits it, so option indexes map 1:1.
+  const placeholderOffset = props.placeholder && !props.multiple ? 1 : 0
   el.selectedIndex = selectedIndex.value < 0
     ? (placeholderOffset ? 0 : -1)
     : selectedIndex.value + placeholderOffset

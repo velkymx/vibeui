@@ -6,9 +6,11 @@ A flexible link component that supports Bootstrap 5.3's link color and underline
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `tag` | `Tag \| 'a'` | `'a'` | HTML tag to render (ignored when `to` is set — renders a router-link) |
-| `href` | `String` | `undefined` | URL for standard links. Sanitized — see Important Notes. |
-| `to` | `String \| Object` | `undefined` | Router link destination (renders `router-link`) |
+| `tag` | `Tag \| 'a'` | `'a'` | HTML tag to render (used only when neither `href` nor `to` resolves) |
+| `href` | `String` | `undefined` | URL for standard links. Sanitized — see Important Notes. Wins over `to` when both are set. |
+| `to` | `String \| Object` | `undefined` | Router link destination (renders `router-link`, only when no usable `href`) |
+| `target` | `String` | `undefined` | Link target (e.g. `_blank`) |
+| `rel` | `String` | `undefined` | Rel attribute. Defaults to `noopener` when `target` is `_blank` and no explicit `rel`. |
 | `variant` | `Variant` | `undefined` | Link color variant (`primary`, `success`, etc.) |
 | `underline` | `Boolean \| '0'` | `true` | Underline behavior. `false` or `'0'` removes the underline. |
 | `underlineVariant` | `Variant` | `undefined` | Color of the underline |
@@ -68,7 +70,7 @@ A flexible link component that supports Bootstrap 5.3's link color and underline
 
 **`href` sanitization:** The `href` prop is sanitized. Only `https://`/`http://` URLs, absolute paths (`/path`), relative paths (`./`, `../`), and anchors (`#section`) are allowed. Dangerous values such as `javascript:`, `data:`, `vbscript:`, and protocol-relative `//host` URLs are stripped — the `href` attribute is omitted entirely. Use `to` for in-app navigation via Vue Router.
 
-**`href` and `to` are mutually exclusive:** unlike the other components, `VibeLink` gives `to` precedence when both are set (matching its `tag` behaviour). Only the winning one is bound, so a router link never carries a stray `href` and a plain anchor never carries a stray `to`.
+**`href` wins over `to`:** matching `linkBindings` and `VibeButton`, a usable `href` renders a plain anchor and `to` is ignored. Only the winning one is bound, so a router link never carries a stray `href` and a plain anchor never carries a stray `to`.
 
 **`to` requires Vue Router:** it renders a `router-link`, which resolves the `href` and handles navigation. Without `app.use(router)` the tag does not resolve.
 
