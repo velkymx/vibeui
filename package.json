@@ -86,7 +86,8 @@
   "homepage": "https://github.com/velkymx/vibeui#readme",
   "dependencies": {
     "@floating-ui/dom": "^1.7.6",
-    "@tanstack/vue-table": "^9.2.8"
+    "@tanstack/vue-table": "^9.2.8",
+    "@tanstack/vue-virtual": "^3.13.40"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
