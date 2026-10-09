@@ -356,4 +356,81 @@ describe('VibeTabs lazy + v-model initial render (issue #67)', () => {
       wrapper.unmount()
     })
   })
+
+  // #234 K3: APG tabs keyboard model (roving tabindex, arrows/Home/End move
+  // plus focus through the same activation as click).
+  describe('arrow-key navigation (#234)', () => {
+    const threeTabs = `
+      <VibeTab name="a" label="Alpha">A body</VibeTab>
+      <VibeTab name="b" label="Beta">B body</VibeTab>
+      <VibeTab name="c" label="Gamma">C body</VibeTab>
+    `
+    const mountThree = (props: Record<string, unknown> = {}) =>
+      mount(VibeTabs, {
+        props,
+        slots: { default: threeTabs },
+        global: { components: { VibeTab } },
+        attachTo: document.body
+      })
+
+    it('roves tabindex: only the active tab is a Tab stop', async () => {
+      const wrapper = mountThree()
+      await nextTick()
+      const tabs = wrapper.findAll('[role="tab"]')
+      expect(tabs.map((t) => t.attributes('tabindex'))).toEqual(['0', '-1', '-1'])
+      expect(tabs[0].attributes('aria-selected')).toBe('true')
+      wrapper.unmount()
+    })
+
+    it('ArrowRight moves activation plus focus', async () => {
+      const wrapper = mountThree()
+      await nextTick()
+      const tabs = () => wrapper.findAll('[role="tab"]')
+      tabs()[0].element.focus()
+      await tabs()[0].trigger('keydown', { key: 'ArrowRight' })
+      await nextTick()
+      expect(wrapper.emitted('update:modelValue')).toBeTruthy()
+      expect(tabs().map((t) => t.attributes('tabindex'))).toEqual(['-1', '0', '-1'])
+      expect(document.activeElement).toBe(tabs()[1].element)
+      expect(tabs()[1].text()).toBe('Beta')
+      wrapper.unmount()
+    })
+
+    it('ArrowLeft wraps, Home/End jump', async () => {
+      const wrapper = mountThree()
+      await nextTick()
+      const tabs = () => wrapper.findAll('[role="tab"]')
+      await tabs()[0].trigger('keydown', { key: 'ArrowLeft' })
+      await nextTick()
+      expect(tabs().map((t) => t.attributes('tabindex'))).toEqual(['-1', '-1', '0'])
+      await tabs()[2].trigger('keydown', { key: 'Home' })
+      await nextTick()
+      expect(tabs()[0].attributes('tabindex')).toBe('0')
+      await tabs()[0].trigger('keydown', { key: 'End' })
+      await nextTick()
+      expect(tabs()[2].attributes('tabindex')).toBe('0')
+      wrapper.unmount()
+    })
+
+    it('skips disabled tabs in arrow order', async () => {
+      const wrapper = mount(VibeTabs, {
+        slots: {
+          default: `
+            <VibeTab name="a" label="Alpha">A body</VibeTab>
+            <VibeTab name="b" label="Beta" disabled>Beta body</VibeTab>
+            <VibeTab name="c" label="Gamma">C body</VibeTab>
+          `
+        },
+        global: { components: { VibeTab } },
+        attachTo: document.body
+      })
+      await nextTick()
+      const tabs = () => wrapper.findAll('[role="tab"]')
+      await tabs()[0].trigger('keydown', { key: 'ArrowRight' })
+      await nextTick()
+      expect(tabs()[2].attributes('tabindex')).toBe('0')
+      expect(tabs()[2].text()).toBe('Gamma')
+      wrapper.unmount()
+    })
+  })
 })

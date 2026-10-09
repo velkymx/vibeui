@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, provide, reactive, ref, watch, type PropType } from 'vue'
+import { computed, nextTick, provide, reactive, ref, useTemplateRef, watch, type PropType } from 'vue'
 import { TABS_CONTEXT_KEY } from '../injectionKeys'
 
 type TabsVariant = 'tabs' | 'pills' | 'underline'
@@ -52,6 +52,33 @@ const setActive = (name: string) => {
   visited.add(name)
   emit('update:modelValue', name)
   emit('change', name)
+}
+
+const tablistRef = useTemplateRef<HTMLElement>('tablistRef')
+
+// APG tabs keyboard model: arrows move within the strip (roving tabindex),
+// Home/End jump. Click and keyboard share setActive so activation, visited
+// tracking, and emits behave identically. Vertical strips use Up/Down.
+const onTabKeydown = (event: KeyboardEvent, name: string): void => {
+  const order = registry.filter(t => !t.disabled).map(t => t.name)
+  const at = order.indexOf(name)
+  if (at === -1) return
+  const forward = props.vertical ? 'ArrowDown' : 'ArrowRight'
+  const backward = props.vertical ? 'ArrowUp' : 'ArrowLeft'
+  let next: string | null = null
+  if (event.key === forward) next = order[(at + 1) % order.length] ?? null
+  else if (event.key === backward) next = order[(at - 1 + order.length) % order.length] ?? null
+  else if (event.key === 'Home') next = order[0] ?? null
+  else if (event.key === 'End') next = order[order.length - 1] ?? null
+  if (!next) return
+  event.preventDefault()
+  setActive(next)
+  // Roving tabindex moves focus with activation (automatic activation, like click).
+  const target = order.indexOf(next)
+  nextTick(() => {
+    const el = tablistRef.value?.querySelectorAll('[role="tab"]')?.[target] as HTMLElement | undefined
+    el?.focus()
+  })
 }
 
 const navClass = computed(() => {
@@ -126,7 +153,7 @@ provide(TABS_CONTEXT_KEY, {
 
 <template>
   <div :class="['vibe-tabs', containerClass]">
-    <ul :class="navClass" role="tablist">
+    <ul :class="navClass" role="tablist" ref="tablistRef">
       <li
         v-for="tab in registry"
         :key="tab.name"
@@ -138,9 +165,11 @@ provide(TABS_CONTEXT_KEY, {
           class="nav-link"
           :class="{ active: tab.name === activeName, disabled: tab.disabled }"
           :disabled="tab.disabled"
+          :tabindex="tab.name === activeName ? 0 : -1"
           :aria-selected="tab.name === activeName"
           role="tab"
           @click="setActive(tab.name)"
+          @keydown="onTabKeydown($event, tab.name)"
         >
           {{ tab.label }}
         </button>

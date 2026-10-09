@@ -20,6 +20,10 @@ Self-contained tab container with content switching. Distinct from `VibeNav` (wh
 | `update:modelValue` | `String` | Emitted when active tab changes |
 | `change` | `String` | Same payload, alias for non-v-model usage |
 
+### Keyboard navigation
+
+Follows the APG tabs pattern with automatic activation: only the active tab is a Tab stop (roving `tabindex`), `ArrowLeft`/`ArrowRight` (or `Up`/`Down` when `vertical`) move activation plus focus, `Home`/`End` jump, disabled tabs are skipped. Click and keyboard share the same activation path.
+
 ## VibeTab Props
 
 | Prop | Type | Default | Description |

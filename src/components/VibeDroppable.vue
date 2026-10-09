@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onBeforeUnmount } from 'vue'
-import { getActiveDrag } from './dndStore'
+import { getActiveDrag, clearActiveDrag } from './dndStore'
 
 const props = defineProps({
   group: { type: String, default: 'default' },
@@ -10,7 +10,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits<{
-  (e: 'drop', payload: { payload: unknown; group: string; event: DragEvent }): void
+  (e: 'drop', payload: { payload: unknown; group: string; event: DragEvent | KeyboardEvent }): void
   (e: 'dragenter', event: DragEvent): void
   (e: 'dragleave', event: DragEvent): void
 }>()
@@ -77,6 +77,24 @@ const onDrop = (event: DragEvent) => {
 
   emit('drop', { payload: active.payload, group: active.group, event })
 }
+
+// Keyboard drop (WCAG 2.1.1): a drag armed via keyboard on a VibeDraggable
+// (Space/Enter) commits here with Enter, through the same group checks and
+// drop emit as the pointer path. Only the gesture event differs.
+const onKeydown = (event: KeyboardEvent) => {
+  if (props.disabled) return
+  if (event.key !== 'Enter') return
+  const active = readActiveDrag()
+  if (!active) return
+  if (!groupAccepted(active.group)) return
+  event.preventDefault()
+  isOver.value = false
+  dragCounter = 0
+  emit('drop', { payload: active.payload, group: active.group, event })
+  // No DOM drop follows a keyboard commit, so the store document listener
+  // never runs: disarm here like a pointer drop does.
+  clearActiveDrag()
+}
 </script>
 
 <template>
@@ -84,12 +102,14 @@ const onDrop = (event: DragEvent) => {
     :is="tag"
     class="vibe-droppable"
     :class="{ 'vibe-droppable-over': isOver, 'vibe-droppable-disabled': disabled }"
+    :tabindex="disabled ? undefined : 0"
     data-vibe-droppable
     :data-vibe-group="group"
     @dragenter="onDragEnter"
     @dragover="onDragOver"
     @dragleave="onDragLeave"
     @drop="onDrop"
+    @keydown="onKeydown"
   >
     <slot :is-over="isOver" />
   </component>
