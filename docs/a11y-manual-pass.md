@@ -45,3 +45,13 @@ on `body`.
 - Tool(s) used: (fill in: keyboard only plus NVDA/VoiceOver/Orca plus browser)
 - Date plus tester: (fill in)
 - Failures filed: (list issue numbers or "none")
+
+## DataTable advanced flows (#283 Tier 2)
+
+| # | Flow | Steps | Expected | Result |
+|---|------|-------|----------|--------|
+| 15 | Sort button (engine header rebuild) | Tab to a sortable header, press Enter, then Space | Sort toggles asc/desc/none from the keyboard; `aria-sort` announces the direction; focus stays on the button | Not run |
+| 16 | Row selection checkboxes | Tab to a row checkbox, press Space; then the select-all header checkbox | Row toggles with its label announced; header shows checked/unchecked/indeterminate correctly | Not run |
+| 17 | Expand toggles (rows and groups) | Tab to an expand toggle, press Enter | Detail or child rows appear; `aria-expanded` flips; group headers announce value plus count | Not run |
+| 18 | Resize handle | Tab to a resize handle, press ArrowRight/ArrowLeft | Column width steps with each press; table stays usable, no focus loss | Not run |
+| 19 | Multi-sort plus filters | Shift+click a second header; type in a text filter | Both sorts apply in order; filter row inputs are labelled and announce results via the info line | Not run |
