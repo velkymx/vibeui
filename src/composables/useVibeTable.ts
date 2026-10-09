@@ -8,6 +8,7 @@ import {
   createPaginatedRowModel,
   createFacetedRowModel,
   createFacetedUniqueValues,
+  createExpandedRowModel,
   columnFilteringFeature,
   columnFacetingFeature,
   columnVisibilityFeature,
@@ -18,6 +19,7 @@ import {
   columnPinningFeature,
   columnSizingFeature,
   columnResizingFeature,
+  rowExpandingFeature,
   type ColumnDef,
   type Row,
   type SortFn
@@ -89,13 +91,16 @@ const features = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
   rowSelectionFeature,
+  rowExpandingFeature,
   coreRowModel: createCoreRowModel(),
   filteredRowModel: createFilteredRowModel(),
   sortedRowModel: createSortedRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
   // Faceting feeds the select filter's option list (unique values per column).
   facetedRowModel: createFacetedRowModel(),
-  facetedUniqueValues: createFacetedUniqueValues()
+  facetedUniqueValues: createFacetedUniqueValues(),
+  // Expansion flattens sub-rows into view when parents expand.
+  expandedRowModel: createExpandedRowModel()
 })
 
 export interface UseVibeTableParams<T extends object> {
@@ -128,6 +133,14 @@ export interface UseVibeTableParams<T extends object> {
   // #283 Phase 3b: per-column sizes in px ({ id: px }). Owned by the engine's
   // columnSizing state; the component's v-model mirrors it.
   columnSizing: Ref<Record<string, number>>
+  // #283 Phase 4a: expanded row keys. Owned by the engine's expanded state;
+  // the component's v-model mirrors it.
+  expandedRows: Ref<(string | number)[]>
+  // #283 Phase 4a: expansion master switch plus per-row predicate plus the
+  // item field holding child rows.
+  expandable: () => boolean
+  expandableRow: (item: T) => boolean
+  subRowsKey: () => string
 }
 
 export interface VibeTableFilters {
@@ -140,6 +153,19 @@ export interface VibeTableFilters {
 export interface VibeTableVisibility {
   isVisible: (id: string) => boolean
   set: (id: string, visible: boolean) => void
+}
+
+export interface VibeTableExpansion {
+  enabled: ComputedRef<boolean>
+  canExpand: (key: string) => boolean
+  isExpanded: (key: string) => boolean
+  toggle: (key: string) => void
+}
+
+export interface VibeTableRow<T> {
+  key: string
+  item: T
+  depth: number
 }
 
 export interface VibeTableLayout {
@@ -174,6 +200,10 @@ export interface UseVibeTableResult<T extends object> {
   visibility: VibeTableVisibility
   // Pin/size/resize surface (engine-owned), consumed by header and cells.
   layout: VibeTableLayout
+  // Expansion surface (engine-owned), consumed by the toggle column.
+  expansion: VibeTableExpansion
+  // Flattened rows for rendering (sub-rows included when expanded).
+  displayedRows: ComputedRef<VibeTableRow<T>[]>
 }
 
 export function useVibeTable<T extends object>(
@@ -284,7 +314,12 @@ export function useVibeTable<T extends object>(
       start: params.columns().filter((c) => c.pinned === 'start').map((c) => c.key),
       end: params.columns().filter((c) => c.pinned === 'end').map((c) => c.key)
     },
-    columnSizing: params.columnSizing.value
+    columnSizing: params.columnSizing.value,
+    // Selection and expansion are key arrays on the component side.
+    expanded: params.expandedRows.value.reduce<Record<string, true>>((acc, key) => {
+      acc[String(key)] = true
+      return acc
+    }, {})
   }))
 
   const selectionEnabled = computed(() => params.selectable() !== false)
@@ -306,6 +341,14 @@ export function useVibeTable<T extends object>(
       const key = readField(row, params.rowKey())
       return key != null ? String(key) : String(index)
     },
+    // #283 Phase 4a: child rows live under the subRowsKey field; a row can
+    // expand when the master switch is on and the predicate (if any) agrees.
+    getSubRows: (row: T) => {
+      const children = (row as Record<string, unknown>)[params.subRowsKey()]
+      return Array.isArray(children) ? (children as T[]) : []
+    },
+    getRowCanExpand: (row) =>
+      params.expandable() && params.expandableRow(row.original),
     // #124 server mode: the backend already filtered/sorted/paged; trust `items`
     // as the current page and drive the count from totalRows.
     manualFiltering: params.serverMode(),
@@ -350,6 +393,17 @@ export function useVibeTable<T extends object>(
       const prev = state.value.columnSizing
       const next = typeof updater === 'function' ? updater(prev) : updater
       params.columnSizing.value = next
+    },
+    onExpandedChange: (updater) => {
+      // ExpandedState is `true | Record<string, boolean>`; normalize the
+      // all-expanded case to a map so the array model stays uniform.
+      const prev = state.value.expanded as unknown as true | Record<string, boolean>
+      const prevMap: Record<string, boolean> = prev === true ? {} : prev
+      const next = (
+        typeof updater === 'function' ? updater(prevMap) : updater
+      ) as true | Record<string, boolean>
+      const nextMap: Record<string, boolean> = next === true ? {} : next
+      params.expandedRows.value = Object.keys(nextMap).filter((key) => nextMap[key])
     }
   })
 
@@ -417,5 +471,25 @@ export function useVibeTable<T extends object>(
       table.getLeafHeaders().find((header) => header.column.id === id)?.getResizeHandler()
   }
 
-  return { paginatedItems, filteredCount, selection, filters, visibility, layout }
+  const rowByKey = (key: string) =>
+    table.getRowModel().rowsById[key] ?? table.getCoreRowModel().rowsById[key]
+
+  const expansion: VibeTableExpansion = {
+    enabled: computed(() => params.expandable()),
+    canExpand: (key) => rowByKey(key)?.getCanExpand() ?? false,
+    isExpanded: (key) => rowByKey(key)?.getIsExpanded() ?? false,
+    toggle: (key) => {
+      rowByKey(key)?.toggleExpanded()
+    }
+  }
+
+  const displayedRows = computed<VibeTableRow<T>[]>(() =>
+    table.getRowModel().rows.map((row) => ({
+      key: row.id,
+      item: row.original as T,
+      depth: row.depth
+    }))
+  )
+
+  return { paginatedItems, filteredCount, selection, filters, visibility, layout, expansion, displayedRows }
 }
