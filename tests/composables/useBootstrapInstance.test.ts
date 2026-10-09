@@ -328,4 +328,36 @@ describe('useBootstrapInstance', () => {
       expect(onError).not.toHaveBeenCalled()
     })
   })
+
+  // #271: dispose() nulls Bootstrap's own props while a transition callback
+  // is still queued, so the callback throws on a nulled element. A
+  // transitioning instance must be detached but NOT disposed (its queued
+  // completion runs harmlessly on detached DOM, then everything is GC'd).
+  describe('transitioning teardown (#271)', () => {
+    it('destroy detaches listeners but skips dispose while transitioning', async () => {
+      const { wrapper, api, el1, created, handler } = setupHarness()
+      await api.init()
+      await settle()
+      const inst = created[0] as unknown as { dispose: ReturnType<typeof vi.fn>; _isTransitioning: boolean }
+      inst._isTransitioning = true
+
+      api.destroy()
+      expect(inst.dispose).not.toHaveBeenCalled()
+      expect(api.get()).toBeNull()
+      el1.dispatchEvent(new Event('test.bs.event'))
+      expect(handler).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+
+    it('destroy disposes a settled instance', async () => {
+      const { wrapper, api, created } = setupHarness()
+      await api.init()
+      await settle()
+      const inst = created[0] as unknown as { dispose: ReturnType<typeof vi.fn>; _isTransitioning: boolean }
+      inst._isTransitioning = false
+      api.destroy()
+      expect(inst.dispose).toHaveBeenCalledTimes(1)
+      wrapper.unmount()
+    })
+  })
 })

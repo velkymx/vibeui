@@ -111,7 +111,17 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
     pendingReinit = false
     detach()
     if (instance.value) {
-      options.disposeInstance(instance.value)
+      // #271: Bootstrap's dispose() nulls its own props while a queued
+      // transition callback still references them, so the callback throws on
+      // a nulled element (uncaught, including on SPA unmounts mid-transition).
+      // A transitioning instance is detached but NOT disposed: its queued
+      // completion runs harmlessly on detached DOM, then everything is GC'd.
+      // Only Bootstrap's own transitioning flag gates this (absent means settled).
+      const transitioning =
+        (instance.value as unknown as { _isTransitioning?: unknown })._isTransitioning === true
+      if (!transitioning) {
+        options.disposeInstance(instance.value)
+      }
       instance.value = null
     }
   }
