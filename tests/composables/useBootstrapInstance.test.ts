@@ -428,5 +428,35 @@ describe('useBootstrapInstance', () => {
       }
       wrapper.unmount()
     })
+
+    it('reinit waits out the transition, then replaces the instance', async () => {
+      const { wrapper, api, created } = setupTransitioning()
+      await api.init()
+      await settle()
+      const old = created[0]
+      old._isTransitioning = true
+
+      vi.useFakeTimers()
+      try {
+        const second = api.init()
+        // The reinit suspends on the settle wait: nothing created or disposed
+        // synchronously (no setTimeout-based settle() under fake timers here;
+        // the async preamble runs sync up to the first await).
+        await Promise.resolve()
+        expect(created).toHaveLength(1)
+        expect(old.dispose).not.toHaveBeenCalled()
+
+        // Transition settles: old disposed once, then the new instance lands.
+        old._isTransitioning = false
+        vi.advanceTimersByTime(50)
+        await second
+        expect(old.dispose).toHaveBeenCalledTimes(1)
+        expect(created).toHaveLength(2)
+        expect(api.get()).toBe(created[1])
+      } finally {
+        vi.useRealTimers()
+      }
+      wrapper.unmount()
+    })
   })
 })

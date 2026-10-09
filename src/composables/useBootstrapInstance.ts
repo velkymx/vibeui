@@ -72,8 +72,13 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
     try {
       detach()
       if (instance.value) {
-        options.disposeInstance(instance.value)
+        // A reinit must replace, not duplicate, the registry entry: wait out
+        // any in-flight transition, then dispose synchronously BEFORE the new
+        // instance is created (a deferred dispose would clear the new entry).
+        const live = instance.value
         instance.value = null
+        await settleLive(live)
+        options.disposeInstance(live)
       }
       const bootstrap = await loadBootstrap()
       const target = options.resolveElement()
@@ -119,6 +124,22 @@ export function useBootstrapInstance<TInstance>(options: UseBootstrapInstanceOpt
 
   const isTransitioning = (inst: TInstance): boolean =>
     (inst as unknown as { _isTransitioning?: unknown })._isTransitioning === true
+
+  // Promise version of the settle wait for paths that must dispose
+  // synchronously afterwards (reinit replaces the registry entry, so the old
+  // dispose must land before the new instance is created).
+  const settleLive = (live: TInstance): Promise<void> => {
+    if (!isTransitioning(live)) return Promise.resolve()
+    return new Promise((resolve) => {
+      let waited = 0
+      const timer = setInterval(() => {
+        waited += DISPOSE_POLL_MS
+        if (isTransitioning(live) && waited < DISPOSE_MAX_WAIT_MS) return
+        clearInterval(timer)
+        resolve()
+      }, DISPOSE_POLL_MS)
+    })
+  }
 
   const destroy = (): void => {
     pendingReinit = false
