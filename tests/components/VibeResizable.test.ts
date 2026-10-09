@@ -29,6 +29,8 @@ const fireResize = async (
     clientY: endY
   }))
   await Promise.resolve()
+  // Drag updates coalesce onto rAF: wait a frame so assertions observe them.
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 }
 
 describe('VibeResizable', () => {
@@ -100,7 +102,7 @@ describe('VibeResizable', () => {
     wrapper.unmount()
   })
 
-  it('emits resizestart, resize, resizeend in order', async () => {
+  it('emits resizestart, updates, resize, resizeend in order (coalesced per frame)', async () => {
     const wrapper = mount(VibeResizable, {
       props: { width: 100, height: 100 },
       attachTo: document.body
@@ -109,7 +111,12 @@ describe('VibeResizable', () => {
     await fireResize(handle, 0, 0, 20, 20)
 
     expect(wrapper.emitted('resizestart')).toBeTruthy()
-    expect(wrapper.emitted('resize')).toBeTruthy()
+    // `resize` rides the coalesced frame (not each pointermove): live drag
+    // signal with the handle payload, the commit rides resizeend.
+    const resizes = wrapper.emitted('resize') as { width: number; height: number; handle: string }[][]
+    expect(resizes).toBeDefined()
+    expect(resizes[resizes.length - 1][0]).toEqual({ width: 120, height: 120, handle: 'se' })
+    expect(wrapper.emitted('update:width')).toBeTruthy()
     expect(wrapper.emitted('resizeend')).toBeTruthy()
     wrapper.unmount()
   })
@@ -170,6 +177,101 @@ describe('VibeResizable', () => {
       await wrapper.setProps({ width: 200 })
       // External change should NOT loop emit back through update:width
       expect(wrapper.emitted('update:width')).toBeFalsy()
+    })
+  })
+
+  // #227: pointermove bursts coalesce onto one frame (one emit set per frame,
+  // last event wins); release delivers the exact final size plus resizeend.
+  describe('drag coalescing (#227)', () => {
+    const stubRaf = () => {
+      const queue: FrameRequestCallback[] = []
+      const raf = window.requestAnimationFrame
+      const caf = window.cancelAnimationFrame
+      window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+        queue.push(cb)
+        return queue.length
+      }) as typeof window.requestAnimationFrame
+      window.cancelAnimationFrame = (() => {}) as typeof window.cancelAnimationFrame
+      return {
+        restore: () => {
+          window.requestAnimationFrame = raf
+          window.cancelAnimationFrame = caf
+        },
+        flushFrames: () => {
+          while (queue.length > 0) queue.shift()!(16)
+        }
+      }
+    }
+
+    const pid = 7
+    const move = (handle: HTMLElement, x: number, y: number) =>
+      handle.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, pointerId: pid, clientX: x, clientY: y })
+      )
+
+    it('coalesces a burst of moves into one update per frame', async () => {
+      const raf = stubRaf()
+      try {
+        const wrapper = mount(VibeResizable, {
+          props: { width: 100, height: 100 },
+          attachTo: document.body
+        })
+        const handle = wrapper.find('[data-handle="se"]').element as HTMLElement
+        handle.dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, pointerId: pid, clientX: 0, clientY: 0 })
+        )
+        move(handle, 10, 10)
+        move(handle, 20, 20)
+        move(handle, 50, 30)
+        // Queued, nothing emitted yet.
+        expect(wrapper.emitted('update:width')).toBeUndefined()
+
+        raf.flushFrames()
+        await wrapper.vm.$nextTick()
+        const updates = wrapper.emitted('update:width') as number[][] | undefined
+        expect(updates).toBeDefined()
+        expect(updates!).toHaveLength(1)
+        // Last event wins: 100 + 50.
+        expect(updates![0][0]).toBe(150)
+        // One coalesced frame carries exactly one live resize with the handle.
+        const resizes = wrapper.emitted('resize') as unknown[][] | undefined
+        expect(resizes).toHaveLength(1)
+        expect(resizes![0][0]).toEqual({ width: 150, height: 130, handle: 'se' })
+        wrapper.unmount()
+      } finally {
+        raf.restore()
+      }
+    })
+
+    it('release delivers the exact final size with resize plus one resizeend', async () => {
+      const raf = stubRaf()
+      try {
+        const wrapper = mount(VibeResizable, {
+          props: { width: 100, height: 100 },
+          attachTo: document.body
+        })
+        const handle = wrapper.find('[data-handle="se"]').element as HTMLElement
+        handle.dispatchEvent(
+          new PointerEvent('pointerdown', { bubbles: true, pointerId: pid, clientX: 0, clientY: 0 })
+        )
+        move(handle, 50, 30)
+        handle.dispatchEvent(
+          new PointerEvent('pointerup', { bubbles: true, pointerId: pid, clientX: 50, clientY: 30 })
+        )
+        raf.flushFrames()
+        await wrapper.vm.$nextTick()
+
+        const updates = wrapper.emitted('update:width') as number[][]
+        expect(updates[updates.length - 1][0]).toBe(150)
+        // The release flush is the drag final frame: one resize, then the commit.
+        const resizes = wrapper.emitted('resize') as unknown[][]
+        expect(resizes).toHaveLength(1)
+        expect(resizes[0][0]).toEqual({ width: 150, height: 130, handle: 'se' })
+        expect(wrapper.emitted('resizeend')).toHaveLength(1)
+        wrapper.unmount()
+      } finally {
+        raf.restore()
+      }
     })
   })
 })

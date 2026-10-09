@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, type PropType } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, type PropType } from 'vue'
 
 type Handle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
 
@@ -34,6 +34,12 @@ const startY = ref(0)
 const startW = ref(0)
 const startH = ref(0)
 let activePointerId: number | null = null
+
+// Pointer moves arrive far faster than paint. Coalesce onto one animation frame
+// and keep only the last event, so a drag performs one measure plus one emit
+// set per frame instead of one per event (same pattern as VibeSlider).
+let pendingMove: PointerEvent | null = null
+let moveRaf: number | null = null
 
 watch(
   () => props.width,
@@ -88,8 +94,11 @@ const pointerDownHandlers = Object.fromEntries(
   ALL_HANDLES.map(h => [h, (e: PointerEvent) => onPointerDown(h, e)])
 ) as Record<Handle, (e: PointerEvent) => void>
 
-const onPointerMove = (event: PointerEvent) => {
-  if (!activeHandle.value || event.pointerId !== activePointerId) return
+const flushResize = (): void => {
+  moveRaf = null
+  const event = pendingMove
+  pendingMove = null
+  if (!event || !activeHandle.value || event.pointerId !== activePointerId) return
   const dx = event.clientX - startX.value
   const dy = event.clientY - startY.value
 
@@ -138,16 +147,41 @@ const onPointerMove = (event: PointerEvent) => {
     currentHeight.value = nextH
     emit('update:height', nextH)
   }
+  // Live per-frame resize (coalesced, not per pointermove): keeps the
+  // documented public contract while dragging. The commit rides resizeend.
   emit('resize', { width: currentWidth.value, height: currentHeight.value, handle })
+}
+
+const onPointerMove = (event: PointerEvent) => {
+  if (!activeHandle.value || event.pointerId !== activePointerId) return
+  pendingMove = event
+  if (moveRaf === null) moveRaf = requestAnimationFrame(() => flushResize())
 }
 
 const onPointerUp = (event: PointerEvent) => {
   if (!activeHandle.value || event.pointerId !== activePointerId) return
+  if (moveRaf !== null) {
+    cancelAnimationFrame(moveRaf)
+    moveRaf = null
+  }
+  // Deliver the final size before releasing so the model is exact at release.
+  pendingMove = event
+  flushResize()
   ;(event.target as HTMLElement).releasePointerCapture?.(event.pointerId)
   activeHandle.value = null
   activePointerId = null
   emit('resizeend', { width: currentWidth.value, height: currentHeight.value })
 }
+
+onBeforeUnmount(() => {
+  if (moveRaf !== null && typeof cancelAnimationFrame !== 'undefined') {
+    cancelAnimationFrame(moveRaf)
+    moveRaf = null
+  }
+  pendingMove = null
+  activeHandle.value = null
+  activePointerId = null
+})
 </script>
 
 <template>
