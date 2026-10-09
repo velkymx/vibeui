@@ -689,4 +689,26 @@ describe('VibeDataTable', () => {
       b.unmount()
     })
   })
+
+  // #226: serverMode fetch in flight renders the pending row, not the stale
+  // page or the empty-text row.
+  describe('serverMode loading (#226)', () => {
+    it('renders the loading row instead of empty text while loading', () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items: [], serverMode: true, loading: true }
+      })
+      expect(wrapper.find('.spinner-border').exists()).toBe(true)
+      expect(wrapper.text()).not.toContain('No data available')
+      wrapper.unmount()
+    })
+
+    it('renders rows normally when not loading', () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, serverMode: true, totalRows: 5, loading: false }
+      })
+      expect(wrapper.find('.spinner-border').exists()).toBe(false)
+      expect(wrapper.text()).toContain('Alice')
+      wrapper.unmount()
+    })
+  })
 })

@@ -140,4 +140,12 @@ describe('VibeChartLine', () => {
     const ok = mount(VibeChartLine, { props: { data: DATA, height: 400 } })
     expect(ok.find('.vibe-chart-canvas-container').attributes('style')).toContain('400px')
   })
+
+  // #226: shape-incomplete data (async load in flight) renders the empty
+  // chart instead of throwing inside render.
+  it('#226 renders without throwing on shape-incomplete data', () => {
+    expect(() =>
+      mount(VibeChartLine, { props: { data: { labels: ['Q1'] } as never } })
+    ).not.toThrow()
+  })
 })
