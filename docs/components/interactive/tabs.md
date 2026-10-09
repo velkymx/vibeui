@@ -20,6 +20,10 @@ Self-contained tab container with content switching. Distinct from `VibeNav` (wh
 | `update:modelValue` | `String` | Emitted when active tab changes |
 | `change` | `String` | Same payload, alias for non-v-model usage |
 
+### Tab wiring
+
+Tabs own `aria-controls` and panes own `aria-labelledby` plus a tab-appropriate `tabindex` (only the active pane is tabbable), derived from strip-unique ids so two strips can share tab names without colliding.
+
 ## VibeTab Props
 
 | Prop | Type | Default | Description |

@@ -32,7 +32,7 @@ const getTabPaneClass = (pane: TabPane) => {
       :class="getTabPaneClass(pane)"
       role="tabpanel"
       :aria-labelledby="`${pane.id}-tab`"
-      tabindex="0"
+      :tabindex="pane.active ? 0 : -1"
     >
       <slot name="pane" :pane="pane" :index="index">
         {{ pane.content }}
