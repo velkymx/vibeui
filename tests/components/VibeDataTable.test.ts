@@ -1,5 +1,6 @@
 import { describe, it, expect, expectTypeOf } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
 import VibeDataTable from '../../src/components/VibeDataTable.vue'
 import type { DataTableColumn, DataTableCellSlotProps } from '../../src/types'
 import { nextTick, ref, h } from 'vue'
@@ -654,6 +655,38 @@ describe('VibeDataTable', () => {
       await nextTick()
       expect(calls).toBe(2)
       wrapper.unmount()
+    })
+  })
+
+  // #228: row keys plus clickable style must come from stable references, not
+  // per-row calls plus fresh literals per render. Structural contract on the
+  // row template, plus output equality for the clickable rows.
+  describe('row memoization (#228)', () => {
+    const rowTemplateOf = (): string => {
+      const src = readFileSync('src/components/VibeDataTable.vue', 'utf8')
+      const start = src.indexOf('<template>')
+      const end = src.indexOf('</template>')
+      const tpl = src.slice(start, end)
+      return tpl.slice(tpl.indexOf('v-for="(item, index) in paginatedItems"'))
+    }
+
+    it('resolves row keys from a computed map, not a per-row call', () => {
+      expect(rowTemplateOf()).not.toContain('getRowKey(item')
+    })
+
+    it('binds a hoisted clickable style, not a fresh literal per row', () => {
+      expect(rowTemplateOf()).not.toContain("{ cursor: 'pointer' }")
+    })
+
+    it('renders identical clickable rows with stable keys', () => {
+      const a = mount(VibeDataTable, { props: { columns, items, clickable: true } })
+      const b = mount(VibeDataTable, { props: { columns, items, clickable: true } })
+      expect(a.find('tbody').html()).toBe(b.find('tbody').html())
+      const rows = a.findAll('tbody tr')
+      expect(rows).toHaveLength(5)
+      expect(rows[0].attributes('style')).toContain('cursor')
+      a.unmount()
+      b.unmount()
     })
   })
 
