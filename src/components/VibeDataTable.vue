@@ -5,6 +5,7 @@ import type { DataTableColumn, ComponentError, Variant } from '../types'
 import { safeCssObject, safeLength } from '../utils/safeCss'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
 import { useVibeTable, type VibeTableRow } from '../composables/useVibeTable'
+import { useVirtualizer, observeElementRect, type Virtualizer, type Rect } from '@tanstack/vue-virtual'
 
 const props = defineProps({
   // Data
@@ -44,6 +45,12 @@ const props = defineProps({
   subRowsKey: { type: String, default: 'children' },
   // #283 Phase 4b: group rows by these column keys (engine grouping state).
   groupBy: { type: [String, Array] as PropType<string | string[]>, default: () => [] },
+  // #283 Phase 5: windowed rendering for large datasets. Bypasses pagination
+  // (one windowing source, not two); rows render from estimates until measured.
+  virtualized: { type: Boolean, default: false },
+  virtualEstimateSize: { type: Number, default: 48 },
+  virtualOverscan: { type: Number, default: 3 },
+  virtualHeight: { type: [String, Number] as PropType<string | number>, default: 400 },
 
   // #124: server-side (manual) mode. When true, the table does no local
   // filtering/sorting/paging: `items` is rendered as-is (the current page from
@@ -159,7 +166,8 @@ const { paginatedItems, filteredCount, selection, filters, visibility, layout, e
   rowKey: () => props.rowKey,
   searchable: () => props.searchable,
   sortable: () => props.sortable,
-  paginated: () => props.paginated,
+  // #283 Phase 5: virtualization replaces pagination (bypassed while on).
+  paginated: () => props.paginated && !props.virtualized,
   serverMode: () => props.serverMode,
   totalRows: () => props.totalRows,
   search: debouncedSearchQuery,
@@ -179,6 +187,72 @@ const { paginatedItems, filteredCount, selection, filters, visibility, layout, e
   expandableRow: (item: T) => props.expandableRow?.(item) ?? true,
   subRowsKey: () => props.subRowsKey,
   groupBy: () => (Array.isArray(props.groupBy) ? props.groupBy : props.groupBy ? [props.groupBy] : [])
+})
+
+// #283 Phase 5: row virtualizer over the displayed rows. Always constructed
+// (composables cannot be conditional); inert unless virtualized is on.
+const scrollEl = ref<HTMLElement | null>(null)
+// Virtual height in px for the scroll container style and the virtualizer's
+// initial rect (happy-dom and SSR never report layout, so without a seed the
+// first window would be empty; the observer corrects it once measured).
+const virtualHeightPx = computed(() => {
+  if (typeof props.virtualHeight === 'number') return props.virtualHeight
+  const match = /^(-?\d+(?:\.\d+)?)px$/.exec(props.virtualHeight.trim())
+  return match ? Number(match[1]) : 400
+})
+const virtualCount = computed(() => displayedRows.value.length)
+const rowVirtualizer = useVirtualizer(
+  computed(() => ({
+    count: virtualCount.value,
+    getScrollElement: () => scrollEl.value,
+    estimateSize: () => props.virtualEstimateSize,
+    overscan: props.virtualOverscan,
+    initialRect: { width: 800, height: virtualHeightPx.value },
+    // Layout-less harnesses (happy-dom, SSR) report zero rects, which would
+    // collapse the seeded window. Ignore zero-height reports; real containers
+    // always measure non-zero once laid out.
+    observeElementRect: (instance: Virtualizer<HTMLElement, Element>, onRect: (rect: Rect) => void) => {
+      observeElementRect(instance, (measured) => {
+        if (measured.height > 0) onRect(measured)
+      })
+    }
+  }))
+)
+// Absolute displayed-row indices in the current window (or all rows when off).
+const windowedIndices = computed<number[] | null>(() => {
+  if (!props.virtualized) return null
+  return rowVirtualizer.value.getVirtualItems().map((item) => item.index)
+})
+const virtualPadding = computed(() => {
+  if (!props.virtualized) return { top: 0, bottom: 0 }
+  const virtualizer = rowVirtualizer.value
+  const items = virtualizer.getVirtualItems()
+  const total = virtualizer.getTotalSize()
+  const top = items.length > 0 ? items[0].start : 0
+  const bottom = items.length > 0 ? total - items[items.length - 1].end : total
+  return { top, bottom }
+})
+const scrollStyle = computed(() =>
+  props.virtualized
+    ? {
+        maxHeight: typeof props.virtualHeight === 'number' ? `${props.virtualHeight}px` : props.virtualHeight,
+        overflowY: 'auto' as const
+      }
+    : {}
+)
+// Rows actually rendered: the virtual window (absolute indices preserved for
+// slots and emits) or everything when virtualization is off.
+const renderEntries = computed(() => {
+  const indices = windowedIndices.value
+  if (indices === null) {
+    return displayedRows.value.map((row, index) => ({ row, index }))
+  }
+  const entries: { row: VibeTableRow<T>; index: number }[] = []
+  for (const index of indices) {
+    const row = displayedRows.value[index]
+    if (row !== undefined) entries.push({ row, index })
+  }
+  return entries
 })
 
 // #283 Phase 2b: filter row helpers (unwrapped for the template).
@@ -319,6 +393,8 @@ const endRow = computed(() => {
 })
 
 const infoString = computed(() => {
+  // Virtualized tables window instead of paging: report the row count.
+  if (props.virtualized) return `Showing ${totalFilteredRows.value} rows`
   // "filtered from N" only makes sense for local filtering.
   const isFiltered = !props.serverMode && totalFilteredRows.value !== clientTotalRows.value
   const template = isFiltered ? props.filteredInfoText : props.infoText
@@ -552,7 +628,7 @@ const cellValueMap = computed(() => {
     </div>
 
     <!-- Table -->
-    <div :class="{ 'table-responsive': responsive }">
+    <div ref="scrollEl" :class="{ 'table-responsive': responsive }" :style="scrollStyle">
       <table :class="tableClass">
         <thead>
           <tr>
@@ -638,22 +714,27 @@ const cellValueMap = computed(() => {
           </tr>
         </thead>
         <tbody>
-          <template v-for="(row, index) in displayedRows" :key="row.key">
+          <template v-if="virtualized">
+            <tr class="vibe-virtual-spacer" aria-hidden="true">
+              <td :colspan="colspanCount" :style="{ height: `${virtualPadding.top}px`, padding: '0', border: '0' }"></td>
+            </tr>
+          </template>
+          <template v-for="entry in renderEntries" :key="entry.row.key">
             <!-- #283 Phase 4b: group header row (toggle plus aggregate cells). -->
-            <tr v-if="row.group" class="vibe-group-row">
+            <tr v-if="entry.row.group" class="vibe-group-row">
               <td v-if="selectEnabled" class="vibe-select-cell"></td>
               <td class="vibe-expand-cell">
                 <button
-                  v-if="expansion.canExpand(row.key)"
+                  v-if="expansion.canExpand(entry.row.key)"
                   type="button"
                   class="btn btn-sm btn-link vibe-expand-toggle p-0"
-                  :aria-expanded="expansion.isExpanded(row.key)"
-                  :aria-label="expansion.isExpanded(row.key) ? 'Collapse group' : 'Expand group'"
-                  @click.stop="expansion.toggle(row.key)"
+                  :aria-expanded="expansion.isExpanded(entry.row.key)"
+                  :aria-label="expansion.isExpanded(entry.row.key) ? 'Collapse group' : 'Expand group'"
+                  @click.stop="expansion.toggle(entry.row.key)"
                 >
                   <span
                     class="vibe-expand-icon"
-                    :class="{ 'vibe-expand-icon-open': expansion.isExpanded(row.key) }"
+                    :class="{ 'vibe-expand-icon-open': expansion.isExpanded(entry.row.key) }"
                     aria-hidden="true"
                   >&#8250;</span>
                 </button>
@@ -664,27 +745,27 @@ const cellValueMap = computed(() => {
                 :class="[column.class, alignClass(column)]"
                 :data-label="column.label"
               >
-                {{ groupCellText(row, column) }}
+                {{ groupCellText(entry.row, column) }}
               </td>
             </tr>
             <tr
               v-else
-              :class="{ 'vibe-sub-row': row.depth > 0 }"
+              :class="{ 'vibe-sub-row': entry.row.depth > 0 }"
               :style="clickable ? CLICKABLE_ROW_STYLE : undefined"
-              @click="handleRowClick(row.item, index)"
+              @click="handleRowClick(entry.row.item, entry.index)"
             >
               <td v-if="expandable" class="vibe-expand-cell">
                 <button
-                  v-if="expansion.canExpand(row.key)"
+                  v-if="expansion.canExpand(entry.row.key)"
                   type="button"
                   class="btn btn-sm btn-link vibe-expand-toggle p-0"
-                  :aria-expanded="expansion.isExpanded(row.key)"
-                  :aria-label="expansion.isExpanded(row.key) ? 'Collapse row' : 'Expand row'"
-                  @click.stop="expansion.toggle(row.key)"
+                  :aria-expanded="expansion.isExpanded(entry.row.key)"
+                  :aria-label="expansion.isExpanded(entry.row.key) ? 'Collapse row' : 'Expand row'"
+                  @click.stop="expansion.toggle(entry.row.key)"
                 >
                   <span
                     class="vibe-expand-icon"
-                    :class="{ 'vibe-expand-icon-open': expansion.isExpanded(row.key) }"
+                    :class="{ 'vibe-expand-icon-open': expansion.isExpanded(entry.row.key) }"
                     aria-hidden="true"
                   >&#8250;</span>
                 </button>
@@ -694,8 +775,8 @@ const cellValueMap = computed(() => {
                 type="checkbox"
                 class="form-check-input"
                 aria-label="Select row"
-                :checked="isRowSelected(row.item)"
-                @click.stop="onToggleRow($event, row.item)"
+                :checked="isRowSelected(entry.row.item)"
+                @click.stop="onToggleRow($event, entry.row.item)"
               />
             </td>
             <td
@@ -705,19 +786,24 @@ const cellValueMap = computed(() => {
               :style="tdStyleMap.get(column)"
               :data-label="column.label"
             >
-              <slot :name="`cell(${column.key})`" :item="row.item" :value="row.item[column.key]" :index="index">
-                {{ cellValueMap.get(column)?.get(row.item) }}
+              <slot :name="`cell(${column.key})`" :item="entry.row.item" :value="entry.row.item[column.key]" :index="entry.index">
+                {{ cellValueMap.get(column)?.get(entry.row.item) }}
               </slot>
             </td>
           </tr>
           <tr
-            v-if="!row.group && expandable && hasExpandedSlot && expansion.isExpanded(row.key)"
+            v-if="!entry.row.group && expandable && hasExpandedSlot && expansion.isExpanded(entry.row.key)"
             class="vibe-expanded-row"
           >
             <td :colspan="colspanCount">
-              <slot name="expanded" :item="row.item" :index="index" />
+              <slot name="expanded" :item="entry.row.item" :index="entry.index" />
             </td>
           </tr>
+          </template>
+          <template v-if="virtualized">
+            <tr class="vibe-virtual-spacer" aria-hidden="true">
+              <td :colspan="colspanCount" :style="{ height: `${virtualPadding.bottom}px`, padding: '0', border: '0' }"></td>
+            </tr>
           </template>
           <tr v-if="props.loading">
             <td :colspan="colspanCount" class="text-center text-body-secondary">
@@ -755,7 +841,7 @@ const cellValueMap = computed(() => {
           {{ infoString }}
         </div>
       </div>
-      <div v-if="paginated && totalPages > 1" class="col-md-6">
+      <div v-if="paginated && !virtualized && totalPages > 1" class="col-md-6">
         <nav>
           <ul class="pagination justify-content-md-end mb-0">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">

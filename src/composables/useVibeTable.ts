@@ -518,8 +518,14 @@ export function useVibeTable<T extends object>(
     }
   }
 
-  const displayedRows = computed<VibeTableRow<T>[]>(() =>
-    table.getRowModel().rows.map((row) => {
+  const displayedRows = computed<VibeTableRow<T>[]>(() => {
+    // Pagination off (client mode): render the full sorted/expanded set via
+    // the pre-pagination model. getRowModel would clamp to the page size.
+    const rows =
+      !params.paginated() && !params.serverMode()
+        ? table.getPrePaginatedRowModel().rows
+        : table.getRowModel().rows
+    return rows.map((row) => {
       if (row.getIsGrouped()) {
         const values: Record<string, unknown> = {}
         for (const column of params.columns()) values[column.key] = row.getValue(column.key)
@@ -537,7 +543,7 @@ export function useVibeTable<T extends object>(
       }
       return { key: row.id, item: row.original as T, depth: row.depth, group: null }
     })
-  )
+  })
 
   return { paginatedItems, filteredCount, selection, filters, visibility, layout, expansion, displayedRows }
 }
