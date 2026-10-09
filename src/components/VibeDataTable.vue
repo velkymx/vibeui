@@ -1,10 +1,9 @@
 <script setup lang="ts" generic="T extends object">
-import { ref, computed, watch, type PropType } from 'vue'
+import { ref, computed, watch, useSlots, type PropType } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { DataTableColumn, ComponentError, Variant } from '../types'
 import { safeCssObject, safeLength } from '../utils/safeCss'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
-import { isDev } from '../composables/useEventBus'
 import { useVibeTable } from '../composables/useVibeTable'
 
 const props = defineProps({
@@ -38,6 +37,11 @@ const props = defineProps({
   multiSort: { type: Boolean, default: false },
   // #283 Phase 3a: render a column-visibility chooser (dropdown of checkboxes).
   showColumnToggle: { type: Boolean, default: false },
+  // #283 Phase 4a: row expansion master switch, per-row predicate (default:
+  // every row), and the item field holding child rows.
+  expandable: { type: Boolean, default: false },
+  expandableRow: { type: Function as PropType<(item: T) => boolean>, default: undefined },
+  subRowsKey: { type: String, default: 'children' },
 
   // #124: server-side (manual) mode. When true, the table does no local
   // filtering/sorting/paging: `items` is rendered as-is (the current page from
@@ -82,6 +86,8 @@ const columnVisibility = defineModel<Record<string, boolean>>('columnVisibility'
 // #283 Phase 3b: per-column sizes in px. Two-way so consumers can read and
 // drive resize state.
 const columnSizing = defineModel<Record<string, number>>('columnSizing', { default: () => ({}) })
+// #283 Phase 4a: expanded row keys (engine row ids). Two-way.
+const expandedRows = defineModel<(string | number)[]>('expandedRows', { default: () => [] })
 
 const emit = defineEmits<{
   (e: 'row-clicked', item: T, globalIndex: number): void
@@ -97,6 +103,9 @@ const emit = defineEmits<{
 // get autocomplete and type-checking instead of `any`.
 defineSlots<{
   [K in keyof T & string as `cell(${K})`]?: (props: { item: T; value: T[K]; index: number }) => unknown
+} & {
+  // #283 Phase 4a: expanded-row detail content for an expanded row.
+  expanded?: (props: { item: T; index: number }) => unknown
 }>()
 
 // Local state for search
@@ -117,28 +126,6 @@ const debouncedSearchQuery = useDebouncedRef('', () => resolveProp(props.searchD
 // `keyof T`, which type-checks without it.
 const readField = (row: T, key: string): unknown => (row as Record<string, unknown>)[key]
 
-const getRowKey = (item: T, index: number): string | number => {
-  // Try to use the specified rowKey property
-  const rowKeyValue = readField(item, props.rowKey)
-  if (props.rowKey && rowKeyValue !== undefined) {
-    return String(rowKeyValue)
-  }
-
-  // Warn in development if no rowKey is found
-  if (isDev() && index === 0) {
-    console.warn(
-      `[VibeDataTable] No unique key found for rows. ` +
-      `For better performance and correct behavior during sorting/filtering, ` +
-      `provide a 'rowKey' prop that matches a unique property in your items (e.g., rowKey="id").`
-    )
-  }
-
-  // Fallback: use a globally unique index by combining page offset + local index.
-  // Page-local index alone causes duplicate Vue keys across pages (page 1 and page 2
-  // both have indices 0..perPage-1), which makes Vue patch wrong DOM rows.
-  return `__row_${(startRow.value - 1) + index}`
-}
-
 // Fan raw input into the debounced mirror; side effects run on commit.
 watch(searchQuery, (newVal) => {
   debouncedSearchQuery.value = newVal
@@ -157,7 +144,7 @@ watch(() => [debouncedSearchQuery.value], ([newVal]) => {
 // useVibeTable. `paginatedItems` (visible rows) and `filteredCount` (local
 // filtered total) preserve the previous contracts exactly; the component keeps
 // its own markup, v-models, and per-cell maps.
-const { paginatedItems, filteredCount, selection, filters, visibility, layout } = useVibeTable<T>({
+const { paginatedItems, filteredCount, selection, filters, visibility, layout, expansion, displayedRows } = useVibeTable<T>({
   items: () => props.items,
   columns: () => props.columns,
   rowKey: () => props.rowKey,
@@ -177,7 +164,11 @@ const { paginatedItems, filteredCount, selection, filters, visibility, layout } 
   selectedRows,
   columnFilters,
   columnVisibility,
-  columnSizing
+  columnSizing,
+  expandedRows,
+  expandable: () => props.expandable,
+  expandableRow: (item: T) => props.expandableRow?.(item) ?? true,
+  subRowsKey: () => props.subRowsKey
 })
 
 // #283 Phase 2b: filter row helpers (unwrapped for the template).
@@ -262,8 +253,16 @@ const selectMultiple = computed(() => selection.multiple.value)
 const selectAllChecked = computed(() => selection.isAllSelected.value)
 const selectAllIndeterminate = computed(() => selection.isIndeterminate.value)
 const isRowSelected = (item: T): boolean => selection.isSelected(selectKey(item))
-// Colspan for the loading/empty rows, including the select column when shown.
-const colspanCount = computed(() => (visibleColumns.value.length || 1) + (selectEnabled.value ? 1 : 0))
+// Colspan for the loading/empty rows, including the select/expand columns.
+const colspanCount = computed(
+  () =>
+    (visibleColumns.value.length || 1) +
+    (selectEnabled.value ? 1 : 0) +
+    (props.expandable ? 1 : 0)
+)
+// The expanded-row detail slot, when provided.
+const slots = useSlots()
+const hasExpandedSlot = computed(() => slots.expanded !== undefined)
 
 // Pagination info
 // Rows loaded in the browser. In server mode this is just the current page slice.
@@ -386,18 +385,6 @@ const handleRowClick = (item: T, index: number) => {
 // style patch check on every render (same as VibeListGroup CLICKABLE_STYLE).
 const CLICKABLE_ROW_STYLE = { cursor: 'pointer' }
 
-// Row keys computed once per page/sort/filter change instead of re-running
-// the key resolution per row on every render. Keyed by row object so an
-// identity change invalidates only its own entry.
-const rowKeyMap = computed(() => {
-  const map = new Map<T, string | number>()
-  const page = paginatedItems.value
-  for (let index = 0; index < page.length; index++) {
-    map.set(page[index], getRowKey(page[index], index))
-  }
-  return map
-})
-
 // Precompute sort icons once per sort-state/columns change instead of calling a function
 // per header cell on every render. Keyed by column (consistent with the style maps).
 const sortIconMap = computed(() => {
@@ -463,7 +450,8 @@ const cellValueMap = computed(() => {
   const byColumn = new Map<DataTableColumn<T>, Map<T, unknown>>()
   for (const column of props.columns) {
     const byRow = new Map<T, unknown>()
-    for (const item of paginatedItems.value) {
+    // Displayed rows (not just the page slice) so expanded sub-rows resolve.
+    for (const { item } of displayedRows.value) {
       const value = item[column.key]
       byRow.set(item, column.formatter ? column.formatter(value, item) : value)
     }
@@ -544,6 +532,9 @@ const cellValueMap = computed(() => {
                 @click="selection.toggleAll($event)"
               />
             </th>
+            <th v-if="expandable" class="vibe-expand-cell" scope="col">
+              <span class="visually-hidden">Expand rows</span>
+            </th>
             <th
               v-for="column in visibleColumns"
               :key="column.key"
@@ -572,6 +563,7 @@ const cellValueMap = computed(() => {
           </tr>
           <tr v-if="filtersEnabled" class="vibe-filter-row">
             <th v-if="selectEnabled" class="vibe-select-cell"></th>
+            <th v-if="expandable" class="vibe-expand-cell"></th>
             <th v-for="column in visibleColumns" :key="column.key" :class="column.headerClass">
               <input
                 v-if="column.filter === 'text'"
@@ -611,19 +603,35 @@ const cellValueMap = computed(() => {
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="(item, index) in paginatedItems"
-            :key="rowKeyMap.get(item)"
-            :style="clickable ? CLICKABLE_ROW_STYLE : undefined"
-            @click="handleRowClick(item, index)"
-          >
+          <template v-for="(row, index) in displayedRows" :key="row.key">
+            <tr
+              :class="{ 'vibe-sub-row': row.depth > 0 }"
+              :style="clickable ? CLICKABLE_ROW_STYLE : undefined"
+              @click="handleRowClick(row.item, index)"
+            >
+              <td v-if="expandable" class="vibe-expand-cell">
+                <button
+                  v-if="expansion.canExpand(row.key)"
+                  type="button"
+                  class="btn btn-sm btn-link vibe-expand-toggle p-0"
+                  :aria-expanded="expansion.isExpanded(row.key)"
+                  :aria-label="expansion.isExpanded(row.key) ? 'Collapse row' : 'Expand row'"
+                  @click.stop="expansion.toggle(row.key)"
+                >
+                  <span
+                    class="vibe-expand-icon"
+                    :class="{ 'vibe-expand-icon-open': expansion.isExpanded(row.key) }"
+                    aria-hidden="true"
+                  >&#8250;</span>
+                </button>
+              </td>
             <td v-if="selectEnabled" class="vibe-select-cell">
               <input
                 type="checkbox"
                 class="form-check-input"
                 aria-label="Select row"
-                :checked="isRowSelected(item)"
-                @click.stop="onToggleRow($event, item)"
+                :checked="isRowSelected(row.item)"
+                @click.stop="onToggleRow($event, row.item)"
               />
             </td>
             <td
@@ -633,11 +641,20 @@ const cellValueMap = computed(() => {
               :style="tdStyleMap.get(column)"
               :data-label="column.label"
             >
-              <slot :name="`cell(${column.key})`" :item="item" :value="item[column.key]" :index="index">
-                {{ cellValueMap.get(column)?.get(item) }}
+              <slot :name="`cell(${column.key})`" :item="row.item" :value="row.item[column.key]" :index="index">
+                {{ cellValueMap.get(column)?.get(row.item) }}
               </slot>
             </td>
           </tr>
+          <tr
+            v-if="expandable && hasExpandedSlot && expansion.isExpanded(row.key)"
+            class="vibe-expanded-row"
+          >
+            <td :colspan="colspanCount">
+              <slot name="expanded" :item="row.item" :index="index" />
+            </td>
+          </tr>
+          </template>
           <tr v-if="props.loading">
             <td :colspan="colspanCount" class="text-center text-body-secondary">
               <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
@@ -724,6 +741,15 @@ opaque background, and stacking. Scoped to internally generated cells. */
   position: sticky;
   background-color: var(--bs-body-bg);
   z-index: 1;
+}
+
+/* Expand toggle icon: chevron rotates when open. */
+.vibe-datatable :deep(.vibe-expand-icon) {
+  display: inline-block;
+  transition: transform 0.15s ease-in-out;
+}
+.vibe-datatable :deep(.vibe-expand-icon-open) {
+  transform: rotate(90deg);
 }
 
 /* Resize handle: slim button at the header's trailing edge. */
