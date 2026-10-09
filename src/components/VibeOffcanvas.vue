@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { OffcanvasPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
@@ -46,18 +47,9 @@ const emit = defineEmits<{
 const computedId = computed(() => props.id || _generatedId)
 
 const offcanvasRef = useTemplateRef<HTMLElement>('offcanvasRef')
-const bsOffcanvas = shallowRef<BootstrapOffcanvas | null>(null)
 const isVisible = ref(false)
 
-// Bug 1: in-flight guard to prevent concurrent async init races
-let initInFlight = false
-
-// Bug 4: track whether listeners are attached to prevent stacking
-let listenersAttached = false
-
-// Set first in onBeforeUnmount — guards the post-await section against constructing
-// a Bootstrap Offcanvas instance on a detached element during a mount/unmount race.
-let isUnmounted = false
+// Bug 1: in-flight guard plus queued reinits now owned by the composable.
 
 // WCAG 2.4.3: focus must return to the trigger after close. Bootstrap's restore is
 // unreliable when shown programmatically, so capture/restore the pre-open focus ourselves.
@@ -101,88 +93,40 @@ const onHidden = () => {
   preFocusEl = null
 }
 
-// Bug 4: listener attach/detach helpers
-// Cached attach target so teardown never depends on the template ref
-// surviving (same pattern as VibeCarousel's attachedEl).
-let listenersEl: HTMLElement | null = null
+// Bug 4: listener attach/detach now owned by the composable (events ride the
+// instance lifetime, attached to the attached element rather than the ref).
 
-function attachListeners() {
-  if (listenersAttached || !offcanvasRef.value) return
-  listenersEl = offcanvasRef.value
-  listenersEl.addEventListener('show.bs.offcanvas', onShow)
-  listenersEl.addEventListener('shown.bs.offcanvas', onShown)
-  listenersEl.addEventListener('hide.bs.offcanvas', onHide)
-  listenersEl.addEventListener('hidden.bs.offcanvas', onHidden)
-  listenersAttached = true
-}
+// Instance lifecycle owned by the shared composable (#247): lazy async
+// construction, per-instance offcanvas listeners, dispose plus nulling, and
+// unmount-race guards. The exposed ref stays live through reinits.
 
-function detachListeners() {
-  if (!listenersAttached) return
-  if (listenersEl) {
-    listenersEl.removeEventListener('show.bs.offcanvas', onShow)
-    listenersEl.removeEventListener('shown.bs.offcanvas', onShown)
-    listenersEl.removeEventListener('hide.bs.offcanvas', onHide)
-    listenersEl.removeEventListener('hidden.bs.offcanvas', onHidden)
-    listenersEl = null
-  }
-  listenersAttached = false
-}
-
-// Bug 1: async init with in-flight guard
-// Bug 4: detach old listeners before dispose, attach after new instance
-const initOffcanvas = async () => {
-  if (!offcanvasRef.value) return
-
-  // Bug 1: prevent concurrent init races
-  if (initInFlight) return
-  initInFlight = true
-
-  try {
-    if (bsOffcanvas.value) {
-      detachListeners()
-      bsOffcanvas.value.dispose()
-      bsOffcanvas.value = null
-    }
-
-    const bootstrap = await import('bootstrap')
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!offcanvasRef.value || isUnmounted) return
-
-    const Offcanvas = bootstrap.Offcanvas
-
-    bsOffcanvas.value = new Offcanvas(offcanvasRef.value, {
+const { init: initInstance, instance: bsOffcanvas } = useBootstrapInstance<BootstrapOffcanvas>({
+  // Template ref read at call time: it may be null during teardown, which the
+  // composable treats as a no-op instead of constructing on a detached node.
+  resolveElement: () => offcanvasRef.value,
+  create: (el, bootstrap) =>
+    new bootstrap.Offcanvas(el, {
       backdrop: props.backdrop === false ? false : props.backdrop === 'static' ? 'static' : true,
       scroll: props.scroll,
       keyboard: props.backdrop !== 'static'
-    }) as BootstrapOffcanvas
+    }) as unknown as BootstrapOffcanvas,
+  disposeInstance: (offcanvas) => offcanvas.dispose(),
+  events: {
+    'show.bs.offcanvas': onShow as EventListener,
+    'shown.bs.offcanvas': onShown as EventListener,
+    'hide.bs.offcanvas': onHide as EventListener,
+    'hidden.bs.offcanvas': onHidden as EventListener
+  },
+  componentName: 'VibeOffcanvas',
+  onError: (error) => reportComponentError(emit, error)
+})
 
-    attachListeners()
-
-    if (props.modelValue) {
-      bsOffcanvas.value.show()
-    }
-  } catch (error) {
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Offcanvas will use data attributes only.',
-      componentName: 'VibeOffcanvas',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-  }
+const initOffcanvas = async (): Promise<void> => {
+  await initInstance()
+  if (props.modelValue) bsOffcanvas.value?.show()
 }
 
 onMounted(initOffcanvas)
-
-// Bug 2: just call dispose() directly — Bootstrap handles cleanup internally
-// Bug 4: detach listeners before dispose
-onBeforeUnmount(() => {
-  isUnmounted = true
-  detachListeners()
-  bsOffcanvas.value?.dispose()
-  bsOffcanvas.value = null
-})
 
 watch(() => props.modelValue, (newValue) => {
   if (!bsOffcanvas.value) return
