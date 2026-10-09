@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportComponentError } from '../utils/reportComponentError'
-import { useTemplateRef, shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, ref, watch, onMounted } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, ToastPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
@@ -48,7 +49,6 @@ const emit = defineEmits<{
 
 const computedId = computed(() => props.id ?? _toastId)
 const toastRef = useTemplateRef<HTMLElement>('toastRef')
-const bsToast = shallowRef<BootstrapToast | null>(null)
 const isVisible = ref(false)
 
 const toastClass = computed(() => {
@@ -89,69 +89,36 @@ const onHidden = () => {
   emit('update:modelValue', false)
 }
 
-const detachToastListeners = () => {
-  const el = toastRef.value
-  if (!el) return
-  el.removeEventListener('show.bs.toast', onShow)
-  el.removeEventListener('shown.bs.toast', onShown)
-  el.removeEventListener('hide.bs.toast', onHide)
-  el.removeEventListener('hidden.bs.toast', onHidden)
-}
-
-let initInFlight = false
-let isUnmounted = false
-
-const initToast = async () => {
-  if (!toastRef.value || initInFlight) return
-  initInFlight = true
-
-  detachToastListeners()
-
-  if (bsToast.value) {
-    bsToast.value.dispose()
-    bsToast.value = null
-  }
-
-  try {
-    const bootstrap = await import('bootstrap')
-    if (!toastRef.value || isUnmounted) return
-    const Toast = bootstrap.Toast
-
-    bsToast.value = new Toast(toastRef.value, {
+// Instance lifecycle owned by the shared composable (#247): lazy async
+// construction, per-instance toast listeners, dispose plus nulling, and
+// unmount-race guards (including queued reinits, which the old hand-rolled
+// init dropped). The exposed ref stays live through reinits.
+const { init: initInstance, instance: bsToast } = useBootstrapInstance<BootstrapToast>({
+  // Template ref read at call time: it may be null during teardown, which the
+  // composable treats as a no-op instead of constructing on a detached node.
+  resolveElement: () => toastRef.value,
+  create: (el, bootstrap) =>
+    new bootstrap.Toast(el, {
       autohide: props.autohide,
       delay: props.delay
-    }) as BootstrapToast
+    }) as unknown as BootstrapToast,
+  disposeInstance: (toast) => toast.dispose(),
+  events: {
+    'show.bs.toast': onShow as EventListener,
+    'shown.bs.toast': onShown as EventListener,
+    'hide.bs.toast': onHide as EventListener,
+    'hidden.bs.toast': onHidden as EventListener
+  },
+  componentName: 'VibeToast',
+  onError: (error) => reportComponentError(emit, error)
+})
 
-    toastRef.value.addEventListener('show.bs.toast', onShow)
-    toastRef.value.addEventListener('shown.bs.toast', onShown)
-    toastRef.value.addEventListener('hide.bs.toast', onHide)
-    toastRef.value.addEventListener('hidden.bs.toast', onHidden)
-
-    if (props.modelValue) {
-      bsToast.value.show()
-    }
-  } catch (error) {
-    reportComponentError(emit, {
-      message: 'Bootstrap JS not loaded. Toast will use data attributes only.',
-      componentName: 'VibeToast',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-  }
+const initToast = async (): Promise<void> => {
+  await initInstance()
+  if (props.modelValue) bsToast.value?.show()
 }
 
 onMounted(initToast)
-
-onBeforeUnmount(() => {
-  isUnmounted = true
-  detachToastListeners()
-
-  if (bsToast.value) {
-    bsToast.value.dispose()
-    bsToast.value = null
-  }
-})
 
 watch(() => props.modelValue, (newValue) => {
   if (!bsToast.value) return
