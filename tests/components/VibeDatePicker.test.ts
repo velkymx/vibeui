@@ -453,4 +453,55 @@ describe('VibeDatePicker $attrs passthrough', () => {
       wrapper.unmount()
     })
   })
+
+  // #299 (WCAG 2.1.1 / 2.4.3): the readonly trigger does not synthesise a click
+  // from Enter/Space, and opening must move focus into the grid so the day keys
+  // (which listen on the popover) are reachable without a pointer.
+  describe('keyboard open (#299)', () => {
+    const settle = async (wrapper: ReturnType<typeof mount>) => {
+      // open watch -> nextTick -> focusInitialDay -> setFocusedDate -> nextTick -> focus()
+      await wrapper.vm.$nextTick()
+      await wrapper.vm.$nextTick()
+      await wrapper.vm.$nextTick()
+    }
+
+    it('ArrowDown on the input opens the calendar and focuses the selected day', async () => {
+      const wrapper = mount(VibeDatePicker, { props: { modelValue: '2026-10-15' }, attachTo: document.body })
+      await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' })
+      await settle(wrapper)
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(true)
+      const active = document.activeElement as HTMLElement | null
+      expect(wrapper.find('.vibe-datepicker-popover').element.contains(active)).toBe(true)
+      expect(active?.getAttribute('data-iso')).toBe('2026-10-15')
+      wrapper.unmount()
+    })
+
+    it('Enter on the input opens the calendar', async () => {
+      const wrapper = mount(VibeDatePicker, { attachTo: document.body })
+      await wrapper.find('input').trigger('keydown', { key: 'Enter' })
+      await settle(wrapper)
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(true)
+      wrapper.unmount()
+    })
+
+    it('Escape on the input closes an open calendar and returns focus to the input', async () => {
+      const wrapper = mount(VibeDatePicker, { attachTo: document.body })
+      await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' })
+      await settle(wrapper)
+      await wrapper.find('input').trigger('keydown', { key: 'Escape' })
+      await wrapper.vm.$nextTick()
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(false)
+      expect(document.activeElement).toBe(wrapper.find('input').element)
+      wrapper.unmount()
+    })
+
+    it('does not open from the keyboard when disabled', async () => {
+      const wrapper = mount(VibeDatePicker, { props: { disabled: true }, attachTo: document.body })
+      await wrapper.find('input').trigger('keydown', { key: 'ArrowDown' })
+      await settle(wrapper)
+      expect(wrapper.find('.vibe-datepicker-popover').exists()).toBe(false)
+      wrapper.unmount()
+    })
+  })
 })

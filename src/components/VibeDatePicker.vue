@@ -282,6 +282,23 @@ const setFocusedDate = async (iso: IsoDate) => {
   el?.focus()
 }
 
+// #299: on open, move focus into the grid so the calendar is operable from the
+// keyboard (arrows, Enter, Escape all live on the popover). Prefer the selected
+// day, else today, else the first selectable in-month day, so focus never lands
+// on a disabled button or stays stranded on the trigger input.
+const focusInitialDay = async () => {
+  const preferred = lowDate.value || todayIso
+  await setFocusedDate(preferred)
+  // setFocusedDate no-ops on a disabled or out-of-view target; if nothing in the
+  // grid took focus, fall back to the first selectable day in the current view.
+  if (!popoverRef.value?.contains(document.activeElement)) {
+    const fallback =
+      monthGrid.value.find(c => c.inMonth && !c.disabled) ||
+      monthGrid.value.find(c => !c.disabled)
+    if (fallback) await setFocusedDate(fallback.iso)
+  }
+}
+
 const shiftFocusedDays = async (days: number) => {
   const baseIso = focusedIso.value || lowDate.value || toIso(todayDate())
   const d = fromIso(baseIso)
@@ -360,6 +377,30 @@ const handleGridKeydown = async (event: KeyboardEvent) => {
   }
 }
 
+// #299: the trigger is a readonly input, so Enter/Space do not synthesise a
+// click the way they would on a button. Open the calendar from the keyboard on
+// ArrowDown/Enter/Space (focus then moves into the grid via the isOpen watch),
+// and let Escape close it even while focus is still on the input.
+const handleInputKeydown = (event: KeyboardEvent) => {
+  if (props.disabled) return
+  switch (event.key) {
+    case 'ArrowDown':
+    case 'Enter':
+    case ' ':
+      if (!isOpen.value) {
+        event.preventDefault()
+        togglePopover()
+      }
+      break
+    case 'Escape':
+      if (isOpen.value) {
+        event.preventDefault()
+        closePopover()
+      }
+      break
+  }
+}
+
 const onDocumentMousedown = (event: MouseEvent) => {
   if (!isOpen.value) return
   const root = rootRef.value
@@ -372,6 +413,8 @@ watch(isOpen, (open) => {
   if (open) {
     focusedIso.value = lowDate.value || toIso(todayDate())
     document.addEventListener('mousedown', onDocumentMousedown)
+    // The popover is v-if, so it mounts next tick; move focus into the grid then.
+    void nextTick(() => { void focusInitialDay() })
   } else {
     focusedIso.value = null
     document.removeEventListener('mousedown', onDocumentMousedown)
@@ -403,6 +446,7 @@ defineExpose({ open: () => { if (!isOpen.value) togglePopover() }, close: closeP
       :aria-haspopup="'dialog'"
       :aria-expanded="isOpen"
       @click="togglePopover"
+      @keydown="handleInputKeydown"
     />
     <div
       v-if="isOpen"
