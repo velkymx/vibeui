@@ -45,11 +45,12 @@ You keep the Bootstrap you know. VibeUI handles the Vue you'd rather not write.
   - [Navigation](#navigation)
   - [Containers](#containers)
   - [Interactive](#interactive)
-  - [Tooltips & Popovers](#tooltips--popovers)
+  - [Advanced](#advanced)
   - [Data & Charts](#data--charts)
   - [Forms](#forms)
 - [Composables](#composables)
 - [Directives](#directives)
+- [Tooling](#tooling)
 - [Examples](#examples)
 - [Documentation](#documentation)
 
@@ -134,6 +135,10 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | **Touch & hybrid aware** | Tooltips switch to tap on touch. Modals and offcanvas honor Android back button. |
 | **Lazy-loaded** | Charts, WYSIWYG editor, and Bootstrap's JS load on demand - ship only what you use. |
 | **Interaction suite** | Drag/drop, sortable, resizable, slider, stepper, autocomplete, calendar, and canvas charts. |
+| **Event bus** | Module-singleton pub/sub (`useEventBus`) with command channels for notifications, modals, theme, offcanvas, layout, and navigation, plus `error:component` / `error:unhandled` channels and typed `emit*`/`on*` helpers. |
+| **Error boundaries** | `VibeErrorBoundary` catches render and lifecycle errors in its subtree, renders a fallback slot, and reports to the bus; opt-in `installErrorHandler` routes app errors there too. |
+| **Global defaults** | `app.use(VibeUI, { defaults })` sets app-wide prop defaults through provide/inject, read with `useVibeDefaults` / `resolveProp`. |
+| **Keyboard & ARIA** | APG keyboard patterns for tabs, sortable, and the date picker, with ARIA wiring and focus management verified in a real browser. |
 
 ## Components
 
@@ -156,7 +161,7 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | `VibeButton` | Button with variant, size, and outline styles | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/button.md) |
 | `VibeButtonGroup` | Horizontal or vertical button group | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/button-group.md) |
 | `VibeCloseButton` | Accessible dismiss button | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/close-button.md) |
-| `VibeIcon` | Bootstrap Icons wrapper with sizing and color | - |
+| `VibeIcon` | Bootstrap Icons wrapper with sizing and color | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/icon.md) |
 | `VibeLink` | Styled anchor with href validation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/link.md) |
 | `VibePlaceholder` | Animated loading placeholder | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/placeholder.md) |
 | `VibeSkeleton` | Multi-variant skeleton loading component | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/core/skeleton.md) |
@@ -206,10 +211,11 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | `VibeToast` | Toast notification component with v-model | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/toast.md) |
 | `VibeToastHost` | Toast container for `useToast()` service | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-toast.md) |
 
-### Tooltips & Popovers
+### Advanced
 
 | Component | Description | Docs |
 |-----------|-------------|------|
+| `VibeErrorBoundary` | Catches render and lifecycle errors in its subtree, renders a fallback slot, and reports to the event bus | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/error-boundary.md) |
 | `VibePopover` | Popover with title and text content | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/popover.md) |
 | `VibeTooltip` | Tooltip with hover/tap detection | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/tooltip.md) |
 
@@ -217,7 +223,7 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 
 | Component | Description | Docs |
 |-----------|-------------|------|
-| `VibeDataTable` | Sortable, searchable, paginated data table | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/data/datatable.md) |
+| `VibeDataTable` | Generic `<T>` table on the `@tanstack/vue-table` engine: multi-column sort, global and per-column filters with faceting, column visibility / pinning / resize / reorder, row expansion, grouping with aggregation, and pagination or row virtualization | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/data/datatable.md) |
 | `VibeProgress` | Progress bar with multi-bar and animated | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/progress/progress.md) |
 | `VibeChartBar` | Bar chart (stacked, grouped) | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/charts/chart-bar.md) |
 | `VibeChartLine` | Line chart with smooth curves and fill | [docs](https://github.com/velkymx/vibeui/blob/main/docs/components/charts/chart-line.md) |
@@ -242,6 +248,7 @@ Mount `<VibeToastHost />` once at app root, dispatch from any component.
 | `VibeFormTextarea` | Multi-line text input with character count | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-textarea.md) |
 | `VibeFormWysiwyg` | Rich-text editor (Quill) with DOMPurify sanitization | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-wysiwyg.md) |
 | `VibeInputGroup` | Input with prepend/append slots | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/input-group.md) |
+| `VibeFormErrorSummary` | Live error summary with links that move focus to each invalid field | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-error-summary.md) |
 
 Form validation rules and `useForm()` API: [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/validation.md)
 
@@ -252,10 +259,14 @@ Form validation rules and `useForm()` API: [docs](https://github.com/velkymx/vib
 | `useBackButton` | Android back button handler | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/back-button.md) |
 | `useBreakpoints` | Reactive Bootstrap breakpoint detection | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/breakpoints.md) |
 | `useColorMode` | Light/dark/auto mode with system detection | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/color-mode.md) |
+| `useDebouncedRef` | Debounced mirror of a reactive source | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/debounced-ref.md) |
+| `useEventBus` | Module-singleton pub/sub with command channels and typed `emit*`/`on*` helpers | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/event-bus.md) |
 | `useForm` | Form state, dirty detection, and validation | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-form.md) |
 | `useFormValidation` | Standalone validator runner with concurrency guard | [docs](https://github.com/velkymx/vibeui/blob/main/docs/forms/validation.md) |
+| `useId` | Stable SSR-safe unique ids | - |
 | `usePosition` | Popper-style positioning utility | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-position.md) |
 | `useToast` | Programmatic toast dispatch (success, error, etc.) | [docs](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-toast.md) |
+| `useVibeDefaults` / `resolveProp` | App-wide prop defaults from `app.use(VibeUI, { defaults })` | - |
 
 ## Directives
 
