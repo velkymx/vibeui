@@ -52,6 +52,6 @@ A new major of an upstream peer (Bootstrap 6, Quill 3, Vue 4) is adopted in a **
 
 ## Recommendations for long-lived projects
 
-- **Pin a version** (`"@velkymx/vibeui": "1.4.2"`) or a tilde range (`~1.4.0`) rather than a wide caret, and upgrade deliberately.
+- **Pin a version** (`"@velkymx/vibeui": "1.3.0"`) or a tilde range (`~1.3.0`) rather than a wide caret, and upgrade deliberately.
 - Read `CHANGELOG.md` before upgrading minors.
 - The full test suite ships with the source — if you ever need to fork and patch, you inherit the regression safety net (unit + real-browser tests).

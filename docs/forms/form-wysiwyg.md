@@ -4,7 +4,7 @@ Rich-text editor powered by Quill. HTML is sanitized with a consumer-provided sa
 
 ## Peer dependencies (consumer-injected)
 
-> **Changed in 2.0.** VibeUI no longer imports `quill` or `dompurify` itself — so the library's build contains **no** reference to them, and a project that never uses `VibeFormWysiwyg` gets no bundler warnings/errors even under warnings-as-errors. You provide the peers.
+> VibeUI does not import `quill` or `dompurify` itself, so the library build contains **no** reference to them: a project that never uses `VibeFormWysiwyg` gets no bundler warnings or errors even under warnings-as-errors. You provide the peers.
 
 Install the peers and import Quill's theme CSS in your own app:
 
@@ -50,15 +50,6 @@ What happens if you skip one:
 | `sanitizer` | The editor works, but the sanitizing pass is the identity function and `modelValue` HTML reaches Quill unsanitized. Quill's Delta conversion still applies its own allowlist, but you lose the defence-in-depth pass. DEV logs a `console.warn`. |
 
 `makeDomPurifySanitizer(DOMPurify)` builds a sanitizer bound to DOMPurify and VibeUI's `WYSIWYG_PURIFY_CONFIG` allowlist (both exported from the package). You can also pass any `(html: string) => string`.
-
-## Migration from 1.x
-
-1.x auto-imported `quill`, its snow CSS, and `dompurify`. In 2.0 you must:
-
-1. `import 'quill/dist/quill.snow.css'` in your app.
-2. Provide `quillLoader` (and, for sanitization, `sanitizer`) via `app.use(VibeUI, { wysiwyg: { … } })` or the `:quill-loader` / `:sanitizer` props.
-
-No other props or events changed.
 
 ## Props
 

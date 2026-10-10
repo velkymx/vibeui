@@ -4,9 +4,9 @@ A Vue 3 component library that wraps Bootstrap 5.3. Every Bootstrap component is
 
 **Package:** `@velkymx/vibeui`
 **Stack:** Vue 3 (Composition API) + Bootstrap 5.3 + TypeScript + Vite
-**Current version:** 1.2.0
+**Current version:** 1.3.0
 **Ships:** `dist/vibeui.es.js` (ESM) · `dist/vibeui.umd.js` (UMD/CDN) · `dist/vibeui.d.ts` · `dist/vibeui.css`
-**Externals:** Vue and Bootstrap are peer dependencies, never bundled. `@floating-ui/dom` is the one runtime dependency (used by `usePosition`).
+**Externals:** Vue and Bootstrap are peer dependencies, never bundled. Runtime dependencies: `@floating-ui/dom` (used by `usePosition`) and `@tanstack/vue-table` + `@tanstack/vue-virtual` (the `VibeDataTable` engine: sorting, filtering, grouping, and row virtualization).
 
 ---
 
@@ -100,9 +100,9 @@ what is non-obvious; the linked doc page (Documentation Index, bottom) is the AP
 **Interactive** (VibeUI owns the Bootstrap JS lifecycle — never construct it yourself):
 `VibeAccordion` · `VibeCarousel` (`:items`, `v-model` = active index) · `VibeCollapse` (v-model) · `VibeDropdown` (`:items`) · `VibeModal` (v-model, Teleport, size xl/fullscreen) · `VibeOffcanvas` (v-model, Teleport) · `VibeToast` (v-model) + `VibeToastHost` (hosts `useToast()` queue) · `VibeTabs` / `VibeTab` / `VibeTabContent` · `VibeStepper` (wizard w/ guards) · `VibeScrollspy`
 
-**Advanced:** `VibeTooltip` · `VibePopover` (both re-init reactively on prop change)
+**Advanced:** `VibeTooltip` · `VibePopover` (both re-init reactively on prop change) · `VibeErrorBoundary` (catches render/lifecycle errors in its subtree, renders a fallback slot, reports to the event bus)
 
-**Data & Charts:** `VibeDataTable` (generic `<T>`: sortable, searchable, paginated, `cell(<key>)` slots) · `VibeChartLine` / `VibeChartBar` / `VibeChartPie` (canvas, no Chart.js)
+**Data & Charts:** `VibeDataTable` (generic `<T>`, `@tanstack/vue-table` engine: multi-column sort, global and per-column filters with faceting, column visibility / pinning / resize / reorder, row expansion with a detail slot, grouping with aggregation and a footer row, pagination or row virtualization, `cell(<key>)` slots) · `VibeChartLine` / `VibeChartBar` / `VibeChartPie` (canvas, no Chart.js)
 
 **Progress:** `VibeProgress` (`:bars`)
 
@@ -110,9 +110,11 @@ what is non-obvious; the linked doc page (Documentation Index, bottom) is the AP
 
 **Forms:** `VibeFormGroup` (auto-links label/id/aria) · `VibeFormInput` · `VibeFormSelect` (`:options`, typed primitive values) · `VibeFormTextarea` · `VibeFormCheckbox` · `VibeFormRadio` · `VibeFormSwitch` · `VibeFormSpinbutton` · `VibeFormDatepicker` (native `<input type=date>`) · `VibeDatePicker` (custom calendar popover, range + keyboard nav) · `VibeAutocomplete` (sync or async source) · `VibeFileInput` (drag-drop, accept enforcement) · `VibeFormWysiwyg` (Quill 2.x; inject `quillLoader`+`sanitizer` via `app.use(VibeUI,{wysiwyg})` or props) · `VibeInputGroup` · `VibeFormErrorSummary`
 
-**Composables:** `useColorMode` · `useForm` · `useFormValidation` · `useToast` · `useBreakpoints` · `usePosition` · `useBackButton` · `useId`
+**Composables:** `useColorMode` · `useForm` · `useFormValidation` · `useToast` · `useBreakpoints` · `usePosition` · `useBackButton` · `useId` · `useDebouncedRef` · `useEventBus` (pub/sub plus command channels and typed `emit*`/`on*` helpers) · `useVibeDefaults` / `resolveProp` (app-wide prop defaults from `app.use(VibeUI, {...})`)
 
 **Directives:** `v-vibe-tooltip`
+
+**Event bus & defaults:** a module-singleton pub/sub (`useEventBus`, plus `emit*`/`on*` command-channel helpers for notifications, modals, theme, offcanvas, layout, and navigation, and `error:component` / `error:unhandled` channels) and provide/inject global defaults (`app.use(VibeUI, { defaults, wysiwyg, errorHandler })`, read with `useVibeDefaults` / `resolveProp`). `VibeErrorBoundary` and the opt-in `installErrorHandler` route errors into the bus.
 
 ---
 
@@ -133,7 +135,7 @@ import {
   VibeTabs, VibeTab, VibeStepper,
   VibeSortable, VibeDraggable, VibeDroppable,
   VibeResizable, VibeSlider,
-  VibeToast, VibeToastHost,
+  VibeToast, VibeToastHost, VibeErrorBoundary,
   VibeChartLine, VibeChartBar, VibeChartPie
   /* ... */
 } from '@velkymx/vibeui'
@@ -141,8 +143,10 @@ import {
 // Composables
 import {
   useColorMode, useFormValidation, validators,
-  useId, useBreakpoints, useBackButton,
-  useForm, useToast, usePosition, resetToastStoreForSSR
+  useId, useBreakpoints, useBackButton, useDebouncedRef,
+  useForm, useToast, usePosition, resetToastStoreForSSR,
+  useEventBus, resetEventBusForSSR,
+  useVibeDefaults, resolveProp, installErrorHandler
 } from '@velkymx/vibeui'
 
 // Directives (also registered globally by app.use(VibeUI))
@@ -650,7 +654,7 @@ These pages ship inside the npm package under `docs/`, so you can read them stra
 
 **Interactive:** [VibeAccordion](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/accordion.md) · [VibeCarousel](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/carousel.md) · [VibeCollapse](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/collapse.md) · [VibeDatePicker](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/date-picker.md) · [VibeDraggable / VibeDroppable](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/draggable.md) · [VibeDropdown](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/dropdown.md) · [VibeModal](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/modal.md) · [VibeOffcanvas](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/offcanvas.md) · [VibeResizable](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/resizable.md) · [VibeSlider](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/slider.md) · [VibeSortable](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/sortable.md) · [VibeStepper](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/stepper.md) · [VibeTabs / VibeTab](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/tabs.md) · [VibeToast](https://github.com/velkymx/vibeui/blob/main/docs/components/interactive/toast.md)
 
-**Advanced:** [VibePopover](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/popover.md) · [VibeScrollspy](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/scrollspy.md) · [VibeTooltip](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/tooltip.md)
+**Advanced:** [VibeErrorBoundary](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/error-boundary.md) · [VibePopover](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/popover.md) · [VibeScrollspy](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/scrollspy.md) · [VibeTooltip](https://github.com/velkymx/vibeui/blob/main/docs/components/advanced/tooltip.md)
 
 **Data & Charts:** [VibeDataTable](https://github.com/velkymx/vibeui/blob/main/docs/components/data/datatable.md) · [VibeChartBar](https://github.com/velkymx/vibeui/blob/main/docs/components/charts/chart-bar.md) · [VibeChartLine](https://github.com/velkymx/vibeui/blob/main/docs/components/charts/chart-line.md) · [VibeChartPie](https://github.com/velkymx/vibeui/blob/main/docs/components/charts/chart-pie.md)
 
@@ -658,7 +662,7 @@ These pages ship inside the npm package under `docs/`, so you can read them stra
 
 **Forms:** [overview](https://github.com/velkymx/vibeui/blob/main/docs/forms/README.md) · [VibeAutocomplete](https://github.com/velkymx/vibeui/blob/main/docs/forms/autocomplete.md) · [VibeFileInput](https://github.com/velkymx/vibeui/blob/main/docs/forms/file-input.md) · [VibeFormCheckbox](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-checkbox.md) · [VibeFormDatepicker](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-datepicker.md) · [VibeFormErrorSummary](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-error-summary.md) · [VibeFormGroup](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-group.md) · [VibeFormInput](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-input.md) · [VibeFormRadio](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-radio.md) · [VibeFormSelect](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-select.md) · [VibeFormSpinbutton](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-spinbutton.md) · [VibeFormSwitch](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-switch.md) · [VibeFormTextarea](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-textarea.md) · [VibeFormWysiwyg](https://github.com/velkymx/vibeui/blob/main/docs/forms/form-wysiwyg.md) · [VibeInputGroup](https://github.com/velkymx/vibeui/blob/main/docs/forms/input-group.md) · [Validation & useForm](https://github.com/velkymx/vibeui/blob/main/docs/forms/validation.md)
 
-**Composables:** [useBackButton](https://github.com/velkymx/vibeui/blob/main/docs/composables/back-button.md) · [useBreakpoints](https://github.com/velkymx/vibeui/blob/main/docs/composables/breakpoints.md) · [useColorMode](https://github.com/velkymx/vibeui/blob/main/docs/composables/color-mode.md) · [useForm](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-form.md) · [usePosition](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-position.md) · [useToast](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-toast.md)
+**Composables:** [useBackButton](https://github.com/velkymx/vibeui/blob/main/docs/composables/back-button.md) · [useBreakpoints](https://github.com/velkymx/vibeui/blob/main/docs/composables/breakpoints.md) · [useColorMode](https://github.com/velkymx/vibeui/blob/main/docs/composables/color-mode.md) · [useDebouncedRef](https://github.com/velkymx/vibeui/blob/main/docs/composables/debounced-ref.md) · [useEventBus](https://github.com/velkymx/vibeui/blob/main/docs/composables/event-bus.md) · [event bus cookbook](https://github.com/velkymx/vibeui/blob/main/docs/composables/event-bus-cookbook.md) · [useForm](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-form.md) · [usePosition](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-position.md) · [useToast](https://github.com/velkymx/vibeui/blob/main/docs/composables/use-toast.md)
 
 **Directives:** [v-vibe-tooltip](https://github.com/velkymx/vibeui/blob/main/docs/directives/v-tooltip.md)
 
