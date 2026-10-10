@@ -34,7 +34,7 @@ a human: an automated harness cannot read what a screen reader speaks.
 | # | Flow | Steps | Expected | Result |
 |---|------|-------|----------|--------|
 | 8 | Tab panel wiring | With screen reader on, arrow across tabs | Tab announces its panel (`aria-controls`/`aria-labelledby`); only the active `role="tabpanel"` is exposed, inactive panels hidden | Not run |
-| 9 | DatePicker focus return (`VibeDatePicker.vue`) | Open calendar from trigger, pick a date with arrows plus Enter, then open and press Escape | Focus returns to the trigger input on close; disabled days are skipped, never focused | Fail, filed #299 (grid not keyboard-reachable from the trigger; focus stays on the input, Escape does not close) |
+| 9 | DatePicker focus return (`VibeDatePicker.vue`) | Open calendar from trigger, pick a date with arrows plus Enter, then open and press Escape | Focus returns to the trigger input on close; disabled days are skipped, never focused | Pass (automated); keyboard open and Escape-close fixed under #299 |
 | 10 | Accordion live state (`VibeAccordion.vue`) | With screen reader on, expand and collapse a panel | Header button announces expanded/collapsed immediately (`aria-expanded` flips on the Bootstrap show/hide events, seeded pre-JS) | Not run |
 | 11 | Droppable affordance | Arm a drag (pointer or Space), move over dropzones | Eligible dropzone exposes its affordance; foreign or wrong-group drags get none | Not run |
 
@@ -48,9 +48,9 @@ a human: an automated harness cannot read what a screen reader speaks.
 
 ## Recording
 
-- Tool(s) used: keyboard-only automated (Playwright/Chromium) for rows 3, 4, 6; screen-reader run still pending.
+- Tool(s) used: keyboard-only automated (Playwright/Chromium) for rows 3, 4, 6, 9; screen-reader run still pending.
 - Date plus tester: 2026-10-09, automated pass (`tests/browser/keyboard-a11y.browser.test.ts`).
-- Failures filed: #299 (row 9, DatePicker keyboard reachability).
+- Failures filed: #299 (row 9, DatePicker keyboard reachability); fixed, row 9 now passes.
 - Still pending: screen-reader rows (8, 10, 12, 13, 14), plus keyboard rows not yet automated (1, 2, 5, 7, 11, 15 to 19).
 
 ## DataTable advanced flows (#283 Tier 2)

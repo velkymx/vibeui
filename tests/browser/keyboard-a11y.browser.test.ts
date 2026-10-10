@@ -6,7 +6,7 @@ import VibeTabs from '../../src/components/VibeTabs.vue'
 import VibeTab from '../../src/components/VibeTab.vue'
 import VibeSortable from '../../src/components/VibeSortable.vue'
 import VibeDatePicker from '../../src/components/VibeDatePicker.vue'
-import { waitForSelector } from './helpers'
+import { waitForSelector, waitForGone } from './helpers'
 
 // #272 keyboard-only AT pass, automated in a real browser (Playwright/Chromium).
 // happy-dom unit tests assert tabindex attributes and activeElement, but focus
@@ -120,23 +120,42 @@ describe('VibeSortable keyboard reorder (#234 run-book 3/4)', () => {
   })
 })
 
-describe('VibeDatePicker keyboard reachability (#272 run-book 9)', () => {
-  // KNOWN GAP, filed as #299 (WCAG 2.1.1 / 2.4.3): opening the calendar leaves
-  // focus on the trigger input, and the grid keydown handler lives on the popover
-  // (a sibling of the input), so a keyboard-only user cannot navigate days or
-  // Escape-close from the input. This test PINS the current broken behavior so the
-  // regression is tracked; flip both asserts to the fixed expectation under #299
-  // (focus moves into the grid on open, Escape closes and returns focus to input).
-  test('[pinned #299] opening the calendar leaves focus on the input, not in the grid', async () => {
+describe('VibeDatePicker keyboard reachability (#272 run-book 9, #299)', () => {
+  // #299 (WCAG 2.1.1 / 2.4.3): the calendar must be fully operable from the
+  // keyboard. Opening from the trigger moves focus into the grid so arrows reach
+  // the days, and Escape closes the calendar and returns focus to the trigger.
+  test('keyboard open focuses the selected day in the grid', async () => {
     const screen = render(VibeDatePicker, { props: { modelValue: '2025-04-15' } })
     const input = screen.getByRole('textbox').element() as HTMLInputElement
 
-    await userEvent.click(input)
+    // Keyboard-only open: focus the trigger, press ArrowDown (no pointer).
+    input.focus()
+    await userEvent.keyboard('{ArrowDown}')
     const popover = await waitForSelector('.vibe-datepicker-popover')
 
-    // Current behavior: focus is still the input and is NOT inside the grid.
+    // Focus lands inside the grid, on the selected day, so arrows can navigate.
+    expect(popover.contains(document.activeElement)).toBe(true)
+    expect((document.activeElement as HTMLElement).getAttribute('data-iso')).toBe('2025-04-15')
+    focusNotStranded()
+  })
+
+  test('ArrowRight moves the focused day and Escape closes returning focus to the input', async () => {
+    const screen = render(VibeDatePicker, { props: { modelValue: '2025-04-15' } })
+    const input = screen.getByRole('textbox').element() as HTMLInputElement
+
+    input.focus()
+    await userEvent.keyboard('{ArrowDown}')
+    const popover = await waitForSelector('.vibe-datepicker-popover')
+
+    // Arrow navigation moves the focused day within the grid.
+    await userEvent.keyboard('{ArrowRight}')
+    expect((document.activeElement as HTMLElement).getAttribute('data-iso')).toBe('2025-04-16')
+    expect(popover.contains(document.activeElement)).toBe(true)
+
+    // Escape closes and returns focus to the trigger (not stranded on body).
+    await userEvent.keyboard('{Escape}')
+    await waitForGone('.vibe-datepicker-popover')
     expect(document.activeElement).toBe(input)
-    expect(popover.contains(document.activeElement)).toBe(false)
     focusNotStranded()
   })
 })
