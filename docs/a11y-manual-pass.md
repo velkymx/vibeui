@@ -11,16 +11,22 @@ Setup: `npm run build`, serve `examples/`, open the matching example page.
 No pointer during the keyboard run. Focus must stay visible and never strand
 on `body`.
 
+Automated coverage: the keyboard-only halves of several flows now run in a real
+browser (Playwright/Chromium) in `tests/browser/keyboard-a11y.browser.test.ts`,
+driving real key events and asserting `document.activeElement`. Rows marked
+"Pass (automated)" are covered there. Screen-reader announcement rows still need
+a human: an automated harness cannot read what a screen reader speaks.
+
 ## Flows from #234 (keyboard paths)
 
 | # | Flow | Steps (keyboard only) | Expected | Result |
 |---|------|----------------------|----------|--------|
 | 1 | FileInput dropzone (`VibeFileInput.vue`, `dragDrop`) | Tab to dropzone, press Enter, then re-focus and press Space | `role="button"`, `tabindex="0"`; both keys open the file browser; `aria-label` names the action | Not run |
 | 2 | FileInput dropzone disabled | Tab through with a disabled dropzone on the page | Dropzone skipped (`tabindex` unset), `aria-disabled` present | Not run |
-| 3 | Sortable grab plus arrows (`VibeSortable.vue`) | Tab to a row, press Space to grab, ArrowDown twice, Space to drop | `aria-grabbed` flips on grab/drop; row order changes; focus follows the moved row | Not run |
-| 4 | Sortable cancel | Grab a row, move once, press Escape | Order reverts, grab released | Not run |
+| 3 | Sortable grab plus arrows (`VibeSortable.vue`) | Tab to a row, press Space to grab, ArrowDown twice, Space to drop | `aria-grabbed` flips on grab/drop; row order changes; focus follows the moved row | Pass (automated) |
+| 4 | Sortable cancel | Grab a row, move once, press Escape | Order reverts, grab released | Pass (automated) |
 | 5 | Draggable arm plus Droppable Enter-drop | Tab to draggable, Space to arm, Tab to dropzone, Enter | `drop` fires on same-group Enter; armed state announced via control label; Escape disarms with no drop | Not run |
-| 6 | Tabs roving tabindex (`VibeTabs.vue`) | Tab into strip, ArrowRight/ArrowLeft, Home, End | Exactly one tab at `tabindex="0"`; arrows move and activate with focus; disabled tabs skipped | Not run |
+| 6 | Tabs roving tabindex (`VibeTabs.vue`) | Tab into strip, ArrowRight/ArrowLeft, Home, End | Exactly one tab at `tabindex="0"`; arrows move and activate with focus; disabled tabs skipped | Pass (automated) |
 | 7 | Tabs vertical orientation | Same as 6 on a vertical tab strip | ArrowUp/ArrowDown move instead of Left/Right | Not run |
 
 ## Flows from #235 (ARIA wiring and focus)
@@ -28,7 +34,7 @@ on `body`.
 | # | Flow | Steps | Expected | Result |
 |---|------|-------|----------|--------|
 | 8 | Tab panel wiring | With screen reader on, arrow across tabs | Tab announces its panel (`aria-controls`/`aria-labelledby`); only the active `role="tabpanel"` is exposed, inactive panels hidden | Not run |
-| 9 | DatePicker focus return (`VibeDatePicker.vue`) | Open calendar from trigger, pick a date with arrows plus Enter, then open and press Escape | Focus returns to the trigger input on close; disabled days are skipped, never focused | Not run |
+| 9 | DatePicker focus return (`VibeDatePicker.vue`) | Open calendar from trigger, pick a date with arrows plus Enter, then open and press Escape | Focus returns to the trigger input on close; disabled days are skipped, never focused | Fail, filed #299 (grid not keyboard-reachable from the trigger; focus stays on the input, Escape does not close) |
 | 10 | Accordion live state (`VibeAccordion.vue`) | With screen reader on, expand and collapse a panel | Header button announces expanded/collapsed immediately (`aria-expanded` flips on the Bootstrap show/hide events, seeded pre-JS) | Not run |
 | 11 | Droppable affordance | Arm a drag (pointer or Space), move over dropzones | Eligible dropzone exposes its affordance; foreign or wrong-group drags get none | Not run |
 
@@ -42,9 +48,10 @@ on `body`.
 
 ## Recording
 
-- Tool(s) used: (fill in: keyboard only plus NVDA/VoiceOver/Orca plus browser)
-- Date plus tester: (fill in)
-- Failures filed: (list issue numbers or "none")
+- Tool(s) used: keyboard-only automated (Playwright/Chromium) for rows 3, 4, 6; screen-reader run still pending.
+- Date plus tester: 2026-10-09, automated pass (`tests/browser/keyboard-a11y.browser.test.ts`).
+- Failures filed: #299 (row 9, DatePicker keyboard reachability).
+- Still pending: screen-reader rows (8, 10, 12, 13, 14), plus keyboard rows not yet automated (1, 2, 5, 7, 11, 15 to 19).
 
 ## DataTable advanced flows (#283 Tier 2)
 
