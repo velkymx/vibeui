@@ -72,8 +72,10 @@ Two tiers, one engine. The simple props (`items`, `columns`, `searchable`, `sort
 | `selectedRows` | `(String \| Number)[]` | `[]` | Two-way: keys (rowKey values) of the selected rows |
 | `multiSort` | `Boolean` | `false` | Multi-column sort. Shift-click appends; state lives in the `sort` model (`sortBy`/`sortDesc` mirror the first entry) |
 | `sort` | `{ id, desc }[]` | `[]` | Two-way: ordered multi-sort state |
+| `columnFilters` | `{ id, value }[]` | `[]` | Two-way: per-column filter state. Pairs with column `filter: 'text' \| 'select' \| 'range'` |
 | `showColumnToggle` | `Boolean` | `false` | Column-visibility chooser (dropdown of checkboxes) |
 | `columnVisibility` | `Record<String, Boolean>` | `{}` | Two-way: `{ key: false }` hides a column |
+| `columnSizing` | `Record<String, Number>` | `{}` | Two-way: per-column width in px. Driven by `resizable` handles; read or set it programmatically |
 | `columnOrder` | `String[]` | `[]` | Two-way: column id order. Unknown ids are ignored; unlisted columns keep props order. Programmatic moves via the exposed `moveColumn(key, toIndex)` template-ref method |
 | `expandable` | `Boolean` | `false` | Row expansion toggle column. Per-row opt-out via `expandableRow`, children via `subRowsKey`, state in `expandedRows` |
 | `expandableRow` | `(item) => Boolean` | `undefined` | Predicate; rows failing it render no toggle (default: every row) |
@@ -90,7 +92,7 @@ Two tiers, one engine. The simple props (`items`, `columns`, `searchable`, `sort
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `searchPlaceholder` | `String` | `'Search...'` | Search input placeholder |
-| `searchDebounce` | `Number` | `300` | Search debounce delay (ms) |
+| `searchDebounce` | `Number` | `undefined` | Search debounce delay (ms). Unset falls back to the global `debounce` default, then `300` |
 
 ### Pagination Props
 
@@ -173,6 +175,7 @@ const columns = [
 | `update:selectedRows` | `(String \| Number)[]` | Selection changes |
 | `update:columnFilters` | `{ id, value }[]` | Per-column filter changes |
 | `update:columnVisibility` | `Record<String, Boolean>` | Visibility changes (chooser or model) |
+| `update:columnOrder` | `String[]` | Column reorder changes (chooser drag or `moveColumn`) |
 | `update:columnSizing` | `Record<String, Number>` | Resize changes (px per column) |
 | `update:expandedRows` | `(String \| Number)[]` | Expansion changes (rows and groups) |
 | `row-selected` | `(item, selected)` | Emitted when a row's selection flips |
