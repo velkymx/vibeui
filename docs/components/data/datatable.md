@@ -141,7 +141,7 @@ interface DataTableColumn {
   align?: 'start' | 'center' | 'end'    // Text alignment (Bootstrap text-* utility)
   width?: string | number       // Column width (number = px; string = any safe CSS length)
   pinned?: 'start' | 'end'      // Sticky edge column (offsets from the engine)
-  resizable?: boolean            // Resize handle (drag plus arrow keys; state in columnSizing)
+  resizable?: boolean            // Resize handle (drag, or arrow keys: 10px/step, 50px with Shift; state in columnSizing)
   aggregate?: 'sum' | 'mean' | 'min' | 'max' | 'count' | ((values: unknown[]) => unknown)
                                 // Group-row aggregation for this column
   footer?: string               // Footer cell text (overridden by the footer(key) slot)
@@ -179,7 +179,7 @@ const columns = [
 | `update:columnSizing` | `Record<String, Number>` | Resize changes (px per column) |
 | `update:expandedRows` | `(String \| Number)[]` | Expansion changes (rows and groups) |
 | `row-selected` | `(item, selected)` | Emitted when a row's selection flips |
-| `row-clicked` | `(item, globalIndex)` | Emitted when a row is clicked. `globalIndex` is the index within the full filtered/sorted dataset, not the current page. Only emitted when a `@row-clicked` listener is attached (rows show a pointer cursor in that case). |
+| `row-clicked` | `(item, globalIndex)` | Emitted on every row click. `globalIndex` is the index within the full filtered/sorted dataset, not the current page. Set the `clickable` prop to show the pointer cursor that signals rows are interactive. |
 | `search` | `String` | Emitted (debounced) with the search query. Use it in `serverMode` to fetch the matching page. |
 | `component-error` | `ComponentError` | Emitted if an internal error occurs |
 
