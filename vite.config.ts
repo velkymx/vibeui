@@ -5,7 +5,14 @@ import dts from 'vite-plugin-dts'
 import { playwright } from '@vitest/browser-playwright'
 import path from 'path'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Bundled deps (e.g. @tanstack/table-core) read process.env.NODE_ENV at
+  // runtime; replace it for the library build (`vite build`) only so the ESM/UMD
+  // bundles run in a plain browser (no bundler) without a `process` shim. Scoped
+  // to build so it never alters the Vitest config.
+  ...(command === 'build'
+    ? { define: { 'process.env.NODE_ENV': JSON.stringify('production') } }
+    : {}),
   plugins: [
     vue(),
     dts({
@@ -93,5 +100,5 @@ export default defineConfig({
       }
     ]
   }
-})
+}))
 
