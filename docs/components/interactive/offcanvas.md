@@ -12,6 +12,7 @@ Hidden sidebar for navigation or additional content.
 | `placement` | `OffcanvasPlacement` | `'start'` | Placement: `'start'`, `'end'`, `'top'`, `'bottom'` |
 | `backdrop` | `Boolean\|String` | `true` | Backdrop: `true`, `false`, or `'static'` |
 | `scroll` | `Boolean` | `false` | Allow body scrolling |
+| `sidebar` | `Boolean` | `false` | Mark this offcanvas as the app sidebar, so it answers the `layout:sidebar-toggle` bus command and emits `layout:sidebar-toggled` |
 | `teleport` | `Boolean\|String` | `'body'` | Destination for Vue Teleport |
 
 ## Events

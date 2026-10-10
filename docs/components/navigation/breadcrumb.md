@@ -7,7 +7,8 @@ Data-driven breadcrumb navigation to indicate the current page's location within
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `ariaLabel` | `String` | `'breadcrumb'` | ARIA label for navigation |
-| `items` | `BreadcrumbItem[]` | Required | Array of breadcrumb items |
+| `items` | `BreadcrumbItem[]` | `[]` | Array of breadcrumb items. Explicit items always win; omit them to drive the trail from the bus (see `busUpdates`) |
+| `busUpdates` | `Boolean` | `false` | Render the trail published on the bus `nav:breadcrumb-updated` channel when no explicit `items` are set |
 | `showEmpty` | `Boolean` | `false` | Show `emptyText` row when the trail is empty (empty trails render nothing by default) |
 | `emptyText` | `String` | `'…'` | Empty state message |
 
