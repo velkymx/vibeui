@@ -39,8 +39,8 @@ For multi-field forms, that destructure pattern multiplied per field becomes noi
 | `isDirty` | `ComputedRef<boolean>` | True if any field differs from initial. |
 | `isValid` | `ComputedRef<boolean>` | `false` until the first `validate()` or `validateField()` call; then `true` if no field has an error. |
 | `values` | `ComputedRef<T>` | Snapshot of current field values. |
-| `validate(rules)` | `(rules) => Promise<{ valid, errors }>` | Run rules; populates `errors` map. |
-| `validateField(key, rule)` | `(key, rule) => Promise<string>` | Run rules for one field. |
+| `validate(rules?)` | `(rules?) => Promise<{ valid, errors }>` | Run rules; populates `errors` map. Rules are optional when supplied to `useForm(initial, rules)`. |
+| `validateField(key, rule?)` | `(key, rule?) => Promise<string>` | Run rules for one field; falls back to the constructor rule for that field. |
 | `reset()` | `() => void` | Restore initial values, clear errors/touched. |
 | `markTouched(key)` | `(key) => void` | Mark single field touched. |
 | `markAllTouched()` | `() => void` | Mark every field touched (use on submit). |
@@ -48,13 +48,27 @@ For multi-field forms, that destructure pattern multiplied per field becomes noi
 
 ## Validation rules
 
-`validate(rules)` accepts a record mapping field keys to either a `ValidatorFunction` or a `ValidationRule[]` array. Reuse the built-in validators or pass arbitrary functions.
+Rules map field keys to either a `ValidatorFunction` or a `ValidationRule[]` array. Reuse the built-in validators or pass arbitrary functions. Supply them once in the constructor (recommended) so you do not repeat them on every `validate()` call:
+
+```ts
+const { fields, errors, validate } = useForm(
+  { email: '', age: 0, bio: '' },
+  {
+    email: [validators.required(), validators.email()],
+    age:   [validators.min(18, 'Must be 18+')],
+    bio:   (value) => typeof value === 'string' && value.length <= 500,
+  },
+)
+
+// Uses the constructor rules.
+const result = await validate()
+```
+
+You can still pass rules per call (which overrides the constructor rules for that call), or omit the constructor rules entirely and pass them to `validate(rules)`:
 
 ```ts
 const result = await validate({
   email: [validators.required(), validators.email()],
-  age:   [validators.min(18, 'Must be 18+')],
-  bio:   (value) => typeof value === 'string' && value.length <= 500
 })
 ```
 

@@ -167,4 +167,62 @@ describe('VibeDroppable', () => {
     expect(wrapper.find('.idle').exists()).toBe(true)
     clearActiveDrag()
   })
+
+  // #234 K2: the source is keyboard-armable (Space grabs into the same store
+  // the pointer path uses, Escape cancels), so keyboard users can operate it.
+  describe('keyboard arm (#234)', () => {
+    it('is focusable with grab state', () => {
+      const wrapper = mount(VibeDraggable, { slots: { default: 'item' } })
+      expect(wrapper.attributes('tabindex')).toBe('0')
+      expect(wrapper.attributes('aria-grabbed')).toBe('false')
+      wrapper.unmount()
+    })
+
+    it('Space arms the store drag, Escape disarms', async () => {
+      const wrapper = mount(VibeDraggable, {
+        props: { payload: { id: 1 } },
+        slots: { default: 'item' },
+        attachTo: document.body
+      })
+      await wrapper.trigger('keydown', { key: ' ' })
+      expect(wrapper.attributes('aria-grabbed')).toBe('true')
+      const { getActiveDrag } = await import('../../src/components/dndStore')
+      expect(getActiveDrag()).toMatchObject({ group: 'default' })
+      await wrapper.trigger('keydown', { key: 'Escape' })
+      expect(wrapper.attributes('aria-grabbed')).toBe('false')
+      expect(getActiveDrag()).toBeNull()
+      wrapper.unmount()
+    })
+
+    it('disabled source is not focusable and ignores keys', async () => {
+      const wrapper = mount(VibeDraggable, {
+        props: { disabled: true, payload: { id: 1 } },
+        slots: { default: 'item' }
+      })
+      expect(wrapper.attributes('tabindex')).toBeUndefined()
+      await wrapper.trigger('keydown', { key: ' ' })
+      const { getActiveDrag } = await import('../../src/components/dndStore')
+      expect(getActiveDrag()).toBeNull()
+      wrapper.unmount()
+    })
+
+    // #234 K2: Space on the source plus Enter on the target commits through
+    // the same store and drop emit as a pointer drag.
+    it('arms on Space and commits on target Enter', async () => {
+      const source = mount(VibeDraggable, {
+        props: { payload: { id: 7 } },
+        slots: { default: 'item' }
+      })
+      const target = mount(VibeDroppable)
+      await source.trigger('keydown', { key: ' ' })
+      await target.find('.vibe-droppable').trigger('keydown', { key: 'Enter' })
+      const emitted = target.emitted('drop') as unknown[][] | undefined
+      expect(emitted).toBeDefined()
+      expect(emitted![0][0]).toMatchObject({ payload: { id: 7 }, group: 'default' })
+      source.unmount()
+      target.unmount()
+      const { getActiveDrag } = await import('../../src/components/dndStore')
+      expect(getActiveDrag()).toBeNull()
+    })
+  })
 })

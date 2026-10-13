@@ -120,4 +120,55 @@ describe('VibeCarousel', () => {
 
     expect(bootstrap.Carousel).not.toHaveBeenCalled()
   })
+
+  // #196: zero slides render a placeholder and no interactive controls.
+  describe('empty state (#196)', () => {
+    it('renders the placeholder and hides indicators plus controls', () => {
+      const wrapper = mount(VibeCarousel, { props: { items: [] } })
+      expect(wrapper.find('.carousel-inner').text()).toContain('No slides')
+      expect(wrapper.find('.carousel-indicators').exists()).toBe(false)
+      expect(wrapper.find('.carousel-control-prev').exists()).toBe(false)
+      expect(wrapper.find('.carousel-control-next').exists()).toBe(false)
+    })
+
+    it('supports custom emptyText and showEmpty=false', () => {
+      const custom = mount(VibeCarousel, { props: { items: [], emptyText: 'Nothing to show' } })
+      expect(custom.find('.carousel-inner').text()).toContain('Nothing to show')
+      const off = mount(VibeCarousel, { props: { items: [], showEmpty: false } })
+      expect(off.find('.carousel-inner').text()).not.toContain('No slides')
+    })
+  })
+
+  // #223: items replaced while the initial import is in flight must end on
+  // the NEW items (queued re-init), and items emptied mid-flight must never
+  // hand Bootstrap an empty inner.
+  describe('init race (#223)', () => {
+    it('items replaced mid-import end on the new items', async () => {
+      const wrapper = mount(VibeCarousel, {
+        props: { id: 'race-carousel', items: [{ src: 'a.jpg' }] }
+      })
+      // No flush: the initial import is still in flight here.
+      await wrapper.setProps({ items: [{ src: 'b.jpg' }, { src: 'c.jpg' }] })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      const indicators = wrapper.findAll('.carousel-indicators button')
+      expect(indicators).toHaveLength(2)
+      const imgs = wrapper.findAll('.carousel-item img')
+      expect(imgs.map((i) => i.attributes('src'))).toEqual(['b.jpg', 'c.jpg'])
+      wrapper.unmount()
+    })
+
+    it('items emptied mid-import construct no instance', async () => {
+      const wrapper = mount(VibeCarousel, {
+        props: { id: 'empty-race-carousel', items: [{ src: 'a.jpg' }] }
+      })
+      await wrapper.setProps({ items: [] })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
+      expect(vi.mocked(bootstrap.Carousel)).not.toHaveBeenCalled()
+      wrapper.unmount()
+    })
+  })
 })

@@ -247,4 +247,29 @@ describe('useForm', () => {
       expect(form.isDirty.value).toBe(false)
     })
   })
+
+  // #198: dirty tracking must not deep-watch the whole form. Editing one field
+  // serializes only that field (plus the one-time setup snapshots).
+  describe('dirty tracking cost (#198)', () => {
+    it('serializes only the edited field on a single-field edit', async () => {
+      const form = useForm({ a: 'x', b: 'y', c: 'z' })
+      await nextTick()
+      expect(form.isDirty.value).toBe(false)
+
+      const rawStringify = JSON.stringify
+      let calls = 0
+      JSON.stringify = ((...args: unknown[]) => {
+        calls += 1
+        return (rawStringify as (...a: never[]) => string)(...args as never[])
+      }) as typeof JSON.stringify
+      try {
+        form.setField('b', 'changed')
+        await nextTick()
+      } finally {
+        JSON.stringify = rawStringify
+      }
+      expect(form.isDirty.value).toBe(true)
+      expect(calls).toBe(1)
+    })
+  })
 })

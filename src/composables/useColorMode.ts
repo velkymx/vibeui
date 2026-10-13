@@ -1,5 +1,6 @@
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { ColorMode } from '../types'
+import { emitEvent, onPersistent, registerSSRReset } from './useEventBus'
 
 const STORAGE_KEY = 'vibe-color-mode'
 
@@ -26,6 +27,17 @@ function getSystemTheme(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
+// Reactive OS theme, kept in sync on attach and on media-query changes.
+const systemTheme = ref<'light' | 'dark'>(getSystemTheme())
+
+/**
+ * The theme the page actually renders: the explicit `colorMode` when it is
+ * `'light'`/`'dark'`, or the OS `prefers-color-scheme` when `'auto'`. Reactive.
+ */
+const resolvedMode = computed<'light' | 'dark'>(() =>
+  colorMode.value === 'auto' ? systemTheme.value : colorMode.value
+)
+
 function applyColorMode(mode: ColorMode) {
   if (typeof document === 'undefined') return
   const activeMode = mode === 'auto' ? getSystemTheme() : mode
@@ -47,6 +59,7 @@ try {
 } catch { /* ignore SSR / private browsing */ }
 
 const onSystemThemeChange = () => {
+  systemTheme.value = getSystemTheme()
   if (colorMode.value === 'auto') {
     applyColorMode('auto')
     callbacks.forEach(cb => cb('auto'))
@@ -58,6 +71,7 @@ let systemThemeMq: MediaQueryList | null = null
 function attachSystemListener() {
   if (typeof window === 'undefined') return
   systemThemeMq = window.matchMedia('(prefers-color-scheme: dark)')
+  systemTheme.value = getSystemTheme()
   systemThemeMq.addEventListener('change', onSystemThemeChange)
 }
 
@@ -66,12 +80,38 @@ function detachSystemListener() {
   systemThemeMq = null
 }
 
-// Bug 1 fix: gate module-level side effects behind window check for SSR safety
-if (typeof window !== 'undefined') {
+/**
+ * #132: eager color-mode initialization. Applies the persisted/initial theme to
+ * `<html data-bs-theme>` and attaches the OS theme listener. The VibeUI plugin
+ * `install()` calls this, so it still runs during `app.use()` before mount
+ * (preventing a flash) while a bare import of this module stays free of DOM side
+ * effects. Idempotent, and a no-op during SSR. Consumers who use `useColorMode`
+ * without installing the plugin should call `initColorMode()` themselves.
+ */
+export function initColorModeEager(): void {
+  if (typeof window === 'undefined' || initialized) return
   applyAndUpdate(_initial)
   attachSystemListener()
   initialized = true
 }
+
+// Event-bus theme channel (#99). Publish theme:changed whenever the resolved
+// light/dark theme flips (mode change or OS change in auto mode), and accept
+// theme:set to change the mode from anywhere. Wired once at module load, outside
+// any component scope, so it lives for the app's lifetime.
+function setModeAndPersist(mode: ColorMode) {
+  try {
+    localStorage.setItem(STORAGE_KEY, mode)
+  } catch {
+    // localStorage may be unavailable (SSR / private browsing)
+  }
+  applyAndUpdate(mode)
+}
+// flush: 'sync' so the bus event fires the instant the theme flips, matching
+// pub/sub expectations rather than deferring to the next tick.
+watch(resolvedMode, (theme) => emitEvent('theme:changed', { theme }), { flush: 'sync' })
+// Persistent so the theme:set handler survives an SSR reset.
+onPersistent('theme:set', ({ theme }) => setModeAndPersist(theme))
 
 export function useColorMode() {
   function setColorMode(mode: ColorMode) {
@@ -138,6 +178,7 @@ export function useColorMode() {
 
   return {
     colorMode,
+    resolvedMode,
     setColorMode,
     toggleColorMode,
     initColorMode,
@@ -145,6 +186,20 @@ export function useColorMode() {
     onColorModeChange
   }
 }
+
+/**
+ * Request boundary: restore per-request theme isolation (SSR). Resets exactly
+ * the mutable mode, the init latch, and pending callbacks; the module watch
+ * and the persistent `theme:set` handler are process-wide on purpose. Runs as
+ * part of `resetEventBusForSSR`, so one call covers bus, channels, and theme.
+ */
+export function resetColorModeForSSR(): void {
+  initialized = false
+  callbacks.length = 0
+  colorMode.value = 'auto'
+}
+
+registerSSRReset(resetColorModeForSSR)
 
 /**
  * For testing only — not re-exported from the package index.

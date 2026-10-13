@@ -14,6 +14,7 @@ Single-line text input supporting all standard HTML input types, with built-in v
 | `disabled` | `boolean` | `false` | Disable the input. |
 | `readonly` | `boolean` | `false` | Make the input read-only. |
 | `required` | `boolean` | `false` | Mark as required (renders a `*` next to a standalone label). |
+| `hideOptional` | `boolean` | `false` | Suppress the "(optional)" suffix on the standalone label of non-required fields. |
 | `size` | `'sm' \| 'lg'` | `undefined` | Control size. |
 | `validationState` | `'valid' \| 'invalid' \| null` | `null` | Visual validation state. |
 | `validationMessage` | `string` | `undefined` | Feedback message shown for the current `validationState`. |
@@ -126,6 +127,7 @@ const password = ref('')
 
 - **Automatic ID & label linking:** when wrapped in a `VibeFormGroup`, the first child control consumes the group id, so the group's `<label>`, help text, and feedback are linked automatically. Do not also set `label`/`helpText` on the input in that case — the group renders them.
 - **Number coercion:** with `type="number"`, an empty field emits `''`; otherwise the emitted value is a `number`.
+- **v-model modifiers:** `.trim` and `.number` behave like native inputs (applied by Vue core); `.lazy` defers the model commit from `input` to `change`.
 - **Plain text:** `plaintext` forces the control read-only.
 - **Placeholder contrast (WCAG 1.4.3):** placeholder text is rendered at full opacity using `--bs-secondary-color`, overriding the browser-default ~0.6 alpha that drops contrast below 3:1.
 - **`autocomplete` auto-detection:** the component sets `autocomplete="email"` automatically for `type="email"` inputs. For password fields, set `autocomplete="current-password"` (login) or `autocomplete="new-password"` (registration) explicitly — the component cannot infer intent from type alone.

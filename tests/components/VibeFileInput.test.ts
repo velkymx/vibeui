@@ -362,4 +362,58 @@ describe('VibeFileInput', () => {
       expect(wrapper.attributes('name')).toBeUndefined()
     })
   })
+
+  // #234 K1: the dropzone is a button-equivalent (focusable, labelled,
+  // operable via Enter/Space, inert while disabled).
+  describe('dropzone keyboard operability (#234)', () => {
+    const mountZone = (props: Record<string, unknown> = {}) =>
+      mount(VibeFileInput, { props: { dragDrop: true, ...props } })
+
+    it('exposes role button, tabindex, and label', () => {
+      const wrapper = mountZone()
+      const zone = wrapper.find('.vibe-file-input-dropzone')
+      expect(zone.attributes('role')).toBe('button')
+      expect(zone.attributes('tabindex')).toBe('0')
+      expect(zone.attributes('aria-label')).toBeTruthy()
+      wrapper.unmount()
+    })
+
+    it('Enter and Space open the picker via the hidden input', async () => {
+      const clicks: HTMLElement[] = []
+      const orig = HTMLInputElement.prototype.click
+      HTMLInputElement.prototype.click = function (this: HTMLElement) {
+        clicks.push(this)
+      }
+      try {
+        const wrapper = mountZone()
+        const zone = wrapper.find('.vibe-file-input-dropzone')
+        await zone.trigger('keydown.enter')
+        await zone.trigger('keydown.space')
+        expect(clicks).toHaveLength(2)
+        wrapper.unmount()
+      } finally {
+        HTMLInputElement.prototype.click = orig
+      }
+    })
+
+    it('keyboard does nothing while disabled', async () => {
+      const clicks: HTMLElement[] = []
+      const orig = HTMLInputElement.prototype.click
+      HTMLInputElement.prototype.click = function (this: HTMLElement) {
+        clicks.push(this)
+      }
+      try {
+        const wrapper = mountZone({ disabled: true })
+        const zone = wrapper.find('.vibe-file-input-dropzone')
+        expect(zone.attributes('tabindex')).toBeUndefined()
+        await zone.trigger('keydown.enter')
+        await zone.trigger('keydown.space')
+        await zone.trigger('click')
+        expect(clicks).toHaveLength(0)
+        wrapper.unmount()
+      } finally {
+        HTMLInputElement.prototype.click = orig
+      }
+    })
+  })
 })

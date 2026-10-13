@@ -9,6 +9,11 @@ const props = defineProps({
   fade: { type: Boolean, default: true }
 })
 
+// #147: type pane slot.
+defineSlots<{
+  pane?: (props: { pane: TabPane; index: number }) => unknown
+}>()
+
 
 const getTabPaneClass = (pane: TabPane) => {
   const classes = ['tab-pane']
@@ -27,7 +32,7 @@ const getTabPaneClass = (pane: TabPane) => {
       :class="getTabPaneClass(pane)"
       role="tabpanel"
       :aria-labelledby="`${pane.id}-tab`"
-      tabindex="0"
+      :tabindex="pane.active ? 0 : -1"
     >
       <slot name="pane" :pane="pane" :index="index">
         {{ pane.content }}

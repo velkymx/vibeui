@@ -169,14 +169,14 @@ describe('VibePagination', () => {
     expect(wrapper.find('nav').attributes('aria-label')).toBe('Custom pagination')
   })
 
-  it('disables both prev and next when totalPages is 0', () => {
+  // #196: nothing to page through renders no nav at all (was: disabled
+  // prev/next with no page buttons).
+  it('renders no nav when totalPages is 0', () => {
     const wrapper = mount(VibePagination, {
       props: { totalPages: 0, currentPage: 1 }
     })
 
-    const buttons = wrapper.findAll('button.page-link')
-    expect(buttons[0].attributes('disabled')).toBeDefined()
-    expect(buttons[buttons.length - 1].attributes('disabled')).toBeDefined()
+    expect(wrapper.find('nav').exists()).toBe(false)
   })
 
   it('disables next when currentPage exceeds totalPages', () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
+import { useTemplateRef, computed, onBeforeUnmount, onMounted, ref, type PropType } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import { useFormField } from '../composables/useFormField'
 import type { Size, ValidationState } from '../types'
 
@@ -19,6 +20,10 @@ const props = defineProps({
   helpText: { type: String, default: undefined },
   dropzoneText: { type: String, default: 'Drag files here or click to browse' }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'update:modelValue', files: File[]): void
@@ -47,12 +52,12 @@ const {
   ariaInvalid
 } = useFormField('file-input', props)
 const isDragging = ref(false)
-const inputRef = ref<HTMLInputElement | null>(null)
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 
 
 const inputClass = computed(() => {
   const c = ['form-control']
-  if (props.size) c.push(`form-control-${props.size}`)
+  if (resolvedSize.value) c.push(`form-control-${resolvedSize.value}`)
   if (validationClass.value) c.push(validationClass.value)
   return c.join(' ')
 })
@@ -190,11 +195,17 @@ onBeforeUnmount(() => {
     <div
       v-if="dragDrop"
       :class="dropzoneClass"
+      role="button"
+      :tabindex="disabled ? undefined : 0"
+      :aria-disabled="disabled || undefined"
+      :aria-label="dropzoneText"
       @drop="handleDrop"
       @dragenter="handleDragEnter"
       @dragover="handleDragOver"
       @dragleave="handleDragLeave"
       @click="openFileBrowser"
+      @keydown.enter.prevent="openFileBrowser"
+      @keydown.space.prevent="openFileBrowser"
     >
       <slot name="dropzone">
         <p class="mb-0">{{ dropzoneText }}</p>

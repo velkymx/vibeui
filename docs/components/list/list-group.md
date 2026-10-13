@@ -11,6 +11,8 @@ Data-driven component for displaying flexible lists of content.
 | `numbered` | `Boolean` | `false` | Numbered list items |
 | `tag` | `String` | `'ul'` | HTML tag: `'ul'`, `'ol'`, or `'div'` |
 | `items` | `ListGroupItem[]` | Required | Array of list group items |
+| `showEmpty` | `Boolean` | `true` | Show `emptyText` row when `items` is empty |
+| `emptyText` | `String` | `'No items'` | Empty state message |
 
 ### ListGroupItem Interface
 
@@ -22,6 +24,8 @@ interface ListGroupItem {
   active?: boolean
   disabled?: boolean
   variant?: Variant
+  tag?: string      // Override the wrapper element (e.g. 'button'); default a/router-link/li
+  class?: string    // Extra classes merged onto the item element
 }
 ```
 
@@ -187,6 +191,41 @@ const listItems = [
   { text: 'Sent', description: 'Outgoing mail', count: 25 }
 ]
 </script>
+```
+
+### Rich Rows with Multiple Actions
+
+For rows with several actions, render action buttons in the `#item` slot and call `event.stopPropagation()` so a button click does not also trigger the row-level `item-click`. Use `class` for layout and `tag` to override the wrapper element (for example a single-action `button` row).
+
+```vue
+<template>
+  <VibeListGroup :items="rows">
+    <template #item="{ item }">
+      <div class="d-flex justify-content-between align-items-center w-100">
+        <span>{{ item.text }}</span>
+        <div class="btn-group btn-group-sm">
+          <VibeButton variant="outline-primary" @click="edit(item, $event)">Edit</VibeButton>
+          <VibeButton variant="outline-danger" @click="remove(item, $event)">Delete</VibeButton>
+        </div>
+      </div>
+    </template>
+  </VibeListGroup>
+</template>
+
+<script setup>
+const rows = [
+  { text: 'Project Alpha', class: 'd-flex' },
+  { text: 'Project Beta', class: 'd-flex' }
+]
+function edit(item, e) { e.stopPropagation(); /* ... */ }
+function remove(item, e) { e.stopPropagation(); /* ... */ }
+</script>
+```
+
+To make a whole row a single actionable control, set `tag: 'button'` on the item:
+
+```js
+const items = [{ text: 'Run task', tag: 'button' }]
 ```
 
 ### With Event Handling

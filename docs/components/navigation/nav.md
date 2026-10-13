@@ -14,6 +14,8 @@ Data-driven navigation tabs and pills for organizing content.
 | `vertical` | `Boolean` | `false` | Stack navigation vertically |
 | `tag` | `String` | `'ul'` | HTML tag to render |
 | `items` | `NavItem[]` | Required | Array of nav items |
+| `showEmpty` | `Boolean` | `true` | Show `emptyText` row when `items` is empty |
+| `emptyText` | `String` | `'No items'` | Empty state message |
 
 ### NavItem Interface
 

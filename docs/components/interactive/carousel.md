@@ -19,6 +19,8 @@ Data-driven slideshow component for cycling through images or content.
 | `dark` | `Boolean` | `false` | Dark variant indicators/controls |
 | `fade` | `Boolean` | `false` | Fade transition instead of slide |
 | `items` | `CarouselItem[]` | Required | Array of carousel items |
+| `showEmpty` | `Boolean` | `true` | Show `emptyText` placeholder when `items` is empty (indicators and controls hide) |
+| `emptyText` | `String` | `'No slides'` | Empty state message |
 
 ### CarouselItem Interface
 

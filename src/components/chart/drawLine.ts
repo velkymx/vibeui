@@ -99,7 +99,11 @@ export function drawLine(
         })
       } else {
         ds.data.forEach((v, i) => {
-          i === 0 && withMove ? ctx.moveTo(toX(i), toY(v)) : ctx.lineTo(toX(i), toY(v))
+          if (i === 0 && withMove) {
+            ctx.moveTo(toX(i), toY(v))
+          } else {
+            ctx.lineTo(toX(i), toY(v))
+          }
         })
       }
     }

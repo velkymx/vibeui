@@ -16,6 +16,8 @@ Multi-step wizard with linear / non-linear modes and per-step validation guards.
 | `prevText` | `String` | `'Back'` | |
 | `finishText` | `String` | `'Finish'` | Replaces `nextText` on the last step |
 
+While a `beforeNext` / `beforePrev` guard is pending, both default buttons disable, the next button shows a spinner, and `aria-busy="true"` is set. The `actions` slot receives the same state as `transitioning`.
+
 ### Step descriptor
 
 ```ts
@@ -42,7 +44,7 @@ interface StepperStep {
 | `step` | `{ index, step }` | Body for the active step |
 | `marker` | `{ index, step, active }` | Override the step's marker (default: number) |
 | `label` | `{ index, step }` | Override the step header label |
-| `actions` | `{ next, prev, isFirst, isLast }` | Replace default footer buttons |
+| `actions` | `{ next, prev, isFirst, isLast, transitioning }` | Replace default footer buttons |
 
 ## Examples
 

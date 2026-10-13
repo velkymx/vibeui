@@ -1,0 +1,90 @@
+import { useEventBus, emitEvent } from './useEventBus'
+import type { VibeEventMap } from '../types'
+
+/**
+ * Lifecycle-style helpers for the library's event-bus channels. `emit*` triggers
+ * a command; `on*` subscribes to a lifecycle event and, when called in a
+ * component scope, auto-unsubscribes on unmount (see `useEventBus`).
+ *
+ * These are thin, typed wrappers over `useEventBus()`; use the bus directly for
+ * your own custom events.
+ */
+
+// Notification channel (#97)
+export const emitNotificationShow = (payload: VibeEventMap['notification:show']): void =>
+  emitEvent('notification:show', payload)
+
+export const emitNotificationDismiss = (payload: VibeEventMap['notification:dismiss']): void =>
+  emitEvent('notification:dismiss', payload)
+
+export const onNotificationShown = (
+  handler: (payload: VibeEventMap['notification:shown']) => void,
+): (() => void) => useEventBus().on('notification:shown', handler)
+
+export const onNotificationDismissed = (
+  handler: (payload: VibeEventMap['notification:dismissed']) => void,
+): (() => void) => useEventBus().on('notification:dismissed', handler)
+
+// Modal channel (#98)
+export const emitModalOpen = (payload: VibeEventMap['modal:open']): void =>
+  emitEvent('modal:open', payload)
+
+export const emitModalClose = (payload: VibeEventMap['modal:close']): void =>
+  emitEvent('modal:close', payload)
+
+export const onBeforeModalOpen = (
+  handler: (payload: VibeEventMap['modal:beforeOpen']) => void,
+): (() => void) => useEventBus().on('modal:beforeOpen', handler)
+
+export const onBeforeModalClose = (
+  handler: (payload: VibeEventMap['modal:beforeClose']) => void,
+): (() => void) => useEventBus().on('modal:beforeClose', handler)
+
+export const onModalOpened = (
+  handler: (payload: VibeEventMap['modal:opened']) => void,
+): (() => void) => useEventBus().on('modal:opened', handler)
+
+export const onModalClosed = (
+  handler: (payload: VibeEventMap['modal:closed']) => void,
+): (() => void) => useEventBus().on('modal:closed', handler)
+
+// Theme channel (#99)
+export const emitThemeSet = (payload: VibeEventMap['theme:set']): void =>
+  emitEvent('theme:set', payload)
+
+export const onThemeChanged = (
+  handler: (payload: VibeEventMap['theme:changed']) => void,
+): (() => void) => useEventBus().on('theme:changed', handler)
+
+// Layout / offcanvas channel (#100)
+export const emitOffcanvasOpen = (payload: VibeEventMap['offcanvas:open']): void =>
+  emitEvent('offcanvas:open', payload)
+
+export const emitOffcanvasClose = (payload: VibeEventMap['offcanvas:close']): void =>
+  emitEvent('offcanvas:close', payload)
+
+export const emitOffcanvasToggle = (payload: VibeEventMap['offcanvas:toggle']): void =>
+  emitEvent('offcanvas:toggle', payload)
+
+export const onOffcanvasOpened = (
+  handler: (payload: VibeEventMap['offcanvas:opened']) => void,
+): (() => void) => useEventBus().on('offcanvas:opened', handler)
+
+export const onOffcanvasClosed = (
+  handler: (payload: VibeEventMap['offcanvas:closed']) => void,
+): (() => void) => useEventBus().on('offcanvas:closed', handler)
+
+export const emitLayoutSidebarToggle = (): void =>
+  emitEvent('layout:sidebar-toggle')
+
+export const onLayoutSidebarToggled = (
+  handler: (payload: VibeEventMap['layout:sidebar-toggled']) => void,
+): (() => void) => useEventBus().on('layout:sidebar-toggled', handler)
+
+// Navigation channel (#101)
+export const emitNavBreadcrumbUpdate = (payload: VibeEventMap['nav:breadcrumb-updated']): void =>
+  emitEvent('nav:breadcrumb-updated', payload)
+
+export const onNavBreadcrumbUpdated = (
+  handler: (payload: VibeEventMap['nav:breadcrumb-updated']) => void,
+): (() => void) => useEventBus().on('nav:breadcrumb-updated', handler)

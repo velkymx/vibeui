@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { ComponentError } from '../types'
 import { safeLength, safeColor } from '../utils/safeCss'
 
@@ -26,6 +27,10 @@ const props = defineProps({
   ariaHidden: { type: Boolean, default: true },
   ariaLabel: { type: String, default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
@@ -56,7 +61,7 @@ const iconStyle = computed(() => {
   if (props.fontSize) {
     const safe = safeLength(props.fontSize)
     if (safe) style.fontSize = safe
-  } else if (props.size) {
+  } else if (resolvedSize.value) {
     const sizeMap: Record<string, string> = {
       'sm': '0.875rem',
       'lg': '1.25rem',
@@ -66,7 +71,7 @@ const iconStyle = computed(() => {
       '4x': '4rem',
       '5x': '5rem'
     }
-    if (sizeMap[props.size]) style.fontSize = sizeMap[props.size]
+    if (sizeMap[resolvedSize.value]) style.fontSize = sizeMap[resolvedSize.value]
   }
 
   if (props.color) {

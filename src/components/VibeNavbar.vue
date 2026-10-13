@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, provide } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, Tag, NavbarPosition } from '../types'
 import { NAVBAR_COLLAPSE_KEY } from '../injectionKeys'
 
@@ -14,6 +15,10 @@ const props = defineProps({
   position: { type: String as () => NavbarPosition, default: undefined },
   tag: { type: String as () => Tag | 'nav', default: 'nav' }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 // Provide reactive collapse state so VibeNavbarToggle and VibeCollapse
 // communicate through Vue reactivity instead of Bootstrap JS
@@ -32,7 +37,7 @@ const navbarClass = computed(() => {
     classes.push(`navbar-expand-${props.expand}`)
   }
 
-  if (props.variant) classes.push(`bg-${props.variant}`)
+  if (resolvedVariant.value) classes.push(`bg-${resolvedVariant.value}`)
 
   if (props.position) {
     classes.push(props.position)
@@ -48,8 +53,8 @@ const navbarClass = computed(() => {
 const DARK_NAVBAR_VARIANTS = new Set(['primary', 'secondary', 'success', 'danger', 'dark'])
 const navbarTheme = computed(() => {
   if (props.theme) return props.theme
-  if (!props.variant) return undefined
-  return DARK_NAVBAR_VARIANTS.has(props.variant) ? 'dark' : 'light'
+  if (!resolvedVariant.value) return undefined
+  return DARK_NAVBAR_VARIANTS.has(resolvedVariant.value) ? 'dark' : 'light'
 })
 
 const containerClass = computed(() => {

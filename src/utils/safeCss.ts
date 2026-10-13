@@ -37,6 +37,24 @@ export function safeColor(value: string | undefined): string | undefined {
   return SAFE_COLOR.test(value.trim()) ? value : undefined
 }
 
+// A url("...") sink, not an href attribute: the href prefix check is
+// insufficient here (it preserves quotes, parens, and commas, so
+// `https://x/a")` breaks out of the url()). Allowed: http(s) or
+// root-relative prefix plus URL-safe characters only. Excluded: double quote,
+// parens, whitespace, backslash, backtick (url() breakout characters).
+const SAFE_CSS_URL = /^(https?:\/\/|\/(?!\/))[^"\s()\\`]*$/
+
+/**
+ * Validate a URL for interpolation into CSS `url("...")`.
+ * Returns the trimmed value when it matches the url-safe form, undefined otherwise.
+ */
+export function safeCssUrl(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  if (trimmed === '') return undefined
+  return SAFE_CSS_URL.test(trimmed) ? trimmed : undefined
+}
+
 /**
  * Filter a consumer-supplied CSS style object to an allowlist of known-safe property names.
  * Use for thStyle / tdStyle column config in VibeDataTable.

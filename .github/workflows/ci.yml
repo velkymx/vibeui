@@ -2,11 +2,13 @@ name: CI
 
 # Runs the build and full test suite on every push and pull request so the
 # README status badge reflects real, current results instead of a hand-typed count.
+# The '*-main' wildcard covers every release line (main plus 1.0-main, 1.3-main
+# and future *-main lines) so release work is always gated, not just main (#274).
 on:
   push:
-    branches: [main, 1.0-main]
+    branches: [main, '*-main']
   pull_request:
-    branches: [main, 1.0-main]
+    branches: [main, '*-main']
 
 jobs:
   test:
@@ -28,6 +30,29 @@ jobs:
 
       - name: Test
         run: npm run test:run
+
+  # Both TypeScript gates. Neither ran in CI before (#274), so a type
+  # regression merged green: typecheck covers the app source, test:types
+  # covers the packaged type tests.
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck app source
+        run: npm run typecheck
+
+      - name: Type tests
+        run: npm run test:types
 
   e2e:
     runs-on: ubuntu-latest
@@ -61,3 +86,23 @@ jobs:
             .vitest-attachments/
           if-no-files-found: ignore
           retention-days: 7
+
+  # Lint gate (#275): runs the flat config (core JS, TS recommended sets,
+  # custom vibeui plugin) over src, tests, and the plugin itself. Fails the
+  # build on any error; warnings (any, unused-vars) do not fail.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint

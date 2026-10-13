@@ -1,6 +1,6 @@
 {
   "name": "@velkymx/vibeui",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "description": "A lightweight Vue 3 component library for Bootstrap 5.3 with dual-mode support (shorthand props and composable slots)",
   "main": "./dist/vibeui.umd.js",
   "module": "./dist/vibeui.es.js",
@@ -15,6 +15,26 @@
       "import": "./dist/vibeui.es.js",
       "require": "./dist/vibeui.umd.js"
     },
+    "./chart-line": {
+      "types": "./dist/chart-line.d.ts",
+      "import": "./dist/chart-line.es.js"
+    },
+    "./chart-bar": {
+      "types": "./dist/chart-bar.d.ts",
+      "import": "./dist/chart-bar.es.js"
+    },
+    "./chart-pie": {
+      "types": "./dist/chart-pie.d.ts",
+      "import": "./dist/chart-pie.es.js"
+    },
+    "./wysiwyg": {
+      "types": "./dist/wysiwyg.d.ts",
+      "import": "./dist/wysiwyg.es.js"
+    },
+    "./datatable": {
+      "types": "./dist/datatable.d.ts",
+      "import": "./dist/datatable.es.js"
+    },
     "./style.css": "./dist/vibeui.css",
     "./dist/vibeui.css": "./dist/vibeui.css",
     "./dist/style.css": "./dist/vibeui.css",
@@ -28,7 +48,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.entries.config.ts",
     "preview": "vite preview",
     "examples": "npm run build && cd examples && python3 -m http.server 8000",
     "smoke": "npm run build && cp dist/vibeui.es.js dist/vibeui.css smoke/dist/ && cd smoke && python3 -m http.server 8001",
@@ -41,6 +61,7 @@
     "test:browser": "vitest run --project browser",
     "test:all": "vitest run",
     "test:examples": "npm run build && playwright test",
+    "lint": "eslint src tests eslint-plugin",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -64,9 +85,12 @@
   },
   "homepage": "https://github.com/velkymx/vibeui#readme",
   "dependencies": {
-    "@floating-ui/dom": "^1.7.6"
+    "@floating-ui/dom": "^1.7.6",
+    "@tanstack/vue-table": "^9.2.8",
+    "@tanstack/vue-virtual": "^3.13.40"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@types/dompurify": "^3.0.5",
     "@vitejs/plugin-vue": "^6.0.4",
@@ -79,15 +103,19 @@
     "@vue/tsconfig": "^0.9.1",
     "bootstrap": "^5.3.8",
     "dompurify": "^3.4.7",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
     "happy-dom": "^20.1.0",
     "playwright": "^1.60.0",
     "quill": "^2.0.3",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
     "vite": "^8.0.14",
     "vite-plugin-dts": "^5.0.1",
     "vitest": "^4.0.16",
     "vitest-browser-vue": "^2.1.0",
     "vue": "^3.5.0",
+    "vue-eslint-parser": "^10.4.1",
     "vue-router": "^5.2.0",
     "vue-tsc": "^3.2.5"
   },

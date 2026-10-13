@@ -59,4 +59,79 @@ describe('VibeDroppable', () => {
     await wrapper.find('.vibe-droppable').trigger('dragenter')
     expect(wrapper.find('.vibe-droppable-over').exists()).toBe(false)
   })
+
+  // #234 K2: a keyboard-armed drag (see VibeDraggable) drops via Enter on a
+  // focused target through the same commit path as pointer drop.
+  describe('keyboard drop (#234)', () => {
+    it('is focusable', () => {
+      const wrapper = mount(VibeDroppable)
+      expect(wrapper.find('.vibe-droppable').attributes('tabindex')).toBe('0')
+      wrapper.unmount()
+    })
+
+    it('Enter drops the armed payload and emits drop', async () => {
+      startDrag('default')
+      const wrapper = mount(VibeDroppable)
+      await wrapper.find('.vibe-droppable').trigger('keydown', { key: 'Enter' })
+      const emitted = wrapper.emitted('drop') as unknown[][] | undefined
+      expect(emitted).toBeDefined()
+      expect(emitted!).toHaveLength(1)
+      expect(emitted![0][0]).toMatchObject({ payload: { _test: true }, group: 'default' })
+      wrapper.unmount()
+    })
+
+    it('Enter with no armed drag emits nothing', async () => {
+      const wrapper = mount(VibeDroppable)
+      await wrapper.find('.vibe-droppable').trigger('keydown', { key: 'Enter' })
+      expect(wrapper.emitted('drop')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('Enter ignores a wrong-group armed drag', async () => {
+      startDrag('other')
+      const wrapper = mount(VibeDroppable, { props: { group: 'mine' } })
+      await wrapper.find('.vibe-droppable').trigger('keydown', { key: 'Enter' })
+      expect(wrapper.emitted('drop')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('disabled target is not focusable and Enter emits nothing', async () => {
+      startDrag('default')
+      const wrapper = mount(VibeDroppable, { props: { disabled: true } })
+      expect(wrapper.find('.vibe-droppable').attributes('tabindex')).toBeUndefined()
+      await wrapper.find('.vibe-droppable').trigger('keydown', { key: 'Enter' })
+      expect(wrapper.emitted('drop')).toBeUndefined()
+      wrapper.unmount()
+    })
+  })
+
+  // #235 W4: dragover must not promise a drop the guards will reject (OS
+  // files, wrong-group drags get no drop affordance).
+  describe('dragover affordance (#235)', () => {
+    it('does not preventDefault for a wrong-group drag', () => {
+      startDrag('other')
+      const wrapper = mount(VibeDroppable, { props: { group: 'mine' } })
+      const event = new DragEvent('dragover', { bubbles: true, cancelable: true })
+      wrapper.find('.vibe-droppable').element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+      wrapper.unmount()
+    })
+
+    it('does not preventDefault with no active drag (OS file)', () => {
+      const wrapper = mount(VibeDroppable)
+      const event = new DragEvent('dragover', { bubbles: true, cancelable: true })
+      wrapper.find('.vibe-droppable').element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+      wrapper.unmount()
+    })
+
+    it('still allows drop for an accepted active drag', () => {
+      startDrag('default')
+      const wrapper = mount(VibeDroppable)
+      const event = new DragEvent('dragover', { bubbles: true, cancelable: true })
+      wrapper.find('.vibe-droppable').element.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(true)
+      wrapper.unmount()
+    })
+  })
 })

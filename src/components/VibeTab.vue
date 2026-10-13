@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, onBeforeUnmount } from 'vue'
+import { computed, inject, onMounted, onBeforeUnmount, watch } from 'vue'
 import { TABS_CONTEXT_KEY } from '../injectionKeys'
 
 const props = defineProps({
@@ -10,18 +10,36 @@ const props = defineProps({
 
 const ctx = inject(TABS_CONTEXT_KEY, null)
 if (!ctx) {
-  // Use console.error instead of throw so app.config.errorHandler can catch it
-  // and the component renders without tearing down the entire component tree
+  // Log directly and render without group wiring: a missing provider must not
+  // tear down the tree. NOTE: app.config.errorHandler does not catch
+  // console.error output, it only receives errors Vue itself throws or
+  // propagates during render/lifecycle.
   console.error('[VibeTab] must be a descendant of <VibeTabs>')
 }
 
+// The name under which this tab is currently registered. Tracked separately
+// from props.name so a rename unregisters the OLD entry instead of orphaning
+// it (unmount after a rename would otherwise remove the new name and leave a
+// ghost button behind).
+let registeredName = props.name
+
 onMounted(() => {
+  registeredName = props.name
   ctx?.register(props.name, props.label, props.disabled)
 })
 
 onBeforeUnmount(() => {
-  ctx?.unregister(props.name)
+  ctx?.unregister(registeredName)
 })
+
+watch(
+  () => [props.name, props.label, props.disabled] as const,
+  ([name, label, disabled]) => {
+    if (!ctx) return
+    ctx.update(registeredName, name, label, disabled)
+    registeredName = name
+  }
+)
 
 const isActive = computed(() => ctx?.isActive(props.name) ?? false)
 const shouldRender = computed(() => {
@@ -35,9 +53,12 @@ const shouldRender = computed(() => {
   <div
     v-if="shouldRender"
     v-show="isActive"
+    :id="ctx?.panelId(props.name) ?? `vibe-panel-${props.name}`"
     class="tab-pane"
     :class="{ active: isActive, show: isActive }"
     role="tabpanel"
+    :aria-labelledby="ctx?.tabId(props.name) ?? `vibe-tab-${props.name}`"
+    :tabindex="isActive ? 0 : -1"
   >
     <slot />
   </div>

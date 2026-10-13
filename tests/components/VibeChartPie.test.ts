@@ -102,4 +102,26 @@ describe('VibeChartPie', () => {
 
     expect(ctx.clearRect).toHaveBeenCalledTimes(1)
   })
+
+  // #193: freeform height is untrusted. expression()/url() payloads fall back
+  // to the aspect-ratio default instead of reaching :style.
+  it('#193 drops expression() and url() heights, keeps valid ones', () => {
+    for (const payload of ['expression(alert(1))', 'url(https://evil/x)']) {
+      const wrapper = mount(VibeChartPie, { props: { data: DATA, height: payload } })
+      const style = wrapper.find('.vibe-chart-canvas-container').attributes('style') ?? ''
+      expect(style).not.toContain('expression')
+      expect(style).not.toContain('url(')
+      expect(style).toContain('aspect-ratio')
+    }
+    const ok = mount(VibeChartPie, { props: { data: DATA, height: 400 } })
+    expect(ok.find('.vibe-chart-canvas-container').attributes('style')).toContain('400px')
+  })
+
+  // #226: shape-incomplete data (async load in flight) renders the empty
+  // chart instead of throwing inside render.
+  it('#226 renders without throwing on shape-incomplete data', () => {
+    expect(() =>
+      mount(VibeChartPie, { props: { data: { datasets: [] } as never } })
+    ).not.toThrow()
+  })
 })

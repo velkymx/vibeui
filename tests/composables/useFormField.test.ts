@@ -74,4 +74,30 @@ describe('useFormField — shared form control contract', () => {
     const ids = wrapper.find('input').attributes('aria-describedby')!.split(' ')
     expect(new Set(ids).size).toBe(ids.length)
   })
+
+  // #225: an explicit-id first child must not burn the group's single-use id
+  // token. The group label must point at an id a real control owns.
+  describe('group id token (#225)', () => {
+    it('leaves the token for the first id-less child', () => {
+      const wrapper = mount(VibeFormGroup, {
+        props: { label: 'Field' },
+        slots: {
+          default: () => [
+            h(VibeFormInput as never, { id: 'explicit-a' }),
+            h(VibeFormInput as never)
+          ]
+        }
+      })
+
+      const labelFor = wrapper.find('label').attributes('for')
+      const inputs = wrapper.findAll('input')
+      expect(inputs[0].attributes('id')).toBe('explicit-a')
+      const secondId = inputs[1].attributes('id')
+      // The group label must reference a control that exists: the second
+      // input inherits the group token the first child declined to burn.
+      expect(labelFor).toBe(secondId)
+      expect(wrapper.find(`#${CSS.escape(secondId!)}`).exists()).toBe(true)
+      wrapper.unmount()
+    })
+  })
 })

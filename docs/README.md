@@ -44,6 +44,23 @@ initColorMode()
 createApp(App).use(VibeUI).mount('#app')
 ```
 
+### Global configuration
+
+Set library-wide prop defaults once instead of repeating props. Every key is opt-in; an explicit per-instance prop always wins, then the global default, then the component builtin. Variant/size globals apply where the prop type accepts them (standard `Variant`/`Size` components; `VibeSkeleton` and `VibeTabs` keep their specialized variants).
+
+```javascript
+createApp(App).use(VibeUI, {
+  defaults: {
+    variant: 'primary',     // default variant (buttons, badges, alerts, …)
+    size: 'sm',             // default size (inputs, buttons, modals, …)
+    toastPosition: 'top-end', // default VibeToastHost placement
+    teleport: 'body',       // default modal/offcanvas/toast target (false renders inline)
+    debounce: 200,          // default search debounce ms (DataTable, Autocomplete)
+    hideOptional: true,     // hide the "(optional)" label suffix everywhere
+  },
+}).mount('#app')
+```
+
 ### Stylesheet
 
 The canonical import for VibeUI's own styles is **`@velkymx/vibeui/style.css`**. It maps to the shipped `dist/vibeui.css`. The full path `@velkymx/vibeui/dist/vibeui.css` also works, as does the legacy `@velkymx/vibeui/dist/style.css` alias (kept for back-compat). Bootstrap's CSS is separate and you import it yourself, as shown above.
@@ -94,6 +111,7 @@ The library handles:
 - [VibeToast](./components/interactive/toast.md)
 
 ### [Advanced Components](./components/advanced/)
+- [VibeErrorBoundary](./components/advanced/error-boundary.md)
 - [VibePopover](./components/advanced/popover.md)
 - [VibeScrollspy](./components/advanced/scrollspy.md)
 - [VibeTooltip](./components/advanced/tooltip.md)
@@ -147,17 +165,29 @@ Standalone utilities that can be used independently of any component.
 - [useBackButton](./composables/back-button.md) - Android hardware back button handling
 - [useBreakpoints](./composables/breakpoints.md) - Programmatic breakpoint detection
 - [useColorMode](./composables/color-mode.md) - Bootstrap light/dark/auto color modes
+- [useDebouncedRef](./composables/debounced-ref.md) - Debounced ref primitive
+- [useEventBus](./composables/event-bus.md) - Zero-init app event bus and custom events
 - [useForm](./composables/use-form.md) - Multi-field form state with validation
 - [usePosition](./composables/use-position.md) - Floating-UI based anchor positioning
 - [useToast](./composables/use-toast.md) - Global toast service
+- [Event bus cookbook](./composables/event-bus-cookbook.md) - Recipes for the built-in channels and custom events
 
 ## Directives
 
 - [v-vibe-tooltip](./directives/v-tooltip.md) - Inline tooltip directive
 
+## Performance
+
+- [Lazy hydration for heavy components](./performance/lazy-hydration.md) - Defer chart and editor download plus hydration with Vue 3.5 strategies
+- [Custom elements spike: decision record](./spikes/custom-elements.md) - Why framework-agnostic distribution is NO-GO for now
+
 ## Utilities
 
 - [Position utility classes](./utilities/position.md) - Bootstrap position-* / top-* / translate-middle reference
+
+## Tooling
+
+- [ESLint rule: use-vibeui](./eslint/use-vibeui.md) - flags raw HTML elements that have a VibeUI equivalent, so the library is actually used
 
 ## Versioning & Stability
 

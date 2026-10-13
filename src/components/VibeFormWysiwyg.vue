@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { reportComponentError } from '../utils/reportComponentError'
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
+import { useTemplateRef, shallowRef, ref, onMounted, onBeforeUnmount, watch, computed, inject, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, ComponentError } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -8,6 +9,8 @@ import { useBreakpoints } from '../composables/useBreakpoints'
 import { VIBE_WYSIWYG_KEY } from '../composables/wysiwygConfig'
 import type { QuillLoader, Sanitizer } from '../types'
 import { safeLength } from '../utils/safeCss'
+import { fallbackSanitizeHtml } from '../utils/sanitizeHtml'
+import { isDev } from '../composables/useEventBus'
 
 interface QuillInstance {
   root: HTMLElement
@@ -79,6 +82,10 @@ const {
 } = useFormField('wysiwyg', props)
 
 const safeMinHeight = computed(() => safeLength(props.height) ?? '200px')
+
+// Hoisted: the inline object was re-allocated on every render, defeating Vue's
+// style patch short-circuit by reference.
+const wysiwygStyle = computed(() => ({ minHeight: safeMinHeight.value }))
 const { isMobile } = useBreakpoints()
 
 // WYSIWYG peers resolve prop → app-provided → none. The library imports neither
@@ -91,20 +98,24 @@ let warnedNoSanitizer = false
 const resolveSanitizer = (): Sanitizer => {
   const s = props.sanitizer ?? injectedWysiwyg?.sanitizer
   if (s) return s
-  if (import.meta.env.DEV && !warnedNoSanitizer) {
+  if (isDev() && !warnedNoSanitizer) {
     warnedNoSanitizer = true
     console.warn(
-      '[VibeFormWysiwyg] No sanitizer provided — HTML is passed to Quill unsanitized ' +
-      "(Quill's Delta conversion is the only backstop). Provide one via " +
+      '[VibeFormWysiwyg] No sanitizer provided, using the built-in minimal fallback ' +
+      '(strips scriptable tags, on* handlers, and javascript:/vbscript:/data:text/html URLs). ' +
+      'For full allowlist protection provide one via ' +
       'app.use(VibeUI, { wysiwyg: { sanitizer: makeDomPurifySanitizer(DOMPurify) } }) ' +
       'or the :sanitizer prop.'
     )
   }
-  return (html: string) => html
+  // #186: safe-by-default. Previously returned an identity function, which left
+  // production builds (where the DEV warning above is stripped) with no
+  // sanitization at all on either the inbound or outbound path.
+  return fallbackSanitizeHtml
 }
 
 
-const editorContainer = ref<HTMLElement | null>(null)
+const editorContainer = useTemplateRef<HTMLElement>('editorContainer')
 const quillInstance = shallowRef<QuillInstance | null>(null)
 const isQuillLoaded = ref(false)
 const loadError = ref<string | null>(null)
@@ -244,7 +255,7 @@ const initQuill = async () => {
       'VibeFormWysiwyg needs a Quill loader. Install quill and its snow theme ' +
       'CSS, then provide a loader through the wysiwyg plugin option or the ' +
       'quill-loader prop. See the VibeFormWysiwyg docs for the exact snippet.'
-    emit('component-error', {
+    reportComponentError(emit, {
       message: loadError.value,
       componentName: 'VibeFormWysiwyg',
       originalError: new Error('No quillLoader provided')
@@ -315,14 +326,14 @@ const initQuill = async () => {
     // visible alert below and the component-error emit already carry the signal, so
     // this stays a DEV-only warning rather than console.error noise in production.
     // Matches how loadDOMPurify() reports its own optional peer.
-    if (import.meta.env.DEV) {
+    if (isDev()) {
       console.warn('[VibeFormWysiwyg] Failed to load Quill editor:', error)
     }
     loadError.value =
       'Failed to load Quill. Ensure quill is installed and the provided ' +
       'quill-loader resolves it. See the VibeFormWysiwyg docs.'
     isQuillLoaded.value = false
-    emit('component-error', {
+    reportComponentError(emit, {
       message: loadError.value,
       componentName: 'VibeFormWysiwyg',
       originalError: error
@@ -464,7 +475,7 @@ watch(isMobile, () => {
       // from the async setTimeout callback is silently swallowed by the runtime.
       quillInstance.value = null
       isQuillLoaded.value = false
-      emit('component-error', {
+      reportComponentError(emit, {
         message: 'Editor failed to reinitialise on mobile breakpoint change.',
         componentName: 'VibeFormWysiwyg',
         originalError: error
@@ -486,9 +497,25 @@ watch(isMobile, () => {
     </div>
 
     <div
-      v-else
+      v-else-if="!isQuillLoaded"
+      class="vibe-wysiwyg-loading d-flex align-items-center justify-content-center text-body-secondary"
+      :style="wysiwygStyle"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading editor"
+    >
+      <span class="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+      Loading editor...
+    </div>
+
+    <!-- Always rendered while there is no load error (visibility toggled):
+      initQuill mounts onto editorContainer while the loader is in flight, so
+      the node must exist before isQuillLoaded flips. -->
+    <div
+      v-if="!loadError"
+      v-show="isQuillLoaded"
       :class="containerClass"
-      :style="{ minHeight: safeMinHeight }"
+      :style="wysiwygStyle"
     >
       <div ref="editorContainer"></div>
     </div>

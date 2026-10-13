@@ -125,4 +125,25 @@ describe('VibePlaceholder', () => {
 
     expect(wrapper.find('.placeholder').text()).toBe('Content')
   })
+
+  // #193: freeform width is untrusted. expression()/url() payloads must be
+  // dropped before :style; valid values still render.
+  it('#193 drops expression() and url() widths', () => {
+    // See the happy-dom note in VibeSkeleton.test.ts: calc() is the
+    // discriminating payload here (valid CSS, outside the allowlist).
+    for (const payload of ['expression(alert(1))', 'url(https://evil/x)', 'calc(100% - 10px)']) {
+      const wrapper = mount(VibePlaceholder, { props: { width: payload } })
+      const style = wrapper.find('.placeholder').attributes('style') ?? ''
+      expect(style).not.toContain('expression')
+      expect(style).not.toContain('url(')
+      expect(style).not.toContain('calc(')
+    }
+  })
+
+  it('#193 drops non-finite numeric widths', () => {
+    const wrapper = mount(VibePlaceholder, {
+      props: { width: Number.POSITIVE_INFINITY as unknown as number }
+    })
+    expect(wrapper.find('.placeholder').attributes('style') ?? '').not.toContain('width')
+  })
 })

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Size, ComponentError } from '../types'
+import { isDev } from '../composables/useEventBus'
 
 const props = defineProps({
   size: { type: String as () => Size, default: undefined },
@@ -10,7 +12,7 @@ const props = defineProps({
     type: Number,
     default: 1,
     validator: (v: number) => {
-      if (import.meta.env.DEV && (!Number.isInteger(v) || v < 1)) {
+      if (isDev() && (!Number.isInteger(v) || v < 1)) {
         console.warn(`[VibePagination] currentPage must be a positive integer, got ${v}`)
       }
       return true
@@ -21,6 +23,10 @@ const props = defineProps({
   nextText: { type: String, default: 'Next' },
   maxVisiblePages: { type: Number, default: 7 }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'update:currentPage', page: number): void
@@ -28,9 +34,16 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type page/prev/next slots.
+defineSlots<{
+  prev?: (props: { disabled: boolean }) => unknown
+  page?: (props: { page: number; active: boolean }) => unknown
+  next?: (props: { disabled: boolean }) => unknown
+}>()
+
 const paginationClass = computed(() => {
   const classes = ['pagination']
-  if (props.size) classes.push(`pagination-${props.size}`)
+  if (resolvedSize.value) classes.push(`pagination-${resolvedSize.value}`)
   return classes.join(' ')
 })
 
@@ -38,7 +51,7 @@ const paginationClass = computed(() => {
 const visibleItems = computed((): (number | null)[] => {
   const total = props.totalPages
   if (total === 0) return []
-  if (import.meta.env.DEV && props.maxVisiblePages < 5) {
+  if (isDev() && props.maxVisiblePages < 5) {
     console.warn('[VibePagination] maxVisiblePages must be at least 5. Got:', props.maxVisiblePages)
   }
   const max = Math.max(5, props.maxVisiblePages)
@@ -77,7 +90,7 @@ const isNextDisabled = computed(() => props.totalPages === 0 || props.currentPag
 </script>
 
 <template>
-  <nav :aria-label="ariaLabel">
+  <nav v-if="totalPages > 0" :aria-label="ariaLabel">
     <ul :class="paginationClass">
       <!-- Previous button -->
       <li v-if="showPrevNext" :class="['page-item', { disabled: isPrevDisabled }]">

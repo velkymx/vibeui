@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed, ref, watch } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
+import { isDev } from '../composables/useEventBus'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
 // The validator option still forwards to the underlying prop.
-const modelValue = defineModel<number>({
+// #148: destructured for modelModifiers (.lazy defers the model commit to change;
+// .number/.trim are meaningless here, the model is already numeric).
+const [modelValue, modelModifiers] = defineModel<number>({
   default: 0,
   validator: (value: unknown) => {
-    if (import.meta.env.DEV && value !== null && typeof value === 'object') {
+    if (isDev() && value !== null && typeof value === 'object') {
       console.error(
         `[VibeFormSpinbutton] Invalid prop: modelValue must be a number, received object. ` +
         `If you're using useFormValidation(), bind to the .value property: ` +
@@ -40,6 +44,10 @@ const props = defineProps({
   wrap: { type: Boolean, default: false },
   vertical: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 // Consumer attributes (aria-label, name, data-*, class) belong on the native
 // control, not the wrapper <div>. Mirrors VibeFormInput/VibeFormSelect.
@@ -70,21 +78,35 @@ const {
 
 const inputClass = computed(() => {
   const classes = ['form-control']
-  if (props.size) classes.push(`form-control-${props.size}`)
+  if (resolvedSize.value) classes.push(`form-control-${resolvedSize.value}`)
   if (validationClass.value) classes.push(validationClass.value)
   return classes.join(' ')
 })
 
 const inputGroupClass = computed(() => {
   const classes = ['input-group']
-  if (props.size) classes.push(`input-group-${props.size}`)
+  if (resolvedSize.value) classes.push(`input-group-${resolvedSize.value}`)
   if (props.vertical) classes.push('input-group-vertical')
   return classes.join(' ')
 })
 
-const internalValue = ref(modelValue.value)
+// Any value arriving from the DOM or from the consumer can be non-finite or
+// out of range (see #195). Normalize once: NaN/undefined become 0 and the
+// result is clamped, so canIncrement/canDecrement never compare against NaN and
+// the buttons can never wedge.
+const toSafeNumber = (value: unknown, fallback = 0): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback
 
-watch(modelValue, (v) => { internalValue.value = v ?? 0 })
+const clampValue = (value: number): number => {
+  let clamped = value
+  if (props.min !== undefined && clamped < props.min) clamped = props.min
+  if (props.max !== undefined && clamped > props.max) clamped = props.max
+  return clamped
+}
+
+const internalValue = ref(clampValue(toSafeNumber(modelValue.value)))
+
+watch(modelValue, (v) => { internalValue.value = clampValue(toSafeNumber(v)) })
 
 const canDecrement = computed(() => {
   if (props.disabled || props.readonly) return false
@@ -100,35 +122,30 @@ const canIncrement = computed(() => {
   return internalValue.value < props.max
 })
 
-const clampValue = (value: number): number => {
-  let clamped = value
-  if (props.min !== undefined && clamped < props.min) clamped = props.min
-  if (props.max !== undefined && clamped > props.max) clamped = props.max
-  return clamped
-}
-
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const raw = target.value === '' ? 0 : Number(target.value)
+  const raw = toSafeNumber(target.value === '' ? 0 : Number(target.value))
   internalValue.value = raw
-  modelValue.value = raw
+  // #148: .lazy defers the model commit to change; the stepper display stays live.
+  if (!modelModifiers.lazy) modelValue.value = raw
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const raw = target.value === '' ? 0 : Number(target.value)
+  const raw = toSafeNumber(target.value === '' ? 0 : Number(target.value))
   const clamped = clampValue(raw)
   internalValue.value = clamped
-  if (clamped !== raw) modelValue.value = clamped
+  // #148: with .lazy the model was untouched on input, so always commit here.
+  if (modelModifiers.lazy || clamped !== raw) modelValue.value = clamped
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
 
 const handleBlur = (event: FocusEvent) => {
   const target = event.target as HTMLInputElement
-  const raw = target.value === '' ? 0 : Number(target.value)
+  const raw = toSafeNumber(target.value === '' ? 0 : Number(target.value))
   const clamped = clampValue(raw)
   internalValue.value = clamped
   if (clamped !== raw) modelValue.value = clamped
@@ -145,7 +162,7 @@ const handleFocus = (event: FocusEvent) => {
 // invalid values to the default of 1 so arithmetic and precision stay well-defined.
 const safeStep = computed(() => {
   if (Number.isFinite(props.step) && props.step > 0) return props.step
-  if (import.meta.env.DEV) {
+  if (isDev()) {
     console.warn(
       `[VibeFormSpinbutton] step must be a positive number; received ${props.step}. Falling back to 1.`
     )
@@ -169,9 +186,13 @@ const increment = () => {
     newValue = props.wrap ? props.min ?? 0 : props.max
   }
   internalValue.value = newValue
+  // A stepper click is an explicit commit gesture (like change on a text
+  // input): the value is final on press, so the model commits per click even
+  // under .lazy, which defers typing commits only. Validation still follows
+  // validateOn like every other path in this file.
   modelValue.value = newValue
   emit('increment', newValue)
-  emit('validate')
+  if (props.validateOn === 'change') emit('validate')
 }
 
 const decrement = () => {
@@ -181,9 +202,10 @@ const decrement = () => {
     newValue = props.wrap ? props.max ?? 0 : props.min
   }
   internalValue.value = newValue
+  // See increment: explicit commit gesture, validation follows validateOn.
   modelValue.value = newValue
   emit('decrement', newValue)
-  emit('validate')
+  if (props.validateOn === 'change') emit('validate')
 }
 </script>
 

@@ -1,4 +1,4 @@
-import { reactive, computed, ref, watch, type ComputedRef } from 'vue'
+import { reactive, computed, ref, watch, onScopeDispose, type ComputedRef } from 'vue'
 import type { ValidationRule, ValidatorFunction } from '../types'
 
 export type FormFieldRules<T> = Partial<Record<keyof T, ValidationRule[] | ValidatorFunction>>
@@ -15,8 +15,8 @@ export interface UseFormReturn<T extends Record<string, unknown>> {
   isDirty: ComputedRef<boolean>
   isValid: ComputedRef<boolean>
   values: ComputedRef<T>
-  validate: (rules: FormFieldRules<T>) => Promise<FormValidateResult<T>>
-  validateField: <K extends keyof T>(key: K, rule: ValidationRule[] | ValidatorFunction) => Promise<string>
+  validate: (rules?: FormFieldRules<T>) => Promise<FormValidateResult<T>>
+  validateField: <K extends keyof T>(key: K, rule?: ValidationRule[] | ValidatorFunction) => Promise<string>
   reset: () => void
   markTouched: <K extends keyof T>(key: K) => void
   markAllTouched: () => void
@@ -42,7 +42,12 @@ const runRules = async (
   return ''
 }
 
-export function useForm<T extends Record<string, unknown>>(initial: T): UseFormReturn<T> {
+export function useForm<T extends Record<string, unknown>>(
+  initial: T,
+  // #138: optional default rules held by the form. validate()/validateField()
+  // use them unless a per-call rule is supplied.
+  defaultRules?: FormFieldRules<T>
+): UseFormReturn<T> {
   const initialSnapshot = deepClone(initial)
   const fields = reactive(deepClone(initial)) as T
 
@@ -67,15 +72,35 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
   for (const k of fieldKeys) {
     initialFieldJson[k] = JSON.stringify((initialSnapshot as Record<keyof T, unknown>)[k])
   }
-  watch(
-    fields,
-    (current) => {
-      dirtyFlag.value = fieldKeys.some(
-        (k) => JSON.stringify((current as Record<keyof T, unknown>)[k]) !== initialFieldJson[k]
-      )
-    },
-    { deep: true, immediate: true }
+  const isDirtyNow = (): boolean =>
+    fieldKeys.some(
+      (k) => JSON.stringify((fields as Record<keyof T, unknown>)[k]) !== initialFieldJson[k]
+    )
+
+  // Per-field watchers instead of one deep watcher: a deep watcher on `fields`
+  // fires for every nested leaf mutation and re-serializes every field until one
+  // differs. Each watcher only serializes its own field (see #198).
+  const stopFieldWatches = fieldKeys.map((k) =>
+    watch(
+      () => (fields as Record<keyof T, unknown>)[k],
+      (current) => {
+        const changed = JSON.stringify(current) !== initialFieldJson[k]
+        // Only fall back to the full comparison when this field reverted to its
+        // initial value; otherwise one dirty field is enough to stay dirty.
+        dirtyFlag.value = changed || isDirtyNow()
+      },
+      { deep: true }
+    )
   )
+
+  // Initial dirty state is false by construction (fields is a clone of the
+  // snapshot), computed once at setup rather than via immediate:true.
+  dirtyFlag.value = isDirtyNow()
+
+  // Keep the watchers disposed with the owning effect scope.
+  onScopeDispose(() => {
+    for (const stop of stopFieldWatches) stop()
+  })
 
   const isValid = computed(() => {
     if (!hasValidated.value) return false
@@ -89,19 +114,22 @@ export function useForm<T extends Record<string, unknown>>(initial: T): UseFormR
 
   const validateField = async <K extends keyof T>(
     key: K,
-    rule: ValidationRule[] | ValidatorFunction
+    rule?: ValidationRule[] | ValidatorFunction
   ): Promise<string> => {
-    const message = await runRules(fields[key], rule)
+    // Fall back to the constructor rule for this field when none is passed.
+    const effective = rule ?? defaultRules?.[key]
+    const message = effective ? await runRules(fields[key], effective) : ''
     errors[key] = message
     hasValidated.value = true
     return message
   }
 
-  const validate = async (rules: FormFieldRules<T>): Promise<FormValidateResult<T>> => {
+  const validate = async (rules?: FormFieldRules<T>): Promise<FormValidateResult<T>> => {
+    const effectiveRules: FormFieldRules<T> = rules ?? defaultRules ?? {}
     const out: Partial<Record<keyof T, string>> = {}
     let valid = true
-    for (const key of Object.keys(rules) as Array<keyof T>) {
-      const rule = rules[key]
+    for (const key of Object.keys(effectiveRules) as Array<keyof T>) {
+      const rule = effectiveRules[key]
       if (!rule) continue
       const message = await runRules(fields[key], rule)
       errors[key] = message

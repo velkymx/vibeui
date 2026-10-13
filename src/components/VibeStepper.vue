@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, onBeforeUnmount, onDeactivated, type PropType } from 'vue'
+import { emitEvent } from '../composables/useEventBus'
+import { computed, ref, onBeforeUnmount, onDeactivated, onActivated, type PropType } from 'vue'
 
 export interface StepperStep {
   label: string
@@ -28,6 +29,14 @@ const emit = defineEmits<{
   (e: 'component-error', error: unknown): void
 }>()
 
+// #147: type marker/label/step/actions slots.
+defineSlots<{
+  marker?: (props: { index: number; step: StepperStep; active: boolean }) => unknown
+  label?: (props: { index: number; step: StepperStep }) => unknown
+  step?: (props: { index: number; step: StepperStep | undefined }) => unknown
+  actions?: (props: { next: () => Promise<void>; prev: () => Promise<void>; isFirst: boolean; isLast: boolean; transitioning: boolean }) => unknown
+}>()
+
 const stepperClass = computed(() => {
   const c = ['vibe-stepper']
   if (props.vertical) c.push('vibe-stepper-vertical')
@@ -36,9 +45,20 @@ const stepperClass = computed(() => {
 
 const transitioning = ref(false)
 
+// #188: two distinct states, deliberately not one flag.
+// - isUnmounted: the instance is destroyed, never write again.
+// - isDeactivated: the instance is cached by KeepAlive, suspend writes now but
+//   resume on activation. Conflating them wedged the stepper permanently after
+//   the first deactivate/activate cycle.
 let isUnmounted = false
+let isDeactivated = false
 onBeforeUnmount(() => { isUnmounted = true })
-onDeactivated(() => { isUnmounted = true })
+onDeactivated(() => { isDeactivated = true })
+onActivated(() => {
+  isDeactivated = false
+  // Release any lock left held by a guard that was suspended mid-flight.
+  transitioning.value = false
+})
 
 const isLast = computed(() => props.modelValue >= props.steps.length - 1)
 const isFirst = computed(() => props.modelValue <= 0)
@@ -67,7 +87,16 @@ const runGuard = async (
     const result = guard(props.modelValue, direction)
     return result instanceof Promise ? await result : result
   } catch (err) {
+    // VibeStepper's local component-error event carries the raw error (unknown),
+    // unlike the ComponentError other components emit. Keep that event as-is
+    // (changing its payload would be breaking) and publish a structured
+    // ComponentError to the bus so the error channel stays uniformly typed.
     emit('component-error', err)
+    emitEvent('error:component', {
+      message: 'A step guard threw.',
+      componentName: 'VibeStepper',
+      originalError: err,
+    })
     return false
   }
 }
@@ -77,7 +106,7 @@ const goNext = async () => {
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforeNext, 'next')
-    if (isUnmounted) return
+    if (isUnmounted || isDeactivated) return
     if (!allowed) return
     if (isLast.value) {
       emit('finish')
@@ -85,7 +114,7 @@ const goNext = async () => {
       emit('update:modelValue', props.modelValue + 1)
     }
   } finally {
-    if (!isUnmounted) transitioning.value = false
+    if (!isUnmounted && !isDeactivated) transitioning.value = false
   }
 }
 
@@ -95,11 +124,11 @@ const goPrev = async () => {
   transitioning.value = true
   try {
     const allowed = await runGuard(props.beforePrev, 'prev')
-    if (isUnmounted) return
+    if (isUnmounted || isDeactivated) return
     if (!allowed) return
     emit('update:modelValue', Math.max(0, props.modelValue - 1))
   } finally {
-    if (!isUnmounted) transitioning.value = false
+    if (!isUnmounted && !isDeactivated) transitioning.value = false
   }
 }
 
@@ -114,11 +143,11 @@ const jumpTo = async (idx: number) => {
     const direction: 'next' | 'prev' = idx > props.modelValue ? 'next' : 'prev'
     const guard = direction === 'next' ? props.beforeNext : props.beforePrev
     const allowed = await runGuard(guard, direction)
-    if (isUnmounted) return
+    if (isUnmounted || isDeactivated) return
     if (!allowed) return
     emit('update:modelValue', idx)
   } finally {
-    if (!isUnmounted) transitioning.value = false
+    if (!isUnmounted && !isDeactivated) transitioning.value = false
   }
 }
 
@@ -161,11 +190,12 @@ const activeStep = computed(() => {
     </div>
 
     <div class="vibe-stepper-actions">
-      <slot name="actions" :next="goNext" :prev="goPrev" :is-first="isFirst" :is-last="isLast">
+      <slot name="actions" :next="goNext" :prev="goPrev" :isFirst="isFirst" :isLast="isLast" :transitioning="transitioning">
         <button
           type="button"
           class="btn btn-secondary"
-          :disabled="isFirst"
+          :disabled="isFirst || transitioning"
+          :aria-busy="transitioning || undefined"
           data-stepper-prev
           @click="goPrev"
         >
@@ -174,9 +204,17 @@ const activeStep = computed(() => {
         <button
           type="button"
           class="btn btn-primary"
+          :disabled="transitioning"
+          :aria-busy="transitioning || undefined"
           data-stepper-next
           @click="goNext"
         >
+          <span
+            v-if="transitioning"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          />
           {{ isLast ? finishText : nextText }}
         </button>
       </slot>

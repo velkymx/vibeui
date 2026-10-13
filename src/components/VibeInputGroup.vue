@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, type PropType } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Size, Tag } from '../types'
 
 const props = defineProps({
@@ -8,10 +9,14 @@ const props = defineProps({
   append: { type: String, default: undefined },
   tag: { type: String as PropType<Tag>, default: 'div' }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const containerClass = computed(() => {
   const classes = ['input-group']
-  if (props.size) classes.push(`input-group-${props.size}`)
+  if (resolvedSize.value) classes.push(`input-group-${resolvedSize.value}`)
   return classes.join(' ')
 })
 </script>

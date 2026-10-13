@@ -12,6 +12,7 @@ Hidden sidebar for navigation or additional content.
 | `placement` | `OffcanvasPlacement` | `'start'` | Placement: `'start'`, `'end'`, `'top'`, `'bottom'` |
 | `backdrop` | `Boolean\|String` | `true` | Backdrop: `true`, `false`, or `'static'` |
 | `scroll` | `Boolean` | `false` | Allow body scrolling |
+| `sidebar` | `Boolean` | `false` | Mark this offcanvas as the app sidebar, so it answers the `layout:sidebar-toggle` bus command and emits `layout:sidebar-toggled` |
 | `teleport` | `Boolean\|String` | `'body'` | Destination for Vue Teleport |
 
 ## Events
@@ -74,6 +75,8 @@ const showOffcanvas = ref(false)
 **Focus Return (WCAG 2.4.3):** When the offcanvas closes, focus is automatically returned to the element that opened it, including for programmatically opened panels.
 
 **Escape Hatch:** The exposed `_unsafe_bsInstance` template ref gives raw access to the underlying Bootstrap Offcanvas instance. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly **will** break the component. Prefer `v-model` and the exposed `show()` / `hide()` methods.
+
+**One control path per instance:** Drive an offcanvas with either `v-model` or the event bus command channel (`offcanvas:open` / `offcanvas:close` / `offcanvas:toggle` by `id`, or `layout:sidebar-toggle`), not both. The two paths are not reconciled, so a bus command on a `v-model`-bound offcanvas logs a development warning. See [useEventBus](../../composables/event-bus.md#pick-one-control-path-per-instance).
 
 ## Mobile Optimization
 

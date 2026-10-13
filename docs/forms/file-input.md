@@ -94,6 +94,7 @@ const onInvalid = (rejected: File[]) => {
 - **Same-file reselection:** the native input is reset after each change so picking the same file again still fires `change`.
 - **Rejection:** files failing `accept` or exceeding `maxSize` are excluded from the model and reported via the `invalid` event.
 - **Drag safety:** a document-level fallback resets the dragging state if a drag ends or drops outside the zone.
+- **Keyboard:** in `dragDrop` mode the dropzone is a focusable button (`role="button"`, labelled): `Enter`/`Space` opens the picker. It is removed from Tab order while `disabled`.
 
 ## Bootstrap CSS Classes
 

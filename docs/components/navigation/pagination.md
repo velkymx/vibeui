@@ -8,7 +8,7 @@ Data-driven pagination component with v-model support.
 |------|------|---------|-------------|
 | `size` | `'sm' \| 'lg'` | `undefined` | Pagination size |
 | `ariaLabel` | `String` | `'Pagination'` | ARIA label for the nav element |
-| `totalPages` | `Number` | Required | Total number of pages |
+| `totalPages` | `Number` | Required | Total number of pages (the nav hides entirely when `0`) |
 | `currentPage` | `Number` | `1` | Current active page |
 | `showPrevNext` | `Boolean` | `true` | Show previous/next buttons |
 | `prevText` | `String` | `'Previous'` | Text for previous button |

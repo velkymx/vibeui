@@ -279,4 +279,217 @@ describe('VibeTabs lazy + v-model initial render (issue #67)', () => {
     expect(wrapper.text()).toContain('B body')
     expect(wrapper.text()).not.toContain('A body')
   })
+  // #224: the registry snapshot must follow prop changes, and a rename must
+  // not orphan the old entry on unmount.
+  describe('registry sync (#224)', () => {
+    const syncHarness = (initial: Record<string, Record<string, unknown>>) =>
+      defineComponent({
+        components: { VibeTabs, VibeTab },
+        data() {
+          return { tabs: initial as Record<string, Record<string, unknown>>, showA: true }
+        },
+        render() {
+          const vm = this as unknown as {
+            tabs: Record<string, Record<string, unknown>>
+            showA: boolean
+          }
+          const entries = Object.entries(vm.tabs).filter(
+            ([, tabProps]) => (tabProps.name as string) !== 'a2' || vm.showA
+          )
+          return h(VibeTabs as never, null, {
+            default: () =>
+              entries.map(([key, tabProps]) =>
+                h(VibeTab as never, {
+                  key,
+                  name: tabProps.name,
+                  label: tabProps.label,
+                  disabled: tabProps.disabled
+                })
+              )
+          })
+        }
+      })
+
+    it('reflects label changes in the strip', async () => {
+      const wrapper = mount(
+        syncHarness({
+          a: { name: 'a', label: 'Alpha' },
+          b: { name: 'b', label: 'Beta' }
+        })
+      )
+      await nextTick()
+      expect(wrapper.findAll('.nav-link')[1].text()).toBe('Beta')
+      const vm = wrapper.vm as unknown as { tabs: Record<string, Record<string, unknown>> }
+      vm.tabs = {
+        a: { name: 'a', label: 'Alpha' },
+        b: { name: 'b', label: 'Beta2' }
+      }
+      await nextTick()
+      expect(wrapper.findAll('.nav-link')[1].text()).toBe('Beta2')
+      wrapper.unmount()
+    })
+
+    it('rename plus removal leaves no ghost tab', async () => {
+      const wrapper = mount(
+        syncHarness({
+          a: { name: 'a', label: 'Alpha' },
+          b: { name: 'b', label: 'Beta' }
+        })
+      )
+      await nextTick()
+      const vm = wrapper.vm as unknown as {
+        tabs: Record<string, Record<string, unknown>>
+        showA: boolean
+      }
+      // Rename a to a2 with a new label: the strip must show the new label,
+      // proving the registry entry moved rather than duplicated.
+      vm.tabs = {
+        a2: { name: 'a2', label: 'Alpha2' },
+        b: { name: 'b', label: 'Beta' }
+      }
+      await nextTick()
+      expect(wrapper.findAll('.nav-link').map((l) => l.text()).sort()).toEqual(['Alpha2', 'Beta'])
+      // Remove the renamed tab: nothing of it may remain.
+      vm.showA = false
+      await nextTick()
+      expect(wrapper.findAll('.nav-link').map((l) => l.text())).toEqual(['Beta'])
+      wrapper.unmount()
+    })
+  })
+
+  // #234 K3: APG tabs keyboard model (roving tabindex, arrows/Home/End move
+  // plus focus through the same activation as click).
+  describe('arrow-key navigation (#234)', () => {
+    const threeTabs = `
+      <VibeTab name="a" label="Alpha">A body</VibeTab>
+      <VibeTab name="b" label="Beta">B body</VibeTab>
+      <VibeTab name="c" label="Gamma">C body</VibeTab>
+    `
+    const mountThree = (props: Record<string, unknown> = {}) =>
+      mount(VibeTabs, {
+        props,
+        slots: { default: threeTabs },
+        global: { components: { VibeTab } },
+        attachTo: document.body
+      })
+
+    it('roves tabindex: only the active tab is a Tab stop', async () => {
+      const wrapper = mountThree()
+      await nextTick()
+      const tabs = wrapper.findAll('[role="tab"]')
+      expect(tabs.map((t) => t.attributes('tabindex'))).toEqual(['0', '-1', '-1'])
+      expect(tabs[0].attributes('aria-selected')).toBe('true')
+      wrapper.unmount()
+    })
+
+    it('ArrowRight moves activation plus focus', async () => {
+      const wrapper = mountThree()
+      await nextTick()
+      const tabs = () => wrapper.findAll('[role="tab"]')
+      tabs()[0].element.focus()
+      await tabs()[0].trigger('keydown', { key: 'ArrowRight' })
+      await nextTick()
+      expect(wrapper.emitted('update:modelValue')).toBeTruthy()
+      expect(tabs().map((t) => t.attributes('tabindex'))).toEqual(['-1', '0', '-1'])
+      expect(document.activeElement).toBe(tabs()[1].element)
+      expect(tabs()[1].text()).toBe('Beta')
+      wrapper.unmount()
+    })
+
+    it('ArrowLeft wraps, Home/End jump', async () => {
+      const wrapper = mountThree()
+      await nextTick()
+      const tabs = () => wrapper.findAll('[role="tab"]')
+      await tabs()[0].trigger('keydown', { key: 'ArrowLeft' })
+      await nextTick()
+      expect(tabs().map((t) => t.attributes('tabindex'))).toEqual(['-1', '-1', '0'])
+      await tabs()[2].trigger('keydown', { key: 'Home' })
+      await nextTick()
+      expect(tabs()[0].attributes('tabindex')).toBe('0')
+      await tabs()[0].trigger('keydown', { key: 'End' })
+      await nextTick()
+      expect(tabs()[2].attributes('tabindex')).toBe('0')
+      wrapper.unmount()
+    })
+
+    it('skips disabled tabs in arrow order', async () => {
+      const wrapper = mount(VibeTabs, {
+        slots: {
+          default: `
+            <VibeTab name="a" label="Alpha">A body</VibeTab>
+            <VibeTab name="b" label="Beta" disabled>Beta body</VibeTab>
+            <VibeTab name="c" label="Gamma">C body</VibeTab>
+          `
+        },
+        global: { components: { VibeTab } },
+        attachTo: document.body
+      })
+      await nextTick()
+      const tabs = () => wrapper.findAll('[role="tab"]')
+      await tabs()[0].trigger('keydown', { key: 'ArrowRight' })
+      await nextTick()
+      expect(tabs()[2].attributes('tabindex')).toBe('0')
+      expect(tabs()[2].text()).toBe('Gamma')
+      expect(document.activeElement).toBe(tabs()[2].element)
+      wrapper.unmount()
+    })
+  })
+
+  // #235 W1: tabs own aria-controls, panes own aria-labelledby plus correct
+  // tabindex; ids stay unique across two strips sharing tab names.
+  describe('tab wiring (#235)', () => {
+    const twoTabs = `
+      <VibeTab name="a" label="Alpha">A body</VibeTab>
+      <VibeTab name="shared" label="Shared">S body</VibeTab>
+    `
+    it('links tabs to panes with matching ids', async () => {
+      const wrapper = mount(VibeTabs, {
+        slots: { default: twoTabs },
+        global: { components: { VibeTab } }
+      })
+      await nextTick()
+      const tabs = wrapper.findAll('[role="tab"]')
+      const panes = wrapper.findAll('[role="tabpanel"]')
+      expect(panes).toHaveLength(2)
+      for (const tab of tabs) {
+        const controls = tab.attributes('aria-controls')
+        expect(controls).toBeTruthy()
+        const pane = panes.find((pn) => pn.attributes('id') === controls)
+        expect(pane).toBeDefined()
+        expect(pane!.attributes('aria-labelledby')).toBe(tab.attributes('id'))
+      }
+      // Only the active pane is tabbable.
+      expect(panes[0].attributes('tabindex')).toBe('0')
+      expect(panes[1].attributes('tabindex')).toBe('-1')
+      wrapper.unmount()
+    })
+
+    it('keeps ids unique across two strips with the same tab names', async () => {
+      const Harness = defineComponent({
+        components: { VibeTabs, VibeTab },
+        setup: () => () =>
+          h('div', [
+            h(VibeTabs as never, null, {
+              default: () => [
+                h(VibeTab as never, { name: 'shared', label: 'One' }, () => 'one'),
+                h(VibeTab as never, { name: 'solo', label: 'Solo' }, () => 'solo')
+              ]
+            }),
+            h(VibeTabs as never, null, {
+              default: () => [
+                h(VibeTab as never, { name: 'shared', label: 'Two' }, () => 'two'),
+                h(VibeTab as never, { name: 'other', label: 'Other' }, () => 'other')
+              ]
+            })
+          ])
+      })
+      const wrapper = mount(Harness, { attachTo: document.body })
+      await nextTick()
+      const ids = wrapper.findAll('[role="tab"]').map((t) => t.attributes('id'))
+      const paneIds = wrapper.findAll('[role="tabpanel"]').map((t) => t.attributes('id'))
+      const all = [...ids, ...paneIds]
+      expect(new Set(all).size).toBe(all.length)
+      wrapper.unmount()
+    })
+  })
 })

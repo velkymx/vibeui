@@ -112,4 +112,21 @@ describe('useToast', () => {
       expect(mod.__toastStore.toasts).toHaveLength(0)
     })
   })
+  // #233 S1: the store is bounded with oldest-first eviction.
+  describe('store cap (#233)', () => {
+    it('retains the 10 newest of 20 rapid show() calls', () => {
+      const { show } = useToast()
+      for (let i = 0; i < 20; i++) show(`t${i}`)
+      expect(__toastStore.toasts).toHaveLength(10)
+      expect(__toastStore.toasts[0].body).toBe('t10')
+      expect(__toastStore.toasts[9].body).toBe('t19')
+    })
+
+    it('honors an explicit max', () => {
+      const { show } = useToast()
+      for (let i = 0; i < 5; i++) show(`m${i}`, { max: 3 })
+      expect(__toastStore.toasts).toHaveLength(3)
+      expect(__toastStore.toasts[0].body).toBe('m2')
+    })
+  })
 })

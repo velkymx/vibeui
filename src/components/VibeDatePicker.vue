@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch, type PropType } from 'vue'
+import { useTemplateRef, computed, nextTick, onBeforeUnmount, ref, watch, type PropType } from 'vue'
 import { useId } from '../composables/useId'
+import { isDev } from '../composables/useEventBus'
 
 type IsoDate = string // YYYY-MM-DD
 type DateValue = IsoDate | null
@@ -45,7 +46,7 @@ const ISO_FORMAT = /^\d{4}-\d{2}-\d{2}$/
 const fromIso = (iso: IsoDate): Date => {
   // Guard: empty or malformed ISO strings produce NaN dates (e.g. fromIso("") → new Date(0,-1,0))
   if (!ISO_FORMAT.test(iso)) {
-    if (import.meta.env.DEV) {
+    if (isDev()) {
       console.warn(`[VibeDatePicker] fromIso received non-ISO string: "${iso}". Falling back to today.`)
     }
     return new Date()
@@ -57,7 +58,7 @@ const validateIsoString = (value: string | undefined, propName: string): void =>
   // DEV-only, and the raw value is not logged — min/max can be derived from user data
   // (birth/medical/financial dates); echoing it to the console is a PII-leak vector in
   // shared-screen or remote-debug sessions.
-  if (import.meta.env.DEV && value !== undefined && !ISO_FORMAT.test(value)) {
+  if (isDev() && value !== undefined && !ISO_FORMAT.test(value)) {
     console.warn(
       `[VibeDatePicker] Invalid ${propName} prop. Expected zero-padded YYYY-MM-DD; comparisons are lexical and will be wrong otherwise.`
     )
@@ -75,8 +76,9 @@ const todayDate = (): Date => new Date()
 const viewYear = ref(todayDate().getFullYear())
 const viewMonth = ref(todayDate().getMonth())
 const focusedIso = ref<IsoDate | null>(null)
-const rootRef = ref<HTMLElement | null>(null)
-const popoverRef = ref<HTMLElement | null>(null)
+const rootRef = useTemplateRef<HTMLElement>('rootRef')
+const popoverRef = useTemplateRef<HTMLElement>('popoverRef')
+const inputEl = useTemplateRef<HTMLElement>('inputEl')
 
 const lowDate = computed<DateValue>(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue[0]
@@ -193,6 +195,11 @@ const closePopover = () => {
   if (isOpen.value) {
     isOpen.value = false
     emit('close')
+    // The popover is v-if: the focused day button unmounts. Return focus to
+    // the input that opened it, or Tab resumes from the top of the page.
+    nextTick(() => {
+      inputEl.value?.focus()
+    })
   }
 }
 
@@ -249,16 +256,47 @@ const cellClass = (cell: DayCell): string => {
   return c.join(' ')
 }
 
+// Grid classes computed once per grid change instead of re-running the join on
+// every render for all 42 cells (see #198).
+const cellClassMap = computed(() => {
+  const map = new Map<string, string>()
+  for (const cell of monthGrid.value) map.set(cell.iso, cellClass(cell))
+  return map
+})
+
 const setFocusedDate = async (iso: IsoDate) => {
-  focusedIso.value = iso
   const d = fromIso(iso)
   if (d.getFullYear() !== viewYear.value || d.getMonth() !== viewMonth.value) {
     viewYear.value = d.getFullYear()
     viewMonth.value = d.getMonth()
   }
+  // Never move focus onto a non-selectable day: focusing a disabled button is
+  // a no-op that strands focus on a node about to re-render. Look up after
+  // the view sync so callers that change months (PageUp/PageDown) resolve
+  // against the fresh grid.
+  const cell = monthGrid.value.find(c => c.iso === iso)
+  if (!cell || cell.disabled) return
+  focusedIso.value = iso
   await nextTick()
   const el = popoverRef.value?.querySelector<HTMLElement>(`[data-iso="${iso}"]`)
   el?.focus()
+}
+
+// #299: on open, move focus into the grid so the calendar is operable from the
+// keyboard (arrows, Enter, Escape all live on the popover). Prefer the selected
+// day, else today, else the first selectable in-month day, so focus never lands
+// on a disabled button or stays stranded on the trigger input.
+const focusInitialDay = async () => {
+  const preferred = lowDate.value || todayIso
+  await setFocusedDate(preferred)
+  // setFocusedDate no-ops on a disabled or out-of-view target; if nothing in the
+  // grid took focus, fall back to the first selectable day in the current view.
+  if (!popoverRef.value?.contains(document.activeElement)) {
+    const fallback =
+      monthGrid.value.find(c => c.inMonth && !c.disabled) ||
+      monthGrid.value.find(c => !c.disabled)
+    if (fallback) await setFocusedDate(fallback.iso)
+  }
 }
 
 const shiftFocusedDays = async (days: number) => {
@@ -339,6 +377,30 @@ const handleGridKeydown = async (event: KeyboardEvent) => {
   }
 }
 
+// #299: the trigger is a readonly input, so Enter/Space do not synthesise a
+// click the way they would on a button. Open the calendar from the keyboard on
+// ArrowDown/Enter/Space (focus then moves into the grid via the isOpen watch),
+// and let Escape close it even while focus is still on the input.
+const handleInputKeydown = (event: KeyboardEvent) => {
+  if (props.disabled) return
+  switch (event.key) {
+    case 'ArrowDown':
+    case 'Enter':
+    case ' ':
+      if (!isOpen.value) {
+        event.preventDefault()
+        togglePopover()
+      }
+      break
+    case 'Escape':
+      if (isOpen.value) {
+        event.preventDefault()
+        closePopover()
+      }
+      break
+  }
+}
+
 const onDocumentMousedown = (event: MouseEvent) => {
   if (!isOpen.value) return
   const root = rootRef.value
@@ -351,6 +413,8 @@ watch(isOpen, (open) => {
   if (open) {
     focusedIso.value = lowDate.value || toIso(todayDate())
     document.addEventListener('mousedown', onDocumentMousedown)
+    // The popover is v-if, so it mounts next tick; move focus into the grid then.
+    void nextTick(() => { void focusInitialDay() })
   } else {
     focusedIso.value = null
     document.removeEventListener('mousedown', onDocumentMousedown)
@@ -372,6 +436,7 @@ defineExpose({ open: () => { if (!isOpen.value) togglePopover() }, close: closeP
     <input
       v-bind="$attrs"
       :id="computedId"
+      ref="inputEl"
       type="text"
       readonly
       class="form-control"
@@ -381,6 +446,7 @@ defineExpose({ open: () => { if (!isOpen.value) togglePopover() }, close: closeP
       :aria-haspopup="'dialog'"
       :aria-expanded="isOpen"
       @click="togglePopover"
+      @keydown="handleInputKeydown"
     />
     <div
       v-if="isOpen"
@@ -415,7 +481,7 @@ defineExpose({ open: () => { if (!isOpen.value) togglePopover() }, close: closeP
           v-for="cell in monthGrid"
           :key="cell.iso"
           type="button"
-          :class="cellClass(cell)"
+          :class="cellClassMap.get(cell.iso)"
           :data-iso="cell.iso"
           :disabled="cell.disabled"
           @click="selectDate(cell)"

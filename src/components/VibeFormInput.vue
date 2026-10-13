@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed, ref } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { InputType, ValidationState, ValidationRule, ValidatorFunction, Size, AutocompleteType, InputMode } from '../types'
 import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
-const modelValue = defineModel<string | number>({ default: '' })
+// #148: destructured for modelModifiers (.lazy gates input vs change commits;
+// .trim/.number need no component code, Vue core applies them to update:* args).
+const [modelValue, modelModifiers] = defineModel<string | number>({ default: '' })
 
 // Consumer HTML attributes (name, min, maxlength, pattern, …) belong on the native
 // <input>, not the wrapper <div> — native form submission needs `name` on the control
@@ -22,6 +25,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
   required: { type: Boolean, default: false },
+  hideOptional: { type: Boolean, default: undefined },
   size: { type: String as PropType<Size>, default: undefined },
   validationState: { type: String as PropType<ValidationState>, default: null },
   validationMessage: { type: String, default: undefined },
@@ -36,6 +40,16 @@ const props = defineProps({
   autocomplete: { type: String as PropType<AutocompleteType>, default: undefined },
   inputmode: { type: String as PropType<InputMode>, default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+// Declared before every resolver that closes over it: a computed getter is
+// lazy, so the old order happened to work, but it breaks the moment any
+// resolver is evaluated eagerly (see #199).
+const vibeDefaults = useVibeDefaults()
+
+const resolvedHideOptional = computed(() => resolveProp(props.hideOptional, vibeDefaults.hideOptional, false))
+
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'validate'): void
@@ -67,6 +81,10 @@ function passwordStrength(pw: string): { level: number; label: string } {
 
 const strength = computed(() => passwordStrength(String(modelValue.value ?? '')))
 const strengthColors = ['', '#dc3545', '#fd7e14', '#0d6efd', '#198754']
+// #155: the active bar color is component-level (shared by every lit bar), so
+// it rides a reactive v-bind() in the scoped stylesheet instead of a per-bar
+// inline :style object allocated each render.
+const activeStrengthColor = computed(() => strengthColors[strength.value.level] ?? 'var(--bs-border-color)')
 
 const inputmodeAutoMap: Partial<Record<InputType, InputMode>> = {
   number: 'decimal',
@@ -106,22 +124,28 @@ const inputClass = computed(() => {
     classes.push('form-control-plaintext')
   } else {
     classes.push('form-control')
-    if (props.size) classes.push(`form-control-${props.size}`)
+    if (resolvedSize.value) classes.push(`form-control-${resolvedSize.value}`)
   }
   if (validationClass.value) classes.push(validationClass.value)
   if (props.focusRing) classes.push('focus-ring')
   return classes.join(' ')
 })
 
+const commitFromTarget = (target: HTMLInputElement) => {
+  modelValue.value = props.type === 'number' ? (target.value === '' ? '' : Number(target.value)) : target.value
+}
+
 const handleInput = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const newValue = props.type === 'number' ? (target.value === '' ? '' : Number(target.value)) : target.value
-  modelValue.value = newValue
+  // #148: .lazy defers the model commit to change; the native input keeps its
+  // own display value meanwhile (same as native v-model.lazy).
+  if (!modelModifiers.lazy) commitFromTarget(event.target as HTMLInputElement)
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
+  // #148: .lazy commits here instead of on input.
+  if (modelModifiers.lazy) commitFromTarget(event.target as HTMLInputElement)
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
@@ -142,7 +166,7 @@ const handleFocus = (event: FocusEvent) => {
     <label v-if="shouldRenderLabel" :for="computedId" class="form-label">
       {{ label }}
       <span v-if="required" class="text-danger ms-1" aria-hidden="true">*</span>
-      <span v-else class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
+      <span v-else-if="!resolvedHideOptional" class="text-muted ms-1 small" aria-hidden="true">(optional)</span>
       <!-- Screen-reader-only equivalent of the visual asterisk -->
       <span v-if="required" class="visually-hidden">required</span>
     </label>
@@ -201,9 +225,8 @@ const handleFocus = (event: FocusEvent) => {
         <div
           v-for="i in 4"
           :key="i"
-          class="flex-fill rounded"
-          style="height: 4px"
-          :style="{ backgroundColor: i <= strength.level ? strengthColors[strength.level] : 'var(--bs-border-color)' }"
+          class="flex-fill rounded vibe-strength-bar"
+          :class="{ 'vibe-strength-active': i <= strength.level }"
         />
       </div>
       <small class="text-muted">Password strength: {{ strength.label }}</small>
@@ -251,5 +274,15 @@ const handleFocus = (event: FocusEvent) => {
 input::placeholder {
   color: var(--bs-secondary-color) !important;
   opacity: 1 !important;
+}
+
+/* #155: strength bars own their presentation; the active color arrives via
+   reactive v-bind() (see activeStrengthColor). */
+.vibe-strength-bar {
+  height: 4px;
+  background-color: var(--bs-border-color);
+}
+.vibe-strength-active {
+  background-color: v-bind(activeStrengthColor);
 }
 </style>

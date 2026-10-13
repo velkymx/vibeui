@@ -1,3 +1,5 @@
+import './global-components'
+import './global-directives'
 import VibeUIPlugin from './components'
 
 export * from './components'
@@ -10,11 +12,39 @@ export type { ToastSpec, ToastShowOptions, UseToastReturn } from './composables/
 export { usePosition } from './composables/usePosition'
 export type { UsePositionOptions, UsePositionReturn } from './composables/usePosition'
 export { useId } from './composables/useId'
+export { useDebouncedRef } from './composables/useDebouncedRef'
 export { VIBE_WYSIWYG_KEY } from './composables/wysiwygConfig'
+export { VIBE_DEFAULTS_KEY, useVibeDefaults, resolveProp } from './composables/vibeDefaults'
 export { makeDomPurifySanitizer, WYSIWYG_PURIFY_CONFIG } from './utils/sanitizeHtml'
-export { useColorMode } from './composables/useColorMode'
+export { installErrorHandler } from './utils/installErrorHandler'
+export { useColorMode, initColorModeEager } from './composables/useColorMode'
 export { useBreakpoints } from './composables/useBreakpoints'
 export { useBackButton } from './composables/useBackButton'
+export { useEventBus, resetEventBusForSSR } from './composables/useEventBus'
+export type { VibeEventBus } from './composables/useEventBus'
+export {
+  emitNotificationShow,
+  emitNotificationDismiss,
+  onNotificationShown,
+  onNotificationDismissed,
+  emitModalOpen,
+  emitModalClose,
+  onBeforeModalOpen,
+  onBeforeModalClose,
+  onModalOpened,
+  onModalClosed,
+  emitThemeSet,
+  onThemeChanged,
+  emitOffcanvasOpen,
+  emitOffcanvasClose,
+  emitOffcanvasToggle,
+  onOffcanvasOpened,
+  onOffcanvasClosed,
+  emitLayoutSidebarToggle,
+  onLayoutSidebarToggled,
+  emitNavBreadcrumbUpdate,
+  onNavBreadcrumbUpdated,
+} from './composables/eventHelpers'
 
 // Export the plugin as default for app.use(VibeUI)
 export default VibeUIPlugin

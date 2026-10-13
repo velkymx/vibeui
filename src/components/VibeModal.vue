@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { reportComponentError } from '../utils/reportComponentError'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, ref, watch, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Size, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { useBackButton } from '../composables/useBackButton'
+import { emitEvent, isDev } from '../composables/useEventBus'
+import { registerModal } from '../composables/modalChannel'
 
 interface BootstrapModal {
   show: () => void
@@ -26,7 +31,7 @@ const props = defineProps({
   staticBackdrop: { type: Boolean, default: false },
   hideHeader: { type: Boolean, default: false },
   hideFooter: { type: Boolean, default: false },
-  teleport: { type: [String, Boolean], default: 'body' },
+  teleport: { type: [String, Boolean], default: undefined },
   // WCAG 2.4.3: move focus to the first form control when the modal opens.
   // Set false to opt out (e.g. modals with a long async transition).
   autoFocus: { type: Boolean, default: true },
@@ -35,6 +40,16 @@ const props = defineProps({
   // Set false to opt out.
   submitOnMetaEnter: { type: Boolean, default: true }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+// Declared before every resolver that closes over it: a computed getter is
+// lazy, so the old order happened to work, but it breaks the moment any
+// resolver is evaluated eagerly (see #199).
+const vibeDefaults = useVibeDefaults()
+
+const resolvedTeleport = computed(() => resolveProp(props.teleport, vibeDefaults.teleport, 'body'))
+
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
@@ -45,11 +60,19 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type header/body/footer slots. Default exposes bus payload.
+defineSlots<{
+  header?: () => unknown
+  default?: (props: { payload: unknown }) => unknown
+  footer?: () => unknown
+}>()
+
 const computedId = computed(() => props.id || _generatedId)
 
-const modalRef = ref<HTMLElement | null>(null)
-const bsModal = shallowRef<BootstrapModal | null>(null)
+const modalRef = useTemplateRef<HTMLElement>('modalRef')
 const isVisible = ref(false)
+// Payload delivered by a `modal:open` bus command, exposed to the default slot.
+const busPayload = ref<unknown>(undefined)
 
 // WCAG 2.4.3: focus must return to the trigger after the modal closes. Bootstrap's
 // own restore is unreliable when the modal is shown programmatically (no trigger
@@ -69,8 +92,19 @@ function getFocusableEls(): HTMLElement[] {
   return Array.from(modalRef.value.querySelectorAll<HTMLElement>(FOCUSABLE))
 }
 
-// Single keydown handler for the modal — handles both focus trapping and form submission.
+// Single keydown handler for the modal — handles focus trapping, form
+// submission, and close intent.
 function onModalKeydown(e: KeyboardEvent) {
+  // #183: own the Escape close intent so it survives a Bootstrap transition.
+  // Bootstrap drops hide() issued mid-transition (silent _isTransitioning
+  // guard) without telling the component, losing the close. requestHide
+  // stores the intent and consumes it when the transition settles. Runs even
+  // mid-transition (before isVisible flips). Skipped for static backdrops,
+  // which stay open on Escape by design.
+  if (e.key === 'Escape' && !props.staticBackdrop) {
+    requestHide()
+    return
+  }
   if (!isVisible.value) return
 
   // WCAG 2.1.1: Cmd/Ctrl+Enter submits the first <form> in the modal.
@@ -118,7 +152,8 @@ function removeInert() {
 }
 
 // Bug 1: in-flight guard to prevent concurrent async init races
-let initInFlight = false
+// (now owned by the composable, which serves queued reinits instead of
+// dropping them).
 
 // Bug 4: track whether listeners are attached to prevent stacking
 let listenersAttached = false
@@ -127,9 +162,57 @@ let listenersAttached = false
 // a Bootstrap Modal instance on a detached element during a mount/unmount race.
 let isUnmounted = false
 
+// #183: Bootstrap drops show()/hide() issued mid-transition (its
+// _isTransitioning guard returns silently, firing no events). Track the
+// in-flight direction ourselves: a contrary intent arriving mid-transition is
+// stored and consumed when the transition settles, so no request is lost.
+// The flag is set only for state-changing calls (redundant calls are silent
+// no-ops in Bootstrap too, so there is nothing to await for them).
+let transitioning = false
+let pendingDesired: boolean | null = null
+
+const requestShow = () => {
+  if (!bsModal.value || isUnmounted) return
+  if (transitioning) {
+    pendingDesired = true
+    return
+  }
+  if (!isVisible.value) {
+    transitioning = true
+    bsModal.value.show()
+  } else {
+    bsModal.value.show()
+  }
+}
+
+const requestHide = () => {
+  if (!bsModal.value || isUnmounted) return
+  if (transitioning) {
+    pendingDesired = false
+    return
+  }
+  if (isVisible.value) {
+    transitioning = true
+    bsModal.value.hide()
+  } else {
+    bsModal.value.hide()
+  }
+}
+
+// Consumes a queued intent once a transition settles. Runs after isVisible is
+// updated so the follow-up request sees fresh state.
+const settleTransition = () => {
+  transitioning = false
+  if (pendingDesired === null) return
+  const desired = pendingDesired
+  pendingDesired = null
+  if (desired) requestShow()
+  else requestHide()
+}
+
 const dialogClass = computed(() => {
   const classes = ['modal-dialog']
-  if (props.size) classes.push(`modal-${props.size}`)
+  if (resolvedSize.value) classes.push(`modal-${resolvedSize.value}`)
   if (props.centered) classes.push('modal-dialog-centered')
   if (props.scrollable) classes.push('modal-dialog-scrollable')
   if (props.fullscreen === true) {
@@ -154,6 +237,8 @@ const onShown = () => {
   isVisible.value = true
   emit('shown')
   emit('update:modelValue', true)
+  // Bus lifecycle: fires however the modal was opened (v-model, method, or bus).
+  emitEvent('modal:opened', { id: computedId.value })
   // WCAG 2.1.2: lock out the page behind the modal from keyboard / SR navigation.
   applyInert()
   // WCAG 2.4.3: move keyboard focus to the first form control so users don't
@@ -167,6 +252,7 @@ const onShown = () => {
     )
     ;(firstControl ?? getFocusableEls()[0])?.focus()
   }
+  settleTransition()
 }
 
 const onHide = () => {
@@ -177,6 +263,9 @@ const onHidden = () => {
   isVisible.value = false
   emit('hidden')
   emit('update:modelValue', false)
+  // Bus lifecycle + clear any payload delivered on open.
+  emitEvent('modal:closed', { id: computedId.value })
+  busPayload.value = undefined
   // WCAG 2.1.2: restore inert on any previously locked-out siblings.
   removeInert()
   // WCAG 2.4.3: return focus to the element that opened the modal.
@@ -184,104 +273,147 @@ const onHidden = () => {
     preFocusEl.focus()
   }
   preFocusEl = null
+  settleTransition()
 }
 
-// Bug 4: listener attach/detach helpers
-function attachListeners() {
+// Keydown wiring stays manual: the document-level Escape catcher and the
+// element trap are transition-window semantics the shared instance lifecycle
+// does not own. The four Bootstrap show/hide events ride the composable.
+let listenersEl: HTMLElement | null = null
+
+function attachKeydownListeners() {
   if (listenersAttached || !modalRef.value) return
-  modalRef.value.addEventListener('show.bs.modal', onShow)
-  modalRef.value.addEventListener('shown.bs.modal', onShown)
-  modalRef.value.addEventListener('hide.bs.modal', onHide)
-  modalRef.value.addEventListener('hidden.bs.modal', onHidden)
+  listenersEl = modalRef.value
   // Keyboard events bubble up from children to the modal root.
-  modalRef.value.addEventListener('keydown', onModalKeydown)
+  listenersEl.addEventListener('keydown', onModalKeydown)
+  // #183: element-level keydown misses Escape while focus sits outside the
+  // modal, which is exactly the opening-transition window. Catch it at
+  // document level for that window only; settled states keep Bootstrap's own
+  // handling (preserving stacked-modal behavior).
+  document.addEventListener('keydown', onDocumentKeydown)
   listenersAttached = true
 }
 
-function detachListeners() {
-  if (!listenersAttached || !modalRef.value) return
-  modalRef.value.removeEventListener('show.bs.modal', onShow)
-  modalRef.value.removeEventListener('shown.bs.modal', onShown)
-  modalRef.value.removeEventListener('hide.bs.modal', onHide)
-  modalRef.value.removeEventListener('hidden.bs.modal', onHidden)
-  modalRef.value.removeEventListener('keydown', onModalKeydown)
+function onDocumentKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape' || props.staticBackdrop || !transitioning) return
+  requestHide()
+}
+
+function detachKeydownListeners() {
+  if (!listenersAttached) return
+  if (listenersEl) {
+    listenersEl.removeEventListener('keydown', onModalKeydown)
+    listenersEl = null
+  }
+  document.removeEventListener('keydown', onDocumentKeydown)
   listenersAttached = false
 }
 
 // Bug 1: async init with in-flight guard
 // Bug 4: detach old listeners before dispose, attach after new instance
-const initModal = async () => {
-  if (!modalRef.value) return
-
-  // Bug 1: prevent concurrent init races
-  if (initInFlight) return
-  initInFlight = true
-
-  try {
-    // Cleanup existing instance
-    if (bsModal.value) {
-      detachListeners()
-      bsModal.value.dispose()
-      bsModal.value = null
-    }
-
-    const bootstrap = await import('bootstrap')
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!modalRef.value || isUnmounted) return
-
-    const Modal = bootstrap.Modal
-
-    bsModal.value = new Modal(modalRef.value, {
+// Instance construction owned by the shared composable (#247); the transition
+// state reset plus keydown wiring stay here (composable does not own them).
+const { init: initInstance, instance: bsModal } = useBootstrapInstance<BootstrapModal>({
+  // Template ref read at call time: it may be null during teardown, which the
+  // composable treats as a no-op instead of constructing on a detached node.
+  resolveElement: () => modalRef.value,
+  create: (el, bootstrap) =>
+    new bootstrap.Modal(el, {
       backdrop: props.staticBackdrop ? 'static' : true,
       keyboard: !props.staticBackdrop,
       focus: true
-    }) as BootstrapModal
+    }) as unknown as BootstrapModal,
+  disposeInstance: (modal) => modal.dispose(),
+  events: {
+    'show.bs.modal': onShow as EventListener,
+    'shown.bs.modal': onShown as EventListener,
+    'hide.bs.modal': onHide as EventListener,
+    'hidden.bs.modal': onHidden as EventListener
+  },
+  componentName: 'VibeModal',
+  onError: (error) => reportComponentError(emit, error)
+})
 
-    attachListeners()
+const initModal = async (): Promise<void> => {
+  if (!modalRef.value) return
 
-    if (props.modelValue) {
-      bsModal.value.show()
-    }
-  } catch (error) {
-    emit('component-error', {
-      message: 'Bootstrap JS not loaded. Modal will use data attributes only.',
-      componentName: 'VibeModal',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
+  detachKeydownListeners()
+  // Fresh instance, fresh transition tracking. The init-time show below
+  // re-arms the flag through requestShow.
+  transitioning = false
+  pendingDesired = null
+
+  await initInstance()
+  attachKeydownListeners()
+
+  if (props.modelValue) {
+    requestShow()
   }
 }
 
 onMounted(initModal)
 
 // Bug 2: just call dispose() directly — Bootstrap handles backdrop cleanup internally
-// Bug 4: detach listeners before dispose
+// (dispose itself is owned by the composable; this hook keeps the rest).
 onBeforeUnmount(() => {
   isUnmounted = true
+  pendingDesired = null
   // WCAG 2.1.2: must clear inert even if the modal was never formally closed.
   removeInert()
-  detachListeners()
-  bsModal.value?.dispose()
-  bsModal.value = null
+  detachKeydownListeners()
 })
 
 watch(() => props.modelValue, (newValue) => {
-  if (!bsModal.value) return
-  if (newValue && !isVisible.value) {
-    bsModal.value.show()
-  } else if (!newValue && isVisible.value) {
-    bsModal.value.hide()
-  }
+  if (newValue) requestShow()
+  else requestHide()
 })
 
 // Re-init when config changes
 watch(() => props.staticBackdrop, initModal)
 
-const show = () => bsModal.value?.show()
-const hide = () => bsModal.value?.hide()
+const show = () => requestShow()
+const hide = () => requestHide()
 const handleUpdate = () => bsModal.value?.handleUpdate()
+
+// #121: v-model and the bus command channel are mutually exclusive per instance.
+// Vue exposes a v-model binding as an `onUpdate:modelValue` listener on the vnode;
+// detect it once at setup (getCurrentInstance() is null outside setup, so the
+// bus controller below reads this captured flag, not a fresh lookup).
+const vModelBound = getCurrentInstance()?.vnode.props?.['onUpdate:modelValue'] != null
+const warnIfVModel = () => {
+  if (isDev() && vModelBound) {
+    console.warn(
+      `[VibeModal] "${computedId.value}" received a bus command while bound with v-model. ` +
+      'Use either v-model or the bus command channel for one instance, not both (#121).'
+    )
+  }
+}
+
+// Event-bus modal channel (#98): open/close this modal by id from anywhere.
+// Guards are cancelable; the payload is exposed to the default slot.
+const openFromBus = (payload?: unknown) => {
+  warnIfVModel()
+  let canceled = false
+  emitEvent('modal:beforeOpen', { id: computedId.value, cancel: () => { canceled = true } })
+  if (canceled) return
+  busPayload.value = payload
+  show()
+}
+const closeFromBus = () => {
+  warnIfVModel()
+  let canceled = false
+  emitEvent('modal:beforeClose', { id: computedId.value, cancel: () => { canceled = true } })
+  if (canceled) return
+  hide()
+}
+let unregisterModal = registerModal(computedId.value, { open: openFromBus, close: closeFromBus })
+// Re-register if the id changes after mount (e.g. a `:id` bound to data that
+// resolves later), so bus commands always reach this modal under its current id.
+watch(computedId, (id) => {
+  unregisterModal()
+  unregisterModal = registerModal(id, { open: openFromBus, close: closeFromBus })
+})
+onBeforeUnmount(() => unregisterModal())
 
 // Support Android back button in hybrid mobile apps
 useBackButton(() => {
@@ -294,7 +426,7 @@ defineExpose({ show, hide, handleUpdate, _unsafe_bsInstance: bsModal })
 </script>
 
 <template>
-  <Teleport :to="teleport === true ? 'body' : (teleport || undefined)" :disabled="!teleport">
+  <Teleport :to="resolvedTeleport === true ? 'body' : (resolvedTeleport || undefined)" :disabled="!resolvedTeleport">
     <div
       ref="modalRef"
       :id="computedId"
@@ -314,7 +446,7 @@ defineExpose({ show, hide, handleUpdate, _unsafe_bsInstance: bsModal })
             <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
           </div>
           <div class="modal-body">
-            <slot />
+            <slot :payload="busPayload" />
           </div>
           <div v-if="!hideFooter" class="modal-footer">
             <slot name="footer">

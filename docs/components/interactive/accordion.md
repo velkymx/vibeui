@@ -15,12 +15,14 @@ Collapsible accordion component for organizing content in a data-driven way.
 
 ```typescript
 interface AccordionItem {
-  id: string
+  id?: string   // Optional: a stable id is generated per item when omitted
   title: string
   content: string
   show?: boolean
 }
 ```
+
+> `id` is optional. Provide one when you need a predictable anchor or to target a panel from the event system; otherwise VibeUI generates a stable id per item.
 
 ## Events
 
@@ -105,6 +107,8 @@ const accordionItems = [
 **Automatic Initialization:** This component automatically initializes Bootstrap's Collapse functionality for each item when it is mounted, provided that Bootstrap's JavaScript is available in your project.
 
 **Reactivity:** The `show` property in the `AccordionItem` objects is watched. Changing it in your parent state will trigger the corresponding Bootstrap transition.
+
+**Announcement:** `aria-expanded` follows live collapse state (synced from Bootstrap show/hide events), and `show: true` paints expanded in markup before Bootstrap loads, so SSR and pre-JS output agree with the announcement.
 
 **Item ids:** Each `item.id` (and the accordion `id`) must contain only alphanumeric characters, hyphens, and underscores — Bootstrap's internal `querySelector` breaks on CSS-special characters. In dev mode an unsafe id logs a console warning.
 

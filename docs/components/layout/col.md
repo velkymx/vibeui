@@ -27,6 +27,8 @@ Column component for Bootstrap's grid system. Supports responsive sizing, offset
 | `orderXxl` | `OrderValue` | `undefined` | Order at `xxl` breakpoint |
 | `alignSelf` | `AlignItems` | `undefined` | Individual column vertical alignment |
 
+`false` on any sizing prop means "no opinion", same as absent: it emits no class and does not suppress the default `col`.
+
 ### Type Reference
 
 - **ColSize:** `1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 'auto'`

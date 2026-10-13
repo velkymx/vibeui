@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { reportComponentError } from '../utils/reportComponentError'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, ref, watch, onMounted } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, ToastPlacement, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 
@@ -18,12 +21,22 @@ const props = defineProps({
   variant: { type: String as () => Variant, default: undefined },
   autohide: { type: Boolean, default: true },
   delay: { type: Number, default: 5000 },
-  teleport: { type: [String, Boolean], default: 'body' },
+  teleport: { type: [String, Boolean], default: undefined },
   placement: { type: String as () => ToastPlacement, default: 'top-end' },
   // When true, render only the .toast element (no Teleport, no .toast-container wrapper).
   // Used by VibeToastHost to group multiple toasts under a single shared container.
   noContainer: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+// Declared before every resolver that closes over it: a computed getter is
+// lazy, so the old order happened to work, but it breaks the moment any
+// resolver is evaluated eagerly (see #199).
+const vibeDefaults = useVibeDefaults()
+
+const resolvedTeleport = computed(() => resolveProp(props.teleport, vibeDefaults.teleport, 'body'))
+
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
@@ -35,13 +48,12 @@ const emit = defineEmits<{
 }>()
 
 const computedId = computed(() => props.id ?? _toastId)
-const toastRef = ref<HTMLElement | null>(null)
-const bsToast = shallowRef<BootstrapToast | null>(null)
+const toastRef = useTemplateRef<HTMLElement>('toastRef')
 const isVisible = ref(false)
 
 const toastClass = computed(() => {
   const classes = ['toast']
-  if (props.variant) classes.push(`text-bg-${props.variant}`)
+  if (resolvedVariant.value) classes.push(`text-bg-${resolvedVariant.value}`)
   return classes.join(' ')
 })
 
@@ -77,69 +89,36 @@ const onHidden = () => {
   emit('update:modelValue', false)
 }
 
-const detachToastListeners = () => {
-  const el = toastRef.value
-  if (!el) return
-  el.removeEventListener('show.bs.toast', onShow)
-  el.removeEventListener('shown.bs.toast', onShown)
-  el.removeEventListener('hide.bs.toast', onHide)
-  el.removeEventListener('hidden.bs.toast', onHidden)
-}
-
-let initInFlight = false
-let isUnmounted = false
-
-const initToast = async () => {
-  if (!toastRef.value || initInFlight) return
-  initInFlight = true
-
-  detachToastListeners()
-
-  if (bsToast.value) {
-    bsToast.value.dispose()
-    bsToast.value = null
-  }
-
-  try {
-    const bootstrap = await import('bootstrap')
-    if (!toastRef.value || isUnmounted) return
-    const Toast = bootstrap.Toast
-
-    bsToast.value = new Toast(toastRef.value, {
+// Instance lifecycle owned by the shared composable (#247): lazy async
+// construction, per-instance toast listeners, dispose plus nulling, and
+// unmount-race guards (including queued reinits, which the old hand-rolled
+// init dropped). The exposed ref stays live through reinits.
+const { init: initInstance, instance: bsToast } = useBootstrapInstance<BootstrapToast>({
+  // Template ref read at call time: it may be null during teardown, which the
+  // composable treats as a no-op instead of constructing on a detached node.
+  resolveElement: () => toastRef.value,
+  create: (el, bootstrap) =>
+    new bootstrap.Toast(el, {
       autohide: props.autohide,
       delay: props.delay
-    }) as BootstrapToast
+    }) as unknown as BootstrapToast,
+  disposeInstance: (toast) => toast.dispose(),
+  events: {
+    'show.bs.toast': onShow as EventListener,
+    'shown.bs.toast': onShown as EventListener,
+    'hide.bs.toast': onHide as EventListener,
+    'hidden.bs.toast': onHidden as EventListener
+  },
+  componentName: 'VibeToast',
+  onError: (error) => reportComponentError(emit, error)
+})
 
-    toastRef.value.addEventListener('show.bs.toast', onShow)
-    toastRef.value.addEventListener('shown.bs.toast', onShown)
-    toastRef.value.addEventListener('hide.bs.toast', onHide)
-    toastRef.value.addEventListener('hidden.bs.toast', onHidden)
-
-    if (props.modelValue) {
-      bsToast.value.show()
-    }
-  } catch (error) {
-    emit('component-error', {
-      message: 'Bootstrap JS not loaded. Toast will use data attributes only.',
-      componentName: 'VibeToast',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-  }
+const initToast = async (): Promise<void> => {
+  await initInstance()
+  if (props.modelValue) bsToast.value?.show()
 }
 
 onMounted(initToast)
-
-onBeforeUnmount(() => {
-  isUnmounted = true
-  detachToastListeners()
-
-  if (bsToast.value) {
-    bsToast.value.dispose()
-    bsToast.value = null
-  }
-})
 
 watch(() => props.modelValue, (newValue) => {
   if (!bsToast.value) return
@@ -163,7 +142,7 @@ defineExpose({ show, hide, _unsafe_bsInstance: bsToast })
 // WCAG 4.1.3: only error/warning toasts may interrupt screen-reader speech
 // (role="alert" / assertive); success/info/neutral toasts are polite status
 // messages, per the ARIA convention Bootstrap documents for toasts.
-const isUrgent = computed(() => props.variant === 'danger' || props.variant === 'warning')
+const isUrgent = computed(() => resolvedVariant.value === 'danger' || resolvedVariant.value === 'warning')
 
 // Shared attrs for the .toast element — avoids repeating them in both template branches.
 // `as const` preserves the literal types ('true', role/aria-live unions) so they stay
@@ -180,13 +159,27 @@ const toastAttrs = computed(() => ({
 </script>
 
 <template>
-  <!-- Single Teleport: disabled when noContainer (VibeToastHost owns the wrapper)
-       or when the teleport prop is falsy (caller wants inline rendering). -->
+  <!-- noContainer renders a plain element root (no Teleport): VibeToastHost
+       places these inside a TransitionGroup, which can only track element
+       children. A (disabled) Teleport root would make Vue apply enter/leave
+       and FLIP classes to the invisible anchor instead of the .toast node
+       (see #218). -->
+  <div v-if="noContainer" ref="toastRef" v-bind="toastAttrs">
+    <div v-if="title || $slots.header" class="toast-header">
+      <slot name="header">
+        <strong class="me-auto">{{ title }}</strong>
+      </slot>
+      <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
+    </div>
+    <div class="toast-body"><slot /></div>
+  </div>
+  <!-- Single Teleport when the caller wants body-level rendering. -->
   <Teleport
-    :to="teleport === true ? 'body' : (teleport || undefined)"
-    :disabled="noContainer || !teleport"
+    v-else
+    :to="resolvedTeleport === true ? 'body' : (resolvedTeleport || undefined)"
+    :disabled="!resolvedTeleport"
   >
-    <div v-if="!noContainer" :class="containerClass" style="z-index: 1090">
+    <div :class="containerClass" style="z-index: 1090">
       <div ref="toastRef" v-bind="toastAttrs">
         <div v-if="title || $slots.header" class="toast-header">
           <slot name="header">
@@ -196,15 +189,6 @@ const toastAttrs = computed(() => ({
         </div>
         <div class="toast-body"><slot /></div>
       </div>
-    </div>
-    <div v-else ref="toastRef" v-bind="toastAttrs">
-      <div v-if="title || $slots.header" class="toast-header">
-        <slot name="header">
-          <strong class="me-auto">{{ title }}</strong>
-        </slot>
-        <button type="button" class="btn-close" aria-label="Close" @click="hide"></button>
-      </div>
-      <div class="toast-body"><slot /></div>
     </div>
   </Teleport>
 </template>

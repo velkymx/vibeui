@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { shallowRef, computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { reportComponentError } from '../utils/reportComponentError'
+import { useBootstrapInstance } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, watch, onMounted } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, Size, Direction, DropdownItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
 import { safeHref } from '../utils/safeHref'
 import { linkBindings } from '../utils/linkBindings'
-import { routeKey } from '../utils/routeKey'
+import { dropdownItemKey } from '../utils/dropdownItemKey'
 
 interface BootstrapDropdown {
   show: () => void
@@ -21,14 +24,26 @@ const _generatedId = useId('dropdown')
 const props = defineProps({
   id: { type: String, default: undefined },
   text: { type: String, default: 'Dropdown' },
-  variant: { type: String as () => Variant, default: 'primary' },
+  variant: { type: String as () => Variant, default: undefined },
   size: { type: String as () => Size, default: undefined },
   split: { type: Boolean, default: false },
   direction: { type: String as () => Direction, default: 'down' },
   menuEnd: { type: Boolean, default: false },
   items: { type: Array as () => DropdownItem[], required: true },
-  autoClose: { type: [Boolean, String], default: true }
+  autoClose: { type: [Boolean, String], default: true },
+  showEmpty: { type: Boolean, default: true },
+  emptyText: { type: String, default: 'No options' }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+// Declared before every resolver that closes over it: a computed getter is
+// lazy, so the old order happened to work, but it breaks the moment any
+// resolver is evaluated eagerly (see #199).
+const vibeDefaults = useVibeDefaults()
+
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, 'primary'))
+
 
 const emit = defineEmits<{
   (e: 'item-click', payload: { item: DropdownItem; index: number; event: Event }): void
@@ -39,17 +54,16 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
+// #147: type the dropdown slots.
+defineSlots<{
+  button?: () => unknown
+  header?: (props: { item: DropdownItem; index: number }) => unknown
+  item?: (props: { item: DropdownItem; index: number }) => unknown
+}>()
+
 const computedId = computed(() => props.id || _generatedId)
 
-const dropdownRef = ref<HTMLElement | null>(null)
-const bsDropdown = shallowRef<BootstrapDropdown | null>(null)
-let toggleEl: HTMLElement | null = null
-let reinitGuard = false
-let initInFlight = false
-
-// Set first in onBeforeUnmount — guards post-await section against constructing
-// a Bootstrap Dropdown instance on a detached element.
-let isUnmounted = false
+const dropdownRef = useTemplateRef<HTMLElement>('dropdownRef')
 
 const dropdownClass = computed(() => {
   if (props.direction === 'up') return 'dropup'
@@ -59,8 +73,8 @@ const dropdownClass = computed(() => {
 })
 
 const buttonClass = computed(() => {
-  const classes = ['btn', `btn-${props.variant}`]
-  if (props.size) classes.push(`btn-${props.size}`)
+  const classes = ['btn', `btn-${resolvedVariant.value}`]
+  if (resolvedSize.value) classes.push(`btn-${resolvedSize.value}`)
   return classes.join(' ')
 })
 
@@ -82,71 +96,31 @@ const onShown = () => emit('shown')
 const onHide = () => emit('hide')
 const onHidden = () => emit('hidden')
 
-const initDropdown = async () => {
-  if (!dropdownRef.value || initInFlight) return
-  initInFlight = true
-
-  try {
-    const bootstrap = await import('bootstrap')
-    const Dropdown = bootstrap.Dropdown
-
-    // Guard: component may have unmounted while the import was in-flight.
-    if (!dropdownRef.value || isUnmounted) return
-
-    toggleEl = dropdownRef.value.querySelector('.dropdown-toggle') as HTMLElement | null
-    if (toggleEl) {
-      bsDropdown.value = new Dropdown(toggleEl, {
-        autoClose: props.autoClose
-      }) as BootstrapDropdown
-
-      toggleEl.addEventListener('show.bs.dropdown', onShow)
-      toggleEl.addEventListener('shown.bs.dropdown', onShown)
-      toggleEl.addEventListener('hide.bs.dropdown', onHide)
-      toggleEl.addEventListener('hidden.bs.dropdown', onHidden)
-    }
-  } catch (error) {
-    emit('component-error', {
-      message: 'Bootstrap JS not loaded. Dropdown will use data attributes only.',
-      componentName: 'VibeDropdown',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-  }
-}
-
-const destroyDropdown = () => {
-  if (toggleEl) {
-    toggleEl.removeEventListener('show.bs.dropdown', onShow)
-    toggleEl.removeEventListener('shown.bs.dropdown', onShown)
-    toggleEl.removeEventListener('hide.bs.dropdown', onHide)
-    toggleEl.removeEventListener('hidden.bs.dropdown', onHidden)
-    toggleEl = null
-  }
-
-  if (bsDropdown.value) {
-    bsDropdown.value.dispose()
-    bsDropdown.value = null
-  }
-}
+// Instance lifecycle owned by the shared composable (#247). The Bootstrap
+// instance attaches to the .dropdown-toggle child (queried at call time, so a
+// re-rendered toggle resolves fresh); listeners ride the attached element.
+const { init: initDropdown, instance: bsDropdown } = useBootstrapInstance<BootstrapDropdown>({
+  resolveElement: () => dropdownRef.value?.querySelector('.dropdown-toggle') ?? null,
+  create: (el, bootstrap) =>
+    new bootstrap.Dropdown(el, {
+      autoClose: props.autoClose
+    }) as unknown as BootstrapDropdown,
+  disposeInstance: (dropdown) => dropdown.dispose(),
+  events: {
+    'show.bs.dropdown': onShow as EventListener,
+    'shown.bs.dropdown': onShown as EventListener,
+    'hide.bs.dropdown': onHide as EventListener,
+    'hidden.bs.dropdown': onHidden as EventListener
+  },
+  componentName: 'VibeDropdown',
+  onError: (error) => reportComponentError(emit, error)
+})
 
 onMounted(initDropdown)
 
-onBeforeUnmount(() => {
-  isUnmounted = true
-  destroyDropdown()
-})
-
 // Re-init when autoClose changes so the Bootstrap instance reflects the new config
-watch(() => props.autoClose, async () => {
-  if (reinitGuard) return
-  reinitGuard = true
-  try {
-    destroyDropdown()
-    await initDropdown()
-  } finally {
-    reinitGuard = false
-  }
+watch(() => props.autoClose, () => {
+  void initDropdown()
 })
 
 const handleItemClick = (item: DropdownItem, index: number, event: Event) => {
@@ -155,7 +129,6 @@ const handleItemClick = (item: DropdownItem, index: number, event: Event) => {
   }
 }
 
-// Programmatic control
 const show = () => bsDropdown.value?.show()
 const hide = () => bsDropdown.value?.hide()
 const toggle = () => bsDropdown.value?.toggle()
@@ -172,6 +145,7 @@ defineExpose({ show, hide, toggle })
       type="button"
       data-bs-toggle="dropdown"
       aria-expanded="false"
+      :disabled="items.length === 0 || undefined"
       :data-bs-auto-close="autoClose"
     >
       <slot name="button">{{ text }}</slot>
@@ -191,6 +165,7 @@ defineExpose({ show, hide, toggle })
         :class="[buttonClass, 'dropdown-toggle', 'dropdown-toggle-split']"
         data-bs-toggle="dropdown"
         aria-expanded="false"
+        :disabled="items.length === 0 || undefined"
         :data-bs-auto-close="autoClose"
       >
         <span class="visually-hidden">Toggle Dropdown</span>
@@ -198,7 +173,10 @@ defineExpose({ show, hide, toggle })
     </template>
 
     <ul :class="menuClass" :aria-labelledby="computedId">
-      <template v-for="(item, index) in items" :key="item.text || item.href || routeKey(item.to) || index">
+      <li v-if="items.length === 0 && showEmpty" class="dropdown-item-text text-body-secondary">
+        {{ emptyText }}
+      </li>
+      <template v-for="(item, index) in items" :key="dropdownItemKey(item, index, 'VibeDropdown')">
         <li v-if="item.divider"><hr class="dropdown-divider"></li>
         <li v-else-if="item.header">
           <h6 class="dropdown-header">

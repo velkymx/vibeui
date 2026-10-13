@@ -14,7 +14,7 @@ Registered globally by `app.use(VibeUI)`.
   </button>
 
   <!-- Options object -->
-  <span v-vibe-tooltip="{ title: 'New tab', placement: 'right' }">
+  <span v-vibe-tooltip="{ title: 'New tab', placement: 'end' }">
     <VibeIcon name="external-link" />
   </span>
 </template>
@@ -37,6 +37,10 @@ Registered globally by `app.use(VibeUI)`.
 | `trigger` | `string` | `'hover focus'` | Auto-swaps to `'click'` on touch devices |
 
 > Tooltip content is always rendered as plain text (`html: false`). HTML in `title` is escaped; there is no `html` option on this directive.
+
+## Typed under global registration
+
+When registered via `app.use(VibeUI)`, `v-vibe-tooltip` is type-checked in templates: binding values autocomplete (`string` or `{ title, placement, trigger }`) and misspelled directive names are flagged by `vue-tsc`/Volar with no extra setup, the same as globally registered components.
 
 ## Direct import
 

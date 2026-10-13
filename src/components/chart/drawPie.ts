@@ -56,7 +56,7 @@ export function hitTestPie(
   if (total === 0) return null
 
   // Normalize angle so 0 = top (-PI/2), going clockwise
-  let angle = (Math.atan2(dy, dx) + Math.PI * 2.5) % (Math.PI * 2)
+  const angle = (Math.atan2(dy, dx) + Math.PI * 2.5) % (Math.PI * 2)
 
   let cumAngle = 0
   for (const [i, v] of values.entries()) {

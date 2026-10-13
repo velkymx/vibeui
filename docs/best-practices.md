@@ -156,9 +156,11 @@ import { VibeButton, VibeModal } from '@velkymx/vibeui'
 
 **VibeUI.**
 
-- Named imports (`import { VibeButton } from '@velkymx/vibeui'`) give you **template type-checking** of props with `vue-tsc`.
+- **Global registration is typed too:** VibeUI ships a `GlobalComponents` augmentation, so components registered by `app.use(VibeUI)` are type-checked in templates (props/events/slots) under `vue-tsc`/Volar with no extra setup — importing the package loads it.
+- Named imports (`import { VibeButton } from '@velkymx/vibeui'`) also give **template type-checking** of props with `vue-tsc`.
 - Public types are exported from the package: `Variant`, `Size`, `FormSelectOption`, `DataTableColumn<T>`, `ComponentError`, and the WYSIWYG `QuillLoader` / `Sanitizer` / `VibeUIOptions`.
 - `VibeFormSelect` preserves typed primitive option values (`number`, `boolean`, `null`) through `v-model` — you don't stringify.
+- **Scoped slot props are typed:** `defineSlots<>()` types `#item`, `cell(<key>)`, `#page`, `#pane`, `#label`, `#marker`, `#step`, `#actions`, and modal `#default` (`{ payload }`), so slot props autocomplete and type-check instead of `any`. DataTable cells are per-key (`value: T[K]`); Sortable slots carry the row type `T`.
 
 ---
 
@@ -174,6 +176,8 @@ import { VibeButton, VibeModal } from '@velkymx/vibeui'
 | hand-written `<ul class="nav">` / `<div class="card">` | `<VibeNav :items>` / `<VibeCard>` |
 | reverse-engineering props from `dist/` | read the component's doc page |
 | mutating chart data in place | replace the data reference immutably |
+
+Enforce the "use the component" habit automatically with the [`use-vibeui` ESLint rule](./eslint/use-vibeui.md): it flags raw `<button>` / `<a>` / `<input>` / `<table>` / `<nav>` (and the table family) that have a VibeUI equivalent.
 
 ---
 

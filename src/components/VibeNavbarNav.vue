@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { reportComponentError } from '../utils/reportComponentError'
+import { useBootstrapInstanceMap } from '../composables/useBootstrapInstance'
+import { computed, useTemplateRef, watch, onMounted, nextTick } from 'vue'
 import type { NavItem, DropdownItem, ComponentError } from '../types'
 import { linkBindings } from '../utils/linkBindings'
 import { safeHref } from '../utils/safeHref'
+import { dropdownItemKey } from '../utils/dropdownItemKey'
 
 interface BootstrapDropdown {
   dispose: () => void
@@ -19,43 +22,41 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const navbarNavRef = ref<HTMLElement | null>(null)
-const bsDropdowns = new Map<HTMLElement, BootstrapDropdown>()
+// #147: type item slots.
+defineSlots<{
+  item?: (props: { item: NavItem; index: number }) => unknown
+  'dropdown-item'?: (props: { item: NavItem; child: DropdownItem; index: number; childIndex: number }) => unknown
+  default?: () => unknown
+}>()
 
-const initDropdowns = async () => {
+const navbarNavRef = useTemplateRef<HTMLElement>('navbarNavRef')
+
+// One Bootstrap Dropdown per toggle element, owned by the shared keyed map
+// (#247). No listeners to manage; unmount-race guards plus dispose-all on
+// teardown and on items change come from the map.
+const dropdownOwners = useBootstrapInstanceMap<BootstrapDropdown>({
+  create: (el, bootstrap) => new bootstrap.Dropdown(el) as unknown as BootstrapDropdown,
+  disposeInstance: (dropdown) => dropdown.dispose(),
+  componentName: 'VibeNavbarNav',
+  onError: (error) => reportComponentError(emit, error)
+})
+
+const initDropdowns = async (): Promise<void> => {
   if (!navbarNavRef.value) return
-  try {
-    const bootstrap = await import('bootstrap')
-    const Dropdown = bootstrap.Dropdown
-    const toggleEls = navbarNavRef.value.querySelectorAll<HTMLElement>('[data-bs-toggle="dropdown"]')
-    toggleEls.forEach(el => {
-      if (!bsDropdowns.has(el)) {
-        bsDropdowns.set(el, new Dropdown(el) as BootstrapDropdown)
-      }
-    })
-  } catch (error) {
-    emit('component-error', {
-      message: 'Bootstrap JS not loaded. Dropdowns will use data attributes only.',
-      componentName: 'VibeNavbarNav',
-      originalError: error
-    })
+  const toggleEls = navbarNavRef.value.querySelectorAll<HTMLElement>('[data-bs-toggle="dropdown"]')
+  for (const el of toggleEls) {
+    if (!dropdownOwners.has(el)) void dropdownOwners.ensure(el)
   }
 }
 
 onMounted(initDropdowns)
-
-onBeforeUnmount(() => {
-  bsDropdowns.forEach(d => d.dispose())
-  bsDropdowns.clear()
-})
 
 // deep: false — dropdown presence depends on items array identity, not leaf values.
 // Replacing the items array (the data-driven update pattern) changes identity and
 // triggers a rebuild; deep traversal only added cost for leaf mutations that do not
 // affect dropdown structure.
 watch(() => props.items, async () => {
-  bsDropdowns.forEach(d => d.dispose())
-  bsDropdowns.clear()
+  dropdownOwners.disposeAll()
   await nextTick()
   await initDropdowns()
 }, { deep: false })
@@ -100,19 +101,42 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
     emit('dropdown-item-click', { item, itemIndex, child, childIndex, event })
   }
 }
+
+// Per-item render data, computed once per items change instead of re-running
+// tag/class/link resolution on every render (see #198). Dropdown children are
+// included so nested rows resolve from the same maps.
+const linkMeta = computed(() => {
+  const itemCls = new Map<NavItem, string>()
+  const linkCls = new Map<NavItem, string>()
+  const tag = new Map<NavItem | DropdownItem, string>()
+  const links = new Map<NavItem | DropdownItem, Record<string, unknown>>()
+  const dropCls = new Map<DropdownItem, string>()
+  for (const item of props.items ?? []) {
+    itemCls.set(item, getItemClass(item))
+    linkCls.set(item, getLinkClass(item))
+    tag.set(item, getItemTag(item))
+    links.set(item, linkBindings(safeHref(item.href), item.to))
+    for (const child of item.children ?? []) {
+      tag.set(child, getItemTag(child))
+      dropCls.set(child, getDropdownItemClass(child))
+      links.set(child, linkBindings(safeHref(child.href), child.to))
+    }
+  }
+  return { itemCls, linkCls, tag, links, dropCls }
+})
 </script>
 
 <template>
   <component :is="tag" ref="navbarNavRef" class="navbar-nav">
     <!-- Data-driven mode: generate from items array -->
     <template v-if="items && items.length > 0">
-      <li v-for="(item, index) in items" :key="item.href || item.text || String(index)" :class="getItemClass(item)">
+      <li v-for="(item, index) in items" :key="dropdownItemKey(item, index, 'VibeNavbarNav')" :class="linkMeta.itemCls.get(item)">
 
         <!-- Dropdown item -->
         <template v-if="item.children?.length">
           <button
             type="button"
-            :class="getLinkClass(item)"
+            :class="linkMeta.linkCls.get(item)"
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
@@ -121,7 +145,7 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
             </slot>
           </button>
           <ul class="dropdown-menu">
-            <template v-for="(child, childIndex) in item.children" :key="child.href || child.text || String(childIndex)">
+            <template v-for="(child, childIndex) in item.children" :key="dropdownItemKey(child, childIndex, 'VibeNavbarNav')">
               <li v-if="child.divider">
                 <hr class="dropdown-divider">
               </li>
@@ -130,13 +154,13 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
               </li>
               <li v-else>
                 <component
-                  :is="getItemTag(child)"
-                  :class="getDropdownItemClass(child)"
-                  v-bind="linkBindings(safeHref(child.href), child.to)"
-                  :type="getItemTag(child) === 'button' ? 'button' : undefined"
+                  :is="linkMeta.tag.get(child)"
+                  :class="linkMeta.dropCls.get(child)"
+                  v-bind="linkMeta.links.get(child)"
+                  :type="linkMeta.tag.get(child) === 'button' ? 'button' : undefined"
                   @click="handleDropdownItemClick(item, index, child, childIndex, $event)"
                 >
-                  <slot name="dropdown-item" :item="item" :child="child" :index="index" :child-index="childIndex">
+                  <slot name="dropdown-item" :item="item" :child="child" :index="index" :childIndex="childIndex">
                     {{ child.text }}
                   </slot>
                 </component>
@@ -148,10 +172,10 @@ const handleDropdownItemClick = (item: NavItem, itemIndex: number, child: Dropdo
         <!-- Regular nav-link -->
         <component
           v-else
-          :is="getItemTag(item)"
-          :class="getLinkClass(item)"
-          v-bind="linkBindings(safeHref(item.href), item.to)"
-          :type="getItemTag(item) === 'button' ? 'button' : undefined"
+          :is="linkMeta.tag.get(item)"
+          :class="linkMeta.linkCls.get(item)"
+          v-bind="linkMeta.links.get(item)"
+          :type="linkMeta.tag.get(item) === 'button' ? 'button' : undefined"
           :aria-current="item.active ? 'page' : undefined"
           :aria-disabled="item.disabled"
           @click="handleItemClick(item, index, $event)"

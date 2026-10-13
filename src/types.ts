@@ -7,6 +7,93 @@ export interface ComponentError {
   originalError: unknown
 }
 
+/**
+ * Payload for the bus `error:unhandled` event: a Tier 1 supported event was
+ * emitted with no target to act on it (e.g. `notification:show` with no
+ * `VibeToastHost` mounted).
+ */
+export interface UnhandledEventError {
+  event: string
+  id?: string
+  message: string
+}
+
+/**
+ * The typed event catalog for the VibeUI event bus. Library channels are
+ * declared here; consumers add their own events by declaration merging:
+ *
+ * ```ts
+ * declare module '@velkymx/vibeui' {
+ *   interface VibeEventMap { 'cart:add': { productId: string; qty: number } }
+ * }
+ * ```
+ *
+ * Events not listed here still work via the string-key fallback on the bus,
+ * with an `unknown` payload.
+ */
+export interface VibeEventMap {
+  /** Any component reported an error (the anchor channel; always present). */
+  'error:component': ComponentError
+  /** A supported event was emitted with no handler/target to act on it. */
+  'error:unhandled': UnhandledEventError
+
+  // Notification channel. Command events are handled by a mounted VibeToastHost;
+  // lifecycle events are published by the toast store.
+  /** Command: raise a toast from anywhere (needs a mounted VibeToastHost). */
+  'notification:show': { message: string; type: 'success' | 'error' | 'info' }
+  /** Command: dismiss a toast by id. */
+  'notification:dismiss': { id: string }
+  /** Lifecycle: a toast was created. */
+  'notification:shown': { id: string }
+  /** Lifecycle: a toast was removed. */
+  'notification:dismissed': { id: string }
+
+  // Modal channel. Command events are handled by the VibeModal with the given id;
+  // guard events are cancelable; lifecycle events fire after the transition.
+  /** Command: open the modal with this id, optionally passing a payload. */
+  'modal:open': { id: string; payload?: unknown }
+  /** Command: close the modal with this id. */
+  'modal:close': { id: string }
+  /** Guard: about to open; call `cancel()` to veto. */
+  'modal:beforeOpen': { id: string; cancel: () => void }
+  /** Guard: about to close; call `cancel()` to veto. */
+  'modal:beforeClose': { id: string; cancel: () => void }
+  /** Lifecycle: the modal finished opening. */
+  'modal:opened': { id: string }
+  /** Lifecycle: the modal finished closing. */
+  'modal:closed': { id: string }
+
+  // Theme channel. Command sets the color mode; lifecycle fires when the
+  // resolved (light/dark) theme changes, including OS changes in auto mode.
+  /** Command: set the color mode to light or dark. */
+  'theme:set': { theme: 'light' | 'dark' }
+  /** Lifecycle: the resolved theme changed. */
+  'theme:changed': { theme: 'light' | 'dark' }
+
+  // Layout / offcanvas channel. Command events are handled by the VibeOffcanvas
+  // with the given id; layout:sidebar-toggle targets the offcanvas flagged as the
+  // sidebar. Lifecycle events fire after the transition.
+  /** Command: open the offcanvas with this id. */
+  'offcanvas:open': { id: string }
+  /** Command: close the offcanvas with this id. */
+  'offcanvas:close': { id: string }
+  /** Command: toggle the offcanvas with this id. */
+  'offcanvas:toggle': { id: string }
+  /** Lifecycle: the offcanvas finished opening. */
+  'offcanvas:opened': { id: string }
+  /** Lifecycle: the offcanvas finished closing. */
+  'offcanvas:closed': { id: string }
+  /** Command: toggle the designated sidebar offcanvas. */
+  'layout:sidebar-toggle': void
+  /** Lifecycle: the sidebar's open state changed. */
+  'layout:sidebar-toggled': { open: boolean }
+
+  // Navigation channel. The app publishes breadcrumb updates from anywhere; a
+  // VibeBreadcrumb with `bus-updates` subscribes and renders them.
+  /** Publish the current breadcrumb trail. */
+  'nav:breadcrumb-updated': { items: { label: string; path: string }[] }
+}
+
 export type ColorMode = 'light' | 'dark' | 'auto'
 
 export type Variant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark'
@@ -44,19 +131,39 @@ export type JustifyContent = 'start' | 'center' | 'end' | 'around' | 'between' |
 // DataTable types
 export type SortDirection = 'asc' | 'desc' | null
 
-export interface DataTableColumn<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface DataTableColumn<T extends object = Record<string, unknown>> {
   key: keyof T & string
   label: string
   sortable?: boolean
   searchable?: boolean
   formatter?: (value: T[keyof T], row: T) => string | number
+  // #70: text to search for this column. Use it when the displayed value comes
+  // from a #cell slot (not visible to the filter) or differs from the raw value.
+  // Takes precedence over `formatter`, which is itself searched when present.
+  searchValue?: (row: T) => string | number
   class?: string
   headerClass?: string
   thStyle?: Record<string, string>
   tdStyle?: Record<string, string>
+  // #283 Phase 2b: per-column filter control rendered in the filter row.
+  // 'text' (displayed-text contains), 'select' (equals a faceted unique value),
+  // 'range' (numeric min/max). Omitted = no filter input for this column.
+  filter?: 'text' | 'select' | 'range'
+  // #283 Phase 3a: cell/header text alignment (Bootstrap text-* utility) and a
+  // validated column width (number = px, string = any safe CSS length).
+  align?: 'start' | 'center' | 'end'
+  width?: string | number
+  // #283 Phase 3b: pin to the logical start/end (sticky) and allow resizing.
+  pinned?: 'start' | 'end'
+  resizable?: boolean
+  // #283 Phase 4b: aggregation for group header cells ('sum' etc. use the
+  // built-in aggregationFns; a function receives the leaf values) and static
+  // footer text (overridden by the footer(key) slot).
+  aggregate?: 'sum' | 'mean' | 'min' | 'max' | 'count' | ((values: unknown[]) => unknown)
+  footer?: string
 }
 
-export interface DataTableCellSlotProps<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface DataTableCellSlotProps<T extends object = Record<string, unknown>> {
   item: T
   value: T[keyof T]
   index: number
@@ -100,10 +207,19 @@ export interface ListGroupItem {
   active?: boolean
   disabled?: boolean
   variant?: Variant
+  // #34: override the auto-chosen wrapper element (e.g. 'button' for an
+  // actionable row). Defaults to a/router-link/li based on href/to.
+  // Narrowed to inert elements: this value is resolved by `<component :is>`,
+  // so an arbitrary string from API data would let a caller pick any tag
+  // name (see #199).
+  tag?: 'li' | 'button' | 'div' | 'span' | 'a'
+  // #34: extra classes merged onto the list-group-item element.
+  class?: string
 }
 
 export interface AccordionItem {
-  id: string
+  // Optional: when omitted, VibeAccordion generates a stable id per item.
+  id?: string
   title: string
   content: string
   show?: boolean
@@ -199,6 +315,23 @@ export interface VibeWysiwygConfig {
 }
 export interface VibeUIOptions {
   wysiwyg?: VibeWysiwygConfig
+  defaults?: VibeDefaults
+}
+
+/**
+ * #159: library-wide prop defaults set once at `app.use(VibeUI, { defaults })`.
+ * Every key is opt-in; an explicit per-instance prop always wins, then the
+ * global default, then the component builtin. Variant/size apply only where
+ * the prop type accepts them (standard Variant/Size components; Skeleton and
+ * Tabs keep their specialized variants).
+ */
+export interface VibeDefaults {
+  variant?: Variant
+  size?: Size
+  toastPosition?: ToastPlacement
+  teleport?: string | boolean
+  debounce?: number
+  hideOptional?: boolean
 }
 
 // Chart types

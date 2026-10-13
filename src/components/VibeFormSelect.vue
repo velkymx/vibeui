@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { useTemplateRef, computed, onMounted, watch } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { FormSelectOption, FormSelectOptionValue, ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
@@ -50,6 +51,10 @@ const props = defineProps({
   validateOn: { type: String as PropType<'change' | 'blur'>, default: 'change' },
   helpText: { type: String, default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'validate'): void
@@ -73,7 +78,7 @@ const {
 
 const selectClass = computed(() => {
   const classes = ['form-select']
-  if (props.size) classes.push(`form-select-${props.size}`)
+  if (resolvedSize.value) classes.push(`form-select-${resolvedSize.value}`)
   if (validationClass.value) classes.push(validationClass.value)
   return classes.join(' ')
 })
@@ -99,7 +104,7 @@ const handleInput = (event: Event) => {
 // per-option, because an option's selectedness is not reliably retained while its
 // siblings are still being inserted. Vue's own v-model on <select> resolves this by
 // applying selectedness imperatively once the options are in the DOM — mirror that.
-const selectEl = ref<HTMLSelectElement | null>(null)
+const selectEl = useTemplateRef<HTMLSelectElement>('selectEl')
 
 // Index into `props.options`; -1 when the model matches no option. First match wins,
 // so duplicate values resolve to the earliest option.
@@ -131,7 +136,9 @@ const syncSelection = () => {
 
   // The placeholder occupies DOM index 0 and is not part of `props.options`. An
   // unmatched model falls back to it, mirroring a native unselected select.
-  const placeholderOffset = props.placeholder ? 1 : 0
+  // The offset exists only when the placeholder option is rendered (single
+  // mode): under `multiple` the template omits it, so option indexes map 1:1.
+  const placeholderOffset = props.placeholder && !props.multiple ? 1 : 0
   el.selectedIndex = selectedIndex.value < 0
     ? (placeholderOffset ? 0 : -1)
     : selectedIndex.value + placeholderOffset
@@ -139,10 +146,21 @@ const syncSelection = () => {
 
 onMounted(syncSelection)
 // `post` flush runs after the option elements have been patched into the DOM.
+// #131: no `deep` watcher. syncSelection only needs to re-run when the model, the
+// options identity/length, `multiple`, or `placeholder` change. Tracking
+// `() => props.options` (reference) plus its length catches replacement and
+// in-place length changes without the O(options) deep traversal on every change.
+// Consumers should replace the options array rather than mutate it in place.
 watch(
-  [modelValue, () => props.options, () => props.multiple, () => props.placeholder],
+  [
+    modelValue,
+    () => props.options,
+    () => props.options.length,
+    () => props.multiple,
+    () => props.placeholder,
+  ],
   syncSelection,
-  { flush: 'post', deep: true }
+  { flush: 'post' }
 )
 
 const handleChange = (event: Event) => {

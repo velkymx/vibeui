@@ -4,7 +4,7 @@ Rich-text editor powered by Quill. HTML is sanitized with a consumer-provided sa
 
 ## Peer dependencies (consumer-injected)
 
-> **Changed in 2.0.** VibeUI no longer imports `quill` or `dompurify` itself — so the library's build contains **no** reference to them, and a project that never uses `VibeFormWysiwyg` gets no bundler warnings/errors even under warnings-as-errors. You provide the peers.
+> VibeUI does not import `quill` or `dompurify` itself, so the library build contains **no** reference to them: a project that never uses `VibeFormWysiwyg` gets no bundler warnings or errors even under warnings-as-errors. You provide the peers.
 
 Install the peers and import Quill's theme CSS in your own app:
 
@@ -51,15 +51,6 @@ What happens if you skip one:
 
 `makeDomPurifySanitizer(DOMPurify)` builds a sanitizer bound to DOMPurify and VibeUI's `WYSIWYG_PURIFY_CONFIG` allowlist (both exported from the package). You can also pass any `(html: string) => string`.
 
-## Migration from 1.x
-
-1.x auto-imported `quill`, its snow CSS, and `dompurify`. In 2.0 you must:
-
-1. `import 'quill/dist/quill.snow.css'` in your app.
-2. Provide `quillLoader` (and, for sanitization, `sanitizer`) via `app.use(VibeUI, { wysiwyg: { … } })` or the `:quill-loader` / `:sanitizer` props.
-
-No other props or events changed.
-
 ## Props
 
 | Prop | Type | Default | Description |
@@ -98,6 +89,10 @@ No other props or events changed.
 ## Slots
 
 None.
+
+## Loading state
+
+While the Quill loader is pending, the component renders a `role="status"` region with `aria-busy="true"` and a Bootstrap spinner (`Loading editor...`) instead of an empty box. The editor container stays mounted but hidden until Quill initializes.
 
 ## Usage
 

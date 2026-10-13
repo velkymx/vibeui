@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { safeLength } from '../utils/safeCss'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { Variant, Size, PlaceholderAnimation, Tag } from '../types'
 
 const props = defineProps({
@@ -9,11 +11,21 @@ const props = defineProps({
   width: { type: [String, Number], default: undefined },
   tag: { type: String as () => Tag, default: 'span' }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+// Declared before every resolver that closes over it: a computed getter is
+// lazy, so the old order happened to work, but it breaks the moment any
+// resolver is evaluated eagerly (see #199).
+const vibeDefaults = useVibeDefaults()
+
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
+const resolvedVariant = computed(() => resolveProp(props.variant, vibeDefaults.variant, undefined))
+
 
 const placeholderClass = computed(() => {
   const classes = ['placeholder']
-  if (props.variant) classes.push(`bg-${props.variant}`)
-  if (props.size) classes.push(`placeholder-${props.size}`)
+  if (resolvedVariant.value) classes.push(`bg-${resolvedVariant.value}`)
+  if (resolvedSize.value) classes.push(`placeholder-${resolvedSize.value}`)
   return classes.join(' ')
 })
 
@@ -23,11 +35,13 @@ const containerClass = computed(() => {
 })
 
 const widthStyle = computed(() => {
-  if (props.width) {
-    const value = typeof props.width === 'number' ? `${props.width}%` : props.width
-    return { width: value }
-  }
-  return undefined
+  const value = props.width
+  if (value === undefined || value === null || value === '') return undefined
+  // Freeform consumer string: validate before it reaches :style (see #193).
+  const resolved = typeof value === 'number'
+    ? (Number.isFinite(value) ? `${value}%` : undefined)
+    : safeLength(String(value))
+  return resolved ? { width: resolved } : undefined
 })
 </script>
 

@@ -128,6 +128,8 @@ function save() {
 
 **Escape Hatch:** The exposed `_unsafe_bsInstance` template ref gives raw access to the underlying Bootstrap Modal instance. It is **not** part of the stable API — calling `dispose()` or other lifecycle methods on it directly **will** break the component. Prefer `v-model` and the exposed `show()` / `hide()` methods.
 
+**One control path per instance:** Drive a modal with either `v-model` or the event bus command channel (`modal:open` / `modal:close` by `id`), not both. The two paths are not reconciled, so a bus command on a `v-model`-bound modal logs a development warning. See [useEventBus](../../composables/event-bus.md#pick-one-control-path-per-instance).
+
 ## Mobile Optimization
 
 **Safe Areas:** In fullscreen mode, the modal header and footer automatically respect device safe areas (notches) in hybrid apps.

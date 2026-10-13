@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import VibeFieldFeedback from './VibeFieldFeedback.vue'
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import type { PropType } from 'vue'
 import type { ValidationState, ValidationRule, ValidatorFunction, Size } from '../types'
 import { useFormField } from '../composables/useFormField'
 
 // v-model via defineModel (Vue 3.4+): replaces the modelValue prop + update:modelValue emit.
-const modelValue = defineModel<string>({ default: '' })
+// #148: destructured for modelModifiers (.lazy gates input vs change commits;
+// .trim/.number need no component code, Vue core applies them to update:* args).
+const [modelValue, modelModifiers] = defineModel<string>({ default: '' })
 
 // Consumer HTML attributes (name, wrap, …) belong on the native <textarea>, not the
 // wrapper <div> — native form submission needs `name` on the control. Auto-inheritance
@@ -34,6 +37,10 @@ const props = defineProps({
   // feedback), so it can be a direct flex child (e.g. an auto-grow composer).
   noWrapper: { type: Boolean, default: false }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedSize = computed(() => resolveProp(props.size, vibeDefaults.size, undefined))
+
 
 const emit = defineEmits<{
   (e: 'validate'): void
@@ -58,26 +65,25 @@ const {
 
 const textareaClass = computed(() => {
   const classes = ['form-control']
-  if (props.size) classes.push(`form-control-${props.size}`)
+  if (resolvedSize.value) classes.push(`form-control-${resolvedSize.value}`)
   if (validationClass.value) classes.push(validationClass.value)
+  // #155: static resize-off state lives in the stylesheet, not an inline :style.
+  if (props.noResize) classes.push('vibe-textarea-no-resize')
   return classes.join(' ')
-})
-
-const textareaStyle = computed(() => {
-  if (props.noResize) return { resize: 'none' as const }
-  return undefined
 })
 
 const currentCount = computed(() => modelValue.value?.length || 0)
 
 const handleInput = (event: Event) => {
-  const target = event.target as HTMLTextAreaElement
-  modelValue.value = target.value
+  // #148: .lazy defers the model commit to change.
+  if (!modelModifiers.lazy) modelValue.value = (event.target as HTMLTextAreaElement).value
   emit('input', event)
   if (props.validateOn === 'input') emit('validate')
 }
 
 const handleChange = (event: Event) => {
+  // #148: .lazy commits here instead of on input.
+  if (modelModifiers.lazy) modelValue.value = (event.target as HTMLTextAreaElement).value
   emit('change', event)
   if (props.validateOn === 'change') emit('validate')
 }
@@ -102,7 +108,6 @@ const handleFocus = (event: FocusEvent) => {
       v-bind="$attrs"
       :id="computedId"
       :class="textareaClass"
-      :style="textareaStyle"
       :value="modelValue"
       :placeholder="placeholder"
       :rows="rows"
@@ -141,7 +146,6 @@ const handleFocus = (event: FocusEvent) => {
     v-bind="$attrs"
     :id="computedId"
     :class="textareaClass"
-    :style="textareaStyle"
     :value="modelValue"
     :placeholder="placeholder"
     :rows="rows"
@@ -157,3 +161,10 @@ const handleFocus = (event: FocusEvent) => {
     @focus="handleFocus"
   ></textarea>
 </template>
+
+<style scoped>
+/* #155: static resize-off state for noResize (was an inline :style). */
+.vibe-textarea-no-resize {
+  resize: none;
+}
+</style>

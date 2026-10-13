@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, KeepAlive } from 'vue'
 import VibeStepper from '../../src/components/VibeStepper.vue'
 
 const baseSteps = [
@@ -184,6 +184,122 @@ describe('VibeStepper', () => {
       await wrapper.find('[data-stepper-next]').trigger('click')
       await new Promise(r => setTimeout(r, 10))
       expect((wrapper.vm as unknown as { active: number }).active).toBe(0)
+    })
+  })
+
+  // #188: onDeactivated latched isUnmounted and nothing reset it, so after one
+  // KeepAlive deactivate/activate cycle the async guards returned before emitting
+  // and the finally never cleared transitioning, wedging the stepper.
+  describe('KeepAlive deactivate/activate (#188)', () => {
+    const makeKeepAliveHarness = () =>
+      defineComponent({
+        components: { VibeStepper },
+        data() {
+          return { active: 0, show: true }
+        },
+        render() {
+          return h(KeepAlive, null, {
+            default: () =>
+              this.show
+                ? h(VibeStepper as never, {
+                    steps: baseSteps,
+                    modelValue: this.active,
+                    'onUpdate:modelValue': (v: number) => {
+                      this.active = v
+                    }
+                  })
+                : h('div', 'away')
+          })
+        }
+      })
+
+    it('still advances after a deactivate/activate cycle', async () => {
+      const wrapper = mount(makeKeepAliveHarness(), { attachTo: document.body })
+      const vm = wrapper.vm as unknown as { active: number; show: boolean }
+
+      // Deactivate (KeepAlive caches the stepper), then reactivate.
+      vm.show = false
+      await nextTick()
+      vm.show = true
+      await nextTick()
+
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await nextTick()
+      expect(vm.active).toBe(1)
+      wrapper.unmount()
+    })
+
+    it('does not leave the transition lock held after reactivation', async () => {
+      const wrapper = mount(makeKeepAliveHarness(), { attachTo: document.body })
+      const vm = wrapper.vm as unknown as { active: number; show: boolean }
+
+      vm.show = false
+      await nextTick()
+      vm.show = true
+      await nextTick()
+
+      // Two consecutive advances must both land: a stuck transitioning flag would
+      // block the second click.
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await nextTick()
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await nextTick()
+      expect(vm.active).toBe(2)
+      wrapper.unmount()
+    })
+
+    // #188: guards must honor isDeactivated, not just isUnmounted. A guard that
+    // resolves while cached must not emit, and the lock must clear on activate.
+    it('suspends a guard that resolves while deactivated, then works on activate', async () => {
+      let resolveGuard!: (v: boolean) => void
+      const Harness = defineComponent({
+        components: { VibeStepper },
+        data() {
+          return { active: 0, show: true }
+        },
+        render() {
+          return h(KeepAlive, null, {
+            default: () =>
+              this.show
+                ? h(VibeStepper as never, {
+                    steps: baseSteps,
+                    modelValue: this.active,
+                    beforeNext: () =>
+                      new Promise<boolean>((r) => {
+                        resolveGuard = r
+                      }),
+                    'onUpdate:modelValue': (v: number) => {
+                      this.active = v
+                    }
+                  })
+                : h('div', 'away')
+          })
+        }
+      })
+      const wrapper = mount(Harness, { attachTo: document.body })
+      const vm = wrapper.vm as unknown as { active: number; show: boolean }
+
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await nextTick()
+      // Guard in flight: deactivate before it resolves.
+      vm.show = false
+      await nextTick()
+      resolveGuard(true)
+      await nextTick()
+      await nextTick()
+      expect(vm.active).toBe(0)
+
+      // Reactivate: lock released, next click advances.
+      vm.show = true
+      await nextTick()
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await nextTick()
+      // Second click arms a fresh guard promise: resolve it too.
+      resolveGuard(true)
+      await nextTick()
+      await nextTick()
+      expect(vm.active).toBe(1)
+      wrapper.unmount()
     })
   })
 
@@ -388,6 +504,69 @@ describe('VibeStepper', () => {
       await nextTick()
 
       expect(vm.active).toBe(1)
+    })
+  })
+
+  // #197: the in-flight guard state must reach the user: both default buttons
+  // disable plus aria-busy while transitioning, and the actions slot receives
+  // transitioning.
+  describe('async busy state (#197)', () => {
+    it('disables both buttons and sets aria-busy during a deferred guard', async () => {
+      let resolveGuard!: (v: boolean) => void
+      const wrapper = mount(VibeStepper, {
+        props: {
+          steps: baseSteps,
+          modelValue: 1,
+          beforeNext: () => new Promise<boolean>((r) => { resolveGuard = r })
+        }
+      })
+      await wrapper.find('[data-stepper-next]').trigger('click')
+      await nextTick()
+
+      const next = wrapper.find('[data-stepper-next]')
+      const prev = wrapper.find('[data-stepper-prev]')
+      expect(next.attributes('disabled')).toBeDefined()
+      expect(prev.attributes('disabled')).toBeDefined()
+      expect(next.attributes('aria-busy')).toBe('true')
+      expect(next.find('.spinner-border').exists()).toBe(true)
+
+      resolveGuard(true)
+      await new Promise((r) => setTimeout(r, 10))
+      await nextTick()
+      expect(wrapper.find('[data-stepper-next]').attributes('disabled')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('exposes transitioning to the actions slot', async () => {
+      let resolveGuard!: (v: boolean) => void
+      const wrapper = mount(VibeStepper, {
+        props: {
+          steps: baseSteps,
+          modelValue: 1,
+          beforeNext: () => new Promise<boolean>((r) => { resolveGuard = r })
+        },
+        slots: {
+          actions: ({
+            next,
+            transitioning
+          }: {
+            next: () => Promise<void>
+            transitioning: boolean
+          }) => [
+            h('span', { class: 'slot-busy' }, transitioning ? 'busy' : 'idle'),
+            h('button', { class: 'slot-next', onClick: () => { void next() } }, 'go')
+          ]
+        }
+      })
+      expect(wrapper.find('.slot-busy').text()).toBe('idle')
+      await wrapper.find('.slot-next').trigger('click')
+      await nextTick()
+      expect(wrapper.find('.slot-busy').text()).toBe('busy')
+      resolveGuard(true)
+      await new Promise((r) => setTimeout(r, 10))
+      await nextTick()
+      expect(wrapper.find('.slot-busy').text()).toBe('idle')
+      wrapper.unmount()
     })
   })
 })

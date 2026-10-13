@@ -136,6 +136,23 @@ describe('VibeFormWysiwyg', () => {
       await flush()
       expect(sanitizer).toHaveBeenCalledWith('<p>ok</p>')
     })
+
+    // #186: with NO sanitizer configured, the inbound path must still strip
+    // dangerous constructs via the built-in fallback (prod builds strip the DEV
+    // warning, so an identity default meant no sanitization at all).
+    it('sanitizes inbound model HTML through the built-in fallback when no sanitizer is configured', async () => {
+      const StubQuill = makeStubQuill()
+      mount(VibeFormWysiwyg, {
+        props: { id: 'w5', modelValue: '<p>hi</p><img src=x onerror="alert(1)"><script>alert(2)</script>' },
+        global: { provide: { [VIBE_WYSIWYG_KEY as symbol]: { quillLoader: () => Promise.resolve(StubQuill) } } }
+      })
+      await flush()
+      const instance = (StubQuill as unknown as { instances: Array<{ clipboard: { convert: ReturnType<typeof vi.fn> } }> }).instances[0]
+      const cleaned = instance.clipboard.convert.mock.calls[0][0].html as string
+      expect(cleaned.toLowerCase()).not.toContain('onerror')
+      expect(cleaned.toLowerCase()).not.toContain('<script')
+      expect(cleaned).toContain('hi')
+    })
   })
 
   // Regression: isUnmounted guard — Quill must not construct on a detached container
@@ -183,5 +200,31 @@ describe('VibeFormWysiwyg', () => {
     await new Promise((r) => setTimeout(r, 300))
 
     expect(wrapper.emitted('component-error')).toBeTruthy()
+  })
+
+  // #197: while the loader is pending the component renders a loading branch
+  // (spinner, role=status, aria-busy), not an empty box.
+  describe('loading state (#197)', () => {
+    it('renders the loading branch before the loader resolves', async () => {
+      let resolveLoader!: (q: unknown) => void
+      const wrapper = mount(VibeFormWysiwyg, {
+        props: {
+          id: 'w-loading',
+          quillLoader: () => new Promise((r) => { resolveLoader = r })
+        }
+      })
+      await nextTick()
+
+      const loading = wrapper.find('[role="status"]')
+      expect(loading.exists()).toBe(true)
+      expect(loading.attributes('aria-busy')).toBe('true')
+      expect(loading.find('.spinner-border').exists()).toBe(true)
+
+      resolveLoader(makeStubQuill())
+      await flush()
+      await nextTick()
+      expect(wrapper.find('[role="status"]').exists()).toBe(false)
+      wrapper.unmount()
+    })
   })
 })

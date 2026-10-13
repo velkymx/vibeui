@@ -1,19 +1,38 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
 import VibeToast from './VibeToast.vue'
 import { __toastStore, useToast, type ToastSpec } from '../composables/useToast'
+import { useEventBus } from '../composables/useEventBus'
 import type { ToastPlacement } from '../types'
 
 const props = defineProps({
-  defaultPlacement: { type: String as () => ToastPlacement, default: 'top-end' }
+  defaultPlacement: { type: String as () => ToastPlacement, default: undefined }
 })
+// #159: explicit prop wins, then the global default, then the builtin.
+const vibeDefaults = useVibeDefaults()
+const resolvedPlacement = computed(() => resolveProp(props.defaultPlacement, vibeDefaults.toastPosition, 'top-end'))
 
-const { dismiss } = useToast()
+
+const toast = useToast()
+const { dismiss } = toast
+
+// Bus notification channel: while this host is mounted it handles the command
+// events, so `notification:show` / `notification:dismiss` from anywhere render
+// here. on() auto-unsubscribes when the host unmounts, so with no host mounted
+// the bus reports these commands as unhandled.
+const bus = useEventBus()
+bus.on('notification:show', ({ message, type }) => {
+  toast[type](message)
+})
+bus.on('notification:dismiss', ({ id }) => {
+  toast.dismiss(id)
+})
 
 const grouped = computed<Array<{ placement: ToastPlacement; toasts: ToastSpec[] }>>(() => {
   const buckets = new Map<ToastPlacement, ToastSpec[]>()
   for (const t of __toastStore.toasts) {
-    const placement = t.placement ?? props.defaultPlacement
+    const placement = t.placement ?? resolvedPlacement.value
     const list = buckets.get(placement)
     if (list) list.push(t)
     else buckets.set(placement, [t])
@@ -41,20 +60,57 @@ const containerClassFor = (p: ToastPlacement): string => {
       :class="containerClassFor(group.placement)"
       style="z-index: 1090"
     >
-      <VibeToast
-        v-for="t in group.toasts"
-        :key="t.id"
-        no-container
-        :model-value="true"
-        :title="t.title || ''"
-        :variant="t.variant"
-        :placement="group.placement"
-        :autohide="t.autohide ?? true"
-        :delay="t.delay ?? 5000"
-        @hidden="dismiss(t.id)"
-      >
-        {{ t.body }}
-      </VibeToast>
+      <!-- #149: keyed enter/leave plus FLIP reposition rides a TransitionGroup.
+           Fragment (no tag) so the positioned container stays the parent. -->
+      <TransitionGroup name="vibe-toast" move-class="vibe-toast-move">
+        <VibeToast
+          v-for="t in group.toasts"
+          :key="t.id"
+          no-container
+          :model-value="true"
+          :title="t.title || ''"
+          :variant="t.variant"
+          :placement="group.placement"
+          :autohide="t.autohide ?? true"
+          :delay="t.delay ?? 5000"
+          @hidden="dismiss(t.id)"
+        >
+          {{ t.body }}
+        </VibeToast>
+      </TransitionGroup>
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+/* #149: toast stack motion. Enter/leave fade plus slide via the independent
+   `translate` property so FLIP `transform` moves compose without clobbering.
+   Kill all motion when the user opts out. */
+.vibe-toast-move {
+  transition: transform 0.3s ease;
+}
+.vibe-toast-enter-active,
+.vibe-toast-leave-active {
+  transition: opacity 0.25s ease, translate 0.25s ease;
+}
+/* FLIP: the leaving toast must leave normal flow at patch time, otherwise
+   survivors only reflow after the leave ends (no hook runs then) and jump
+   instantly. Absolute anchors it to the fixed container for the duration. */
+.vibe-toast-leave-active {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+}
+.vibe-toast-enter-from,
+.vibe-toast-leave-to {
+  opacity: 0;
+  translate: 0 -0.5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vibe-toast-move,
+  .vibe-toast-enter-active,
+  .vibe-toast-leave-active {
+    transition: none;
+  }
+}
+</style>

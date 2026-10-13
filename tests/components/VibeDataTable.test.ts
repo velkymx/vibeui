@@ -1,5 +1,6 @@
 import { describe, it, expect, expectTypeOf } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
 import VibeDataTable from '../../src/components/VibeDataTable.vue'
 import type { DataTableColumn, DataTableCellSlotProps } from '../../src/types'
 import { nextTick, ref, h } from 'vue'
@@ -630,6 +631,84 @@ describe('VibeDataTable', () => {
       const style = td.attributes('style') ?? ''
       expect(style).toContain('color')
       expect(style).not.toContain('animation')
+    })
+  })
+
+  // #198: the consumer formatter must run once per data change, not once per
+  // render. A bare re-render (no data change) must not re-invoke it.
+  describe('formatter memoization (#198)', () => {
+    it('does not re-invoke the formatter on a data-identical re-render', async () => {
+      let calls = 0
+      const fmtColumns = [
+        { key: 'id', label: 'ID' },
+        { key: 'name', label: 'Name', formatter: (v: unknown) => { calls += 1; return `n:${String(v)}` } }
+      ]
+      const rows = [
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' }
+      ]
+      const wrapper = mount(VibeDataTable, { props: { columns: fmtColumns, items: rows } })
+      await nextTick()
+      expect(calls).toBe(2)
+
+      wrapper.vm.$forceUpdate()
+      await nextTick()
+      expect(calls).toBe(2)
+      wrapper.unmount()
+    })
+  })
+
+  // #228: row keys plus clickable style must come from stable references, not
+  // per-row calls plus fresh literals per render. Structural contract on the
+  // row template, plus output equality for the clickable rows.
+  describe('row memoization (#228)', () => {
+    const rowTemplateOf = (): string => {
+      const src = readFileSync('src/components/VibeDataTable.vue', 'utf8')
+      const start = src.indexOf('<template>')
+      const end = src.indexOf('</template>')
+      const tpl = src.slice(start, end)
+      return tpl.slice(tpl.indexOf('v-for="(item, index) in paginatedItems"'))
+    }
+
+    it('resolves row keys from a computed map, not a per-row call', () => {
+      expect(rowTemplateOf()).not.toContain('getRowKey(item')
+    })
+
+    it('binds a hoisted clickable style, not a fresh literal per row', () => {
+      expect(rowTemplateOf()).not.toContain("{ cursor: 'pointer' }")
+    })
+
+    it('renders identical clickable rows with stable keys', () => {
+      const a = mount(VibeDataTable, { props: { columns, items, clickable: true } })
+      const b = mount(VibeDataTable, { props: { columns, items, clickable: true } })
+      expect(a.find('tbody').html()).toBe(b.find('tbody').html())
+      const rows = a.findAll('tbody tr')
+      expect(rows).toHaveLength(5)
+      expect(rows[0].attributes('style')).toContain('cursor')
+      a.unmount()
+      b.unmount()
+    })
+  })
+
+  // #226: serverMode fetch in flight renders the pending row, not the stale
+  // page or the empty-text row.
+  describe('serverMode loading (#226)', () => {
+    it('renders the loading row instead of empty text while loading', () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items: [], serverMode: true, loading: true }
+      })
+      expect(wrapper.find('.spinner-border').exists()).toBe(true)
+      expect(wrapper.text()).not.toContain('No data available')
+      wrapper.unmount()
+    })
+
+    it('renders rows normally when not loading', () => {
+      const wrapper = mount(VibeDataTable, {
+        props: { columns, items, serverMode: true, totalRows: 5, loading: false }
+      })
+      expect(wrapper.find('.spinner-border').exists()).toBe(false)
+      expect(wrapper.text()).toContain('Alice')
+      wrapper.unmount()
     })
   })
 })

@@ -1,17 +1,46 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import type { BreadcrumbItem, ComponentError } from '../types'
 import { safeHref } from '../utils/safeHref'
 import { linkBindings } from '../utils/linkBindings'
+import { onNavBreadcrumbUpdated } from '../composables/eventHelpers'
 
 const props = defineProps({
   ariaLabel: { type: String, default: 'breadcrumb' },
-  items: { type: Array as () => BreadcrumbItem[], required: true }
+  // Optional: when omitted, the trail can be driven by the bus (see busUpdates).
+  items: { type: Array as () => BreadcrumbItem[], default: () => [] },
+  // Opt in to render the trail published on the bus `nav:breadcrumb-updated`
+  // channel. Explicit `items` always take precedence.
+  busUpdates: { type: Boolean, default: false },
+  // An empty trail conventionally renders nothing: opt-in empty state with an
+  // ellipsis rather than prose (see #196).
+  showEmpty: { type: Boolean, default: false },
+  emptyText: { type: String, default: '…' }
 })
 
 const emit = defineEmits<{
   (e: 'item-click', payload: { item: BreadcrumbItem; index: number; event: Event }): void
   (e: 'component-error', error: ComponentError): void
 }>()
+
+// #147: type the item slot.
+defineSlots<{
+  item?: (props: { item: BreadcrumbItem; index: number }) => unknown
+}>()
+
+// Trail received from the bus, mapped from { label, path } to BreadcrumbItem.
+// Subscribe unconditionally (on() auto-unsubscribes on unmount) so toggling
+// `busUpdates` reactively takes effect; whether the bus trail is shown is
+// decided in displayItems.
+const busItems = ref<BreadcrumbItem[]>([])
+onNavBreadcrumbUpdated(({ items }) => {
+  busItems.value = items.map(i => ({ text: i.label, to: i.path }))
+})
+
+// Explicit items win; otherwise use the bus trail only when busUpdates is on.
+const displayItems = computed<BreadcrumbItem[]>(() =>
+  props.items.length > 0 ? props.items : (props.busUpdates ? busItems.value : props.items)
+)
 
 const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
   if (!item.active) {
@@ -23,8 +52,11 @@ const handleItemClick = (item: BreadcrumbItem, index: number, event: Event) => {
 <template>
   <nav :aria-label="ariaLabel">
     <ol class="breadcrumb">
+      <li v-if="displayItems.length === 0 && showEmpty" class="breadcrumb-item text-body-secondary">
+        {{ emptyText }}
+      </li>
       <li
-        v-for="(item, index) in items"
+        v-for="(item, index) in displayItems"
         :key="item.href || item.text || String(index)"
         :class="['breadcrumb-item', { active: item.active }]"
         :aria-current="item.active ? 'page' : undefined"

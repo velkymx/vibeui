@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import VibeChartLegend from './chart/VibeChartLegend.vue'
-import { ref, computed, watch, onMounted, onUnmounted, type PropType } from 'vue'
+import { useTemplateRef, ref, computed, watch, onMounted, onUnmounted, type PropType } from 'vue'
 import type { ChartData, ChartLegendPosition } from '../types'
 import { resolveColors } from './chart/chartColors'
+import { safeLength } from '../utils/safeCss'
 import { useChartResize } from './chart/chartResize'
 import { bindTooltip } from './chart/chartTooltip'
 import { drawLine, hitTestLine, getLineExtent } from './chart/drawLine'
@@ -17,16 +18,21 @@ const props = defineProps({
   fill: { type: Boolean, default: false },
 })
 
-const containerEl = ref<HTMLElement | null>(null)
-const canvasEl = ref<HTMLCanvasElement | null>(null)
+const containerEl = useTemplateRef<HTMLElement>('containerEl')
+const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
 let cleanupTooltip: (() => void) | null = null
 let currentW = 0
 let currentH = 0
 
 const canvasContainerStyle = computed(() => {
   if (props.height === 'auto') return { width: '100%', aspectRatio: '16/9' }
-  const h = typeof props.height === 'number' ? `${props.height}px` : (props.height as string)
-  return { width: '100%', height: h }
+  // Freeform consumer string: validate before it reaches :style (see #193).
+  // An invalid value falls back to the aspect-ratio default rather than
+  // rendering a zero-height canvas.
+  const raw = typeof props.height === 'number'
+    ? (Number.isFinite(props.height) ? `${props.height}px` : undefined)
+    : safeLength(String(props.height))
+  return raw ? { width: '100%', height: raw } : { width: '100%', aspectRatio: '16/9' }
 })
 
 // Plain ref, not a computed: resolveColors() calls getComputedStyle() — a synchronous
@@ -38,7 +44,7 @@ const resolvedColors = ref<string[]>([])
 
 function updateColors() {
   resolvedColors.value = containerEl.value
-    ? resolveColors(props.data.datasets, containerEl.value)
+    ? resolveColors(props.data?.datasets ?? [], containerEl.value)
     : []
 }
 
@@ -50,6 +56,9 @@ function redraw() {
   // Refresh colors before the dimension guard so the legend populates even if the
   // canvas has not been sized yet.
   updateColors()
+  // Shape-incomplete data (async load in flight): render the empty chart
+  // rather than throwing inside render (see #226).
+  if (!Array.isArray(props.data?.datasets) || !Array.isArray(props.data?.labels)) return
   hitExtent = getLineExtent(props.data)
   if (!canvasEl.value || !currentW || !currentH) return
   const canvas = canvasEl.value
@@ -86,6 +95,9 @@ onMounted(() => {
   // One-time color resolution at mount so the legend has colors before the first
   // ResizeObserver callback. Subsequent refreshes happen inside redraw().
   updateColors()
+  // Shape-incomplete data (async load in flight): render the empty chart
+  // rather than throwing inside render (see #226).
+  if (!Array.isArray(props.data?.datasets) || !Array.isArray(props.data?.labels)) return
   hitExtent = getLineExtent(props.data)
   if (containerEl.value && canvasEl.value) {
     cleanupTooltip = bindTooltip(
@@ -108,7 +120,7 @@ onUnmounted(() => {
 })
 
 const legendItems = computed(() =>
-  props.data.datasets.map((ds, i) => ({ label: ds.label, color: resolvedColors.value[i] }))
+  (props.data?.datasets ?? []).map((ds, i) => ({ label: ds.label, color: resolvedColors.value[i] }))
 )
 </script>
 

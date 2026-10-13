@@ -52,6 +52,7 @@ import VibeTooltip from './VibeTooltip.vue'
 import VibePopover from './VibePopover.vue'
 import VibeScrollspy from './VibeScrollspy.vue'
 import VibeIcon from './VibeIcon.vue'
+import VibeErrorBoundary from './VibeErrorBoundary.vue'
 
 // Chart Components
 import VibeChartLine from './VibeChartLine.vue'
@@ -141,6 +142,7 @@ export {
   VibePopover,
   VibeScrollspy,
   VibeIcon,
+  VibeErrorBoundary,
 
   // Chart
   VibeChartLine,
@@ -179,14 +181,25 @@ import type { App, Plugin } from 'vue'
 import { vTooltip } from '../directives/vTooltip'
 import type { VibeUIOptions } from '../types'
 import { VIBE_WYSIWYG_KEY } from '../composables/wysiwygConfig'
+import { VIBE_DEFAULTS_KEY } from '../composables/vibeDefaults'
+import { initColorModeEager } from '../composables/useColorMode'
 
 // Vue plugin for global registration
 const VibeUIPlugin: Plugin = {
   install(app: App, options?: VibeUIOptions) {
+    // #132: apply the color mode eagerly here (not at module import) so the bare
+    // import has no DOM side effect. Runs during app.use(), before mount, so the
+    // first paint still gets the right theme.
+    initColorModeEager()
+
     // Consumer-provided WYSIWYG peers (Quill loader + sanitizer). Provided
     // app-wide so VibeFormWysiwyg can inject them without the library importing
     // the optional peers itself.
     if (options?.wysiwyg) app.provide(VIBE_WYSIWYG_KEY, options.wysiwyg)
+
+    // #159: library-wide prop defaults. Provided only when set; components
+    // fall back to builtins otherwise, so bare installs behave identically.
+    if (options?.defaults) app.provide(VIBE_DEFAULTS_KEY, options.defaults)
 
     // Core
     app.component('VibeAlert', VibeAlert)
@@ -242,6 +255,7 @@ const VibeUIPlugin: Plugin = {
     app.component('VibePopover', VibePopover)
     app.component('VibeScrollspy', VibeScrollspy)
     app.component('VibeIcon', VibeIcon)
+    app.component('VibeErrorBoundary', VibeErrorBoundary)
 
     // Chart
     app.component('VibeChartLine', VibeChartLine)

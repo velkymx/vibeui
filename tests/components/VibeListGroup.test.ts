@@ -222,4 +222,63 @@ describe('VibeListGroup', () => {
     })
     expect(wrapper.text()).toBe('[0:a][1:b][2:c]')
   })
+
+  // #196: empty items render a defined empty state.
+  describe('empty state (#196)', () => {
+    it('renders emptyText when items is empty', () => {
+      const wrapper = mount(VibeListGroup, { props: { items: [] } })
+      expect(wrapper.find('.list-group-item').text()).toBe('No items')
+    })
+
+    it('supports custom emptyText and showEmpty=false', () => {
+      const custom = mount(VibeListGroup, { props: { items: [], emptyText: 'Nothing here' } })
+      expect(custom.find('.list-group-item').text()).toBe('Nothing here')
+      const off = mount(VibeListGroup, { props: { items: [], showEmpty: false } })
+      expect(off.find('.list-group-item').exists()).toBe(false)
+    })
+  })
+
+  // #199: per-item tag resolves through <component :is>, so it is narrowed to
+  // inert elements. An arbitrary tag from runtime data falls back to the
+  // auto-chosen wrapper instead of rendering.
+  describe('item tag allowlist (#199)', () => {
+    it('renders an allowed tag override', () => {
+      const wrapper = mount(VibeListGroup, {
+        props: { items: [{ text: 'Act', tag: 'button' }] }
+      })
+      expect(wrapper.find('button.list-group-item').exists()).toBe(true)
+    })
+
+    it('falls back to li for a disallowed tag', () => {
+      // Runtime data bypasses the type union, so cast to simulate API input.
+      const hostile = { text: 'X', tag: 'script' } as unknown as ListGroupItem
+      const wrapper = mount(VibeListGroup, {
+        props: { items: [hostile] }
+      })
+      expect(wrapper.find('script').exists()).toBe(false)
+      expect(wrapper.find('li.list-group-item').exists()).toBe(true)
+    })
+  })
+
+  // #224: duplicate href/text must not produce duplicate keys (wrong DOM
+  // reuse). Keys stay unique via the index-suffixed helper.
+  describe('duplicate keys (#224)', () => {
+    it('renders distinct rows for duplicate hrefs with correct state', () => {
+      // Characterization: rows render correctly. Uniqueness itself is pinned
+      // by the dropdownItemKey unit test (this build emits no duplicate-key
+      // warnings, so a warn assertion would pass vacuously).
+      const wrapper = mount(VibeListGroup, {
+        props: {
+          items: [
+            { text: 'A', href: '#', active: true },
+            { text: 'B', href: '#' }
+          ]
+        }
+      })
+      const rows = wrapper.findAll('.list-group-item')
+      expect(rows).toHaveLength(2)
+      expect(rows[0].classes()).toContain('active')
+      expect(rows[1].classes()).not.toContain('active')
+    })
+  })
 })

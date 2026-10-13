@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { reportComponentError } from '../utils/reportComponentError'
+import { useBootstrapInstanceMap } from '../composables/useBootstrapInstance'
+import { useTemplateRef, computed, onMounted, watch, nextTick, ref } from 'vue'
 import type { AccordionItem, ComponentError } from '../types'
 import { useId } from '../composables/useId'
+import { isDev } from '../composables/useEventBus'
 
 interface BootstrapCollapse {
   show: () => void
@@ -21,13 +24,23 @@ const props = defineProps({
 
 const computedId = computed(() => props.id || _generatedId)
 
+// #139: item.id is optional. Resolve a stable id per item (explicit id wins,
+// otherwise derive one from the accordion id + index) for the panel id,
+// data-bs-target, aria wiring, and collapse tracking.
+const resolvedItems = computed(() =>
+  props.items.map((item, index) => ({
+    item,
+    id: item.id || `${computedId.value}-panel-${index}`,
+  }))
+)
+
 // CSS-special characters break Bootstrap's internal querySelector (e.g. #my.id).
 const CSS_SPECIAL_CHARS = /[ .:#[\](){}+~>,|^$*?=]/
 
 // DEV-only: warn for ids that will break Bootstrap's querySelector. Covers both the
 // accordion container id and every item.id (used in data-bs-target / data-bs-parent).
 const warnUnsafeIds = () => {
-  if (!import.meta.env.DEV) return
+  if (!isDev()) return
   if (props.id && CSS_SPECIAL_CHARS.test(props.id)) {
     console.warn(`[VibeAccordion] id "${props.id}" contains CSS-special characters. Bootstrap's querySelector will fail. Use only alphanumeric characters, hyphens, and underscores.`)
   }
@@ -48,154 +61,100 @@ const emit = defineEmits<{
   (e: 'component-error', error: ComponentError): void
 }>()
 
-const accordionRef = ref<HTMLElement | null>(null)
-const bsCollapses = new Map<string, BootstrapCollapse>()
-const collapseElements = new Map<string, HTMLElement>()
-let initInFlight = false
-let pendingReinit = false
-let reinitGuard = false
-// Explicit unmount flag — set synchronously in onBeforeUnmount so the async
-// initItems continuation bails out even in the window before Vue nulls the ref.
-let isUnmounted = false
+// #147: type the title/content slots.
+defineSlots<{
+  title?: (props: { item: AccordionItem; index: number }) => unknown
+  content?: (props: { item: AccordionItem; index: number }) => unknown
+}>()
 
-interface CollapseHandlers {
-  show: EventListener
-  shown: EventListener
-  hide: EventListener
-  hidden: EventListener
+const accordionRef = useTemplateRef<HTMLElement>('accordionRef')
+
+// Per-panel event identity: listeners attach directly to the panel, so the
+// shared map handlers recover the entry id from the event target.
+const idOf = (event: Event): string => (event.currentTarget as HTMLElement).id
+
+// One Bootstrap Collapse per panel, owned by the shared keyed map (#247):
+// lazy construction, per-element collapse listeners, dispose-all on teardown
+// and on items change, unmount-race guards.
+const collapseOwners = useBootstrapInstanceMap<BootstrapCollapse>({
+  create: (el, bootstrap) =>
+    new bootstrap.Collapse(el, {
+      toggle: false,
+      parent: props.alwaysOpen ? undefined : `#${computedId.value}`
+    }) as unknown as BootstrapCollapse,
+  disposeInstance: (collapse) => collapse.dispose(),
+  events: {
+    'show.bs.collapse': ((event: Event) => onShow(idOf(event))) as EventListener,
+    'shown.bs.collapse': ((event: Event) => onShown(idOf(event))) as EventListener,
+    'hide.bs.collapse': ((event: Event) => onHide(idOf(event))) as EventListener,
+    'hidden.bs.collapse': ((event: Event) => onHidden(idOf(event))) as EventListener
+  },
+  componentName: 'VibeAccordion',
+  onError: (error) => reportComponentError(emit, error)
+})
+
+// Live expanded state per entry id. Seeded from the prop so SSR and pre-JS
+// paint agree with the announcement; flipped by the Bootstrap show/hide
+// events after init (reactive Set membership is tracked in render).
+const expandedIds = ref(new Set<string>())
+for (const entry of resolvedItems.value) {
+  if (entry.item.show) expandedIds.value.add(entry.id)
 }
-const collapseHandlers = new Map<string, CollapseHandlers>()
 
-const onShow = (id: string) => emit('show', id)
+const onShow = (id: string) => {
+  expandedIds.value.add(id)
+  emit('show', id)
+}
 const onShown = (id: string) => emit('shown', id)
-const onHide = (id: string) => emit('hide', id)
+const onHide = (id: string) => {
+  expandedIds.value.delete(id)
+  emit('hide', id)
+}
 const onHidden = (id: string) => emit('hidden', id)
 
-const disposeItem = (id: string) => {
-  const el = collapseElements.get(id)
-  const h = collapseHandlers.get(id)
-  if (el && h) {
-    el.removeEventListener('show.bs.collapse', h.show)
-    el.removeEventListener('shown.bs.collapse', h.shown)
-    el.removeEventListener('hide.bs.collapse', h.hide)
-    el.removeEventListener('hidden.bs.collapse', h.hidden)
-  }
-  collapseElements.delete(id)
-  collapseHandlers.delete(id)
-  bsCollapses.get(id)?.dispose()
-  bsCollapses.delete(id)
-}
-
-const initItems = async () => {
+const initItems = async (): Promise<void> => {
   if (!accordionRef.value) return
-  if (initInFlight) {
-    pendingReinit = true
-    return
-  }
-  initInFlight = true
-  pendingReinit = false
 
-  try {
-    const bootstrap = await import('bootstrap')
-    const Collapse = bootstrap.Collapse
+  const collapseEls = accordionRef.value.querySelectorAll('.accordion-collapse')
+  const seenIds = new Set<string>()
+  for (const el of collapseEls) {
+    const id = el.id
+    if (seenIds.has(id)) {
+      console.warn(`[VibeAccordion] Duplicate item.id "${id}" detected — only the first occurrence is initialised. Ensure each item has a unique id.`)
+      continue
+    }
+    seenIds.add(id)
+    // Only initialize untracked panels; ensure() reuses live entries.
+    const htmlEl = el as HTMLElement
+    const inst = await collapseOwners.ensure(htmlEl)
 
-    // Guard: component may have unmounted while the import was in flight.
-    // isUnmounted is set in onBeforeUnmount — checked before dereferencing
-    // accordionRef.value to prevent a TypeError if Vue has already nulled the ref.
-    if (isUnmounted || !accordionRef.value) return
-
-    const collapseEls = accordionRef.value.querySelectorAll('.accordion-collapse')
-    const seenIds = new Set<string>()
-    collapseEls.forEach((el) => {
-      const id = el.id
-      if (seenIds.has(id)) {
-        console.warn(`[VibeAccordion] Duplicate item.id "${id}" detected — only the first occurrence is initialised. Ensure each item has a unique id.`)
-        return
-      }
-      seenIds.add(id)
-      // Only initialize if not already tracked
-      if (!bsCollapses.has(id)) {
-        const htmlEl = el as HTMLElement
-        collapseElements.set(id, htmlEl)
-        const bsCollapse = new Collapse(htmlEl, {
-          toggle: false,
-          parent: props.alwaysOpen ? undefined : `#${computedId.value}`
-        }) as BootstrapCollapse
-
-        bsCollapses.set(id, bsCollapse)
-
-        const handlers: CollapseHandlers = {
-          show: () => onShow(id),
-          shown: () => onShown(id),
-          hide: () => onHide(id),
-          hidden: () => onHidden(id)
-        }
-        collapseHandlers.set(id, handlers)
-
-        el.addEventListener('show.bs.collapse', handlers.show)
-        el.addEventListener('shown.bs.collapse', handlers.shown)
-        el.addEventListener('hide.bs.collapse', handlers.hide)
-        el.addEventListener('hidden.bs.collapse', handlers.hidden)
-
-        // Check initial state from props
-        const item = props.items.find(i => i.id === id)
-        if (item?.show) {
-          bsCollapse.show()
-        }
-      }
-    })
-  } catch (error) {
-    emit('component-error', {
-      message: 'Bootstrap JS not loaded. Accordion will use data attributes only.',
-      componentName: 'VibeAccordion',
-      originalError: error
-    })
-  } finally {
-    initInFlight = false
-    // Don't schedule a reinit if the component has already unmounted.
-    if (!isUnmounted && pendingReinit) {
-      pendingReinit = false
-      void initItems()
+    // Check initial state from props (match on the resolved id).
+    const entry = resolvedItems.value.find(e => e.id === id)
+    if (entry?.item.show) {
+      inst?.show()
     }
   }
 }
 
 onMounted(initItems)
 
-onBeforeUnmount(() => {
-  isUnmounted = true
-  bsCollapses.forEach((_, id) => disposeItem(id))
-})
-
 watch([() => props.items, () => props.alwaysOpen], async () => {
-  if (reinitGuard) return
-  reinitGuard = true
   try {
     warnUnsafeIds()
-    // Snapshot keys first — disposeItem mutates bsCollapses/collapseElements/collapseHandlers
-    // internally via .delete(). Iterating the live Map during mutation is safe per spec but
-    // produces confusing dead .clear() calls after; snapshot makes the intent explicit.
-    const ids = [...bsCollapses.keys()]
-    for (const id of ids) {
-      disposeItem(id)
-    }
-    // All Maps are empty after the loop (disposeItem calls .delete() on each).
-    // These clears are retained as defensive guards against any future partial dispose paths.
-    bsCollapses.clear()
-    collapseElements.clear()
+    // Tear down every tracked panel, then rebuild after paint. disposeAll
+    // detaches listeners plus disposes.
+    collapseOwners.disposeAll()
 
     // Await both nextTick and initItems so errors surface instead of being silently dropped.
     // The previous nextTick(() => initItems()) discarded the inner Promise.
     await nextTick()
     await initItems()
   } catch (error) {
-    emit('component-error', {
+    reportComponentError(emit, {
       message: 'Error reinitialising accordion items.',
       componentName: 'VibeAccordion',
       originalError: error
     })
-  } finally {
-    reinitGuard = false
   }
 }, { deep: false })
 
@@ -205,39 +164,40 @@ const handleItemClick = (item: AccordionItem, index: number) => {
 
 // _unsafe_bsInstances is an escape hatch, NOT part of the stable API.
 // Calling dispose()/other lifecycle methods on these directly WILL break this component.
-defineExpose({ refresh: initItems, _unsafe_bsInstances: bsCollapses })
+// Keyed by panel element (previously by entry id); identity only, no lifecycle.
+defineExpose({ refresh: initItems, _unsafe_bsInstances: collapseOwners.instances })
 </script>
 
 <template>
   <div ref="accordionRef" :id="computedId" :class="['accordion', { 'accordion-flush': flush }]">
     <div
-      v-for="(item, index) in items"
-      :key="item.id"
+      v-for="(entry, index) in resolvedItems"
+      :key="entry.id"
       class="accordion-item"
     >
       <h2 class="accordion-header">
         <button
-          :class="['accordion-button', { collapsed: !item.show }]"
+          :class="['accordion-button', { collapsed: !entry.item.show }]"
           type="button"
           data-bs-toggle="collapse"
-          :data-bs-target="`#${item.id}`"
-          :aria-expanded="item.show"
-          :aria-controls="item.id"
-          @click="handleItemClick(item, index)"
+          :data-bs-target="`#${entry.id}`"
+          :aria-expanded="expandedIds.has(entry.id)"
+          :aria-controls="entry.id"
+          @click="handleItemClick(entry.item, index)"
         >
-          <slot name="title" :item="item" :index="index">
-            {{ item.title }}
+          <slot name="title" :item="entry.item" :index="index">
+            {{ entry.item.title }}
           </slot>
         </button>
       </h2>
       <div
-        :id="item.id"
-        :class="['accordion-collapse', 'collapse']"
+        :id="entry.id"
+        :class="['accordion-collapse', 'collapse', { show: expandedIds.has(entry.id) }]"
         :data-bs-parent="alwaysOpen ? undefined : `#${computedId}`"
       >
         <div class="accordion-body">
-          <slot name="content" :item="item" :index="index">
-            {{ item.content }}
+          <slot name="content" :item="entry.item" :index="index">
+            {{ entry.item.content }}
           </slot>
         </div>
       </div>

@@ -191,3 +191,33 @@ describe('useColorMode', () => {
     }
   })
 })
+
+describe('useColorMode resolvedMode (issue #71)', () => {
+  beforeEach(() => _resetColorMode())
+
+  it('follows an explicit light/dark mode', () => {
+    const { resolvedMode, setColorMode } = useColorMode()
+    setColorMode('dark')
+    expect(resolvedMode.value).toBe('dark')
+    setColorMode('light')
+    expect(resolvedMode.value).toBe('light')
+  })
+
+  it('follows the OS theme when mode is auto', () => {
+    const listeners: Array<(e: { matches: boolean }) => void> = []
+    const mockMql = {
+      matches: true, // OS = dark
+      addEventListener: vi.fn((_: string, fn: (e: { matches: boolean }) => void) => listeners.push(fn)),
+      removeEventListener: vi.fn()
+    }
+    vi.spyOn(window, 'matchMedia').mockReturnValue(mockMql as unknown as MediaQueryList)
+    const { resolvedMode, clearColorMode } = useColorMode()
+    clearColorMode() // auto + attach listener (syncs systemTheme from the mock)
+    expect(resolvedMode.value).toBe('dark')
+    // OS flips to light
+    mockMql.matches = false
+    listeners.forEach(fn => fn({ matches: false }))
+    expect(resolvedMode.value).toBe('light')
+    vi.restoreAllMocks()
+  })
+})

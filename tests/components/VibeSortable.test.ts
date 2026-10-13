@@ -153,4 +153,105 @@ describe('VibeSortable', () => {
     expect(nodes).toHaveLength(3)
     expect(nodes.map(n => n.text())).toEqual(['X', 'Y', 'Z'])
   })
+
+  // #234 K2: rows are keyboard-reorderable (Space grabs, arrows move,
+  // Escape cancels) through the same commit path as pointer drag.
+  describe('keyboard reorder (#234)', () => {
+    const rowsOf = (wrapper: { findAll: (s: string) => { attributes: (a: string) => string | undefined }[] }) =>
+      wrapper.findAll('[data-vibe-sortable-item]')
+
+    it('rows are focusable listitems with grab state', () => {
+      const Harness = makeHarness(['a', 'b'])
+      const wrapper = mount(Harness)
+      const rows = rowsOf(wrapper)
+      expect(rows[0].attributes('tabindex')).toBe('0')
+      expect(rows[0].attributes('role')).toBe('listitem')
+      expect(rows[0].attributes('aria-grabbed')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('Space grabs, ArrowDown moves, and the model commits like a drop', async () => {
+      const Harness = makeHarness(['a', 'b', 'c'])
+      const wrapper = mount(Harness, { attachTo: document.body })
+      const row = () => wrapper.findAll('[data-vibe-sortable-item]')[0]
+      ;(row().element as HTMLElement).focus()
+      await row().trigger('keydown', { key: ' ' })
+      expect(row().attributes('aria-grabbed')).toBe('true')
+      await row().trigger('keydown', { key: 'ArrowDown' })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findAll('[data-vibe-sortable-item]').map((n) => n.text())).toEqual([
+        'b',
+        'a',
+        'c'
+      ])
+      const reorder = wrapper.findComponent(VibeSortable).emitted('reorder') as
+        | { from: number; to: number }[][]
+        | undefined
+      expect(reorder).toBeDefined()
+      expect(reorder![reorder!.length - 1][0]).toMatchObject({ from: 0, to: 1 })
+      // Focus follows the moved row.
+      expect(document.activeElement).toBe(wrapper.findAll('[data-vibe-sortable-item]')[1].element)
+      wrapper.unmount()
+    })
+
+    it('Escape cancels the grab without reordering', async () => {
+      const Harness = makeHarness(['a', 'b'])
+      const wrapper = mount(Harness)
+      const row = () => wrapper.findAll('[data-vibe-sortable-item]')[0]
+      await row().trigger('keydown', { key: ' ' })
+      await row().trigger('keydown', { key: 'Escape' })
+      await row().trigger('keydown', { key: 'ArrowDown' })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findAll('[data-vibe-sortable-item]').map((n) => n.text())).toEqual(['a', 'b'])
+      expect(wrapper.findComponent(VibeSortable).emitted('reorder')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('exposes move() for programmatic reorder', async () => {
+      const Harness = makeHarness(['a', 'b', 'c'])
+      const wrapper = mount(Harness)
+      const sortable = wrapper.findComponent(VibeSortable)
+      ;(sortable.vm as unknown as { move: (from: number, to: number) => void }).move(2, 0)
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findAll('[data-vibe-sortable-item]').map((n) => n.text())).toEqual([
+        'c',
+        'a',
+        'b'
+      ])
+      wrapper.unmount()
+    })
+
+    it('disabled rows are not focusable and ignore keys', async () => {
+      const Harness = defineComponent({
+        components: { VibeSortable },
+        setup() {
+          const items = ref(['a', 'b'])
+          return { items }
+        },
+        render() {
+          return h(
+            VibeSortable as never,
+            {
+              modelValue: this.items,
+              disabled: true,
+              'onUpdate:modelValue': (v: string[]) => {
+                this.items = v
+              }
+            },
+            {
+              default: ({ item }: { item: string }) => h('div', item)
+            }
+          )
+        }
+      })
+      const wrapper = mount(Harness)
+      const row = wrapper.findAll('[data-vibe-sortable-item]')[0]
+      expect(row.attributes('tabindex')).toBeUndefined()
+      await row.trigger('keydown', { key: ' ' })
+      await row.trigger('keydown', { key: 'ArrowDown' })
+      await wrapper.vm.$nextTick()
+      expect(wrapper.findAll('[data-vibe-sortable-item]').map((n) => n.text())).toEqual(['a', 'b'])
+      wrapper.unmount()
+    })
+  })
 })

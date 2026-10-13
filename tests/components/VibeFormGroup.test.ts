@@ -312,3 +312,14 @@ describe('VibeFormGroup validation-state marks the child control (issue #68)', (
     expect(wrapper.find('input').classes()).toContain('is-valid')
   })
 })
+
+describe('VibeFormGroup hideOptional (issue #74)', () => {
+  it('shows "(optional)" by default on a non-required labelled group', () => {
+    const wrapper = mount(VibeFormGroup, { props: { label: 'Name' } })
+    expect(wrapper.text()).toContain('(optional)')
+  })
+  it('hides "(optional)" when hideOptional is set', () => {
+    const wrapper = mount(VibeFormGroup, { props: { label: 'Name', hideOptional: true } })
+    expect(wrapper.text()).not.toContain('(optional)')
+  })
+})
