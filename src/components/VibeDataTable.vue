@@ -159,11 +159,13 @@ watch(searchQuery, (newVal) => {
 })
 
 // #124: a committed search resets paging and lets a server-mode consumer fetch.
-// Watching the ref directly gives one emission per actual change: the debounced
-// mirror triggers on every commit, including a commit whose value is unchanged
-// (typing "abc" then deleting "c" inside one debounce window), and a fresh-array
-// source used to turn those no-op commits into duplicate `search` events —
-// duplicate fetches for server-mode consumers, with racing responses.
+// useDebouncedRef triggers on every commit, including a commit whose value is
+// unchanged (type "abc", delete "c", inside one debounce window). `watch` on the
+// ref re-runs its getter but skips the callback when the value is unchanged, so
+// one `search` event is emitted per actual query change. The previous source was
+// a fresh array, whose identity differs on every run: that bypassed this check
+// and turned those no-op commits into duplicate `search` events, i.e. duplicate
+// server-mode fetches with racing responses.
 watch(debouncedSearchQuery, (newVal) => {
   currentPage.value = 1
   emit('search', newVal)
@@ -352,14 +354,23 @@ const onChooserFocusOut = (event: FocusEvent): void => {
   if (!(next instanceof Node) || !chooserEl.value?.contains(next)) closeChooser()
 }
 // Outside-click dismissal. `pointerdown` closes before the outside target acts;
-// the listener is inert while the menu is closed and is always removed so it
-// cannot outlive the table.
+// the listener is inert while the menu is closed.
 const onDocumentPointerDown = (event: Event): void => {
   const target = event.target
   if (!chooserOpen.value || !chooserEl.value || !(target instanceof Node)) return
   if (!chooserEl.value.contains(target)) closeChooser()
 }
-onMounted(() => document.addEventListener('pointerdown', onDocumentPointerDown))
+// Only subscribe while the chooser exists: every table was paying for a
+// document-level listener even with showColumnToggle off (20 tables = 20
+// listeners fired per click). Registration waits for mount so SSR never
+// touches `document`, and follows the prop so enabling the toggle later still
+// works. removeEventListener for a listener that was never added is a no-op.
+const subscribeChooserDismissal = (enabled: boolean): void => {
+  if (enabled) document.addEventListener('pointerdown', onDocumentPointerDown)
+  else document.removeEventListener('pointerdown', onDocumentPointerDown)
+}
+onMounted(() => subscribeChooserDismissal(props.showColumnToggle))
+watch(() => props.showColumnToggle, (enabled) => subscribeChooserDismissal(enabled))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown))
 
 // align -> Bootstrap text utility; width -> validated CSS length (number = px).

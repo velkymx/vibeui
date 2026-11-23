@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import VibeDataTable from '../../src/components/VibeDataTable.vue'
@@ -6,6 +6,10 @@ import VibeDataTable from '../../src/components/VibeDataTable.vue'
 // #283 Phase 3a: first-class align/width column fields and opt-in column
 // visibility (v-model + chooser). All opt-in, so default rendering is unchanged.
 describe('VibeDataTable column presentation (#283)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Name' },
@@ -107,17 +111,29 @@ describe('VibeDataTable column presentation (#283)', () => {
     wrapper.unmount()
   })
 
+  it('subscribes the dismissal listener only while the chooser is enabled', async () => {
+    const addSpy = vi.spyOn(document, 'addEventListener')
+    const removeSpy = vi.spyOn(document, 'removeEventListener')
+    const wrapper = mount(VibeDataTable, {
+      props: { columns, items, paginated: false, showColumnToggle: false }
+    })
+    expect(addSpy).not.toHaveBeenCalledWith('pointerdown', expect.any(Function))
+
+    await wrapper.setProps({ showColumnToggle: true })
+    expect(addSpy).toHaveBeenCalledWith('pointerdown', expect.any(Function))
+
+    await wrapper.setProps({ showColumnToggle: false })
+    expect(removeSpy).toHaveBeenCalledWith('pointerdown', expect.any(Function))
+    wrapper.unmount()
+  })
+
   it('removes the document pointerdown listener on unmount', () => {
     const removeSpy = vi.spyOn(document, 'removeEventListener')
-    try {
-      const wrapper = mount(VibeDataTable, {
-        props: { columns, items, paginated: false, showColumnToggle: true }
-      })
-      wrapper.unmount()
-      expect(removeSpy).toHaveBeenCalledWith('pointerdown', expect.any(Function))
-    } finally {
-      removeSpy.mockRestore()
-    }
+    const wrapper = mount(VibeDataTable, {
+      props: { columns, items, paginated: false, showColumnToggle: true }
+    })
+    wrapper.unmount()
+    expect(removeSpy).toHaveBeenCalledWith('pointerdown', expect.any(Function))
   })
 
   it('toggling a chooser checkbox hides the column and emits update:columnVisibility', async () => {

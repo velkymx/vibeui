@@ -20,7 +20,7 @@ Pending patch release: fixes the `VibeDataTable` per-column slot declarations sh
 - **The virtualizer is disarmed while `virtualized` is off.** Every table previously attached a `ResizeObserver`, a scroll listener and a measurement cache for a feature it never used, and re-measured on every data change. (#311)
 - **Virtualized tables only format rendered rows.** `cellValueMap` ran every consumer `formatter` over the full dataset, so windowing saved DOM nodes but not compute. (#312)
 - **Row selection membership is a `Set`.** `isSelected` rebuilt a stringified key array on every call — once per rendered row per render — which scaled with `visible × selected`. (#313)
-- **The column chooser can be dismissed.** It now closes on outside pointerdown and Escape (returning focus to the trigger), exposes a per-instance `id`/`aria-controls`, and removes its document listener on unmount. (#315)
+- **The column chooser can be dismissed.** It now closes on outside pointerdown and Escape (returning focus to the trigger), exposes a per-instance `id`/`aria-controls`, and removes its document listener on unmount. The listener is only subscribed while `showColumnToggle` is on, so chooser-less tables add no document-level listener. (#315)
 - **Filter row work is hoisted out of the render loop.** Range tuples and sorted faceted option lists are derived once per column/filter-state change instead of rebuilt (and re-sorted) for every cell on every render. (#318)
 - **Exported slot-prop types match the slots.** `DataTableColumnCellSlotProps<T, K>`, `DataTableFooterSlotProps<T>` and `DataTableExpandedSlotProps<T>` are now the single definitions `defineSlots` consumes, pinned by `expectTypeOf`; the legacy `DataTableCellSlotProps` stays for back-compat. (#316)
 
