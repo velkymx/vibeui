@@ -50,7 +50,9 @@ export default tseslint.config(
   // enforced at error level on consumer-style example code, where a raw
   // element genuinely means a missed VibeUI equivalent.
   {
-    files: ['src/**/*.vue'],
+    // Type fixtures are SFCs too; keep them parsed so template syntax and parser
+    // errors are linted alongside the compiled type gate.
+    files: ['src/**/*.vue', 'tests/types/**/*.vue'],
     languageOptions: {
       parser: vueParser,
       parserOptions: {

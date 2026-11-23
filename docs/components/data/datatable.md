@@ -223,6 +223,16 @@ watch([page, sortBy, sortDesc, query], async () => {
 | `expanded` | `{ item, index }` | Detail content for an expanded row |
 | `footer({columnKey})` | `{ column }` | Custom footer cell for specific column |
 
+### Typing slots
+
+`#cell(key)` narrows `value` to that column's type and `#footer(key)` receives
+the column definition, as long as the row type is known. Declare `items` as
+`Row[]` and `columns` as `DataTableColumn<Row>[]`, or pass the columns array
+inline (`:columns="[{ key: 'name', label: 'Name' }]"`), which is contextually
+typed. A hoisted, unannotated columns array widens `key` to `string`, and
+`DataTableColumn[]` without its type argument resolves the row type to
+`Record<string, unknown>`; both lose per-key slot narrowing.
+
 ## Usage
 
 ### Basic DataTable

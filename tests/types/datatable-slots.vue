@@ -33,4 +33,10 @@ const columns: DataTableColumn<Row>[] = [
 
     <template #expanded="{ item, index }">{{ item.name }} {{ index }}</template>
   </VibeDataTable>
+
+  <!-- An inline columns array is contextually typed: T still comes from `items`
+  and the per-key slot narrows without annotating `columns`. -->
+  <VibeDataTable :items="rows" :columns="[{ key: 'name', label: 'Name' }]">
+    <template #cell(name)="{ value }">{{ value.toUpperCase() }}</template>
+  </VibeDataTable>
 </template>
