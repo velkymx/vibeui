@@ -6,6 +6,17 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ---
 
+## [1.3.1] - 2026-11-23
+
+A types-only patch fixing the `VibeDataTable` per-column slot declarations shipped in 1.3.0. No runtime change.
+
+### Fixed
+
+- **`VibeDataTable` `#cell(key)` and `#footer(key)` slots are usable from typed templates again.** 1.3.0 typed both slot families with a single mapped member whose props were the union `{ item, value, index } | { column }`. TypeScript only allows destructuring properties present on every union member, so `#cell(key)="{ item, value, index }"` failed with TS2339 on all three and `#footer(key)="{ column }"` failed on `column`; annotated bindings additionally failed with TS2345. The families are now separate mapped members, so each receives exactly what it does at runtime and what the docs promise: `#cell` gets `{ item, value, index }`, `#footer` gets `{ column }`. Consumers on 1.3.0 can stay on 1.2.2, avoid destructuring, or patch the emitted `.d.ts` until this release.
+- **Generic slot types now have a template-level regression test.** The `h()` assertion in `VibeSlots.test-d.ts` asserted nothing: `h()` cannot infer a generic SFC's `T`, so slot props fell back permissively (a deliberately wrong annotation compiled). It is replaced by `tests/types/datatable-slots.vue`, compiled by `vue-tsc` through `tsconfig.types.json`, which checks `#cell` and `#footer` destructuring the way consumers write it — including the annotated-binding form.
+
+---
+
 ## [1.3.0] - 2026-10-09
 
 A minor release: the event-bus system, error boundaries, global defaults, full keyboard operability, ARIA hardening, async-data resilience, and a unified Bootstrap instance lifecycle. No required-prop changes; behavior changes are listed explicitly below.

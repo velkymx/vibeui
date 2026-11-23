@@ -112,19 +112,26 @@ const emit = defineEmits<{
 // #147: type the per-column cell slots to the row type T. A `cell(<key>)` slot
 // receives the typed row, the typed cell value, and the row index, so consumers
 // get autocomplete and type-checking instead of `any`.
-defineSlots<{
-  // #147: per-column cell slots plus #283 Phase 4b per-column footer slots.
-  // One mapped member covers both families (two `as` remaps in one literal
-  // break the SFC parser); props are the union of both shapes.
-  [K in keyof T & string as `cell(${K})` | `footer(${K})`]?: (
-    props:
-      | { item: T; value: T[K]; index: number }
-      | { column: DataTableColumn<T> }
-  ) => unknown
-} & {
-  // #283 Phase 4a: expanded-row detail content for an expanded row.
-  expanded?: (props: { item: T; index: number }) => unknown
-}>()
+// Each slot family is its own mapped type: a single mapped member covering both
+// would make every slot's props a union, and destructuring a property that
+// exists on only one member (`value` for cell, `column` for footer) fails.
+defineSlots<
+  {
+    [K in keyof T & string as `cell(${K})`]?: (props: {
+      item: T
+      value: T[K]
+      index: number
+    }) => unknown
+  } & {
+    // #283 Phase 4b: per-column footer slots receive the column definition only.
+    [K in keyof T & string as `footer(${K})`]?: (props: {
+      column: DataTableColumn<T>
+    }) => unknown
+  } & {
+    // #283 Phase 4a: expanded-row detail content for an expanded row.
+    expanded?: (props: { item: T; index: number }) => unknown
+  }
+>()
 
 // Local state for search
 const searchQuery = ref('')

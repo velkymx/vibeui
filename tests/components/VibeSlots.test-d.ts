@@ -1,15 +1,10 @@
 import { h } from 'vue'
-import VibeDataTable from '../../src/components/VibeDataTable.vue'
 import VibeSortable from '../../src/components/VibeSortable.vue'
 
-// #147: scoped slots are typed to the row type T (not `any`).
-interface Row { id: number; name: string; active: boolean }
-const rows: Row[] = [{ id: 1, name: 'a', active: true }]
-
-// DataTable: a cell slot receives the typed row, the typed cell value, and index.
-h(VibeDataTable, { items: rows, columns: [] }, {
-  'cell(name)': (props: { item: Row; value: string; index: number }) => `${props.item.name}:${props.value}:${props.index}`,
-})
+// DataTable's per-column slots (#147 cell, #283 footer) are generic over the row
+// type, which h() cannot infer — slot props passed here would not be checked at
+// all (a wrong annotation compiles). They are covered by the template fixture
+// tests/types/datatable-slots.vue, which vue-tsc does type-check.
 
 // Sortable: the default slot receives the typed row and index. Sortable's generic
 // constraint is `Record<string, unknown>`, so the row type carries an index signature.
