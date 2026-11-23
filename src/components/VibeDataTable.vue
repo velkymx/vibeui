@@ -653,7 +653,9 @@ const tdStyleMap = computed(() => {
 // otherwise windowing saves DOM nodes while every consumer formatter still runs
 // over the full dataset on each invalidation. With virtualization off the two
 // are the same rows. Keyed by column then row so a row identity change
-// invalidates only its own entry.
+// invalidates only its own entry. Scrolling changes the window, so the map is
+// rebuilt for the new window: O(window) per scroll update is the intended
+// bound, not zero-cost scrolling.
 const cellValueMap = computed(() => {
   const byColumn = new Map<DataTableColumn<T>, Map<T, unknown>>()
   for (const column of props.columns) {

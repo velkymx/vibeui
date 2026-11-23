@@ -8,7 +8,7 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ## [Unreleased]
 
-Pending patch release: fixes the `VibeDataTable` per-column slot declarations shipped in 1.3.0, plus the correctness and render-cost defects found in the same review. Additive type exports only; no runtime API changes. The version bump and release date are set in the release commit.
+Pending patch release: fixes the `VibeDataTable` per-column slot declarations shipped in 1.3.0, plus the correctness and render-cost defects found in the same review. Additive type exports only; no runtime API changes. The release commit renames this heading to `## [1.3.1] - YYYY-MM-DD` and sets the version bump.
 
 ### Fixed
 
