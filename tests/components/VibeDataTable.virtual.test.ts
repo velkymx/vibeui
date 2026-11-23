@@ -1,10 +1,14 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeDataTable from '../../src/components/VibeDataTable.vue'
 
 // #283 Phase 5: virtualization (windowed rendering behind the virtualized
 // prop). Opt-in; default rendering unchanged.
 describe('VibeDataTable virtualization (#283)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Name' }
@@ -66,22 +70,18 @@ describe('VibeDataTable virtualization (#283)', () => {
       disconnect(): void {}
     }
     vi.stubGlobal('ResizeObserver', SpyResizeObserver)
-    try {
-      const off = mount(VibeDataTable, { props: { ...base } })
-      // Force an options update now that the scroll element exists: without the
-      // `enabled` gate this is where the observer would attach.
-      await off.setProps({ items: items.slice(0, 40) })
-      expect(constructed).not.toHaveBeenCalled()
-      off.unmount()
+    const off = mount(VibeDataTable, { props: { ...base } })
+    // Force an options update now that the scroll element exists: without the
+    // `enabled` gate this is where the observer would attach.
+    await off.setProps({ items: items.slice(0, 40) })
+    expect(constructed).not.toHaveBeenCalled()
+    off.unmount()
 
-      // Sanity: the spy is wired to the element window the virtualizer uses.
-      const on = mount(VibeDataTable, { props: { ...base, virtualized: true } })
-      await on.setProps({ items: items.slice(0, 40) })
-      expect(constructed).toHaveBeenCalled()
-      on.unmount()
-    } finally {
-      vi.unstubAllGlobals()
-    }
+    // Sanity: the spy is wired to the element window the virtualizer uses.
+    const on = mount(VibeDataTable, { props: { ...base, virtualized: true } })
+    await on.setProps({ items: items.slice(0, 40) })
+    expect(constructed).toHaveBeenCalled()
+    on.unmount()
   })
 
   it('formats only the rendered window while virtualized', () => {

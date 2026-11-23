@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 
 // The positive template fixture only proves the slots are strict enough to
 // accept correct usage. A regression to permissive slot types (back to a union
@@ -7,29 +7,31 @@ import { execFileSync } from 'node:child_process'
 // asserts the exact diagnostics, so "too loose" also fails.
 
 const FIXTURE = 'tests/types/negative/datatable-slots.vue'
-// One per negative case in the fixture. The annotated binding yields two
+// One per negative case in the fixture; the annotated binding yields two
 // (the annotation mismatch and the body's use of the narrowed value).
 const EXPECTED_CODES = ['TS2339', 'TS2339', 'TS2339', 'TS2345', 'TS2551']
-
-function run(args) {
-  try {
-    const output = execFileSync('npx', args, {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe']
-    })
-    return { code: 0, output }
-  } catch (error) {
-    return {
-      code: error.status ?? 1,
-      output: `${error.stdout ?? ''}${error.stderr ?? ''}`
-    }
-  }
-}
 
 function fail(message, output = '') {
   console.error(`negative type gate failed: ${message}`)
   if (output) console.error(output)
   process.exit(1)
+}
+
+function run(args) {
+  const result = spawnSync('npx', args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe']
+  })
+  // spawnSync reports launch failures through `error` and signals through
+  // `signal`; neither means vue-tsc diagnosed anything. Surface them instead of
+  // folding them into a status, so an environment failure cannot be reported as
+  // a type regression.
+  if (result.error) fail(`vue-tsc could not be executed: ${result.error.message}`)
+  if (result.signal) fail(`vue-tsc was terminated by signal ${result.signal}`)
+  return {
+    code: result.status ?? 1,
+    output: `${result.stdout ?? ''}${result.stderr ?? ''}`
+  }
 }
 
 // 1. The positive fixture must be part of the positive program. If a config

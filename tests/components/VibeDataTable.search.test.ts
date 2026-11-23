@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import VibeDataTable from '../../src/components/VibeDataTable.vue'
@@ -18,30 +18,30 @@ describe('VibeDataTable search emission (#124, #314)', () => {
   const columns = [{ key: 'name', label: 'Name' }]
   const items = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Alina' }]
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('emits once per actual query change, not per debounce commit', async () => {
     vi.useFakeTimers()
-    try {
-      const wrapper = mount(VibeDataTable, {
-        props: { columns, items, searchable: true }
-      })
-      const input = wrapper.find('input[type="search"]')
+    const wrapper = mount(VibeDataTable, {
+      props: { columns, items, searchable: true }
+    })
+    const input = wrapper.find('input[type="search"]')
 
-      await input.setValue('Al')
-      vi.advanceTimersByTime(300)
-      await nextTick()
-      expect(wrapper.emitted('search')).toHaveLength(1)
+    await input.setValue('Al')
+    vi.advanceTimersByTime(300)
+    await nextTick()
+    expect(wrapper.emitted('search')).toHaveLength(1)
 
-      // Change and revert inside one debounce window: the debounced mirror
-      // commits the same value again, which must not re-emit.
-      await input.setValue('Ali')
-      await input.setValue('Al')
-      vi.advanceTimersByTime(300)
-      await nextTick()
-      expect(wrapper.emitted('search')).toHaveLength(1)
-      wrapper.unmount()
-    } finally {
-      vi.useRealTimers()
-    }
+    // Change and revert inside one debounce window: the debounced mirror
+    // commits the same value again, which must not re-emit.
+    await input.setValue('Ali')
+    await input.setValue('Al')
+    vi.advanceTimersByTime(300)
+    await nextTick()
+    expect(wrapper.emitted('search')).toHaveLength(1)
+    wrapper.unmount()
   })
 })
 
