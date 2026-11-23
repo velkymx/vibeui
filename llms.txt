@@ -155,7 +155,8 @@ import { vTooltip } from '@velkymx/vibeui'
 // Types
 import type {
   Variant, ButtonVariant, ColorMode, Size,
-  DataTableColumn, DataTableCellSlotProps,
+  DataTableColumn, DataTableCellSlotProps, DataTableColumnCellSlotProps,
+  DataTableFooterSlotProps, DataTableExpandedSlotProps,
   FormSelectOption, FormSelectOptionValue,
   ToastSpec, ToastShowOptions, UseToastReturn,
   UsePositionOptions, UsePositionReturn,
@@ -196,7 +197,10 @@ interface ProgressBar      { value, max?, variant?, striped?, animated?, label?,
 // Generic over the row type T (default Record<string, unknown>)
 interface DataTableColumn<T>      { key: keyof T & string, label, sortable?, searchable?,
                                     formatter?: (value: T[keyof T], row: T) => string | number, ... }
-interface DataTableCellSlotProps<T> { item: T, value: T[keyof T], index: number }
+interface DataTableCellSlotProps<T> { item: T, value: T[keyof T], index: number }  // prefer the keyed form
+interface DataTableColumnCellSlotProps<T, K> { item: T, value: T[K], index: number }
+interface DataTableFooterSlotProps<T>        { column: DataTableColumn<T> }
+interface DataTableExpandedSlotProps<T>      { item: T, index: number }
 
 // Form select primitive — accepts null / undefined / boolean
 type FormSelectOptionValue = string | number | boolean | null | undefined

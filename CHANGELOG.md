@@ -8,12 +8,21 @@ The **Detailed History** section below the releases preserves the per-commit Cod
 
 ## [1.3.1] - 2026-11-23
 
-A types-only patch fixing the `VibeDataTable` per-column slot declarations shipped in 1.3.0. No runtime change.
+A patch release fixing the `VibeDataTable` per-column slot declarations shipped in 1.3.0, plus the correctness and render-cost defects found in the same review. No API additions.
 
 ### Fixed
 
 - **`VibeDataTable` `#cell(key)` and `#footer(key)` slots are usable from typed templates again.** 1.3.0 typed both slot families with a single mapped member whose props were the union `{ item, value, index } | { column }`. TypeScript only allows destructuring properties present on every union member, so `#cell(key)="{ item, value, index }"` failed with TS2339 on all three and `#footer(key)="{ column }"` failed on `column`; annotated bindings additionally failed with TS2345. The families are now separate mapped members, so each receives exactly what it does at runtime and what the docs promise: `#cell` gets `{ item, value, index }`, `#footer` gets `{ column }`. Consumers on 1.3.0 can stay on 1.2.2, avoid destructuring, or patch the emitted `.d.ts` until this release.
-- **Generic slot types now have a template-level regression test.** The `h()` assertion in `VibeSlots.test-d.ts` asserted nothing: `h()` cannot infer a generic SFC's `T`, so slot props fell back permissively (a deliberately wrong annotation compiled). It is replaced by `tests/types/datatable-slots.vue`, compiled by `vue-tsc` through `tsconfig.types.json`, which checks `#cell` and `#footer` destructuring the way consumers write it — including the annotated-binding form.
+- **Generic slot types now have a template-level regression test.** The `h()` assertion in `VibeSlots.test-d.ts` asserted nothing: `h()` cannot infer a generic SFC's `T`, so slot props fell back permissively (a deliberately wrong annotation compiled). It is replaced by `tests/types/datatable-slots.vue`, compiled by `vue-tsc` through `tsconfig.types.json`, which checks `#cell` and `#footer` destructuring the way consumers write it — including the annotated-binding form. A matching negative fixture (`npm run test:types:negative`) asserts the slots are still strict enough to reject wrong props, so a regression to permissive types also fails CI. (#317)
+- **`VibeDataTable` body rows keep the header's leading columns.** Leaf rows rendered the expand cell before the select cell while the header, filter, group and footer rows rendered select first; and leaf rows omitted the expand cell entirely when `groupBy` added that column without `expandable`. Every data cell was shifted one column in grouped tables. (#309)
+- **Conditionally supplied `#expanded` / `#footer(key)` slots render.** Slot presence was read inside a `computed()` over `useSlots()`, which is a plain non-reactive object: the computed cached its first answer forever, so a slot added after mount never appeared. Both are now render-time helpers. (#310)
+- **One `search` emission per actual query change.** The watcher used a fresh array as its source, so a debounce commit of an unchanged value (type, then undo, inside one window) emitted `search` again — duplicate fetches in server mode, with racing responses. (#314)
+- **The virtualizer is disarmed while `virtualized` is off.** Every table previously attached a `ResizeObserver`, a scroll listener and a measurement cache for a feature it never used, and re-measured on every data change. (#311)
+- **Virtualized tables only format rendered rows.** `cellValueMap` ran every consumer `formatter` over the full dataset, so windowing saved DOM nodes but not compute. (#312)
+- **Row selection membership is a `Set`.** `isSelected` rebuilt a stringified key array on every call — once per rendered row per render — which scaled with `visible × selected`. (#313)
+- **The column chooser can be dismissed.** It now closes on outside pointerdown and Escape (returning focus to the trigger), exposes a per-instance `id`/`aria-controls`, and removes its document listener on unmount. (#315)
+- **Filter row work is hoisted out of the render loop.** Range tuples and sorted faceted option lists are derived once per column/filter-state change instead of rebuilt (and re-sorted) for every cell on every render. (#318)
+- **Exported slot-prop types match the slots.** `DataTableColumnCellSlotProps<T, K>`, `DataTableFooterSlotProps<T>` and `DataTableExpandedSlotProps<T>` are now the single definitions `defineSlots` consumes, pinned by `expectTypeOf`; the legacy `DataTableCellSlotProps` stays for back-compat. (#316)
 
 ---
 

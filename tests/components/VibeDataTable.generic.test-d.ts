@@ -1,4 +1,11 @@
-import type { DataTableColumn, DataTableCellSlotProps } from '../../src/types'
+import { expectTypeOf } from 'vitest'
+import type {
+  DataTableColumn,
+  DataTableCellSlotProps,
+  DataTableColumnCellSlotProps,
+  DataTableExpandedSlotProps,
+  DataTableFooterSlotProps
+} from '../../src/types'
 
 // #38: a plain interface (NO string index signature) must be a valid row type.
 // Before the fix the generic was `T extends Record<string, unknown>`, so writing
@@ -26,3 +33,24 @@ const slot: DataTableCellSlotProps<PromptDef> = {
 }
 const rowName: string = slot.item.name
 void rowName
+
+// #316: the exported slot-props types are the ones defineSlots consumes, and
+// the keyed cell form narrows `value` to that column (the unkeyed legacy type
+// stays the union of every column value).
+expectTypeOf<DataTableColumnCellSlotProps<PromptDef, 'name'>>().toEqualTypeOf<{
+  item: PromptDef
+  value: string
+  index: number
+}>()
+expectTypeOf<DataTableColumnCellSlotProps<PromptDef, 'id'>>().toEqualTypeOf<{
+  item: PromptDef
+  value: number
+  index: number
+}>()
+expectTypeOf<DataTableFooterSlotProps<PromptDef>>().toEqualTypeOf<{
+  column: DataTableColumn<PromptDef>
+}>()
+expectTypeOf<DataTableExpandedSlotProps<PromptDef>>().toEqualTypeOf<{
+  item: PromptDef
+  index: number
+}>()

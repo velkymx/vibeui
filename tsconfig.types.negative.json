@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.types.json",
+  "include": ["tests/types/negative/**/*.vue", "src/shims-optional-deps.d.ts"]
+}
