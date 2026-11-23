@@ -54,6 +54,9 @@ jobs:
       - name: Type tests
         run: npm run test:types
 
+      - name: Negative type tests
+        run: npm run test:types:negative
+
   e2e:
     runs-on: ubuntu-latest
     steps:

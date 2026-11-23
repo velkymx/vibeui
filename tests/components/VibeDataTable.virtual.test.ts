@@ -1,10 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import VibeDataTable from '../../src/components/VibeDataTable.vue'
 
 // #283 Phase 5: virtualization (windowed rendering behind the virtualized
 // prop). Opt-in; default rendering unchanged.
 describe('VibeDataTable virtualization (#283)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Name' }
@@ -52,6 +56,45 @@ describe('VibeDataTable virtualization (#283)', () => {
     }
     const dataRows = wrapper.findAll('tbody tr:not(.vibe-virtual-spacer)')
     expect(spacers.reduce((sum, s) => sum + cellPx(s), 0) + dataRows.length * 100).toBe(1000)
+    wrapper.unmount()
+  })
+
+  it('attaches no virtualizer observers while virtualization is off', async () => {
+    const constructed = vi.fn()
+    class SpyResizeObserver {
+      constructor() {
+        constructed()
+      }
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    }
+    vi.stubGlobal('ResizeObserver', SpyResizeObserver)
+    const off = mount(VibeDataTable, { props: { ...base } })
+    // Force an options update now that the scroll element exists: without the
+    // `enabled` gate this is where the observer would attach.
+    await off.setProps({ items: items.slice(0, 40) })
+    expect(constructed).not.toHaveBeenCalled()
+    off.unmount()
+
+    // Sanity: the spy is wired to the element window the virtualizer uses.
+    const on = mount(VibeDataTable, { props: { ...base, virtualized: true } })
+    await on.setProps({ items: items.slice(0, 40) })
+    expect(constructed).toHaveBeenCalled()
+    on.unmount()
+  })
+
+  it('formats only the rendered window while virtualized', () => {
+    const formatter = vi.fn((value: unknown) => String(value))
+    const cols = [{ key: 'name', label: 'Name', formatter }]
+    const wrapper = mount(VibeDataTable, {
+      props: { columns: cols, items, paginated: false, virtualized: true, virtualEstimateSize: 48 }
+    })
+    expect(formatter).toHaveBeenCalled()
+    // The window is a fraction of the 50-row dataset; formatting the whole
+    // dataset here is the bug the rendered-entry map removes.
+    expect(formatter.mock.calls.length).toBeLessThan(items.length)
+    expect(wrapper.text()).toContain('Row 1')
     wrapper.unmount()
   })
 

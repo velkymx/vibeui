@@ -163,9 +163,32 @@ export interface DataTableColumn<T extends object = Record<string, unknown>> {
   footer?: string
 }
 
+// #147: what a `#cell(<key>)` slot receives. `value` is the union of every
+// column value, so it cannot narrow to the slot's key; kept for back-compat
+// (it is advertised in llms.txt). Prefer DataTableColumnCellSlotProps.
 export interface DataTableCellSlotProps<T extends object = Record<string, unknown>> {
   item: T
   value: T[keyof T]
+  index: number
+}
+
+// The keyed form: `value` is the value of that exact column. VibeDataTable's
+// defineSlots consumes this type, so the slot contract has one definition
+// instead of a second inline shape that can drift from the public type.
+export interface DataTableColumnCellSlotProps<T extends object, K extends keyof T & string> {
+  item: T
+  value: T[K]
+  index: number
+}
+
+// #283 Phase 4b: what a `#footer(<key>)` slot receives (the column definition).
+export interface DataTableFooterSlotProps<T extends object> {
+  column: DataTableColumn<T>
+}
+
+// #283 Phase 4a: what the `#expanded` slot receives (the expanded row).
+export interface DataTableExpandedSlotProps<T extends object> {
+  item: T
   index: number
 }
 

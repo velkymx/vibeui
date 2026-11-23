@@ -466,12 +466,17 @@ export function useVibeTable<T extends object>(
 
   const filteredCount = computed(() => table.getFilteredRowModel().rows.length)
 
+  // Membership set rebuilt once per selection change. isSelected runs once per
+  // rendered row per render; materializing the key list on every call made that
+  // O(rows x selected) string conversions per render.
+  const selectedKeySet = computed(() => new Set(params.selectedRows.value.map(String)))
+
   const selection: VibeTableSelection = {
     enabled: selectionEnabled,
     multiple: selectionMultiple,
     isAllSelected: computed(() => table.getIsAllRowsSelected()),
     isIndeterminate: computed(() => table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()),
-    isSelected: (key) => params.selectedRows.value.map(String).includes(String(key)),
+    isSelected: (key) => selectedKeySet.value.has(String(key)),
     toggleRow: (event, key) => {
       const row = table.getRowModel().rowsById[String(key)] ?? table.getCoreRowModel().rowsById[String(key)]
       row?.getToggleSelectedHandler()(event)

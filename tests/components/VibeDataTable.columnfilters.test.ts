@@ -83,6 +83,37 @@ describe('VibeDataTable column filters (#283)', () => {
     wrapper.unmount()
   })
 
+  it('refreshes select options when the row set changes', async () => {
+    const wrapper = mount(VibeDataTable, {
+      props: { columns, items, paginated: false }
+    })
+    const optionValues = () =>
+      wrapper.findAll('select.vibe-filter-select option').map((o) => (o.element as HTMLOptionElement).value)
+    expect(optionValues()).toEqual(['', 'active', 'inactive'])
+
+    await wrapper.setProps({
+      items: [...items, { id: 4, name: 'Dana', status: 'pending', age: 40 }]
+    })
+    expect(optionValues()).toEqual(['', 'active', 'inactive', 'pending'])
+    wrapper.unmount()
+  })
+
+  it('preselects a range model into both inputs', () => {
+    const wrapper = mount(VibeDataTable, {
+      props: {
+        columns,
+        items,
+        paginated: false,
+        columnFilters: [{ id: 'age', value: [26, 40] }]
+      }
+    })
+    const [min, max] = wrapper.findAll('input.vibe-filter-range')
+    expect((min.element as HTMLInputElement).value).toBe('26')
+    expect((max.element as HTMLInputElement).value).toBe('40')
+    expect(rowCount(wrapper)).toBe(1)
+    wrapper.unmount()
+  })
+
   it('preselects from the columnFilters model', () => {
     const wrapper = mount(VibeDataTable, {
       props: { columns, items, paginated: false, columnFilters: [{ id: 'name', value: 'bob' }] }

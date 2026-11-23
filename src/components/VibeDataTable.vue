@@ -1,7 +1,15 @@
 <script setup lang="ts" generic="T extends object">
-import { ref, computed, watch, useSlots, type PropType } from 'vue'
+import { ref, computed, watch, useSlots, onMounted, onBeforeUnmount, type PropType } from 'vue'
 import { useVibeDefaults, resolveProp } from '../composables/vibeDefaults'
-import type { DataTableColumn, ComponentError, Variant } from '../types'
+import { useId } from '../composables/useId'
+import type {
+  DataTableColumn,
+  DataTableColumnCellSlotProps,
+  DataTableExpandedSlotProps,
+  DataTableFooterSlotProps,
+  ComponentError,
+  Variant
+} from '../types'
 import { safeCssObject, safeLength } from '../utils/safeCss'
 import { useDebouncedRef } from '../composables/useDebouncedRef'
 import { useVibeTable, type VibeTableRow } from '../composables/useVibeTable'
@@ -112,19 +120,20 @@ const emit = defineEmits<{
 // #147: type the per-column cell slots to the row type T. A `cell(<key>)` slot
 // receives the typed row, the typed cell value, and the row index, so consumers
 // get autocomplete and type-checking instead of `any`.
-defineSlots<{
-  // #147: per-column cell slots plus #283 Phase 4b per-column footer slots.
-  // One mapped member covers both families (two `as` remaps in one literal
-  // break the SFC parser); props are the union of both shapes.
-  [K in keyof T & string as `cell(${K})` | `footer(${K})`]?: (
-    props:
-      | { item: T; value: T[K]; index: number }
-      | { column: DataTableColumn<T> }
-  ) => unknown
-} & {
-  // #283 Phase 4a: expanded-row detail content for an expanded row.
-  expanded?: (props: { item: T; index: number }) => unknown
-}>()
+// Each slot family is its own mapped type: a single mapped member covering both
+// would make every slot's props a union, and destructuring a property that
+// exists on only one member (`value` for cell, `column` for footer) fails.
+defineSlots<
+  {
+    [K in keyof T & string as `cell(${K})`]?: (props: DataTableColumnCellSlotProps<T, K>) => unknown
+  } & {
+    // #283 Phase 4b: per-column footer slots receive the column definition only.
+    [K in keyof T & string as `footer(${K})`]?: (props: DataTableFooterSlotProps<T>) => unknown
+  } & {
+    // #283 Phase 4a: expanded-row detail content for an expanded row.
+    expanded?: (props: DataTableExpandedSlotProps<T>) => unknown
+  }
+>()
 
 // Local state for search
 const searchQuery = ref('')
@@ -149,12 +158,16 @@ watch(searchQuery, (newVal) => {
   debouncedSearchQuery.value = newVal
 })
 
-// Watch through a fresh array so every commit notifies: watch() skips the
-// callback when the value is unchanged, but every input event schedules work
-// (matches the pre-#158 per-keystroke timer behavior).
-watch(() => [debouncedSearchQuery.value], ([newVal]) => {
+// #124: a committed search resets paging and lets a server-mode consumer fetch.
+// useDebouncedRef triggers on every commit, including a commit whose value is
+// unchanged (type "abc", delete "c", inside one debounce window). `watch` on the
+// ref re-runs its getter but skips the callback when the value is unchanged, so
+// one `search` event is emitted per actual query change. The previous source was
+// a fresh array, whose identity differs on every run: that bypassed this check
+// and turned those no-op commits into duplicate `search` events, i.e. duplicate
+// server-mode fetches with racing responses.
+watch(debouncedSearchQuery, (newVal) => {
   currentPage.value = 1
-  // #124: let a server-mode consumer fetch the matching page.
   emit('search', newVal)
 })
 
@@ -193,7 +206,10 @@ const { paginatedItems, filteredCount, selection, filters, visibility, layout, e
 })
 
 // #283 Phase 5: row virtualizer over the displayed rows. Always constructed
-// (composables cannot be conditional); inert unless virtualized is on.
+// (composables cannot be conditional) but only enabled while virtualized is on;
+// @tanstack attaches a ResizeObserver and a scroll listener to
+// getScrollElement() and keeps them for the component's lifetime, so a
+// non-virtualized table must not return its container or a count.
 const scrollEl = ref<HTMLElement | null>(null)
 // Virtual height in px for the scroll container style and the virtualizer's
 // initial rect (happy-dom and SSR never report layout, so without a seed the
@@ -206,8 +222,9 @@ const virtualHeightPx = computed(() => {
 const virtualCount = computed(() => displayedRows.value.length)
 const rowVirtualizer = useVirtualizer(
   computed(() => ({
-    count: virtualCount.value,
-    getScrollElement: () => scrollEl.value,
+    enabled: props.virtualized,
+    count: props.virtualized ? virtualCount.value : 0,
+    getScrollElement: () => (props.virtualized ? scrollEl.value : null),
     estimateSize: () => props.virtualEstimateSize,
     overscan: props.virtualOverscan,
     initialRect: { width: 800, height: virtualHeightPx.value },
@@ -258,20 +275,41 @@ const renderEntries = computed(() => {
   return entries
 })
 
-// #283 Phase 2b: filter row helpers (unwrapped for the template).
+// #283 Phase 2b: filter row helpers. Derived once per columns/filter-state
+// change and keyed by column, instead of rebuilding range tuples and re-sorting
+// option lists inside the render loop (same reason as the sort/style/cell maps
+// below). Options are only collected for columns that render a select.
 const filtersEnabled = computed(() => filters.enabled.value)
-const filterText = (column: DataTableColumn<T>): string => String(filters.get(column.key) ?? '')
-const filterOptions = (column: DataTableColumn<T>): string[] => filters.uniqueValues(column.key)
-const setFilter = (column: DataTableColumn<T>, value: unknown) => filters.set(column.key, value)
+const filterTextMap = computed(() => {
+  const map = new Map<DataTableColumn<T>, string>()
+  for (const column of props.columns) map.set(column, String(filters.get(column.key) ?? ''))
+  return map
+})
+const filterOptionsMap = computed(() => {
+  const map = new Map<DataTableColumn<T>, string[]>()
+  for (const column of props.columns) {
+    if (column.filter === 'select') map.set(column, filters.uniqueValues(column.key))
+  }
+  return map
+})
+const filterRangeMap = computed(() => {
+  const map = new Map<DataTableColumn<T>, [string, string]>()
+  for (const column of props.columns) {
+    if (column.filter !== 'range') continue
+    const value = filters.get(column.key)
+    map.set(column, Array.isArray(value) ? [String(value[0] ?? ''), String(value[1] ?? '')] : ['', ''])
+  }
+  return map
+})
+const filterText = (column: DataTableColumn<T>): string => filterTextMap.value.get(column) ?? ''
+const filterOptions = (column: DataTableColumn<T>): string[] => filterOptionsMap.value.get(column) ?? []
 // Range tuple read/write: [min, max] as strings for the number inputs.
-const filterRange = (column: DataTableColumn<T>): [string, string] => {
-  const value = filters.get(column.key)
-  return Array.isArray(value) ? [String(value[0] ?? ''), String(value[1] ?? '')] : ['', '']
-}
+const filterRange = (column: DataTableColumn<T>): [string, string] =>
+  filterRangeMap.value.get(column) ?? ['', '']
+const setFilter = (column: DataTableColumn<T>, value: unknown) => filters.set(column.key, value)
 const setFilterRange = (column: DataTableColumn<T>, index: 0 | 1, value: string) => {
-  const next = filterRange(column)
-  next[index] = value
-  filters.set(column.key, next)
+  const current = filterRange(column)
+  filters.set(column.key, index === 0 ? [value, current[1]] : [current[0], value])
 }
 
 // #283 Phase 3a: column visibility is engine-owned (core columnVisibility
@@ -291,7 +329,49 @@ defineExpose({ moveColumn })
 const setColumnVisible = (column: DataTableColumn<T>, visible: boolean) => {
   visibility.set(column.key, visible)
 }
+// #283 Phase 3a: column-visibility chooser. A disclosure (checkbox list), not a
+// Bootstrap dropdown, so it cannot borrow the dropdown's dismissal behaviour.
+// The id is per instance so multiple tables on a page keep aria-controls valid.
 const chooserOpen = ref(false)
+const chooserEl = ref<HTMLElement | null>(null)
+const chooserTriggerEl = ref<HTMLButtonElement | null>(null)
+const chooserMenuId = useId('vibe-column-toggle')
+
+const closeChooser = (): void => {
+  chooserOpen.value = false
+}
+// Escape hides the menu while focus is inside it; return focus to the trigger
+// rather than orphaning it on a hidden element (WCAG 2.4.3).
+const dismissChooser = (): void => {
+  closeChooser()
+  chooserTriggerEl.value?.focus()
+}
+// Closing on focus-out keeps the keyboard path predictable. Moving between the
+// checkboxes inside the menu must not close it, so only an outside relatedTarget
+// dismisses.
+const onChooserFocusOut = (event: FocusEvent): void => {
+  const next = event.relatedTarget
+  if (!(next instanceof Node) || !chooserEl.value?.contains(next)) closeChooser()
+}
+// Outside-click dismissal. `pointerdown` closes before the outside target acts;
+// the listener is inert while the menu is closed.
+const onDocumentPointerDown = (event: Event): void => {
+  const target = event.target
+  if (!chooserOpen.value || !chooserEl.value || !(target instanceof Node)) return
+  if (!chooserEl.value.contains(target)) closeChooser()
+}
+// Only subscribe while the chooser exists: every table was paying for a
+// document-level listener even with showColumnToggle off (20 tables = 20
+// listeners fired per click). Registration waits for mount so SSR never
+// touches `document`, and follows the prop so enabling the toggle later still
+// works. removeEventListener for a listener that was never added is a no-op.
+const subscribeChooserDismissal = (enabled: boolean): void => {
+  if (enabled) document.addEventListener('pointerdown', onDocumentPointerDown)
+  else document.removeEventListener('pointerdown', onDocumentPointerDown)
+}
+onMounted(() => subscribeChooserDismissal(props.showColumnToggle))
+watch(() => props.showColumnToggle, (enabled) => subscribeChooserDismissal(enabled))
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown))
 
 // align -> Bootstrap text utility; width -> validated CSS length (number = px).
 const alignClass = (column: DataTableColumn<T>): string =>
@@ -357,8 +437,15 @@ const colspanCount = computed(
     (props.expandable || grouped.value ? 1 : 0)
 )
 // The expanded-row detail slot, when provided.
+// useSlots() returns the plain, non-reactive instance.slots object that Vue
+// mutates in place when the parent re-renders. Read inside a computed it would
+// register no dependencies, so the first answer would be cached forever and a
+// conditionally supplied slot would never be seen. These stay render-time
+// helpers so every render sees the current object.
 const slots = useSlots()
-const hasExpandedSlot = computed(() => slots.expanded !== undefined)
+const hasExpandedSlot = (): boolean => slots.expanded !== undefined
+const hasFooterSlot = (key: string): boolean =>
+  (slots as Record<string, unknown>)[`footer(${key})`] !== undefined
 // #283 Phase 4b: group header cell text. The grouping column shows the value
 // plus leaf count; aggregated columns show the engine aggregation; the rest
 // stay blank so the group label reads cleanly.
@@ -376,11 +463,8 @@ const groupCellText = (row: Extract<VibeTableRow<T>, { group: object }>, column:
 // #283 Phase 4b: grouping active when groupBy names at least one column.
 const grouped = computed(() => (Array.isArray(props.groupBy) ? props.groupBy.length > 0 : !!props.groupBy))
 // Footer renders when any column carries footer text or a footer slot.
-const footEnabled = computed(
-  () =>
-    props.columns.some((column) => column.footer !== undefined) ||
-    Object.keys(slots).some((name) => name.startsWith('footer('))
-)
+const footEnabled = (): boolean =>
+  props.columns.some((column) => column.footer !== undefined || hasFooterSlot(column.key))
 
 // Pagination info
 // Rows loaded in the browser. In server mode this is just the current page slice.
@@ -562,18 +646,24 @@ const tdStyleMap = computed(() => {
   return m
 })
 
-// Cell display values, computed once per data/columns change. Previously
-// getCellValue() ran (and invoked the consumer formatter) on every render for
-// every visible cell. Keyed by column then row so a row identity change
-// invalidates only its own entry.
+// Cell display values, computed once per rendered-window/columns change.
+// Previously getCellValue() ran (and invoked the consumer formatter) on every
+// render for every visible cell. Using the rendered entries (rather than every
+// displayed row) keeps a virtualized table O(window) instead of O(dataset):
+// otherwise windowing saves DOM nodes while every consumer formatter still runs
+// over the full dataset on each invalidation. With virtualization off the two
+// are the same rows. Keyed by column then row so a row identity change
+// invalidates only its own entry. Scrolling changes the window, so the map is
+// rebuilt for the new window: O(window) per scroll update is the intended
+// bound, not zero-cost scrolling.
 const cellValueMap = computed(() => {
   const byColumn = new Map<DataTableColumn<T>, Map<T, unknown>>()
   for (const column of props.columns) {
     const byRow = new Map<T, unknown>()
-    // Displayed rows (not just the page slice) so expanded sub-rows resolve.
-    // Group header rows carry no item and are skipped here; their cells render
-    // from the engine aggregated values instead.
-    for (const { item } of displayedRows.value) {
+    for (const { row } of renderEntries.value) {
+      const item = row.item
+      // Group header rows carry no item; their cells render from the engine
+      // aggregated values instead.
       if (item === null) continue
       const value = item[column.key]
       byRow.set(item, column.formatter ? column.formatter(value, item) : value)
@@ -615,16 +705,24 @@ const cellValueMap = computed(() => {
     </div>
 
     <!-- #283 Phase 3a: column visibility chooser -->
-    <div v-if="showColumnToggle" class="dropdown mb-2 vibe-column-toggle">
+    <div
+      v-if="showColumnToggle"
+      ref="chooserEl"
+      class="dropdown mb-2 vibe-column-toggle"
+      @keydown.esc="dismissChooser"
+      @focusout="onChooserFocusOut"
+    >
       <button
+        ref="chooserTriggerEl"
         type="button"
         class="btn btn-outline-secondary btn-sm dropdown-toggle"
         :aria-expanded="chooserOpen"
+        :aria-controls="chooserMenuId"
         @click="chooserOpen = !chooserOpen"
       >
         Columns
       </button>
-      <ul class="dropdown-menu" :class="{ show: chooserOpen }">
+      <ul :id="chooserMenuId" class="dropdown-menu" :class="{ show: chooserOpen }">
         <li v-for="column in columns" :key="column.key">
           <label class="dropdown-item d-flex align-items-center gap-2">
             <input
@@ -776,7 +874,21 @@ const cellValueMap = computed(() => {
               :style="clickable ? CLICKABLE_ROW_STYLE : undefined"
               @click="handleRowClick(entry.row.item, entry.index)"
             >
-              <td v-if="expandable" class="vibe-expand-cell">
+              <!-- Leading columns must match <thead>, the filter row, the group
+              row and <tfoot>: select first, expand second. The expand cell is
+              rendered whenever any other row renders one (grouping adds it even
+              when expandable is off, empty for rows that cannot expand), so
+              every body row keeps the header's cell count. -->
+              <td v-if="selectEnabled" class="vibe-select-cell">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  aria-label="Select row"
+                  :checked="isRowSelected(entry.row.item)"
+                  @click.stop="onToggleRow($event, entry.row.item)"
+                />
+              </td>
+              <td v-if="expandable || grouped" class="vibe-expand-cell">
                 <button
                   v-if="expansion.canExpand(entry.row.key)"
                   type="button"
@@ -792,15 +904,6 @@ const cellValueMap = computed(() => {
                   >&#8250;</span>
                 </button>
               </td>
-            <td v-if="selectEnabled" class="vibe-select-cell">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                aria-label="Select row"
-                :checked="isRowSelected(entry.row.item)"
-                @click.stop="onToggleRow($event, entry.row.item)"
-              />
-            </td>
             <td
               v-for="column in visibleColumns"
               :key="column.key"
@@ -814,7 +917,7 @@ const cellValueMap = computed(() => {
             </td>
           </tr>
           <tr
-            v-if="!entry.row.group && expandable && hasExpandedSlot && expansion.isExpanded(entry.row.key)"
+            v-if="!entry.row.group && expandable && hasExpandedSlot() && expansion.isExpanded(entry.row.key)"
             class="vibe-expanded-row"
           >
             <td :colspan="colspanCount">
@@ -840,7 +943,7 @@ const cellValueMap = computed(() => {
           </tr>
         </tbody>
         <!-- #283 Phase 4b: footer row from column footer text or footer slots. -->
-        <tfoot v-if="footEnabled">
+        <tfoot v-if="footEnabled()">
           <tr>
             <td v-if="selectEnabled" class="vibe-select-cell"></td>
             <td v-if="expandable || grouped" class="vibe-expand-cell"></td>

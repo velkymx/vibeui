@@ -223,6 +223,16 @@ watch([page, sortBy, sortDesc, query], async () => {
 | `expanded` | `{ item, index }` | Detail content for an expanded row |
 | `footer({columnKey})` | `{ column }` | Custom footer cell for specific column |
 
+### Typing slots
+
+`#cell(key)` narrows `value` to that column's type and `#footer(key)` receives
+the column definition, as long as the row type is known. Declare `items` as
+`Row[]` and `columns` as `DataTableColumn<Row>[]`, or pass the columns array
+inline (`:columns="[{ key: 'name', label: 'Name' }]"`), which is contextually
+typed. A hoisted, unannotated columns array widens `key` to `string`, and
+`DataTableColumn[]` without its type argument resolves the row type to
+`Record<string, unknown>`; both lose per-key slot narrowing.
+
 ## Usage
 
 ### Basic DataTable
@@ -551,6 +561,12 @@ Only the visible window renders (plus overscan), with spacer rows preserving
 scroll height. Pagination is bypassed while on. Rows measure on render, so
 `virtualEstimateSize` only affects the pre-measure estimate; keep it close to
 the real height to avoid scroll drift.
+
+While `virtualized` is off, the virtualizer is fully disarmed (no scroll
+listener or `ResizeObserver`), and formatters only run for the rows actually
+rendered. Note that the window assumes one row per index, so pairing
+`virtualized` with `expandable` (in-row detail content) desynchronizes scroll
+offsets; use pagination for expandable tables.
 
 ## Advanced Features
 
