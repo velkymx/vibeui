@@ -13,7 +13,7 @@
 
 **The Vue 3 component library for people who already love Bootstrap.**
 
-> **🤖 Building with an AI assistant?** Point it at [`llms.txt`](./llms.txt) (quick-start guardrails + a link to every doc) and [`docs/`](https://github.com/velkymx/vibeui/blob/main/docs/README.md). Every component's props, events, and slots are documented — **don't let it guess props or reverse-engineer from `dist/`.** Quick reminders: data-driven components use `:items` / `:bars` / `:options`, visibility uses `v-model`, outline buttons use the `outline` prop, and granular tags like `<vibe-card-body>` / `<vibe-nav-item>` do **not** exist (use slots). Both `llms.txt` and the `docs/` pages ship inside the npm package — the links are absolute so they also resolve from npmjs.com.
+> **🤖 Building with an AI assistant?** Install the VibeUI **agent skill** ([`skills/vibeui`](./skills/vibeui/SKILL.md)) — one portable `SKILL.md` for Claude Code, OpenAI Codex, and any agent on the open Agent Skills format. It makes the agent read the installed docs and follow the library's rules before writing code. Also point it at [`llms.txt`](./llms.txt) (quick-start guardrails + a link to every doc) and [`docs/`](https://github.com/velkymx/vibeui/blob/main/docs/README.md). Every component's props, events, and slots are documented — **don't let it guess props or reverse-engineer from `dist/`.** Quick reminders: data-driven components use `:items` / `:bars` / `:options`, visibility uses `v-model`, outline buttons use the `outline` prop, and granular tags like `<vibe-card-body>` / `<vibe-nav-item>` do **not** exist (use slots). All of it ships inside the npm package, so the links also resolve from npmjs.com.
 
 
 
@@ -38,6 +38,7 @@ You keep the Bootstrap you know. VibeUI handles the Vue you'd rather not write.
 ## Contents
 
 - [Quick Start](#quick-start)
+- [Agent skills](#agent-skills)
 - [Features](#features)
 - [Components](#components)
   - [Layout](#layout)
@@ -123,6 +124,32 @@ toast.error('Network error', { delay: 8000 })
 ```
 
 Mount `<VibeToastHost />` once at app root, dispatch from any component.
+
+## Agent skills
+
+VibeUI ships a portable [Agent Skill](https://agentskills.io) for Claude Code, OpenAI Codex, and other agents that support the open `SKILL.md` format. It turns "build a settings page" into the library's workflow: read the docs, use the components and props, cover the states, then run the design review.
+
+Inside the skill:
+
+- **Rules first** — no Bootstrap JS import, props over CSS, `v-model` for visibility, arrays for data-driven components, `VibeFormGroup` + `useForm`.
+- **Component map** — every area, its components, key props, and the doc page to read before using it.
+- **Recipes** — app shell, sign-in, settings form, data table with states, dialog + toast, theme, and non-table empty/loading/error states.
+- **Design review** — budgets, the highest-impact AI-slop tells, and a ship gate.
+- **Troubleshooting** — the real failure modes, from `outline` variants to two modal control paths and `DataTableColumn<Row>[]` typing.
+
+### Install
+
+Claude Code and Codex read the same skill from different folders. Copy it from the installed package:
+
+```bash
+mkdir -p .claude/skills .agents/skills
+cp -R node_modules/@velkymx/vibeui/skills/vibeui .claude/skills/
+cp -R node_modules/@velkymx/vibeui/skills/vibeui .agents/skills/
+```
+
+Use `~/.claude/skills/` or `~/.agents/skills/` for a user-level install. In this repo the same folder is linked from `.claude/skills/vibeui` and `.agents/skills/vibeui`, so there is one canonical copy to edit.
+
+Then ask normally, or invoke it directly: `/vibeui` in Claude Code, `$vibeui` in Codex. See [`skills/README.md`](./skills/README.md) for the layout and editing rules, and [`references/design-review.md`](./skills/vibeui/references/design-review.md) for the checklist the agent runs.
 
 ## Features
 

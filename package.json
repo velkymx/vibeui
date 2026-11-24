@@ -44,7 +44,8 @@
     "dist",
     "llms.txt",
     "docs",
-    "examples"
+    "examples",
+    "skills"
   ],
   "scripts": {
     "dev": "vite",
