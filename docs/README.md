@@ -9,6 +9,8 @@ VibeUI is designed to be simple and lightweight, providing Vue 3 components that
 > **New here?** See the [Starter Template](./getting-started/starter-template.md) for a complete, copy-pasteable minimal app.
 >
 > **Building for real?** Read [Best Practices](./best-practices.md) — how to use VibeUI well (setup, the props+slots API, forms/a11y, optional-peer injection, tree-shaking), with cited sources.
+>
+> **Designing it (or directing an AI to)?** Read [Unslop](./unslop.md) — the design contract, UI budgets, the tell catalog, and the build/review protocol that keeps generated interfaces intentional.
 
 ### Installation
 

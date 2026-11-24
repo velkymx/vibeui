@@ -69,7 +69,7 @@ createApp(App).use(VibeUI).mount('#app')         // registers every component + 
 
 ### Read the doc first
 
-A component's exact props/events/slots live in its doc page (Documentation Index, bottom). **Read it before building — do not guess props or reverse-engineer from `dist/`.** The documented API is the source of truth. For cross-cutting guidance (setup, props+slots, forms/a11y, optional-peer injection, tree-shaking), see [Best Practices](https://github.com/velkymx/vibeui/blob/main/docs/best-practices.md).
+A component's exact props/events/slots live in its doc page (Documentation Index, bottom). **Read it before building — do not guess props or reverse-engineer from `dist/`.** The documented API is the source of truth. For cross-cutting guidance (setup, props+slots, forms/a11y, optional-peer injection, tree-shaking), see [Best Practices](https://github.com/velkymx/vibeui/blob/main/docs/best-practices.md). For UI/UX direction (design contract, budgets, AI-slop tells, Bootstrap reference examples, review protocol), see [Unslop](https://github.com/velkymx/vibeui/blob/main/docs/unslop.md) before designing a screen.
 
 ### Common mistakes — do NOT do these
 
@@ -646,7 +646,7 @@ Per-component and per-API reference. **Read the relevant page before building wi
 
 These pages ship inside the npm package under `docs/`, so you can read them straight from `node_modules/@velkymx/vibeui/docs/`. The links below are absolute so they also resolve on npmjs.com and GitHub, where relative paths do not.
 
-**Start here:** [docs/README.md](https://github.com/velkymx/vibeui/blob/main/docs/README.md) · [Getting started / starter template](https://github.com/velkymx/vibeui/blob/main/docs/getting-started/starter-template.md) · [Versioning & stability policy](https://github.com/velkymx/vibeui/blob/main/docs/versioning.md)
+**Start here:** [docs/README.md](https://github.com/velkymx/vibeui/blob/main/docs/README.md) · [Getting started / starter template](https://github.com/velkymx/vibeui/blob/main/docs/getting-started/starter-template.md) · [Best practices](https://github.com/velkymx/vibeui/blob/main/docs/best-practices.md) · [Unslop (UI/UX direction)](https://github.com/velkymx/vibeui/blob/main/docs/unslop.md) · [Versioning & stability policy](https://github.com/velkymx/vibeui/blob/main/docs/versioning.md)
 
 **Layout:** [VibeContainer](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/container.md) · [VibeRow](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/row.md) · [VibeCol](https://github.com/velkymx/vibeui/blob/main/docs/components/layout/col.md)
 
