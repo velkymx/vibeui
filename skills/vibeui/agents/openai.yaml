@@ -1,0 +1,4 @@
+interface:
+  display_name: "VibeUI"
+  short_description: "Build Vue 3 + Bootstrap 5.3 UI with VibeUI components"
+  default_prompt: "Build this screen with VibeUI components and props, following the project's design contract."
