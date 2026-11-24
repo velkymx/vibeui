@@ -1,6 +1,6 @@
 # Design review: keep the UI intentional
 
-Use this before calling a screen done. It is the condensed version of `docs/unslop.md`; open that file for the full catalog and prompts.
+Use this before calling a screen done. It is the condensed version of the Unslop guide (`docs/unslop.md`, when present); open that file for the full catalog and prompts.
 
 ## Budgets
 
@@ -90,7 +90,7 @@ Remove, do not restyle:
 </VibeCard>
 ```
 
-The full pair, with the gradient, three actions, and the verdict list, is in `docs/unslop.md` §7.7.
+The full pair, with the gradient, three actions, and the verdict list, is in `docs/unslop.md` §7.7 when present.
 
 ## Ship gate
 
@@ -108,6 +108,6 @@ The full pair, with the gradient, three actions, and the verdict list, is in `do
 
 ## References
 
-- `docs/unslop.md` in the VibeUI package or repo: full catalog, budgets, prompts, and the Bootstrap example map.
+- `docs/unslop.md` (when present): full catalog, budgets, prompts, and the Bootstrap example map.
 - `docs/best-practices.md`: setup, props and slots, forms, accessibility.
 - Impeccable's Slop catalog: <https://impeccable.style/slop/>.

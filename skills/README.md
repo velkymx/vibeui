@@ -45,7 +45,7 @@ Once installed, the agent loads the skill when a task matches its description (V
 - Claude Code: `/vibeui`
 - Codex: `$vibeui`
 
-The skill points the agent at the installed docs (`node_modules/@velkymx/vibeui/llms.txt` and `docs/`) before it writes code, and at `docs/unslop.md` for design review.
+The skill points the agent at the installed docs (`node_modules/@velkymx/vibeui/llms.txt` and `docs/`) before it writes code, and at `docs/unslop.md` (when present) for the full design review.
 
 ## Editing
 
